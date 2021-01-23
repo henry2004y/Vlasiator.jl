@@ -19,7 +19,6 @@ using Test
    @test cellIDs == IDRef
    indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
    @test meta.cellIndex == indexRef
-   rm(filename)
    # ID finding
    loc = [2.0, 0.0, 0.0]
    id = get_cellid(meta, loc)
@@ -31,4 +30,7 @@ using Test
    point2 = [2.0, 0.0, 0.0]
    cellids, _, _ = get_cell_in_line(meta, point1, point2)
    @test cellids == collect(4:8)
+
+   close(meta.fid) # required for Windows
+   rm(filename, force=true)
 end

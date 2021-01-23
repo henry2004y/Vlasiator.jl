@@ -5,6 +5,11 @@ The VLSV loader inherits the basic structure from [Analysator](analysator) and i
 
 The function APIs are made to be consistent with [Analysator](analysator).
 
+The IOstream handle for the VLSV file requires some special attention.
+In the current implementation, once the meta data is read, the file stays open until one explictly says `close(meta.fid)`.
+On the Windows platform, it is not allowed to delete the file before the IO is closed.
+However, this is allowed in Unix, so be careful.
+
 ## Benchmarks
 
 Initial tests on getting one variable from a VLSV file: 
