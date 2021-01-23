@@ -12,6 +12,10 @@ os:
 arch:
   - x64
   - x86
+addons:
+  apt:
+    packages:
+      - python3-matplotlib
 cache:
   directories:
     - ~/.julia/artifacts
