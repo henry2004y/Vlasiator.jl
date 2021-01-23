@@ -1,0 +1,42 @@
+# Log
+
+This package was born when I was learning Vlasiator and its corresponding data structures.
+The VLSV loader inherits the basic structure from [Analysator](analysator) and is redesigned for performance.
+
+The function APIs are made to be consistent with [Analysator](analysator).
+
+## Benchmarks
+
+Initial tests on getting one variable from a VLSV file: 
+
+| 2MB   | tmean [μs] |
+|:-------|:---------:|
+| Julia  | 200    |
+| Python | 1000   |
+
+| 50MB   | tmean [μs] |
+|:-------|:---------:|
+| Julia  | 400    |
+| Python | 1000   |
+
+I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
+Same thing for Julia costs 1.0s (first time ~8s including everything).
+
+Reading and plotting one 2d slice of proton density out of 3D AMR data:
+
+| 26G   | tmean [s] |
+|:-------|:---------:|
+| Julia  | 0.35  |
+| Python | 1.7   |
+
+Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on Vorna:
+
+| 1 CPU   | tmean [m] |
+|:-------|:---------:|
+| Julia  | 11    |
+| Python | 125   |
+
+Note that the above timings are for a single CPU. With only one command added for multithreading, the Julia timings can be improved by n where n is the number of threads. For example, with 8 threads, Julia takes ~80s to finish.
+
+
+[analysator]: https://github.com/fmihpc/analysator
