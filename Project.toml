@@ -14,7 +14,9 @@ PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 julia = "1"
 
 [extras]
+CodecZlib = "944b1d66-785c-5afd-91f1-9de20f533193"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Tar = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
 
 [targets]
 test = ["Test"]

@@ -2,7 +2,14 @@ using Vlasiator
 using Test
 
 @testset "Vlasiator.jl" begin
-   run(`tar -zxvf data/bulk_vlsv.tar`)
+   if Sys.iswindows()
+      using CodecZlib, Tar
+      open("data/bulk_vlsv.tar") do io
+         Tar.extract(GzipDecompressorStream(io), ".")
+      end
+   else
+      run(`tar -zxvf data/bulk_vlsv.tar`)
+   end
    filename = "bulk.0000004.vlsv"
    meta = read_meta(filename)
    # ID reading

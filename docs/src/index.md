@@ -4,9 +4,6 @@ CurrentModule = Vlasiator
 
 # Vlasiator
 
-```@index
-```
-
 Data processing and analyzing tool for the numerical model for collisionless ion-kinetic plasma physics [Vlasiator](https://github.com/fmihpc/vlasiator). 
 
 The package contains the following features:
