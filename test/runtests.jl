@@ -3,12 +3,13 @@ using Test
 
 @testset "Vlasiator.jl" begin
    if Sys.iswindows()
-      using CodecZlib, Tar
-      open("data/bulk_vlsv.tar") do io
-         Tar.extract(GzipDecompressorStream(io), ".")
+      using ZipFile
+      r = ZipFile.Reader("data/bulk_vlsv.zip")
+      open(r.files[1].name, "w") do io
+         write(io, read(r.files[1], String))
       end
    else
-      run(`tar -zxvf data/bulk_vlsv.tar`)
+      run(`unzip data/bulk_vlsv.zip`)
    end
    filename = "bulk.0000004.vlsv"
    meta = read_meta(filename)
