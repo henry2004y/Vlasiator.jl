@@ -1,9 +1,9 @@
 # Log
 
 This package was born when I was learning Vlasiator and its corresponding data structures.
-The VLSV loader inherits the basic structure from [Analysator](analysator) and is redesigned for performance.
+The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
 
-The function APIs are made to be consistent with [Analysator](analysator).
+The function APIs are made to be consistent with Analysator.
 
 The IOstream handle for the VLSV file requires some special attention.
 In the current implementation, once the meta data is read, the file stays open until one explictly says `close(meta.fid)`.
@@ -42,6 +42,3 @@ Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on Vor
 | Python | 125   |
 
 Note that the above timings are for a single CPU. With only one command added for multithreading, the Julia timings can be improved by n where n is the number of threads. For example, with 8 threads, Julia takes ~80s to finish.
-
-
-[analysator]: https://github.com/fmihpc/analysator
