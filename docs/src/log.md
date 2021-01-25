@@ -10,6 +10,12 @@ In the current implementation, once the meta data is read, the file stays open u
 On the Windows platform, it is not allowed to delete the file before the IO is closed.
 However, this is allowed in Unix, so be careful.
 
+## Plotting Philosophy
+
+We should not take over what underlying plotting libraries like Matplotlib offers.
+Users should be able to modify the figures as they wish even if they only know how to use the well-known plotting libraries.
+Do not reinvent the wheel. For customized plotting, simply provide some sample scripts for the common tasks like zooming-in, change font sizes, add text boxes, etc..
+
 ## Benchmarks
 
 Initial tests on getting one variable from a VLSV file: 

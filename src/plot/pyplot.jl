@@ -4,7 +4,61 @@
 
 using PyPlot, Printf, LaTeXStrings
 
-export plot_pcolormesh, plot_colormap3dslice
+export streamplot, plot_pcolormesh, plot_colormap3dslice
+
+import PyPlot:streamplot
+
+"""
+    streamplot(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
+
+Wrapper over Matplotlib's stream line function. The `comp` option can take a
+subset of "xyz" in any order.
+"""
+function streamplot(meta, var; comp="xy", axisunit="Re", kwargs...)
+
+   if occursin("x", comp)
+      v1_ = 1
+      if occursin("y", comp)
+         v2_ = 2
+         sizes = [meta.xcells, meta.ycells]
+         plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
+      else
+         v2_ = 3
+         sizes = [meta.xcells, meta.zcells]
+         plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
+      end
+   else
+      v1_, v2_ = 2, 3
+      sizes = [meta.ycells, meta.zcells]
+      plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
+   end
+
+   if var in keys(variables_predefined)
+      data = variables_predefined[var](meta)
+   else
+      data = read_variable(meta, var)
+   end
+
+   @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required to plot streamlines!"
+
+   if startswith(var, "fg_") # fsgrid
+      
+   else # vlasov grid
+      data = reshape(data[:,meta.cellIndex], 3, sizes...)
+      v1 = data[v1_,:,:]'
+      v2 = data[v2_,:,:]'
+   end
+
+   x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Re
+   y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Re
+
+   # Be careful about array ordering difference between Julia and Python!
+   X = [i for _ in y, i in x]
+   Y = [j for j in y, _ in x]
+
+   c = streamplot(X, Y, v1, v2; kwargs...)
+end
+
 
 """
     plot_pcolormesh(meta::MetaData, var; op="mag", axisunit="Re", islinear=false)
@@ -26,13 +80,13 @@ function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
 
    # Check if ecliptic or polar run
    if ysize == 1 && zsize != 1
-      plotrange = [xmin,xmax,zmin,zmax]
-      sizes = [xsize,zsize]
+      plotrange = [xmin, xmax, zmin, zmax]
+      sizes = [xsize, zsize]
       PLANE = "XZ"
       axislabels = ['X', 'Z']
    elseif zsize == 1 && ysize != 1
-      plotrange = [xmin,xmax,ymin,ymax]
-      sizes = [xsize,ysize]
+      plotrange = [xmin, xmax, ymin, ymax]
+      sizes = [xsize, ysize]
       PLANE = "XY"
       axislabels = ['X', 'Y']
    elseif ysize == 1 && zsize == 1
@@ -45,7 +99,7 @@ function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
       data = read_variable(meta, var)
    end
 
-   if startswith(var, "fg_") # fsgrid array
+   if startswith(var, "fg_") # fsgrid
       
    else # vlasov grid
       if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       

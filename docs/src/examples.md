@@ -44,6 +44,13 @@ plot_pcolormesh(meta, "rho", op="z", islinear=false, axisunit="Re")
 plot_pcolormesh(meta, "b", op="z", islinear=false, axisunit="Re")
 ```
 
+- Streamline for 2D simulation
+```
+streamline(meta, "rho_v", comp="xy")
+```
+
+The `comp` option is used to specify the two vector components.
+
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
@@ -53,3 +60,5 @@ You can choose to use linear/log color scale, plot vector components via e.g. `o
 ```
 plot_colormap3dslice(meta, "proton/vg_rho", normal="y")
 ```
+
+More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
