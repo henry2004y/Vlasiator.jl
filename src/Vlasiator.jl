@@ -4,6 +4,5 @@ module Vlasiator
 
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
-include("plot/pyplot.jl")
 
 end

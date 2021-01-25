@@ -12,7 +12,7 @@ The package contains the following features:
 * Plotting 2D cuts from 2D/3D simulations.
 
 !!! note
-    This package is still under development, so be careful for any future breaking changes!
+    This package is new and young, so be careful for any future breaking changes!
 
 ## Getting started
 

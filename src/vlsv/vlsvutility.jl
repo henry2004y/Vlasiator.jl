@@ -220,7 +220,8 @@ function get_cell_in_line(meta, point1, point2)
 end
 
 """
-    getSliceCellID(meta, slicelocation, maxreflevel; xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
+    getSliceCellID(meta, slicelocation, maxreflevel; xmin=-Inf, xmax=Inf,
+       ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
 Find the cell ids which are needed to plot a 2d cut through of a 3d mesh.
 """

@@ -29,6 +29,20 @@ cellids, distances, coords = get_cell_in_line(meta, point1, point2)
 
 ## Plotting
 
+Vlasiator.jl does not have any plotting library as dependency, but it offers plotting functionalities through additional scripts.
+To use a specific plotting library, just include the target script (e.g. `pyplot.jl`) under `src/plot` folder:
+```
+include("src/plot/pyplot.jl")
+```
+
+Currently I would recommend using `PyPlot.jl`.
+`Plots.jl` is catching up, but it is still slower and lack of features.
+`Makie.jl` will be supported in the future if 3D plotting is necessary.
+
+More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
+
+### PyPlot Backend
+
 - Scaler colored contour for 2D simulation
 ```
 plot_pcolormesh(meta, "rho")
@@ -61,4 +75,16 @@ You can choose to use linear/log color scale, plot vector components via e.g. `o
 plot_colormap3dslice(meta, "proton/vg_rho", normal="y")
 ```
 
-More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
+### Plots.jl Backend
+
+- Scaler colored contour for 2D simulation
+```
+heatmap(meta, "rho", aspect_ratio=:equal, c=:turbo)
+```
+
+- Scaler colored contour with lines for 2D simulation
+```
+contourf(meta, "rho)
+```
+
+This backend supports all available attributes provided by Plots.jl.

@@ -3,9 +3,11 @@
 # Reading 2D simulation data, zooming-in to a region of interest, and
 # adding streamlines on top of colored mesh.
 #
-# Hongyang Zhou, hyzhou@umich.edu 1/25/2021
+# Hongyang Zhou, hyzhou@umich.edu 01/25/2021
 
 using Vlasiator, PyPlot
+
+include("../plot/pyplot.jl")
 
 filename = "bulk.0000501.vlsv"
 nameρ = "rho"

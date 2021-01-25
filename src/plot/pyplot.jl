@@ -2,9 +2,7 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu 12/03/2020
 
-using PyPlot, Printf, LaTeXStrings
-
-export streamplot, plot_pcolormesh, plot_colormap3dslice
+using Vlasiator, PyPlot, Printf, LaTeXStrings
 
 import PyPlot:streamplot
 
@@ -33,8 +31,8 @@ function streamplot(meta, var; comp="xy", axisunit="Re", kwargs...)
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
    end
 
-   if var in keys(variables_predefined)
-      data = variables_predefined[var](meta)
+   if var in keys(Vlasiator.variables_predefined)
+      data = Vlasiator.variables_predefined[var](meta)
    else
       data = read_variable(meta, var)
    end
@@ -49,8 +47,8 @@ function streamplot(meta, var; comp="xy", axisunit="Re", kwargs...)
       v2 = data[v2_,:,:]'
    end
 
-   x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Re
-   y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Re
+   x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
+   y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re
 
    # Be careful about array ordering difference between Julia and Python!
    X = [i for _ in y, i in x]
@@ -63,7 +61,7 @@ end
 """
     plot_pcolormesh(meta::MetaData, var; op="mag", axisunit="Re", islinear=false)
 
-Plot a 2D pseudocolor var from vlsv.
+Plot a variable using pseudocolor from 2D VLSV data.
 
 `plot_pcolormesh(meta, var)`
 
@@ -93,8 +91,8 @@ function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
 
    end
 
-   if var in keys(variables_predefined)
-      data = variables_predefined[var](meta)
+   if var in keys(Vlasiator.variables_predefined)
+      data = Vlasiator.variables_predefined[var](meta)
    else
       data = read_variable(meta, var)
    end
@@ -186,8 +184,8 @@ function plot_colormap3dslice(meta, var; op="mag", origin=0.0, normal="y",
    # Scale the sizes to the heighest refinement level
    sizes *= 2^maxreflevel
 
-   if var in keys(variables_predefined)
-      data = variables_predefined[var](meta)
+   if var in keys(Vlasiator.variables_predefined)
+      data = Vlasiator.variables_predefined[var](meta)
    else
       data = read_variable(meta, var)
    end
@@ -244,8 +242,8 @@ end
 function set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, data)
 
    if axisunit == "Re"
-      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Re
-      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Re      
+      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
+      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re      
    else
       x = range(plotrange[1], plotrange[2], length=sizes[1])
       y = range(plotrange[3], plotrange[4], length=sizes[2])
