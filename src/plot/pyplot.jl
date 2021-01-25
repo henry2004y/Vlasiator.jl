@@ -228,7 +228,7 @@ function set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, d
       ticks = range(vmin, vmax, length=nticks)
    end
 
-   datainfo = read_variable_info(meta.footer, var)
+   datainfo = read_variable_info(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
    data_unit = datainfo.unitLaTeX

@@ -14,3 +14,16 @@ The package contains the following features:
 !!! note
     This package is still under development, so be careful for any future breaking changes!
 
+## Getting started
+
+To install it,
+```
+pkg> add Vlasiator
+```
+
+You can then get started with
+```
+julia> using Vlasiator
+```
+
+More usages can be found in the [examples](examples.md).
