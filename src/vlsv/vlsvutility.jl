@@ -4,8 +4,8 @@ import LinearAlgebra: norm, dot
 
 const Re = 6.371e6 # Earth radius, [m]
 
-export get_cellid, get_amr_level, get_max_amr_level, get_cell_coordinates,
-   get_cell_in_line
+export get_cellid, getSliceCellID, get_amr_level, get_max_amr_level,
+   get_cell_coordinates, get_cell_in_line, refine_data
 
 """
     get_cell_id(meta::MetaData, location)

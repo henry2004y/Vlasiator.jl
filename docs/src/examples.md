@@ -41,6 +41,14 @@ Currently I would recommend using `PyPlot.jl`.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
+Sample outputs:
+
+* Proton density of Earth's magnetosphere in the meridional plane from 3D simulation
+![](figures/magnetosphere_earth_proton_density_ycut.png)
+
+* Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and fore shock region
+![](figures/magnetosphere_earth_proton_density_2D.png)
+
 ### PyPlot Backend
 
 - Scaler colored contour for 2D simulation
