@@ -13,8 +13,8 @@ using Test
    end
    filename = "bulk.0000004.vlsv"
    meta = read_meta(filename)
-   # ID reading
-   cellIDs = read_variable(meta, "CellID")
+   # ID reading, unsorted
+   cellIDs = read_variable(meta, "CellID", false)
    IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
    @test cellIDs == IDRef
    indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]

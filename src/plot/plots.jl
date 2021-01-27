@@ -32,9 +32,9 @@ using RecipesBase
       
    else # vlasov grid
       if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       
-         data = reshape(data[meta.cellIndex], sizes[1], sizes[2])
+         data = reshape(data, sizes[1], sizes[2])
       elseif ndims(data) == 2
-         data = reshape(data[:,meta.cellIndex], 3, sizes...)
+         data = reshape(data, 3, sizes...)
          if op == "x"
             data = data[1,:,:]
          elseif op == "y"

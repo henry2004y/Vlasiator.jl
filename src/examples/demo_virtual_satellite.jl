@@ -38,3 +38,12 @@ point2 = [15Re, 0, 0]
 # Extract data along the line segment in one snapshot
 meta = read_meta(filenames[1])
 cellIDs, distances, coords = get_cell_in_line(meta, point1, point2)
+
+## Visualization
+#=
+using PyPlot, DelimitedFiles
+
+data = readdlm("virtual_satellite.txt")
+
+plot(data)
+=#

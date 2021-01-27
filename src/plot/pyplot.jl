@@ -4,15 +4,13 @@
 
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 
-import PyPlot:streamplot
-
 """
-    streamplot(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
+    streamline(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
 
-Wrapper over Matplotlib's stream line function. The `comp` option can take a
+Wrapper over Matplotlib's streamplot function. The `comp` option can take a
 subset of "xyz" in any order.
 """
-function streamplot(meta, var; comp="xy", axisunit="Re", kwargs...)
+function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 
    if occursin("x", comp)
       v1_ = 1
@@ -42,7 +40,7 @@ function streamplot(meta, var; comp="xy", axisunit="Re", kwargs...)
    if startswith(var, "fg_") # fsgrid
       
    else # vlasov grid
-      data = reshape(data[:,meta.cellIndex], 3, sizes...)
+      data = reshape(data, 3, sizes...)
       v1 = data[v1_,:,:]'
       v2 = data[v2_,:,:]'
    end
@@ -101,9 +99,9 @@ function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
       
    else # vlasov grid
       if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       
-         data = reshape(data[meta.cellIndex], sizes[1], sizes[2])
+         data = reshape(data, sizes[1], sizes[2])
       elseif ndims(data) == 2
-         data = reshape(data[:,meta.cellIndex], 3, sizes...)
+         data = reshape(data, 3, sizes...)
          if op == "x"
             data = data[1,:,:]
          elseif op == "y"
@@ -195,10 +193,8 @@ function plot_colormap3dslice(meta, var; op="mag", origin=0.0, normal="y",
    else # moments, dccrg grid
       # vlasov grid, AMR
       if ndims(data) == 1
-         data = data[meta.cellIndex] # sorted
          data = data[indexlist] # find required cells
       elseif ndims(data) == 2
-         data = data[:,meta.cellIndex] # sorted
          data = data[:,indexlist] # find required cells
       end
 

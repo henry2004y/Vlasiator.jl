@@ -13,6 +13,10 @@ meta = read_meta(filename)
 data = read_variable(meta, "proton/vg_rho")
 ```
 
+By default the returned variable array is sorted by cell IDs.
+If in any case you want the original unsorted version as being stored in the file,
+simply say `read_variable(meta, var, false)`.
+
 - Get variable at a given location (This can be simplified even further later!)
 ```
 loc = [2.0, 0.0, 0.0]
@@ -26,6 +30,9 @@ point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 cellids, distances, coords = get_cell_in_line(meta, point1, point2)
 ```
+
+Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl), it is possible to do all kinds of in depth analysis.
+More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
 ## Plotting
 

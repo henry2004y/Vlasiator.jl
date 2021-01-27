@@ -350,12 +350,21 @@ function read_mesh(fid, footer, typeMesh, varMesh)
 end
 
 """
-    read_variable(meta::MetaData, var)
+    read_variable(meta::MetaData, var, sorted=true)
 
-Return variable value from the vlsv file.
+Return variable value from the vlsv file. Sorted by cell ID by default.
 """
-read_variable(meta, var) = 
-   read_vector(meta.fid, meta.footer, var, "VARIABLE")
+function read_variable(meta, var, sorted=true)
+   data = read_vector(meta.fid, meta.footer, var, "VARIABLE")
+   if sorted
+      if ndims(data) == 1
+         data = data[meta.cellIndex]
+      elseif ndims(data) == 2
+         data = data[:, meta.cellIndex]
+      end
+   end
+   return data
+end
 
 "Check if vlsv file contain a variable."
 has_variable(footer, var) = has_name(footer, "VARIABLE", var)
@@ -368,14 +377,14 @@ Read a variable in a collection of cells.
 function read_variable_select(meta, var, idIn=UInt[])
 
    if isempty(idIn)
-      w = read_variable(meta, var)
+      w = read_variable(meta, var, false)
       return [w]
    end
 
    T, variable_offset, arraysize, datasize, vectorsize = 
       read_prep(meta.fid, meta.footer, var, "VARIABLE", "name")
 
-   cellids = read_variable(meta, "CellID")
+   cellids = read_variable(meta, "CellID", false)
    rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in idIn]
 
    v = fill(T[], length(rOffsets))
