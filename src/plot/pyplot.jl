@@ -4,6 +4,21 @@
 
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 
+"Plotting arguments."
+struct PlotArgs
+   sizes::Vector{Int}
+   plotrange::Vector{Float32}
+   idlist::Vector{Int}
+   indexlist::Vector{Int}
+   maxreflevel::Int8
+   islinear::Bool
+   str_title::String
+   strx::String
+   stry::String
+   cmap::ColorMap
+   cb_title_use::String
+end
+
 """
     streamline(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
 
@@ -55,7 +70,6 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
    c = streamplot(X, Y, v1, v2; kwargs...)
 end
 
-
 """
     plot_pcolormesh(meta::MetaData, var; op="mag", axisunit="Re", islinear=false)
 
@@ -69,25 +83,105 @@ Plot a variable using pseudocolor from 2D VLSV data.
 """
 function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
 
-   xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
-   xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin 
-   xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
-   dx = meta.dx # cell size is equal in x,y,z for now
+   pArgs = set_args(meta, var, axisunit, islinear)
 
-   # Check if ecliptic or polar run
-   if ysize == 1 && zsize != 1
-      plotrange = [xmin, xmax, zmin, zmax]
-      sizes = [xsize, zsize]
-      PLANE = "XZ"
-      axislabels = ['X', 'Z']
-   elseif zsize == 1 && ysize != 1
-      plotrange = [xmin, xmax, ymin, ymax]
-      sizes = [xsize, ysize]
-      PLANE = "XY"
-      axislabels = ['X', 'Y']
-   elseif ysize == 1 && zsize == 1
+   x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
+   norm, cticks = set_colorbar(data, pArgs)
+
+   fig, ax = subplots()
+
+   c = ax.pcolormesh(x, y, data, norm=norm, cmap=pArgs.cmap, shading="auto")
+
+   set_plot(fig, ax, c, pArgs, cticks)
+
+   return c
+end
+
+"""
+    plot_colormap3dslice(meta::MetaData, var (...))
+
+Plot pseudocolor var on a 2D slice of 3D vlsv data.
+
+`plot_colormap3dslice(meta, var)`
+
+`plot_colormap3dslice(meta, var, op="z", origin=1.0, normal="x")`
+
+`plot_colormap3dslice(data, func, islinear=false)`
+"""
+function plot_colormap3dslice(meta, var; op="mag", origin=0.0, normal="y",
+   axisunit="Re", islinear=false)
+
+   pArgs = set_args(meta, var, axisunit, islinear, normal, origin)
+
+   maxreflevel = pArgs.maxreflevel
+   sizes = pArgs.sizes
+   plotrange = pArgs.plotrange
+   idlist, indexlist = pArgs.idlist, pArgs.indexlist
+
+   if var in keys(Vlasiator.variables_predefined)
+      data = Vlasiator.variables_predefined[var](meta)
+   else
+      data = read_variable(meta, var)
    end
+
+   if startswith(var, "fg_") # field quantities, fsgrid
+
+   else # moments, dccrg grid
+      # vlasov grid, AMR
+      if ndims(data) == 1
+         data = data[indexlist] # find required cells
+      elseif ndims(data) == 2
+         data = data[:,indexlist] # find required cells
+      end
+
+      # Create the plotting grid
+      if ndims(data) == 1
+         data = refine_data(meta, idlist, data, maxreflevel, normal)
+      elseif ndims(data) == 2
+         if op == "x"
+            data = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
+         elseif op == "y"
+            data = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
+         elseif op == "z"
+            data = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
+         elseif startswith("mag", op)
+            datax = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
+            datay = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
+            dataz = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
+            data = @. sqrt(datax^2 + datay^2 + dataz^2)
+         end
+
+      elseif ndims(data) == 3
+         @error "not implemented yet!"
+      else
+         @error "Dimension error in constructing 2D AMR slice!"
+      end
+   end
+
+   if axisunit == "Re"
+      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
+      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re      
+   else
+      x = range(plotrange[1], plotrange[2], length=sizes[1])
+      y = range(plotrange[3], plotrange[4], length=sizes[2])
+   end
+
+   norm, cticks = set_colorbar(data, pArgs)
+
+   fig, ax = subplots()
+
+   c = ax.pcolormesh(x, y, data', norm=norm, cmap=pArgs.cmap, shading="auto")
+
+   set_plot(fig, ax, c, pArgs, cticks)
+
+   return c
+end
+
+"Generate axis and data for 2D plotting."
+function plot_prep2d(meta, var, pArgs, op, axisunit)
+
+   sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
    if var in keys(Vlasiator.variables_predefined)
       data = Vlasiator.variables_predefined[var](meta)
@@ -118,132 +212,68 @@ function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
       end
    end
 
-   x, y, str_title, strx, stry, cmap, norm, ticks, cb_title_use = 
-      set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, data)
+   if axisunit == "Re"
+      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
+      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re
+   else
+      x = range(plotrange[1], plotrange[2], length=sizes[1])
+      y = range(plotrange[3], plotrange[4], length=sizes[2])
+   end
 
-   fig, ax = subplots()
-
-   c = ax.pcolormesh(x, y, data', norm=norm, cmap=cmap, shading="auto")
-
-   set_plot(fig, ax, c, str_title, strx, stry, ticks, cb_title_use)
-
-   return c
+   return x, y, data'
 end
 
-"""
-    plot_colormap3dslice(meta::MetaData, var (...))
-
-Plot pseudocolor var on a 2D slice of 3D vlsv data.
-
-`plot_colormap3dslice(meta, var)`
-
-`plot_colormap3dslice(meta, var, op="z", origin=1.0, normal="x")`
-
-`plot_colormap3dslice(data, func, islinear=false)`
-"""
-function plot_colormap3dslice(meta, var; op="mag", origin=0.0, normal="y",
-   axisunit="Re", islinear=false)
-
-   xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
-   xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin 
-   xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
+"Set plot-related arguments."
+function set_args(meta, var, axisunit, islinear, normal="", origin=0.0)
 
    maxreflevel = get_max_amr_level(meta)
 
    if normal == "x"
       normal_D = [1,0,0]
-      sizes = [ysize, zsize]
-      plotrange = [ymin, ymax, zmin, zmax]
-      sliceoffset = abs(xmin) + origin
+      sizes = [meta.ycells, meta.zcells]
+      plotrange = [meta.ymin, ymax, meta.zmin, meta.zmax]
+      sliceoffset = abs(meta.xmin) + origin
       axislabels = ['Y','Z']
 
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
-         xmin=xmin, xmax=xmax)
+         xmin=meta.xmin, xmax=meta.xmax)
    elseif normal == "y"
       normal_D = [0,1,0]
-      sizes = [xsize, zsize]
-      plotrange = [xmin, xmax, zmin, zmax]
-      sliceoffset = abs(ymin) + origin
+      sizes = [meta.xcells, meta.zcells]
+      plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
+      sliceoffset = abs(meta.ymin) + origin
       axislabels = ['X','Z']
 
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
-         ymin=ymin, ymax=ymax)
+         ymin=meta.ymin, ymax=meta.ymax)
    elseif normal == "z"
       normal_D = [0,0,1]
-      sizes = [xsize, ysize]
-      plotrange = [xmin, xmax, ymin, ymax]
-      sliceoffset = abs(zmin) + origin
+      sizes = [meta.xcells, meta.ycells]
+      plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
+      sliceoffset = abs(meta.zmin) + origin
       axislabels = ['X','Y']
 
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
-         zmin=zmin, zmax=zmax)
-   end
-
-   # Scale the sizes to the heighest refinement level
-   sizes *= 2^maxreflevel
-
-   if var in keys(Vlasiator.variables_predefined)
-      data = Vlasiator.variables_predefined[var](meta)
+         zmin=meta.zmin, zmax=meta.zmax)
    else
-      data = read_variable(meta, var)
-   end
-
-   if startswith(var, "fg_") # field quantities, fsgrid
-
-   else # moments, dccrg grid
-      # vlasov grid, AMR
-      if ndims(data) == 1
-         data = data[indexlist] # find required cells
-      elseif ndims(data) == 2
-         data = data[:,indexlist] # find required cells
-      end
-
-      # Create the plotting grid
-      if ndims(data) == 1
-         data = refine_data(meta, idlist, data, maxreflevel, normal)
-      elseif ndims(data) == 2
-         if op == "x"
-            data = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-         elseif op == "y"
-            data = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-         elseif op == "z"
-            data = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
-         elseif startswith("mag",op)
-            datax = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-            datay = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-            dataz = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
-            data = @. sqrt(datax^2 + datay^2 + dataz^2)
-         end
-
-      elseif ndims(data) == 3
-         @error "not implemented yet!"
-      else
-         @error "Dimension error in constructing 2D AMR slice!"
+      idlist = Int64[]
+      indexlist = Int64[]
+      # Check if ecliptic or polar run
+      if meta.ycells == 1 && meta.zcells != 1
+         plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
+         sizes = [meta.xcells, meta.zcells]
+         PLANE = "XZ"
+         axislabels = ['X', 'Z']
+      elseif meta.zcells == 1 && meta.ycells != 1
+         plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
+         sizes = [meta.xcells, meta.ycells]
+         PLANE = "XY"
+         axislabels = ['X', 'Y']
       end
    end
 
-   x, y, str_title, strx, stry, cmap, norm, ticks, cb_title_use = 
-      set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, data)
-
-   fig, ax = subplots()
-
-   c = ax.pcolormesh(x, y, data', norm=norm, cmap=cmap, shading="auto")
-
-   set_plot(fig, ax, c, str_title, strx, stry, ticks, cb_title_use)
-
-   return c
-end
-
-"Set plot-related arguments."
-function set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, data)
-
-   if axisunit == "Re"
-      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
-      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re      
-   else
-      x = range(plotrange[1], plotrange[2], length=sizes[1])
-      y = range(plotrange[3], plotrange[4], length=sizes[2])
-   end
+   # Scale the sizes to the highest refinement level
+   sizes *= 2^maxreflevel # data needs to be refined later (WIP)
 
    strx = latexstring(axislabels[1]*"["*axisunit*"]")
    stry = latexstring(axislabels[2]*"["*axisunit*"]")
@@ -260,7 +290,19 @@ function set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, d
 
    cmap = matplotlib.cm.turbo
 
-   if !islinear
+   datainfo = read_variable_info(meta, var)
+
+   cb_title_use = datainfo.variableLaTeX
+   data_unit = datainfo.unitLaTeX
+   cb_title_use *= ",["*data_unit*"]"
+
+   PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, islinear,
+      str_title, strx, stry, cmap, cb_title_use)
+end
+
+function set_colorbar(data, pArgs)
+
+   if !pArgs.islinear
       # Logarithmic plot
       vmin = minimum(data[data .> 0.0])
       vmax = maximum(data)
@@ -272,23 +314,21 @@ function set_args(meta, var, axisunit, islinear, axislabels, plotrange, sizes, d
       vmax = maximum(data)
       nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
-      norm = matplotlib.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=true)
+      norm = matplotlib.colors.BoundaryNorm(levels, ncolors=pArgs.cmap.N, clip=true)
       ticks = range(vmin, vmax, length=nticks)
    end
 
-   datainfo = read_variable_info(meta, var)
-
-   cb_title_use = datainfo.variableLaTeX
-   data_unit = datainfo.unitLaTeX
-   cb_title_use *= ",["*data_unit*"]"
-
-   return x, y, str_title, strx, stry, cmap, norm, ticks, cb_title_use
+   return norm, ticks
 end
 
-"Draw customized plot."
-function set_plot(fig, ax, c, str_title, strx, stry, ticks, cb_title_use)
 
-   cb = fig.colorbar(c, ticks=ticks)
+"Configure customized plot."
+function set_plot(fig, ax, c, pArgs, cticks)
+
+   str_title, strx, stry, cb_title_use = pArgs.str_title,
+      pArgs.strx, pArgs.stry, pArgs.cb_title_use
+
+   cb = fig.colorbar(c, ticks=cticks)
 
    ax.set_title(str_title, fontsize=14, fontweight="bold")
    ax.set_xlabel(strx, fontsize=14, weight="black")
