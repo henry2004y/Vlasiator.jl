@@ -1,12 +1,13 @@
 # VLSV reader in Julia
 #
-# Hongyang Zhou, hyzhou@umich.edu 12/01/2020
+# Hongyang Zhou, hyzhou@umich.edu
 
 include("vlsvvariables.jl")
 
 using LightXML
 
-export MetaData, read_meta, read_variable, read_parameter, has_variable
+export MetaData
+export read_meta, read_variable, read_parameter, show_variable, has_variable
 export has_parameter, has_name, read_variable_select, read_variable_info
 
 "Mesh size information."
@@ -109,7 +110,6 @@ function read_prep(fid, footer, name, tag, attr)
    
    for varinfo in footer[tag]
       if attribute(varinfo, attr) == name
-         #has_attribute(e, name)
          arraysize = parse(Int, attribute(varinfo, "arraysize"))
          datasize = parse(Int, attribute(varinfo, "datasize"))
          datatype = attribute(varinfo, "datatype")
@@ -366,7 +366,7 @@ function read_variable(meta, var, sorted=true)
    return data
 end
 
-"Check if vlsv file contain a variable."
+"Check if the VLSV file contains a variable."
 has_variable(footer, var) = has_name(footer, "VARIABLE", var)
 
 """
@@ -422,14 +422,24 @@ Check if vlsv file contains a parameter.
 """
 has_parameter(meta::MetaData, param) = has_name(meta.footer, "PARAMETER", param)
 
-
-function has_name(footer, tag, name)
+"Check if the XMLElement `elem` contains a `tag` with `name`."
+function has_name(elem, tag, name)
    isFound = false
    
-   for varinfo in footer[tag]
+   for varinfo in elem[tag]
       attribute(varinfo, "name") == name && (isFound = true)
       isFound && break
    end
    
    return isFound
+end
+
+"Display all variables in the VLSV file."
+function show_variables(meta::MetaData)
+   nVar = length(meta.footer["VARIABLE"])
+   vars = Vector{String}(undef, nVar)
+   for i in 1:nVar
+      vars[i] = attribute(meta.footer["VARIABLE"][i], "name")
+   end
+   vars
 end

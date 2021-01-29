@@ -8,6 +8,11 @@ filename = "bulk.0000004.vlsv"
 meta = read_meta(filename)
 ```
 
+- Display all variable names
+```
+vars = show_variables(meta)
+```
+
 - Read variable
 ```
 data = read_variable(meta, "proton/vg_rho")
@@ -31,7 +36,7 @@ point2 = [15Re, 0, 0]
 cellids, distances, coords = get_cell_in_line(meta, point1, point2)
 ```
 
-Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl), it is possible to do all kinds of in depth analysis.
+Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl), it is possible to do all kinds of in-depth analysis.
 More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
 ## Plotting
