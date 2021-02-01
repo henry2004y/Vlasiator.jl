@@ -1,6 +1,6 @@
 # Vlasiator plotting in Julia.
 #
-# Hongyang Zhou, hyzhou@umich.edu 12/03/2020
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 
@@ -71,9 +71,11 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 end
 
 """
-    plot_pcolormesh(meta::MetaData, var; op="mag", axisunit="Re", islinear=false)
+    plot_pcolormesh(meta::MetaData, var, ax=nothing; op="mag", axisunit="Re",
+       islinear=false)
 
-Plot a variable using pseudocolor from 2D VLSV data.
+Plot a variable using pseudocolor from 2D VLSV data. If `ax` is provided, then
+it tries to plot into that axes.
 
 `plot_pcolormesh(meta, var)`
 
@@ -81,7 +83,8 @@ Plot a variable using pseudocolor from 2D VLSV data.
 
 `plot_pcolormesh(data, func, islinear=false)`
 """
-function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
+function plot_pcolormesh(meta, var, ax=nothing; op="mag", axisunit="Re",
+   islinear=false, addcolorbar=true)
 
    pArgs = set_args(meta, var, axisunit, islinear)
 
@@ -89,19 +92,20 @@ function plot_pcolormesh(meta, var; op="mag", axisunit="Re", islinear=false)
 
    norm, cticks = set_colorbar(data, pArgs)
 
-   fig, ax = subplots()
+   if isnothing(ax) ax = plt.gca() end
 
    c = ax.pcolormesh(x, y, data, norm=norm, cmap=pArgs.cmap, shading="auto")
 
-   set_plot(fig, ax, c, pArgs, cticks)
+   set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    return c
 end
 
 """
-    plot_colormap3dslice(meta::MetaData, var (...))
+    plot_colormap3dslice(meta::MetaData, var, ax=nothing (...))
 
-Plot pseudocolor var on a 2D slice of 3D vlsv data.
+Plot pseudocolor var on a 2D slice of 3D vlsv data. If `ax` is provided, then
+it tries to plot into that axes.
 
 `plot_colormap3dslice(meta, var)`
 
@@ -109,8 +113,8 @@ Plot pseudocolor var on a 2D slice of 3D vlsv data.
 
 `plot_colormap3dslice(data, func, islinear=false)`
 """
-function plot_colormap3dslice(meta, var; op="mag", origin=0.0, normal="y",
-   axisunit="Re", islinear=false)
+function plot_colormap3dslice(meta, var, ax=nothing; op="mag", origin=0.0,
+   normal="y", axisunit="Re", islinear=false, addcolorbar=true)
 
    pArgs = set_args(meta, var, axisunit, islinear, normal, origin)
 
@@ -169,11 +173,11 @@ function plot_colormap3dslice(meta, var; op="mag", origin=0.0, normal="y",
 
    norm, cticks = set_colorbar(data, pArgs)
 
-   fig, ax = subplots()
+   if isnothing(ax) ax = plt.gca() end
 
    c = ax.pcolormesh(x, y, data', norm=norm, cmap=pArgs.cmap, shading="auto")
 
-   set_plot(fig, ax, c, pArgs, cticks)
+   set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    return c
 end
@@ -231,7 +235,7 @@ function set_args(meta, var, axisunit, islinear, normal="", origin=0.0)
    if normal == "x"
       normal_D = [1,0,0]
       sizes = [meta.ycells, meta.zcells]
-      plotrange = [meta.ymin, ymax, meta.zmin, meta.zmax]
+      plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
       sliceoffset = abs(meta.xmin) + origin
       axislabels = ['Y','Z']
 
@@ -293,8 +297,7 @@ function set_args(meta, var, axisunit, islinear, normal="", origin=0.0)
    datainfo = read_variable_info(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
-   data_unit = datainfo.unitLaTeX
-   cb_title_use *= ",["*data_unit*"]"
+   cb_title_use *= ",["*datainfo.unitLaTeX*"]"
 
    PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, islinear,
       str_title, strx, stry, cmap, cb_title_use)
@@ -323,12 +326,16 @@ end
 
 
 "Configure customized plot."
-function set_plot(fig, ax, c, pArgs, cticks)
+function set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    str_title, strx, stry, cb_title_use = pArgs.str_title,
       pArgs.strx, pArgs.stry, pArgs.cb_title_use
 
-   cb = fig.colorbar(c, ticks=cticks)
+   if addcolorbar
+      cb = colorbar(c, ax=ax, ticks=cticks, fraction=0.046, pad=0.04)
+      cb_title = cb.ax.set_title(cb_title_use, fontsize=14, fontweight="bold")
+      cb.outline.set_linewidth(2.0)
+   end
 
    ax.set_title(str_title, fontsize=14, fontweight="bold")
    ax.set_xlabel(strx, fontsize=14, weight="black")
@@ -340,7 +347,4 @@ function set_plot(fig, ax, c, pArgs, cticks)
    end
    ax.xaxis.set_tick_params(width=2.0,length=3)
    ax.yaxis.set_tick_params(width=2.0,length=3)
-   
-   cb_title = cb.ax.set_title(cb_title_use, fontsize=14, fontweight="bold")
-   cb.outline.set_linewidth(2.0)
 end
