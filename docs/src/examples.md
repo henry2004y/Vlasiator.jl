@@ -61,6 +61,9 @@ Sample outputs:
 * Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and foreshock region, with streamlines and density contour at 1e7
 ![](figures/magnetosphere_earth_proton_density_2D.png)
 
+* Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
+![](figures/magnetosphere_earth_proton_density_3cuts.png)
+
 ### PyPlot Backend
 
 - Scaler colored contour for 2D simulation
