@@ -184,7 +184,7 @@ function read_meta(filename::AbstractString; verbose=false)
 
    cellIndex = sortperm(cellid)
 
-   bbox = read_mesh(fid, footer, meshName, "MESH_BBOX") 
+   bbox = read_mesh(fid, footer, meshName, "MESH_BBOX")
 
    nodeCoordsX = read_mesh(fid, footer, meshName, "MESH_NODE_CRDS_X")
    nodeCoordsY = read_mesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
@@ -352,11 +352,56 @@ end
 """
     read_variable(meta::MetaData, var, sorted=true)
 
-Return variable value from the vlsv file. Sorted by cell ID by default.
+Return variable value from the vlsv file. For DCCRG grid, the variables are
+sorted by cell ID by default.
 """
 function read_variable(meta, var, sorted=true)
    data = read_vector(meta.fid, meta.footer, var, "VARIABLE")
-   if sorted
+   
+   if startswith(var, "fg_") # fsgrid
+      bbox = read_mesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX")
+      # Determine fsgrid domain decomposition
+      nIORanks = read_parameter(meta, "numWritingRanks")
+
+      if ndims(data) > 1
+         orderedData = zeros(Float32, size(data,1),bbox[1:3]...)
+      else
+         orderedData = zeros(Float32, bbox[1:3]...)
+      end
+
+      currentOffset = 1
+      fgDecomposition = getDomainDecomposition(bbox[1:3], nIORanks)
+
+      for i = 0:nIORanks-1
+         x = i ÷ fgDecomposition[3] ÷ fgDecomposition[2]
+         y = i ÷ fgDecomposition[3] % fgDecomposition[2]
+         z = i % fgDecomposition[3]
+
+         lsize = calcLocalSize.(bbox[1:3], fgDecomposition, [x,y,z])
+         lstart = calcLocalStart.(bbox[1:3], fgDecomposition, [x,y,z])
+         lend = @. lstart + lsize - 1
+
+         totalSize = prod(lsize)
+
+         # Reorder data
+         if ndims(data) > 1
+            ldata = data[:,currentOffset:currentOffset+totalSize-1]
+            ldata = reshape(ldata, size(data,1), lsize...)
+
+            orderedData[:,
+               lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+         else
+            ldata = data[currentOffset:currentOffset+totalSize-1]
+            ldata = reshape(ldata, lsize...)
+
+            orderedData[
+               lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+         end
+
+         currentOffset += totalSize
+      end
+      data = orderedData
+   elseif sorted # dccrg grid
       if ndims(data) == 1
          data = data[meta.cellIndex]
       elseif ndims(data) == 2
@@ -364,6 +409,57 @@ function read_variable(meta, var, sorted=true)
       end
    end
    return data
+end
+
+# Optimize decomposition of this grid over the given number of processors.
+# Reference: fsgrid.hpp
+function getDomainDecomposition(globalsize, nprocs)
+   domainDecomp = [1, 1, 1]
+   procBox = [0.0, 0.0, 0.0]
+   minValue = Inf
+
+   for i = 1:min(nprocs, globalsize[1])
+      procBox[1] = max(globalsize[1]/i, 1)
+
+      for j = 1:min(nprocs, globalsize[2])
+         i * j > nprocs && break
+
+         procBox[2] = max(globalsize[2]/j, 1)
+
+         for k = 1:min(nprocs, globalsize[2])
+            i * j * k > nprocs && continue
+
+            procBox[3] = max(globalsize[3]/k, 1)
+         
+            nyz = i > 1 ? procBox[2] * procBox[3] : 0
+            nzx = j > 1 ? procBox[1] * procBox[3] : 0
+            nxy = k > 1 ? procBox[1] * procBox[2] : 0
+
+            value = 10*procBox[1]*procBox[2]*procBox[3] + nyz + nzx + nxy            
+
+            if i * j * k == nprocs && value < minValue
+               minValue = value
+               domainDecomp[1:3] = [i, j, k]
+            end
+         end
+      end
+   end
+
+   return domainDecomp
+end
+
+function calcLocalStart(globalCells, nprocs, lcells)
+   ncells = globalCells ÷ nprocs
+   remainder = globalCells % nprocs
+   lstart = lcells < remainder ? 
+      lcells*(ncells+1) + 1 :
+      lcells*ncells + remainder + 1
+end
+
+function calcLocalSize(globalCells, nprocs, lcells)
+   ncells = globalCells ÷ nprocs
+   remainder = globalCells % nprocs
+   lsize = lcells < remainder ? ncells + 1 : ncells
 end
 
 "Check if the VLSV file contains a variable."
