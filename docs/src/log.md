@@ -3,7 +3,7 @@
 This package was born when I was learning Vlasiator and its corresponding data structures.
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
 
-The function APIs are made to be consistent with Analysator.
+The function APIs are made trying to be consistent with Analysator.
 
 The IOstream handle for the VLSV file requires some special attention.
 In the current implementation, once the meta data is read, the file stays open until one explictly says `close(meta.fid)`.
@@ -31,12 +31,13 @@ Initial tests on reading variables from a VLSV file:
 | Julia  | 400    |
 | Python | 1000   |
 
-* Field solver grid[^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant. With 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time!
+* Field solver grid[^1]
 | 26GB   | tmean [s] |
 |:-------|:---------:|
 | Julia  | 13   |
 | Python | 45   |
 
+[^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time!
 
 I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
 Same thing for Julia costs 1.0s (first time ~8s including everything).

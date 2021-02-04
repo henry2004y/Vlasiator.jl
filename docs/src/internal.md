@@ -11,6 +11,6 @@ Order = [:function]
 ## Private types and methods
 
 ```@autodocs
-Modules = [Foo]
+Modules = [Vlasiator]
 Public = false
 ```
