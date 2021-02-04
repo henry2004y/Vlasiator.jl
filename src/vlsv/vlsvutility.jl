@@ -120,8 +120,9 @@ function get_cell_coordinates(meta, cellid)
 
    indices = zeros(Int, 3)
    indices[1] = cellid % xcells
-   indices[2] = floor(Int, cellid / xcells) % ycells
-   indices[3] = floor(Int, cellid / (xcells*ycells))
+   indices[2] = cellid ÷ xcells % ycells
+   indices[3] = cellid ÷ (xcells*ycells)
+
 
    coords = zeros(3)
    coords[1] = xmin + (indices[1] + 0.5) * (xmax - xmin)/xcells
@@ -263,13 +264,13 @@ function getSliceCellID(meta, slicelocation, maxreflevel;
       ids = cellids[nCellUptoLowerLvl .< cellids .≤ nCellUptoCurrentLvl]
 
       # Compute every cell ids' x, y and z indexes
-      z = @. floor(Int, (ids - nCellUptoLowerLvl - 1)/(xsize*ysize*4^i) + 1)
+      z = @. (ids - nCellUptoLowerLvl - 1) ÷ (xsize*ysize*4^i) + 1
 
       # number of ids up to the coordinate z in the refinement level i
-      idUpToZ = @. floor(Int, (z-1)*xsize*ysize*4^i) + nCellUptoLowerLvl
+      idUpToZ = @. (z-1)*xsize*ysize*4^i + nCellUptoLowerLvl
 
-      y = @. floor(Int, (ids - idUpToZ - 1)/(xsize*2^i) + 1)
-      x = @. floor(Int, ids - idUpToZ - (y-1)*xsize*2^i)
+      y = @. (ids - idUpToZ - 1) ÷ (xsize*2^i) + 1
+      x = @. ids - idUpToZ - (y-1)*xsize*2^i
 
       if idim == 1
          coords = x
@@ -323,13 +324,13 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
       d = data[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
 
       # Compute every cell ids' x, y and z indexes on this refinement level
-      z = @. floor(Int, (ids - nCellUptoLowerLvl - 1)/(xsize*ysize*4^i) + 1)
+      z = @. (ids - nCellUptoLowerLvl - 1) ÷ (xsize*ysize*4^i) + 1
 
       # number of ids up to the coordinate z in the refinement level i
-      idUpToZ = @. floor(Int, (z-1)*xsize*ysize*4^i) + nCellUptoLowerLvl
+      idUpToZ = @. (z-1)*xsize*ysize*4^i + nCellUptoLowerLvl
 
-      y = @. floor(Int, (ids - idUpToZ - 1)/(xsize*2^i) + 1)
-      x = @. floor(Int, ids - idUpToZ - (y-1)*xsize*2^i)
+      y = @. (ids - idUpToZ - 1) ÷ (xsize*2^i) + 1
+      x = @. ids - idUpToZ - (y-1)*xsize*2^i
 
       # Get the correct coordinate values and the widths for the plot
       if normal == "x"
