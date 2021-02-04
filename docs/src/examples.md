@@ -18,7 +18,8 @@ vars = show_variables(meta)
 data = read_variable(meta, "proton/vg_rho")
 ```
 
-By default the returned variable array is sorted by cell IDs.
+The same interface works for both DCCRG grid and FS grid variables.
+By default the returned DCCRG grid variable array is sorted by cell IDs.
 If in any case you want the original unsorted version as being stored in the file,
 simply say `read_variable(meta, var, false)`.
 
