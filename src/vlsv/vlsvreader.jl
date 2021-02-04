@@ -400,7 +400,9 @@ function read_variable(meta, var, sorted=true)
 
          currentOffset += totalSize
       end
-      data = orderedData
+      singleton_dims = tuple(
+         (d for d in 1:ndims(orderedData) if size(orderedData, d) == 1)...)
+      data = dropdims(orderedData, dims=singleton_dims)
    elseif sorted # dccrg grid
       if ndims(data) == 1
          data = data[meta.cellIndex]
