@@ -13,6 +13,9 @@ using Test
    end
    filename = "bulk.0000004.vlsv"
    meta = read_meta(filename)
+   # Variable strings reading
+   varname = show_variables(meta)
+   @test length(varname) == 7 && varname[end] == "vg_rhom"
    # ID reading, unsorted
    cellIDs = read_variable(meta, "CellID", false)
    IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]

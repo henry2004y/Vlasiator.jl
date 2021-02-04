@@ -7,7 +7,7 @@ include("vlsvvariables.jl")
 using LightXML
 
 export MetaData
-export read_meta, read_variable, read_parameter, show_variable, has_variable
+export read_meta, read_variable, read_parameter, show_variables, has_variable
 export has_parameter, has_name, read_variable_select, read_variable_info
 
 "Mesh size information."
