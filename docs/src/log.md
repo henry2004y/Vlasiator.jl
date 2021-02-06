@@ -10,6 +10,8 @@ In the current implementation, once the meta data is read, the file stays open u
 On the Windows platform, it is not allowed to delete the file before the IO is closed.
 However, this is allowed in Unix, so be careful.
 
+Vlasiator has come up with many different names for the same quantities, so it is really hard to collect them correctly in post-processing. Therefore for the derived quantities, it is not guaranteed to work properly. The user should be able to compute more complicated quantities given the basic outputs from the VLSV file.
+
 ## Plotting Philosophy
 
 We should not take over what underlying plotting libraries like Matplotlib offers.
