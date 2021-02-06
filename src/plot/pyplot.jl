@@ -333,8 +333,8 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    if addcolorbar
       cb = colorbar(c, ax=ax, ticks=cticks, fraction=0.046, pad=0.04)
-      cb_title = cb.ax.set_title(cb_title_use, fontsize=14, fontweight="bold")
-      cb.outline.set_linewidth(2.0)
+      cb_title = cb.ax.set_ylabel(cb_title_use, fontsize=14)
+      cb.outline.set_linewidth(1.0)
    end
 
    ax.set_title(str_title, fontsize=14, fontweight="bold")

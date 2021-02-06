@@ -40,6 +40,19 @@ cellids, distances, coords = get_cell_in_line(meta, point1, point2)
 Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl), it is possible to do all kinds of in-depth analysis.
 More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
+## Computing derived quantities
+
+There are some predefined methods for computing derived quantities such as plasma β, velocity parallel/perpendicular to the magnetic field, pressure tensor with the third axis aligned with the magnetic field direction and so on.
+To compute such, for example, 
+```
+beta = get_variable_derived(meta, "beta")
+```
+
+A full list of available quantities can be found in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
+
+!!! warning
+    This part has not been carefully tested so it might not work or just generate wrong results!
+
 ## Plotting
 
 Vlasiator.jl does not have any plotting library as dependency, but it offers plotting functionalities through additional scripts.
