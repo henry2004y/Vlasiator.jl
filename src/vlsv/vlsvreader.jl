@@ -7,8 +7,9 @@ include("vlsvvariables.jl")
 using LightXML
 
 export MetaData
-export read_meta, read_variable, read_parameter, show_variables, has_variable
-export has_parameter, has_name, read_variable_select, read_variable_info
+export read_meta, read_variable, read_parameter, show_variables, has_variable,
+       has_parameter, has_name, read_variable_select, read_variable_info,
+       get_variable_derived
 
 "Mesh size information."
 struct MeshInfo
@@ -464,6 +465,19 @@ end
 
 "Check if the VLSV file contains a variable."
 has_variable(footer, var) = has_name(footer, "VARIABLE", var)
+
+"""
+    get_variable_derived(meta::MetaData, var)
+
+Calculate a derived variable from basic quantities.
+"""
+function get_variable_derived(meta::MetaData, var)
+   if var in keys(variables_predefined)
+      data = variables_predefined[var](meta)
+   else
+      @error "Derived variable not known!"
+   end
+end
 
 """
     read_variable_select(meta::MetaData, var, idIn=UInt[])

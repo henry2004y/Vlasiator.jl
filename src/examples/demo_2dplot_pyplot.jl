@@ -19,6 +19,7 @@ plot_pcolormesh(meta, nameρ)
 streamline(meta, nameV, comp="xy", color="w", density=2.0)
 
 f, ax = plt.gcf(), plt.gca()
+cbar = ax.collections[end].colorbar
 boxcoords = [0, 20, -15, 15]
 ax.set_xlim([boxcoords[1],boxcoords[2]])
 ax.set_ylim([boxcoords[3],boxcoords[4]])
