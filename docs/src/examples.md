@@ -125,3 +125,34 @@ contourf(meta, "rho)
 ```
 
 This backend supports all available attributes provided by Plots.jl.
+
+## Calling from Python
+
+It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
+Following the installation steps described in the manual[^1], and then inside Python REPL:
+```
+# Handling initialization issue for Conda
+from julia.api import Julia
+jl = Julia(compiled_modules=False)
+
+from julia import Vlasiator
+filename = "bulk1.0001000.vlsv"
+meta = Vlasiator.read_meta(filename)
+var = "proton/vg_rho"
+data = Vlasiator.read_variable(meta, var)
+```
+
+To run a Julia script in Python,
+```
+# Handling initialization issue for Conda
+from julia.api import Julia
+jl = Julia(compiled_modules=False)
+jl.eval('include("src/examples/demo_2dplot_pyplot.jl")')
+import matplotlib.pyplot as plt
+plt.show()
+```
+
+!!! note
+    This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
+
+[^1]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
