@@ -1,4 +1,4 @@
-# Vlasiator
+# Vlasiator.jl
 
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://henry2004y.github.io/Vlasiator.jl/dev)
 [![Build Status](https://travis-ci.com/henry2004y/Vlasiator.jl.svg?branch=master)](https://travis-ci.com/henry2004y/Vlasiator.jl)
