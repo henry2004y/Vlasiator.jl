@@ -50,12 +50,6 @@ struct MetaData
    footer::XMLElement
    cellid::Vector{UInt64}  # sorted cell IDs
    cellIndex::Vector{Int64}
-   use_dict_for_blocks::Bool
-   cellid_blocks::Dict{Int64,Int64} # [0] is index, [1] is blockcount
-   cells_with_blocks::Dict{Int64,Int64}
-   blocks_per_cell::Dict{Int64,Int64}
-   blocks_per_cell_offsets::Dict{Int64,Int64}
-   order_for_cellid_blocks::Dict{Int64,Int64}
    xcells::Int64
    ycells::Int64
    zcells::Int64
@@ -168,15 +162,6 @@ function read_meta(filename::AbstractString; verbose=false)
 
    fid = open(filename, "r")
 
-   use_dict_for_blocks = false
-   cellid_blocks = Dict()
-
-   # Per population
-   cells_with_blocks = Dict()
-   blocks_per_cell = Dict()
-   blocks_per_cell_offsets = Dict()
-   order_for_cellid_blocks = Dict()
-
    footer = read_xml_footer(fid)
 
    meshName = "SpatialGrid"
@@ -278,12 +263,8 @@ function read_meta(filename::AbstractString; verbose=false)
    #close(fid) # Is it safe not to close it?
 
    meta = MetaData(filename, fid, footer, cellid[cellIndex], cellIndex,
-      use_dict_for_blocks, 
-      cellid_blocks, cells_with_blocks, blocks_per_cell, 
-      blocks_per_cell_offsets, order_for_cellid_blocks, 
       xcells, ycells, zcells, xblock_size, yblock_size, zblock_size,
-      xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, meshes, 
-      populations)
+      xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, meshes, populations)
 end
 
 
@@ -365,7 +346,7 @@ function read_variable(meta, var, sorted=true)
       nIORanks = read_parameter(meta, "numWritingRanks")
 
       if ndims(data) > 1
-         orderedData = zeros(Float32, size(data,1),bbox[1:3]...)
+         orderedData = zeros(Float32, size(data,1), bbox[1:3]...)
       else
          orderedData = zeros(Float32, bbox[1:3]...)
       end
