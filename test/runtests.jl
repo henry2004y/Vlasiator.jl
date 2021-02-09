@@ -15,8 +15,11 @@ using Test
       filename = "bulk.0000004.vlsv"
       meta = read_meta(filename)
       # Variable strings reading
-      varname = show_variables(meta)
-      @test length(varname) == 7 && varname[end] == "vg_rhom"
+      varnames = show_variables(meta)
+      @test length(varnames) == 7 && varnames[end] == "vg_rhom"
+      # Variable info reading
+      varinfo = read_variable_info(meta, "proton/vg_rho")
+      @test varinfo.unit == "1/m^3"
       # ID reading, unsorted
       cellIDs = read_variable(meta, "CellID", false)
       IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]

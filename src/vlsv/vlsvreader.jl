@@ -6,7 +6,7 @@ include("vlsvvariables.jl")
 
 using LightXML
 
-export MetaData
+export MetaData, VarInfo
 export read_meta, read_variable, read_parameter, show_variables, has_variable,
        has_parameter, has_name, read_variable_select, read_variable_info,
        get_variable_derived
@@ -74,6 +74,12 @@ function Base.show(io::IO, s::MetaData)
    println(io, "filename = ", s.name)
 end
 
+function Base.show(io::IO, s::VarInfo)
+   println(io, "var in LaTeX: ", s.variableLaTeX)
+   println(io, "unit: ", s.unit)
+   println(io, "unit in LaTeX: ", s.unitLaTeX)
+   println(io, "unit conversion = ", s.unitConversion)
+end
 
 "Return the xml footer of vlsv."
 function read_xml_footer(fid)
