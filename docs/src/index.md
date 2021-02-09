@@ -5,7 +5,8 @@ CurrentModule = Vlasiator
 # Vlasiator
 
 Data processing and analyzing tool for the numerical model for collisionless ion-kinetic plasma physics [Vlasiator](https://github.com/fmihpc/vlasiator).
-This package is built upon its sister in Python [Analysator](https://github.com/fmihpc/analysator), and is carefully designed for performance and ease of use.
+This lightweight package is built upon its sister in Python [Analysator](https://github.com/fmihpc/analysator), and is carefully designed for performance and ease of use.
+It becomes even more powerful when using together with other fantastic packages.
 
 It contains the following features:
 * Reading [VLSV](https://github.com/fmihpc/vlsv) format data.

@@ -87,12 +87,12 @@ plot_pcolormesh(meta, "rho")
 
 - Vector z component colored contour for 2D simulation
 ```
-plot_pcolormesh(meta, "rho", op="z", islinear=false, axisunit="Re")
+plot_pcolormesh(meta, "rho", op=:z, islinear=false, axisunit="Re")
 ```
 
 - Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
 ```
-plot_pcolormesh(meta, "b", op="z", islinear=false, axisunit="Re")
+plot_pcolormesh(meta, "b", op=:z, islinear=false, axisunit="Re")
 ```
 
 - Streamline for 2D simulation
@@ -105,11 +105,11 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log color scale, plot vector components via e.g. `op="x"` or magnitude by default, and set unit via `axisunit="Re"` etc..
+You can choose to use linear/log color scale, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit="Re"` etc..
 
 - Cut slice colored contour for 3D simulation
 ```
-plot_colormap3dslice(meta, "proton/vg_rho", normal="y")
+plot_colormap3dslice(meta, "proton/vg_rho", normal=:y)
 ```
 
 ### Plots.jl Backend

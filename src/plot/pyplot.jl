@@ -71,7 +71,7 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 end
 
 """
-    plot_pcolormesh(meta::MetaData, var, ax=nothing; op="mag", axisunit="Re",
+    plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit="Re",
        islinear=false)
 
 Plot a variable using pseudocolor from 2D VLSV data. If `ax` is provided, then
@@ -83,7 +83,7 @@ it tries to plot into that axes.
 
 `plot_pcolormesh(data, func, islinear=false)`
 """
-function plot_pcolormesh(meta, var, ax=nothing; op="mag", axisunit="Re",
+function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
    islinear=false, addcolorbar=true)
 
    pArgs = set_args(meta, var, axisunit, islinear)
@@ -109,14 +109,14 @@ it tries to plot into that axes.
 
 `plot_colormap3dslice(meta, var)`
 
-`plot_colormap3dslice(meta, var, op="z", origin=1.0, normal="x")`
+`plot_colormap3dslice(meta, var, op=:z, origin=1.0, normal=:x)`
 
 `plot_colormap3dslice(data, func, islinear=false)`
 """
-function plot_colormap3dslice(meta, var, ax=nothing; op="mag", origin=0.0,
-   normal="y", axisunit="Re", islinear=false, addcolorbar=true)
+function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
+   normal=:y, axisunit="Re", islinear=false, addcolorbar=true)
 
-   pArgs = set_args(meta, var, axisunit, islinear, normal, origin)
+   pArgs = set_args(meta, var, axisunit, islinear; normal, origin)
 
    maxreflevel = pArgs.maxreflevel
    sizes = pArgs.sizes
@@ -143,13 +143,13 @@ function plot_colormap3dslice(meta, var, ax=nothing; op="mag", origin=0.0,
       if ndims(data) == 1
          data = refine_data(meta, idlist, data, maxreflevel, normal)
       elseif ndims(data) == 2
-         if op == "x"
+         if op == :x
             data = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-         elseif op == "y"
+         elseif op == :y
             data = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-         elseif op == "z"
+         elseif op == :z
             data = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
-         elseif startswith("mag", op)
+         elseif op == :mag
             datax = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
             datay = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
             dataz = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
@@ -193,26 +193,20 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
       data = read_variable(meta, var)
    end
 
-   if startswith(var, "fg_") # fsgrid
-      
-   else # vlasov grid
-      if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       
-         data = reshape(data, sizes[1], sizes[2])
-      elseif ndims(data) == 2
+   if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       
+      data = reshape(data, sizes[1], sizes[2])
+   else
+      if ndims(data) == 2
          data = reshape(data, 3, sizes...)
-         if op == "x"
-            data = data[1,:,:]
-         elseif op == "y"
-            data = data[2,:,:]
-         elseif op == "z"
-            data = data[3,:,:]
-         elseif startswith("mag",op)
-            @. data = sqrt(data[1,:,:] ^2 + data[2,:,:]^2 + data[3,:,:]^2)
-         end
-      elseif ndims(data) == 3
-
-      else
-         @error "Error in reshaping data $(var)!"
+      end
+      if op == :x
+         data = data[1,:,:]
+      elseif op == :y
+         data = data[2,:,:]
+      elseif op == :z
+         data = data[3,:,:]
+      elseif op == :mag
+         data = @. sqrt(data[1,:,:] ^2 + data[2,:,:]^2 + data[3,:,:]^2)
       end
    end
 
@@ -228,11 +222,11 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, islinear, normal="", origin=0.0)
+function set_args(meta, var, axisunit, islinear; normal=:y, origin=0.0)
 
    maxreflevel = get_max_amr_level(meta)
 
-   if normal == "x"
+   if normal == :x
       normal_D = [1,0,0]
       sizes = [meta.ycells, meta.zcells]
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
@@ -241,7 +235,7 @@ function set_args(meta, var, axisunit, islinear, normal="", origin=0.0)
 
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
          xmin=meta.xmin, xmax=meta.xmax)
-   elseif normal == "y"
+   elseif normal == :y
       normal_D = [0,1,0]
       sizes = [meta.xcells, meta.zcells]
       plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
@@ -250,7 +244,7 @@ function set_args(meta, var, axisunit, islinear, normal="", origin=0.0)
 
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
          ymin=meta.ymin, ymax=meta.ymax)
-   elseif normal == "z"
+   elseif normal == :z
       normal_D = [0,0,1]
       sizes = [meta.xcells, meta.ycells]
       plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]

@@ -27,9 +27,9 @@ grid = AxesGrid(fig, 111,
                 label_mode="all"
                 )
 
-c1 = plot_colormap3dslice(meta, nameρ, grid[1]; normal="x", addcolorbar=false)
-c2 = plot_colormap3dslice(meta, nameρ, grid[2]; normal="y", addcolorbar=false)
-c3 = plot_colormap3dslice(meta, nameρ, grid[3]; normal="z", addcolorbar=false)
+c1 = plot_colormap3dslice(meta, nameρ, grid[1]; normal=:x, addcolorbar=false)
+c2 = plot_colormap3dslice(meta, nameρ, grid[2]; normal=:y, addcolorbar=false)
+c3 = plot_colormap3dslice(meta, nameρ, grid[3]; normal=:z, addcolorbar=false)
 
 cb = fig.colorbar(c3, cax=grid.cbar_axes[1])
 datainfo = read_variable_info(meta, nameρ)

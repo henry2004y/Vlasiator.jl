@@ -17,6 +17,7 @@ Vlasiator has come up with many different names for the same quantities, so it i
 We should not take over what underlying plotting libraries like Matplotlib offers.
 Users should be able to modify the figures as they wish even if they only know how to use the well-known plotting libraries.
 Do not reinvent the wheel. For customized plotting, simply provide some sample scripts for the common tasks like zooming-in, change font sizes, add text boxes, etc..
+The original plotting APIs in Matplotlib are already complicated enough: instead of building a wrapper on top of them, it is considered a better approach to provide *recipes* such that the plotting package can understand what to do with the user defined types. Therefore the user can rely solely on the documentation of the plotting package to generate plots.
 
 ## Benchmarks
 
