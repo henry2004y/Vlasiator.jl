@@ -193,7 +193,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
       data = read_variable(meta, var)
    end
 
-   if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       
+   if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)
       data = reshape(data, sizes[1], sizes[2])
    else
       if ndims(data) == 2
@@ -222,7 +222,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, islinear; normal=:y, origin=0.0)
+function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
 
    maxreflevel = get_max_amr_level(meta)
 
