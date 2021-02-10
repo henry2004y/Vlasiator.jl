@@ -86,7 +86,7 @@ it tries to plot into that axes.
 function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
    islinear=false, addcolorbar=true)
 
-   pArgs = set_args(meta, var, axisunit, islinear)
+   pArgs = set_args(meta, var, axisunit, islinear; normal=:none)
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
