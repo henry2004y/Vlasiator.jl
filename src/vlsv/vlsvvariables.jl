@@ -205,6 +205,23 @@ const variables_predefined = Dict(
       vmag2 = dropdims(sum(v.^2, dims=1), dims=1)
       uperp = @. √(vmag2 - upar^2) # This may be errorneous due to Float32!
    end,
+   "Tpar" => function (meta) # Parallel temperature to the B field
+      P = get_variable_derived(meta, "PRotated")
+      Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
+      BmagInv = inv.(get_variable_derived(meta, "bmag"))
+      [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
+   end,
+   "Tperp" => function (meta) # Perpendicular temperature to the B field
+      T = get_variable_derived(meta, "temperature")
+      B = read_variable(meta, "vg_b_vol")
+      BmagInv = inv.(get_variable_derived(meta, "bmag"))
+      upar = [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
+      vmag2 = dropdims(sum(v.^2, dims=1), dims=1)
+      uperp = @. √(vmag2 - upar^2) # This may be errorneous due to Float32!
+   end,
+   "Egradpe" => function (meta)
+      
+   end,
    "PRotated" => function (meta)
       # Rotate the pressure tensor to align the z-component with the B field
       B = read_variable(meta, "vg_b_vol")

@@ -9,7 +9,7 @@ using LightXML
 export MetaData, VarInfo
 export read_meta, read_variable, read_parameter, show_variables, has_variable,
        has_parameter, has_name, read_variable_select, read_variable_info,
-       get_variable_derived
+       get_variable_derived, read_velocity_cells, get_velocity_cell_coordinates
 
 "Mesh size information."
 struct MeshInfo
@@ -539,4 +539,133 @@ function show_variables(meta::MetaData)
       vars[i] = attribute(meta.footer["VARIABLE"][i], "name")
    end
    vars
+end
+
+"""
+    read_velocity_cells(meta, cellid; pop="proton")
+
+Read velocity cells from a spatial cell of ID `cellid`, and return a map of
+velocity cell ids and corresponding value.
+"""
+function read_velocity_cells(meta, cellid; pop="proton")
+
+   vmesh = meta.meshes[pop]
+   nblockx = vmesh.vxblock_size
+   nblocky = vmesh.vyblock_size
+   nblockz = vmesh.vzblock_size
+   bsize = vmesh.vxblock_size * vmesh.vyblock_size * vmesh.vzblock_size
+
+   cellsWithVDF = read_vector(meta.fid, meta.footer, pop, "CELLSWITHBLOCKS")
+   nblock_C = read_vector(meta.fid, meta.footer, pop, "BLOCKSPERCELL")
+
+   nblock_C_offsets = zeros(Int, length(cellsWithVDF))
+   nblock_C_offsets[2:end] = cumsum(nblock_C[1:end-1])
+
+   # Check that cells has vspace
+   if cellid ∈ cellsWithVDF
+      cellWithVDFIndex = findfirst(x->x==cellid, cellsWithVDF)
+   else
+      @error "The input cell does not have velocity distribution!"
+   end
+
+   # Navigate to the correct position
+   offset = nblock_C_offsets[cellWithVDFIndex]
+   nblocks = nblock_C[cellWithVDFIndex]
+
+   # Read in avgs
+   varinfo = meta.footer["BLOCKVARIABLE"][1]
+   arraysize = parse(Int, attribute(varinfo, "arraysize"))
+   datasize = parse(Int, attribute(varinfo, "datasize"))
+   datatype = attribute(varinfo, "datatype")
+   vectorsize = parse(Int, attribute(varinfo, "vectorsize"))
+   variable_offset = parse(Int, content(varinfo))
+
+   # Navigate to the correct position
+   offset_data = offset * vectorsize * datasize + variable_offset
+
+   seek(meta.fid, offset_data)
+
+   if datatype == "float" && datasize == 4
+      Tavg = Float32
+   elseif datatype == "float" && datasize == 8
+      Tavg = Float64
+   end
+
+   data = Array{Tavg,2}(undef, vectorsize, nblocks)
+   read!(meta.fid, data)
+
+   # Read in block IDs
+   varinfo = meta.footer["BLOCKIDS"][1]
+   arraysize = parse(Int, attribute(varinfo, "arraysize"))
+   datasize = parse(Int, attribute(varinfo, "datasize"))
+   datatype = attribute(varinfo, "datatype")
+   vectorsize = parse(Int, attribute(varinfo, "vectorsize"))
+   variable_offset = parse(Int, content(varinfo))
+
+   # Navigate to the correct position
+   offset_f = offset * vectorsize * datasize + variable_offset
+
+   seek(meta.fid, offset_f)
+
+   if datatype == "uint" && datasize == 4
+      T = UInt32
+   elseif datatype == "uint" && datasize == 8
+      T = UInt64
+   end
+
+   blockIDs = Vector{T}(undef, nblocks*vectorsize)
+   read!(meta.fid, blockIDs)
+
+   # Velocity cell IDs and corresponding avg distributions
+   vcellids = zeros(Int, bsize*nblocks)
+   vcellf = zeros(Tavg, bsize*nblocks)
+
+   vcellid_local = [i + nblockx*j + nblockx*nblocky*k
+      for i in 0:nblockx-1, j in 0:nblocky-1, k in 0:nblockz-1]
+
+   for i in 1:nblocks
+      vblockid = blockIDs[i]
+      for j = 1:bsize
+         vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*vblockid
+         vcellf[(i-1)*bsize+j] = data[j,i]
+      end
+   end
+   return vcellids, vcellf
+end
+
+
+"""
+    get_velocity_cell_coordinates(meta, vcellids, pop="proton")
+
+Returns velocity cells' coordinates of population `pop` and id `vcellids`.
+"""
+function get_velocity_cell_coordinates(meta, vcellids; pop="proton")
+
+   vmesh = meta.meshes[pop]
+   bsize = vmesh.vxblock_size * vmesh.vyblock_size * vmesh.vzblock_size
+   blockid = @. vcellids ÷ bsize
+   # Get block coordinates
+   blockIndX = @. blockid % (vmesh.vxblocks)
+   blockIndY = @. blockid ÷ vmesh.vxblocks % vmesh.vyblocks
+   blockIndZ = @. blockid ÷ (vmesh.vxblocks * vmesh.vyblocks)
+   blockCoordX = @. blockIndX * vmesh.dvx * vmesh.vxblock_size + vmesh.vxmin
+   blockCoordY = @. blockIndY * vmesh.dvy * vmesh.vyblock_size + vmesh.vymin
+   blockCoordZ = @. blockIndZ * vmesh.dvz * vmesh.vzblock_size + vmesh.vzmin
+   # Get cell indices
+   cellids = @. vcellids % bsize
+   cellidx = @. cellids % vmesh.vxblock_size
+   cellidy = @. cellids ÷ vmesh.vxblock_size % vmesh.vyblock_size
+   cellidz = @. cellids ÷ (vmesh.vxblock_size * vmesh.vyblock_size)
+   # Get cell coordinates
+   #cellCoords = [blockCoordX + (cellidx + 0.5) * vmesh.dvx,
+   #              blockCoordY + (cellidy + 0.5) * vmesh.dvy,
+   #              blockCoordZ + (cellidz + 0.5) * vmesh.dvz]
+
+   cellCoords = Matrix{Float32}(undef, 3, length(cellids))
+   for i = 1:length(cellids)
+      cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * vmesh.dvx
+      cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * vmesh.dvy
+      cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * vmesh.dvz
+   end
+   cellCoords
 end
