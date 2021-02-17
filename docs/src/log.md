@@ -2,6 +2,7 @@
 
 This package was born when I was learning Vlasiator and its corresponding data structures.
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
+One of the key decision in boosting performance is to avoid the usage of dictionary with integer keys as much as possible.
 
 The function APIs are made trying to be consistent with Analysator.
 

@@ -45,4 +45,8 @@ using Test
    @testset "Derived variables" begin
 
    end
+
+   @testset "Plotting" begin
+
+   end
 end
