@@ -61,3 +61,9 @@ Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on Vor
 | Python | 125   |
 
 Note that the above timings are for a single CPU. With only one command added for multithreading, the Julia timings can be improved by n where n is the number of threads. For example, with 8 threads, Julia takes ~80s to finish.
+
+## Conditional Dependency
+
+There are certain packages that I don't want to include as dependencies, but instead I want to compile some glue codes if they are loaded. For example, I do not want to include any plotting packages as dependencies because either they are heavy-weighted, or incompatible with one another if one wants to switch.
+
+There is a proposal in the Pkg manager for this, but it will come in later versions. Now my temporary solution is to include some additional scripts for a target plotting library, but that requires the location of the scripts, which is inconvenient for users.
