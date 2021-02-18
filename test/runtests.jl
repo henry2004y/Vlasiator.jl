@@ -37,6 +37,12 @@ using Test
       point2 = [2.0, 0.0, 0.0]
       cellids, _, _ = get_cell_in_line(meta, point1, point2)
       @test cellids == collect(4:8)
+      # Nearest ID with VDF stored
+      @test getNearestCellWithVspace(meta, id) == 8
+
+      # AMR level (this should later be replaced with real AMR data!)
+      @test get_max_amr_level(meta) == 0
+      @test get_amr_level(meta, id) == 0
 
       close(meta.fid) # required for Windows
       rm(filename, force=true)

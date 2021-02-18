@@ -11,7 +11,7 @@ const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
 const Re = 6.371e6          # Earth radius, [m]
 
 export get_cellid, getSliceCellID, get_amr_level, get_max_amr_level,
-   get_cell_coordinates, get_cell_in_line, refine_data
+   get_cell_coordinates, get_cell_in_line, refine_data, getNearestCellWithVspace
 
 """
     get_cell_id(meta::MetaData, location)
@@ -309,11 +309,11 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
-   if normal == "x"
+   if normal == :x
       dims = [ysize, zsize] .* 2^maxreflevel
-   elseif normal == "y"
+   elseif normal == :y
       dims = [xsize, zsize] .* 2^maxreflevel
-   elseif normal == "z"
+   elseif normal == :z
       dims = [xsize, ysize] .* 2^maxreflevel
    end
 
@@ -339,13 +339,13 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
       x = @. ids - idUpToZ - (y-1)*xsize*2^i
 
       # Get the correct coordinate values and the widths for the plot
-      if normal == "x"
+      if normal == :x
          a = y
          b = z
-      elseif normal == "y"
+      elseif normal == :y
          a = x
          b = z
-      elseif normal == "z"
+      elseif normal == :z
          a = x
          b = y
       end
@@ -355,7 +355,7 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
       X = [x for x in iRange, _ in iRange]
       Y = [y for _ in iRange, y in iRange]
 
-      coords = Array{Int64,3}(undef, 2,length(a),2^(2*(maxreflevel-i)))
+      coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxreflevel-i)))
       @inbounds for ic = 1:length(a), ir = 1:2^((maxreflevel-i)*2)
          coords[1,ic,ir] = (a[ic] - 1)*2^(maxreflevel - i) + 1 + X[ir]
          coords[2,ic,ir] = (b[ic] - 1)*2^(maxreflevel - i) + 1 + Y[ir]
@@ -370,4 +370,17 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
    end
 
    return dpoints
+end
+
+"Find the nearest spatial cell with f saved of a given cell `id`."
+function getNearestCellWithVspace(meta, id)
+   cells = Vlasiator.read_mesh(meta.fid, meta.footer, "SpatialGrid",
+      "CELLSWITHBLOCKS")
+   coords = Matrix{Float32}(undef, 3, length(cells))
+   for i = 1:length(cells)
+      coords[:,i] = get_cell_coordinates(meta, cells[i])
+   end
+   coords_orig = get_cell_coordinates(meta, id)
+   d2 = sum((coords .- coords_orig).^2, dims=1)
+   cells[argmin(d2)[2]]
 end

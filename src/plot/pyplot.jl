@@ -604,16 +604,3 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
    end
 
 end
-
-# Find the nearest spatial cell with f saved of a given cell id.
-function getNearestCellWithVspace(meta, cid)
-   cells = Vlasiator.read_mesh(meta.fid, meta.footer, "SpatialGrid",
-      "CELLSWITHBLOCKS")
-   coords = Matrix{Float32}(undef, 3, length(cells))
-   for i = 1:length(cells)
-      coords[:,i] = get_cell_coordinates(meta, cells[i])
-   end
-   coords_orig = get_cell_coordinates(meta, cid)
-   d2 = sum((coords .- coords_orig).^2, dims=1)
-   cells[argmin(d2)[2]]
-end
