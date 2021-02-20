@@ -3,10 +3,14 @@ on:
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'README.md'
   push:
     branches:
       - master
     tags: '*'
+    paths-ignore:
+      - 'README.md'
 env:
   JULIA_NUM_THREADS: 1
 jobs:
