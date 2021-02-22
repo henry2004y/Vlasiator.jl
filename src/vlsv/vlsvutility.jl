@@ -394,12 +394,13 @@ function compare(f1, f2)
    meta1 = read_meta(f1)
    meta2 = read_meta(f2)
    varnames = show_variables(meta1)
+   isIdentical = true
    for vname in varnames
       v1 = read_variable(meta1, vname)
       v2 = read_variable(meta2, vname)
-      if v1 != v2
-         return false
-      end
+      v1 != v2 && (isIdentical = false; break)
    end
-   return true
+   close(meta1.fid)
+   close(meta2.fid)
+   return isIdentical
 end
