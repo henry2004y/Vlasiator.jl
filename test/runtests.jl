@@ -45,6 +45,10 @@ using Test
       @test get_amr_level(meta, id) == 0
 
       close(meta.fid) # required for Windows
+
+      # Compare two VLSV files
+      @test compare(filename, filename)
+
       rm(filename, force=true)
    end
 
