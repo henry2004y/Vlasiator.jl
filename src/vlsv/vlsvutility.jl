@@ -11,7 +11,8 @@ const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
 const Re = 6.371e6          # Earth radius, [m]
 
 export get_cellid, getSliceCellID, get_amr_level, get_max_amr_level,
-   get_cell_coordinates, get_cell_in_line, refine_data, getNearestCellWithVspace
+   refine_data, get_cell_coordinates, get_cell_in_line,
+   getNearestCellWithVspace, compare
 
 """
     get_cell_id(meta::MetaData, location)
@@ -383,4 +384,22 @@ function getNearestCellWithVspace(meta, id)
    coords_orig = get_cell_coordinates(meta, id)
    d2 = sum((coords .- coords_orig).^2, dims=1)
    cells[argmin(d2)[2]]
+end
+
+"Compare if two VLSV files are identical."
+function compare(f1, f2)
+   if filesize(f1) != filesize(f2)
+      return false
+   end
+   meta1 = read_meta(f1)
+   meta2 = read_meta(f2)
+   varnames = show_variables(meta1)
+   for vname in varnames
+      v1 = read_variable(meta1, vname)
+      v2 = read_variable(meta2, vname)
+      if v1 != v2
+         return false
+      end
+   end
+   return true
 end
