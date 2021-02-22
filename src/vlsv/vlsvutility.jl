@@ -394,6 +394,7 @@ function compare(f1, f2)
    meta1 = read_meta(f1)
    meta2 = read_meta(f2)
    varnames = show_variables(meta1)
+   deleteat!(varnames, findfirst(x->x=="CellID", varnames))
    isIdentical = true
    for vname in varnames
       v1 = read_variable(meta1, vname)
