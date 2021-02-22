@@ -506,17 +506,17 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
          BxV = B × Vbulk
          if slicetype == "bperp" # slice in b_perp1/b_perp2
             sliceNormal = B ./ norm(B)
-            #strx = L"$v_{B \times V}$ "
-            #stry = L"$v_{B \times (B \times V)}$ "
+            strx = L"$v_{B \times V}$ "
+            stry = L"$v_{B \times (B \times V)}$ "
          elseif slicetype == "bpar1" # slice in b_parallel/b_perp1 plane
             sliceNormal = B × BxV
             sliceNormal ./= norm(sliceNormal)
-            #strx = L$v_{B}$ "
-            #stry = L$v_{B \times V}$ "
+            strx = L"$v_{B}$ "
+            stry = L"$v_{B \times V}$ "
          else # slice in b_parallel/b_perp2 plane
             sliceNormal = BxV ./ norm(BxV)
-            #strx = L"$v_{B}$ "
-            #stry = L"$v_{B \times (B \times V)}$ "
+            strx = L"$v_{B}$ "
+            stry = L"$v_{B \times (B \times V)}$ "
          end
       end
 

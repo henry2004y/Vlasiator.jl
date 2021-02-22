@@ -162,10 +162,15 @@ plt.show()
 
 ## Misc
 
-One may want to check if two vlsv files are identical. This is tricky because of the structure of VLSV format.
+One may want to check if two vlsv files are identical. This is tricky because
+1. the structure of VLSV format does not guarantee parallel writing order;
+2. numerical error accumulates with floating point representation.
+
 The key is that we should not check quantities that are related to MPI writing sequence.
 Note that even file sizes may vary depending on the number of MPI processes!
 
 ```
 compare(filename1, filename2)
 ```
+
+There is an optional third argument to `compare` for setting the 2-norm difference tolerange, with default being 1e-4.
