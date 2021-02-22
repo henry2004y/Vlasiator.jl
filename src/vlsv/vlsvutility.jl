@@ -388,13 +388,11 @@ end
 
 "Compare if two VLSV files are identical."
 function compare(f1, f2)
-   if filesize(f1) != filesize(f2)
-      return false
-   end
    meta1 = read_meta(f1)
    meta2 = read_meta(f2)
    varnames = show_variables(meta1)
-   deleteat!(varnames, findfirst(x->x=="CellID", varnames))
+   list_nocheck = ("CellID", "vg_rank")
+   deleteat!(varnames, findall(x->x in list_nocheck, varnames))
    isIdentical = true
    for vname in varnames
       v1 = read_variable(meta1, vname)
