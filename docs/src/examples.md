@@ -159,3 +159,13 @@ plt.show()
     This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
 
 [^1]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
+
+## Misc
+
+One may want to check if two vlsv files are identical. This is tricky because of the structure of VLSV format.
+The key is that we should not check quantities that are related to MPI writing sequence.
+Note that even file sizes may vary depending on the number of MPI processes!
+
+```
+compare(filename1, filename2)
+```
