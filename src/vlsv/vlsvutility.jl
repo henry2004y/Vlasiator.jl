@@ -386,8 +386,12 @@ function getNearestCellWithVspace(meta, id)
    cells[argmin(d2)[2]]
 end
 
-"Compare if two VLSV files are identical."
-function compare(f1, f2)
+"""
+    compare(filename1, filename2, tol=1e-4)
+
+Compare if two VLSV files are identical.
+"""
+function compare(f1, f2, tol=1e-4)
    meta1 = read_meta(f1)
    meta2 = read_meta(f2)
    varnames = show_variables(meta1)
@@ -397,7 +401,7 @@ function compare(f1, f2)
    for vname in varnames
       v1 = read_variable(meta1, vname)
       v2 = read_variable(meta2, vname)
-      v1 != v2 && (isIdentical = false; break)
+      norm((v1 - v2) ./ v1) > tol && (isIdentical = false; break)
    end
    close(meta1.fid)
    close(meta2.fid)
