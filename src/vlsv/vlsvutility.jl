@@ -391,17 +391,29 @@ end
 
 Compare if two VLSV files are identical.
 """
-function compare(f1, f2, tol=1e-4)
+function compare(f1, f2, tol::AbstractFloat=1e-4)
+   # filesize diff should be less than 1 %
+   if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
+      return false
+   end
+
    meta1 = read_meta(f1)
    meta2 = read_meta(f2)
    varnames = show_variables(meta1)
-   list_nocheck = ("CellID", "vg_rank")
-   deleteat!(varnames, findall(x->x in list_nocheck, varnames))
+   strskip = r"CellID|rank|blocks"
+   deleteat!(varnames, findall(x->endswith(x, strskip), varnames))
+
    isIdentical = true
    for vname in varnames
       v1 = read_variable(meta1, vname)
       v2 = read_variable(meta2, vname)
-      norm((v1 - v2) ./ v1) > tol && (isIdentical = false; break)
+
+      s1, s2 = sum(v1), sum(v2)
+      if abs(s1 - s2) > tol * abs(s1) && abs(s1 - s2) > tol * abs(s2)
+         isIdentical = false
+         println("$vname is quite different!")
+         break
+      end
    end
    close(meta1.fid)
    close(meta2.fid)
