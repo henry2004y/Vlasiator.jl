@@ -15,6 +15,9 @@ Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 [compat]
 LaTeXStrings = "1.2"
 LightXML = "0.9"
+Plots = "1.92"
+PyPlot = "2.9"
+Requires = "1.1"
 julia = "1.5"
 
 [extras]
