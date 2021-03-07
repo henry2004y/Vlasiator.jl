@@ -173,4 +173,5 @@ Note that even file sizes may vary depending on the number of MPI processes!
 compare(filename1, filename2)
 ```
 
-There is an optional third argument to `compare` for setting the 2-norm difference tolerange, with default being 1e-4.
+There is an optional third argument to `compare` for setting the relative difference tolerance, with default being 1e-4.
+In practice relative difference works better for "large" numbers, and absolute difference works better for "small" numbers.
