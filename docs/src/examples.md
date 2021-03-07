@@ -63,20 +63,6 @@ Currently I would recommend using `PyPlot.jl`.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
-Sample outputs:
-
-* Proton density of Earth's magnetosphere in the meridional plane from 3D simulation
-![](figures/magnetosphere_earth_proton_density_ycut.png)
-
-* Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and foreshock region, with streamlines and density contour at 1e7
-![](figures/magnetosphere_earth_proton_density_2D.png)
-
-* Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
-![](figures/magnetosphere_earth_proton_density_3cuts.png)
-
-* Proton phase space distribution
-![](figures/phase_space_distribution.png)
-
 ### PyPlot Backend
 
 To trigger the Matplotlib plotting, `use PyPlot`.
@@ -127,7 +113,21 @@ heatmap(meta, "rho", aspect_ratio=:equal, c=:turbo)
 contourf(meta, "rho)
 ```
 
-This backend supports all available attributes provided by Plots.jl.
+This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/).
+
+### Gallery
+
+* Proton density of Earth's magnetosphere in the meridional plane from 3D simulation
+![](figures/magnetosphere_earth_proton_density_ycut.png)
+
+* Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and foreshock region, with streamlines and density contour at 1e7
+![](figures/magnetosphere_earth_proton_density_2D.png)
+
+* Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
+![](figures/magnetosphere_earth_proton_density_3cuts.png)
+
+* Proton phase space distribution
+![](figures/phase_space_distribution.png)
 
 ## Calling from Python
 

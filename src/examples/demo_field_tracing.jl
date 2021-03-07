@@ -2,6 +2,9 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu 01/27/2021
 
+# FieldTracer is not a registered pkg yet
+# using Pkg
+# Pkg.add(url="https://github.com/henry2004y/FieldTracer.jl.git", rev="master")
 using PyPlot, FieldTracer, Vlasiator
 
 Re = Vlasiator.Re

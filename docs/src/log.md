@@ -68,5 +68,6 @@ There are certain packages that I don't want to include as dependencies, but ins
 
 There is a proposal in the Pkg manager for this, but it will come in later versions.
 My first workaround is to include some additional scripts for a target plotting library, but that requires the location of the scripts, which is inconvenient for users.
-The solution I am adapting now, which is much nicer, is to use [Requires.jl](https://github.com/JuliaPackaging/Requires.jl).
+The Plots package provides a lightweight [RecipesBase](http://juliaplots.org/RecipesBase.jl/dev/) library for defining behaviors for customized types. In the future if Makie is used, the same idea can be applied there.
+The solution I am adapting now for PyPlot is to use [Requires.jl](https://github.com/JuliaPackaging/Requires.jl).
 I am not alone.
