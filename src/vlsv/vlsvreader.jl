@@ -310,11 +310,6 @@ function read_variable_info(meta, var)
             end
          end
 
-         # Correction for early version incorrect number density (extra backslash)
-         if variableLaTeX[1:3] == r"$\n"
-            variableLaTeX = r"$n"*variableLaTeX[4:end]
-         end
-
       elseif var in keys(units_predefined)
          unit = units_predefined[var]
          variableLaTeX = latex_predefined[var]
