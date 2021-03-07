@@ -6,8 +6,6 @@ using PyPlot, FieldTracer, Vlasiator
 
 Re = Vlasiator.Re
 
-include("../plot/pyplot.jl")
-
 filename = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"

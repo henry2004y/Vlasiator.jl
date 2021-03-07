@@ -5,6 +5,8 @@
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 import LinearAlgebra: norm, ×
 
+export plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
+
 "Plotting arguments."
 struct PlotArgs
    sizes::Vector{Int}
@@ -298,6 +300,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
       str_title, strx, stry, cmap, cb_title_use)
 end
 
+"Return colorbar norm and ticks."
 function set_colorbar(data, pArgs)
 
    if !pArgs.islinear

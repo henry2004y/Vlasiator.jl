@@ -2,4 +2,9 @@
 *.jl.cov
 *.jl.mem
 *.vlsv
+*.txt
+*.cfg
+*.png
+*.mp4
+*.dat
 /docs/build/

@@ -8,8 +8,6 @@ using Vlasiator, PyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
 AxesGrid = axes_grid1.AxesGrid
 
-include("../plot/pyplot.jl")
-
 filename = "bulk1.0001000.vlsv"
 nameρ = "proton/vg_rho"
 

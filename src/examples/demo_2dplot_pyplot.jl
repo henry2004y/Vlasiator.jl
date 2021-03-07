@@ -7,8 +7,6 @@
 
 using Vlasiator, PyPlot
 
-include("../plot/pyplot.jl")
-
 filename = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
@@ -25,7 +23,7 @@ ax.set_xlim([boxcoords[1],boxcoords[2]])
 ax.set_ylim([boxcoords[3],boxcoords[4]])
 
 # Contour line at a specific level
-pArgs = set_args(meta, nameρ, "Re", true)
-x, y, data = plot_prep2d(meta, nameρ, pArgs, "", "Re")
+pArgs = Vlasiator.set_args(meta, nameρ, "Re", true)
+x, y, data = Vlasiator.plot_prep2d(meta, nameρ, pArgs, "", "Re")
 CS = plt.contour(x, y, data, levels = [1e7],
                  colors=("k",),linestyles=("-",),linewidths=(0.5,))

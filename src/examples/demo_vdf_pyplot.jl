@@ -3,9 +3,9 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu 02/17/2021
 
-include("../plot/pyplot.jl")
+using Vlasiator, PyPlot
 
-filename = "bulk.0000004.vlsv"
+filename = "bulk.0000001.vlsv"
 
 meta = read_meta(filename)
 

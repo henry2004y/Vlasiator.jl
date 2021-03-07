@@ -66,4 +66,7 @@ Note that the above timings are for a single CPU. With only one command added fo
 
 There are certain packages that I don't want to include as dependencies, but instead I want to compile some glue codes if they are loaded. For example, I do not want to include any plotting packages as dependencies because either they are heavy-weighted, or incompatible with one another if one wants to switch.
 
-There is a proposal in the Pkg manager for this, but it will come in later versions. Now my temporary solution is to include some additional scripts for a target plotting library, but that requires the location of the scripts, which is inconvenient for users.
+There is a proposal in the Pkg manager for this, but it will come in later versions.
+My first workaround is to include some additional scripts for a target plotting library, but that requires the location of the scripts, which is inconvenient for users.
+The solution I am adapting now, which is much nicer, is to use [Requires.jl](https://github.com/JuliaPackaging/Requires.jl).
+I am not alone.

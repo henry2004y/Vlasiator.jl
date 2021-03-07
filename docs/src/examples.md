@@ -55,11 +55,7 @@ A full list of available quantities can be found in [vlsvvariables.jl](https://g
 
 ## Plotting
 
-Vlasiator.jl does not have any plotting library as dependency, but it offers plotting functionalities through additional scripts.
-To use a specific plotting library, just include the target script (e.g. `pyplot.jl`) under `src/plot` folder:
-```
-include("src/plot/pyplot.jl")
-```
+Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting functionalities once the target plotting package is used.
 
 Currently I would recommend using `PyPlot.jl`.
 `Plots.jl` is catching up, but it is still slower and lack of features.
@@ -82,6 +78,8 @@ Sample outputs:
 ![](figures/phase_space_distribution.png)
 
 ### PyPlot Backend
+
+To trigger the Matplotlib plotting, `use PyPlot`.
 
 - Scaler colored contour for 2D simulation
 ```
@@ -115,7 +113,9 @@ You can choose to use linear/log color scale, plot vector components via e.g. `o
 plot_colormap3dslice(meta, "proton/vg_rho", normal=:y)
 ```
 
-### Plots.jl Backend
+### Plots Backend
+
+To trigger the Plots package plotting, `use Plots`.
 
 - Scaler colored contour for 2D simulation
 ```
