@@ -53,11 +53,11 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       data = read_variable(meta, var)
    end
 
-   @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required to plot streamlines!"
-
-   if startswith(var, "fg_") # fsgrid
-      
+   if startswith(var, "fg_")
+      v1 = data[v1_,:,:]'
+      v2 = data[v2_,:,:]'
    else # vlasov grid
+      @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required!"
       data = reshape(data, 3, sizes...)
       v1 = data[v1_,:,:]'
       v2 = data[v2_,:,:]'
