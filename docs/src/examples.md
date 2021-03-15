@@ -124,7 +124,7 @@ This backend supports all available attributes provided by [Plots.jl](http://doc
 ![](figures/magnetosphere_earth_proton_density_2D.png)
 
 * Proton density of Earth's magnetosphere in the meridional cut from 2D simulation, with fieldlines through fixed seeding points
-![](figures/magnetosphere2D_bx_bz.png)
+![](figures/magnetosphere_earth_proton_density_2D_bx_bz.png)
 
 * Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
 ![](figures/magnetosphere_earth_proton_density_3cuts.png)
