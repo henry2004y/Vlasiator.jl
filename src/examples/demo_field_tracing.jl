@@ -1,4 +1,4 @@
-# Sample script for stream tracing using FieldTracer.
+# Sample script for stream tracing from a given starting point.
 #
 # Hongyang Zhou, hyzhou@umich.edu 01/27/2021
 
