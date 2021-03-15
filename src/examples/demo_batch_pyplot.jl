@@ -36,7 +36,7 @@ else
    cticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
 end
 
-pArgs = set_args(meta, vardict[varname], axisunit, islinear)
+pArgs = set_args(meta, vardict[varname], axisunit, islinear; normal=:none)
 
 for (i, filename) in enumerate(filenames)
    @info "$i out of $nfile"
