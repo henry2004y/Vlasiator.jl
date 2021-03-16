@@ -652,10 +652,6 @@ function get_velocity_cell_coordinates(meta, vcellids; pop="proton")
    cellidy = @. cellids ÷ vmesh.vxblock_size % vmesh.vyblock_size
    cellidz = @. cellids ÷ (vmesh.vxblock_size * vmesh.vyblock_size)
    # Get cell coordinates
-   #cellCoords = [blockCoordX + (cellidx + 0.5) * vmesh.dvx,
-   #              blockCoordY + (cellidy + 0.5) * vmesh.dvy,
-   #              blockCoordZ + (cellidz + 0.5) * vmesh.dvz]
-
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
    for i = 1:length(cellids)
       cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * vmesh.dvx
