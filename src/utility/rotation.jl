@@ -1,6 +1,6 @@
 # Utility functions for common algebraic operations.
 
-import LinearAlgebra: norm, ⋅, ×
+import LinearAlgebra: ⋅, ×
 using StaticArrays
 
 """
@@ -11,8 +11,8 @@ Rotates `tensor` with a rotation matrix that aligns z-axis with `vector`.
 function rotateTensorToVectorZ!(T, v)
    unitz = @SVector [0.0, 0.0, 1.0]
    vz = v × unitz
-   vz ./= norm(vz)
-   angle = acos(v ⋅ unitz / norm(v))
+   vz ./= hypot(vz...)
+   angle = acos(v ⋅ unitz / hypot(v...))
    R = rotation_matrix(vz, angle)
    # Rotate Tensor
    T_rotated = R * T * R'
