@@ -156,7 +156,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
             datax = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
             datay = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
             dataz = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
-            data = @. sqrt(datax^2 + datay^2 + dataz^2)
+            data = hypot.(datax, datay, dataz)
          end
 
       elseif ndims(data) == 3
@@ -191,25 +191,25 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
    sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
    if var in keys(Vlasiator.variables_predefined)
-      data = Vlasiator.variables_predefined[var](meta)
+      dataRaw = Vlasiator.variables_predefined[var](meta)
    else
-      data = read_variable(meta, var)
+      dataRaw = read_variable(meta, var)
    end
 
-   if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)
-      data = reshape(data, sizes[1], sizes[2])
+   if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
+      data = reshape(dataRaw, sizes[1], sizes[2])
    else
-      if ndims(data) == 2
-         data = reshape(data, 3, sizes...)
+      if ndims(dataRaw) == 2
+         dataRaw = reshape(dataRaw, 3, sizes...)
       end
       if op == :x
-         data = data[1,:,:]
+         data = dataRaw[1,:,:]
       elseif op == :y
-         data = data[2,:,:]
+         data = dataRaw[2,:,:]
       elseif op == :z
-         data = data[3,:,:]
+         data = dataRaw[3,:,:]
       elseif op == :mag
-         data = @. sqrt(data[1,:,:] ^2 + data[2,:,:]^2 + data[3,:,:]^2)
+         data = hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
       end
    end
 

@@ -1,6 +1,6 @@
 # Utility functions for processing VLSV data.
 
-import LinearAlgebra: norm, dot
+import LinearAlgebra: dot
 
 const qₑ = -1.60217662e-19  # electron charge, [C]
 const mₑ = 9.10938356e-31   # electron mass, [kg]
@@ -180,7 +180,7 @@ function get_cell_in_line(meta, point1, point2)
    ϵ = eps(Float32)
 
    p = point1
-   unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
+   unit_vector = @. (point2 - point1) / $hypot(point2 - point1 + ϵ...)
 
    while true
       cellid = get_cellid(meta, p)
@@ -217,7 +217,7 @@ function get_cell_in_line(meta, point1, point2)
 
       push!(cellids, cellidnew)
       coords = hcat(coords, coordnew)
-      push!(distances, norm(coordnew - point1))
+      push!(distances, hypot(coordnew - point1...))
 
       p = coordnew
 

@@ -23,26 +23,26 @@ using RecipesBase
    end
 
    if var in keys(variables_predefined)
-      data = variables_predefined[var](meta)
+      dataRaw = variables_predefined[var](meta)
    else
-      data = read_variable(meta, var)
+      dataRaw = read_variable(meta, var)
    end
 
    if startswith(var, "fg_") # fsgrid
-      
+      data = dataRaw
    else # vlasov grid
-      if ndims(data) == 1 || (ndims(data) == 2 && size(data)[1] == 1)       
-         data = reshape(data, sizes[1], sizes[2])
-      elseif ndims(data) == 2
-         data = reshape(data, 3, sizes...)
+      if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)       
+         data = reshape(dataRaw, sizes[1], sizes[2])
+      elseif ndims(dataRaw) == 2
+         dataRaw = reshape(dataRaw, 3, sizes...)
          if op == "x"
-            data = data[1,:,:]
+            data = dataRaw[1,:,:]
          elseif op == "y"
-            data = data[2,:,:]
+            data = dataRaw[2,:,:]
          elseif op == "z"
-            data = data[3,:,:]
+            data = dataRaw[3,:,:]
          elseif startswith("mag",op)
-            @. data = sqrt(data[1,:,:] ^2 + data[2,:,:]^2 + data[3,:,:]^2)
+            data = hypot.(dataRaw[1,:,:,], dataRaw[2,:,:], dataRaw[3,:,:])
          end
       end
    end
