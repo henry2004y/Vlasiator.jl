@@ -20,6 +20,11 @@ using Test
       # Variable info reading
       varinfo = read_variable_info(meta, "proton/vg_rho")
       @test varinfo.unit == "1/m^3"
+      # Parameter checking
+      @test has_parameter(meta, "dt") == true
+      # Parameter reading
+      t = read_parameter(meta, "time")
+      @test t == 8.0
       # ID reading, unsorted
       cellIDs = read_variable(meta, "CellID", false)
       IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
@@ -40,9 +45,15 @@ using Test
       # Nearest ID with VDF stored
       @test getNearestCellWithVspace(meta, id) == 8
 
+      # AMR data reading, fsgrid & dccrg grid
+      #getSliceCellID
+      #refine_data
+
       # AMR level (this should later be replaced with real AMR data!)
       @test get_max_amr_level(meta) == 0
       @test get_amr_level(meta, id) == 0
+
+      # velocity space reading
 
       # Compare two VLSV files
       @test compare(filename, filename)
