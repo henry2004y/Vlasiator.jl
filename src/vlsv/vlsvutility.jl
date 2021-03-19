@@ -210,9 +210,12 @@ function get_cell_in_line(meta, point1, point2)
       end
 
       # Find the minimum distance from a boundary times a factor
-      d = min(minimum(coef_min), minimum(coef_max)) * 1.0001
+      d = min(minimum(coef_min), minimum(coef_max)) * 1.00001
 
       coordnew = p + d .* unit_vector
+
+      dot(point2-coordnew, unit_vector) ≥ 0 || break
+
       cellidnew = get_cellid(meta, coordnew)
 
       push!(cellids, cellidnew)
@@ -220,8 +223,6 @@ function get_cell_in_line(meta, point1, point2)
       push!(distances, hypot(coordnew - point1...))
 
       p = coordnew
-
-      dot(point2-p, unit_vector) ≥ 0 || break
    end
 
    return cellids, distances, coords

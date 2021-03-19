@@ -41,7 +41,7 @@ using Test
       point1 = [-2.0, 0.0, 0.0]
       point2 = [2.0, 0.0, 0.0]
       cellids, _, _ = get_cell_in_line(meta, point1, point2)
-      @test cellids == collect(4:8)
+      @test cellids == collect(4:7)
       # Nearest ID with VDF stored
       @test getNearestCellWithVspace(meta, id) == 8
 
