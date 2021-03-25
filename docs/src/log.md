@@ -71,3 +71,7 @@ My first workaround is to include some additional scripts for a target plotting 
 The Plots package provides a lightweight [RecipesBase](http://juliaplots.org/RecipesBase.jl/dev/) library for defining behaviors for customized types. In the future if Makie is used, the same idea can be applied there.
 The solution I am adapting now for PyPlot is to use [Requires.jl](https://github.com/JuliaPackaging/Requires.jl).
 I am not alone.
+
+## Parallelism
+
+At some point I may want to try multi-threading in data processing. First I need to make sure adding threads does not affect single thread performance, and then I need to identify proper places for using threads rather than abuse threads at any place.
