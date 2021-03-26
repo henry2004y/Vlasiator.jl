@@ -214,7 +214,7 @@ function get_cell_in_line(meta, point1, point2)
 
       coordnew = p + d .* unit_vector
 
-      dot(point2-coordnew, unit_vector) ≥ 0 || break
+      dot(point2 - coordnew, unit_vector) ≥ 0 || break
 
       cellidnew = get_cellid(meta, coordnew)
 

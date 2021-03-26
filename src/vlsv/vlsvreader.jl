@@ -139,7 +139,7 @@ function read_prep(fid, footer, name, tag, attr)
       T = UInt64
    end
 
-   return T::DataType, variable_offset, arraysize, datasize, vectorsize
+   T::DataType, variable_offset, arraysize, datasize, vectorsize
 end
 
 "Return vector data from vlsv file."
@@ -155,7 +155,7 @@ function read_vector(fid, footer, name, tag)
 
    read!(fid, w)
 
-   return w
+   w
 end
 
 
@@ -317,7 +317,7 @@ function read_variable_info(meta, var)
       end
    end
 
-   return VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
+   VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
 "Return mesh related variable."
@@ -329,7 +329,7 @@ function read_mesh(fid, footer, typeMesh, varMesh)
    w = Vector{T}(undef, arraysize)
    read!(fid, w)
 
-   return w
+   w
 end
 
 """
@@ -391,7 +391,7 @@ function read_variable(meta, var, sorted=true)
          data = data[:, meta.cellIndex]
       end
    end
-   return data
+   data
 end
 
 # Optimize decomposition of this grid over the given number of processors.
@@ -428,7 +428,7 @@ function getDomainDecomposition(globalsize, nprocs)
       end
    end
 
-   return domainDecomp
+   domainDecomp
 end
 
 function calcLocalStart(globalCells, nprocs, lcells)
@@ -467,6 +467,8 @@ end
 Read a variable in a collection of cells.
 """
 function read_variable_select(meta, var, idIn=UInt[])
+
+   @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
 
    if isempty(idIn)
       w = read_variable(meta, var, false)
@@ -523,7 +525,7 @@ function has_name(elem, tag, name)
       isFound && break
    end
    
-   return isFound
+   isFound
 end
 
 "Display all variables in the VLSV file."
@@ -625,14 +627,14 @@ function read_velocity_cells(meta, cellid; pop="proton")
          vcellf[(i-1)*bsize+j] = data[j,i]
       end
    end
-   return vcellids, vcellf
+   vcellids, vcellf
 end
 
 
 """
     get_velocity_cell_coordinates(meta, vcellids, pop="proton")
 
-Returns velocity cells' coordinates of population `pop` and id `vcellids`.
+Return velocity cells' coordinates of population `pop` and id `vcellids`.
 """
 function get_velocity_cell_coordinates(meta, vcellids; pop="proton")
 

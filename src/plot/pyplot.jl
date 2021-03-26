@@ -63,8 +63,13 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       v2 = data[v2_,:,:]'
    end
 
-   x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
-   y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re
+   if axisunit == "Re"
+      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
+      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re      
+   else
+      x = range(plotrange[1], plotrange[2], length=sizes[1])
+      y = range(plotrange[3], plotrange[4], length=sizes[2])
+   end
 
    # Be careful about array ordering difference between Julia and Python!
    X = [i for _ in y, i in x]
