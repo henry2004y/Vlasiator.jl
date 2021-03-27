@@ -62,7 +62,7 @@ function get_cellid(meta, loc)
       @error "CellID does not exist in any AMR level"
    end
 
-   return cellid
+   cellid
 end
 
 """
@@ -79,7 +79,7 @@ function get_amr_level(meta, cellid)
       cellid -= 2^(3*(ilevel))*(xcells*ycells*zcells)
       ilevel += 1
    end
-   return ilevel - 1 
+   ilevel - 1 
 end
 
 """
@@ -130,13 +130,12 @@ function get_cell_coordinates(meta, cellid)
    indices[2] = cellid ÷ xcells % ycells
    indices[3] = cellid ÷ (xcells*ycells)
 
-
    coords = zeros(3)
    coords[1] = xmin + (indices[1] + 0.5) * (xmax - xmin)/xcells
    coords[2] = ymin + (indices[2] + 0.5) * (ymax - ymin)/ycells
    coords[3] = zmin + (indices[3] + 0.5) * (zmax - zmin)/zcells
 
-   return coords
+   coords
 end
 
 function isInsideDomain(meta, point)
@@ -225,7 +224,7 @@ function get_cell_in_line(meta, point1, point2)
       p = coordnew
    end
 
-   return cellids, distances, coords
+   cellids, distances, coords
 end
 
 """
@@ -299,7 +298,7 @@ function getSliceCellID(meta, slicelocation, maxreflevel;
       nCellUptoCurrentLvl += ncell*8^(i+1)
    end
 
-   return idlist, indexlist
+   idlist, indexlist
 end
 
 """
@@ -371,7 +370,7 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
       nCellUptoCurrentLvl += ncell*8^(i+1)
    end
 
-   return dpoints
+   dpoints
 end
 
 "Find the nearest spatial cell with f saved of a given cell `id`."

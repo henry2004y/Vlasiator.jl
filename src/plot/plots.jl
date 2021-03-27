@@ -36,23 +36,23 @@ using RecipesBase
       elseif ndims(dataRaw) == 2
          dataRaw = reshape(dataRaw, 3, sizes...)
          if op == "x"
-            data = dataRaw[1,:,:]
+            data = @view dataRaw[1,:,:]
          elseif op == "y"
-            data = dataRaw[2,:,:]
+            data = @view dataRaw[2,:,:]
          elseif op == "z"
-            data = dataRaw[3,:,:]
-         elseif startswith("mag",op)
-            data = hypot.(dataRaw[1,:,:,], dataRaw[2,:,:], dataRaw[3,:,:])
+            data = @view dataRaw[3,:,:]
+         elseif startswith("mag", op)
+            data = @views hypot.(dataRaw[1,:,:,], dataRaw[2,:,:], dataRaw[3,:,:])
          end
       end
    end
 
    if axisunit == "Re"
-      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Re
-      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Re      
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Re      
    else
-      x = range(plotrange[1], plotrange[2], length=sizes[1])
-      y = range(plotrange[3], plotrange[4], length=sizes[2])
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
    @series begin

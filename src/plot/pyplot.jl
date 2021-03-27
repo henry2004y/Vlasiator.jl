@@ -64,11 +64,11 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
    end
 
    if axisunit == "Re"
-      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
-      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re      
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
    else
-      x = range(plotrange[1], plotrange[2], length=sizes[1])
-      y = range(plotrange[3], plotrange[4], length=sizes[2])
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
    # Be careful about array ordering difference between Julia and Python!
@@ -106,7 +106,7 @@ function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
-   return c
+   c
 end
 
 """
@@ -151,16 +151,19 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
       if ndims(data) == 1
          data = refine_data(meta, idlist, data, maxreflevel, normal)
       elseif ndims(data) == 2
-         if op == :x
-            data = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-         elseif op == :y
-            data = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-         elseif op == :z
-            data = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
+         if op in (:x, :y, :z)
+            if op == :x
+               slice = @view data[1,:]
+            elseif op == :y
+               slice = @view data[2,:]
+            elseif op == :z
+               slice = @view data[3,:]
+            end
+            data = refine_data(meta, idlist, slice, maxreflevel, normal)
          elseif op == :mag
-            datax = refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-            datay = refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-            dataz = refine_data(meta, idlist, data[3,:], maxreflevel, normal)
+            datax = @views refine_data(meta, idlist, data[1,:], maxreflevel, normal)
+            datay = @views refine_data(meta, idlist, data[2,:], maxreflevel, normal)
+            dataz = @views refine_data(meta, idlist, data[3,:], maxreflevel, normal)
             data = hypot.(datax, datay, dataz)
          end
 
@@ -172,11 +175,11 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
    end
 
    if axisunit == "Re"
-      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
-      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re      
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
    else
-      x = range(plotrange[1], plotrange[2], length=sizes[1])
-      y = range(plotrange[3], plotrange[4], length=sizes[2])
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
    cnorm, cticks = set_colorbar(data, pArgs)
@@ -187,7 +190,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
-   return c
+   c
 end
 
 "Generate axis and data for 2D plotting."
@@ -219,14 +222,14 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
    end
 
    if axisunit == "Re"
-      x = range(plotrange[1], plotrange[2], length=sizes[1]) ./ Vlasiator.Re
-      y = range(plotrange[3], plotrange[4], length=sizes[2]) ./ Vlasiator.Re
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
    else
-      x = range(plotrange[1], plotrange[2], length=sizes[1])
-      y = range(plotrange[3], plotrange[4], length=sizes[2])
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
-   return x, y, data'
+   x, y, data'
 end
 
 "Set plot-related arguments."
@@ -325,7 +328,7 @@ function set_colorbar(data, pArgs)
       ticks = range(vmin, vmax, length=nticks)
    end
 
-   return cnorm, ticks
+   cnorm, ticks
 end
 
 
@@ -591,8 +594,8 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
       cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
       cmap = matplotlib.cm.turbo
 
-      rx = range(vxmin/unitfactor, vxmax/unitfactor; length=vxsize+1)
-      ry = range(vymin/unitfactor, vymax/unitfactor; length=vysize+1)
+      rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
+      ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
 
       h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm, cmap=cmap)
 
