@@ -22,7 +22,7 @@ The original plotting APIs in Matplotlib are already complicated enough: instead
 
 ## Benchmarks
 
-Initial tests on reading variables from a VLSV file: 
+Initial tests on reading variables from sample VLSV files: 
 
 * DCCRG grid
 | 2MB   | tmean [μs] |
