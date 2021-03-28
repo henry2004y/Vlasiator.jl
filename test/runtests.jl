@@ -45,21 +45,32 @@ using Test
       # Nearest ID with VDF stored
       @test getNearestCellWithVspace(meta, id) == 8
 
-      # AMR data reading, fsgrid & dccrg grid
-      #getSliceCellID
-      #refine_data
-
-      # AMR level (this should later be replaced with real AMR data!)
-      @test get_max_amr_level(meta) == 0
-      @test get_amr_level(meta, id) == 0
-
       # velocity space reading
+      vcellids, vcellf = read_velocity_cells(meta, 2; pop="proton")
+      V = get_velocity_cell_coordinates(meta, vcellids; pop="proton")
+      @test V[:,end] == Float32[2.45, 1.95, 1.95]
+
+      # AMR data reading, dccrg grid
+      filename = "bulk.amr.vlsv"
+      meta = read_meta(filename)
+      maxreflevel = get_max_amr_level(meta)
+      sliceoffset = abs(meta.ymin)
+      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+         ymin=meta.ymin, ymax=meta.ymax)
+
+      data = read_variable(meta, "proton/vg_rho")
+      data = refine_data(meta, idlist, data[indexlist], maxreflevel, :y)
+      @test sum(data) ≈ 7.690352275026747e8
+
+      # AMR level
+      @test get_max_amr_level(meta) == 2
+      @test get_amr_level(meta, idlist[1]) == 1
 
       # Compare two VLSV files
       @test compare(filename, filename)
 
       close(meta.fid) # required for Windows
-      rm(filename, force=true)
+      rm("*.vlsv", force=true)
    end
 
    @testset "Derived variables" begin
