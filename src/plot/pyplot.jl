@@ -238,7 +238,6 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
    maxreflevel = get_max_amr_level(meta)
 
    if normal == :x
-      normal_D = [1,0,0]
       sizes = [meta.ycells, meta.zcells]
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
       sliceoffset = abs(meta.xmin) + origin
@@ -247,7 +246,6 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
          xmin=meta.xmin, xmax=meta.xmax)
    elseif normal == :y
-      normal_D = [0,1,0]
       sizes = [meta.xcells, meta.zcells]
       plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
       sliceoffset = abs(meta.ymin) + origin
@@ -256,7 +254,6 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
       idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
          ymin=meta.ymin, ymax=meta.ymax)
    elseif normal == :z
-      normal_D = [0,0,1]
       sizes = [meta.xcells, meta.ycells]
       plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
       sliceoffset = abs(meta.zmin) + origin
@@ -357,22 +354,25 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
 end
 
 """
-    plot_vdf(meta, location, limits; kwargs...)
+    plot_vdf(meta, location; kwargs...)
 
 Plot the 2D slice cut of phase space distribution function at `location` within
 velocity range `limits`.
-# Arguments
-- `slicetype`: optional string for choosing the slice type from "xy", "xz",
+# Optional arguments
+- `limits`: velocity space range given in [xmin, xmax, ymin, ymax].
+- `slicetype`: string for choosing the slice type from "xy", "xz",
 "yz", "bperp", "bpar", "bpar1".
-- `slicethick`: optional argument for setting the slice thickness. If set to 0,
-the whole distribution along the normal direction is projected onto a plane.
-- `center`: optional string for setting the reference frame from "bulk", "peak".
-- `weight`: optional symbol for choosing distribution weights from phase space
+- `center`: string for setting the reference frame from "bulk", "peak".
+- `vslicethick`: setting the velocity space slice thickness in the normal
+direction. If set to 0, the whole distribution along the normal direction is
+projected onto a plane. Currently this is only meaningful when `center` is set
+such that a range near the bulk/peak normal velocity is selected! 
+- `weight`: symbol for choosing distribution weights from phase space
 density or particle flux.
 """
-function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
+function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit="SI", slicetype="xy",
-   slicethick=-1.0, center="0", weight=:particle, fThreshold=-1.0)
+   vslicethick=0.0, center="0", weight=:particle, fThreshold=-1.0)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
@@ -433,9 +433,6 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
       elseif has_variable(meta.footer, pop*"/V")
          # multipop bulk file
          Vbulk = read_variable_select(meta, pop*"/V", cid)
-      elseif has_variable(meta.footer, pop*"/vg_v")
-         # multipop V5 bulk file
-         Vbulk = read_variable(meta, pop*"/vg_v", cid)
       else
          # regular bulk file, currently analysator supports pre- and
          # post-multipop files with "V"
@@ -480,14 +477,6 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
       f = vcellf[fselect_]
       V = V[:,fselect_]
 
-      if verbose
-         if slicethick > 0
-            @info "Performing slice with a counting thickness of $slicethick"
-         else
-            @info "Projecting total VDF to a single plane"
-         end
-      end
-      
       if has_parameter(meta, "t")
          timesim = read_parameter(meta, "t")
          str_title = @sprintf "t= %4.1fs" timesim
@@ -499,7 +488,12 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
       end
 
       # Set normal direction
-      if ysize == 1 && slicetype == "xz" # polar
+      if ysize == 1 && zsize == 1 # 1D, select xz
+         slicetype = "xz"
+         sliceNormal = [0., 1., 0.]
+         strx = "vx [km/s]"
+         stry = "vz [km/s]"
+      elseif ysize == 1 && slicetype == "xz" # polar
          sliceNormal = [0., 1., 0.]
          strx = "vx [km/s]"
          stry = "vz [km/s]"
@@ -528,15 +522,6 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
             sliceNormal = BxV ./ norm(BxV)
             strx = L"$v_{B}$ "
             stry = L"$v_{B \times (B \times V)}$ "
-         end
-      end
-
-      if slicethick < 0
-         # Assure that the slice cut through at least 1 velocity cell
-         if any(sliceNormal .== 1.0)
-            slicethick = cellsize
-         else # Assume cubic vspace grid, add extra space
-            slicethick = cellsize*(√3+0.05)
          end
       end
 
@@ -572,9 +557,26 @@ function plot_vdf(meta, location, limits=[-Inf, Inf, -Inf, Inf], ax=nothing;
       # Weights using particle flux or phase-space density
       fw = weight == :flux ? f*norm([v1, v2, vnormal]) : f
 
+      if verbose
+         if vslicethick > 0
+            @info "Performing slice with a counting thickness of $vslicethick"
+         else
+            @info "Projecting total VDF to a single plane"
+         end
+      end
+
+      if vslicethick < 0 # Trying to set a proper value automatically
+         # Assure that the slice cut through at least 1 velocity cell
+         if any(sliceNormal .== 1.0)
+            vslicethick = cellsize
+         else # Assume cubic vspace grid, add extra space
+            vslicethick = cellsize*(√3+0.05)
+         end
+      end
+
       # Select cells which are within slice area
-      if slicethick > 0.0
-         ind_ = @. (abs(vnormal) ≤ 0.5*slicethick) &
+      if vslicethick > 0.0
+         ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
                  (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
       else
          ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
