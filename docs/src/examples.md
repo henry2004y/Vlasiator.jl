@@ -99,6 +99,11 @@ You can choose to use linear/log color scale, plot vector components via e.g. `o
 plot_colormap3dslice(meta, "proton/vg_rho", normal=:y)
 ```
 
+- Velocity distribution function near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
+```
+plot_vdf(meta, coordinates)
+```
+
 ### Plots Backend
 
 To trigger the Plots package plotting, `use Plots`.
