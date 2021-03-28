@@ -6,8 +6,10 @@ using Test
       if Sys.iswindows()
          using ZipFile
          r = ZipFile.Reader("data/bulk_vlsv.zip")
-         open(r.files[1].name, "w") do io
-            write(io, read(r.files[1], String))
+         for file in r.files
+            open(file.name, "w") do io
+               write(io, read(file, String))
+            end
          end
       else
          run(`unzip data/bulk_vlsv.zip`)
