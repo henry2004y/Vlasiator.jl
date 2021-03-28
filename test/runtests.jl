@@ -14,8 +14,9 @@ using Test
       else
          run(`unzip data/bulk_vlsv.zip`)
       end
-      filename = "bulk.0000004.vlsv"
-      meta = read_meta(filename)
+
+      filenames = ["bulk.0000004.vlsv", "bulk.amr.vlsv"]
+      meta = read_meta(filenames[1])
       # Variable strings reading
       varnames = show_variables(meta)
       @test length(varnames) == 7 && varnames[end] == "vg_rhom"
@@ -53,26 +54,30 @@ using Test
       @test V[:,end] == Float32[2.45, 1.95, 1.95]
 
       # AMR data reading, dccrg grid
-      filename = "bulk.amr.vlsv"
-      meta = read_meta(filename)
-      maxreflevel = get_max_amr_level(meta)
-      sliceoffset = abs(meta.ymin)
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
-         ymin=meta.ymin, ymax=meta.ymax)
+      metaAMR = read_meta(filenames[2])
+      maxreflevel = get_max_amr_level(metaAMR)
+      sliceoffset = abs(metaAMR.ymin)
+      idlist, indexlist = getSliceCellID(metaAMR, sliceoffset, maxreflevel,
+         ymin=metaAMR.ymin, ymax=metaAMR.ymax)
 
-      data = read_variable(meta, "proton/vg_rho")
-      data = refine_data(meta, idlist, data[indexlist], maxreflevel, :y)
+      data = read_variable(metaAMR, "proton/vg_rho")
+      data = refine_data(metaAMR, idlist, data[indexlist], maxreflevel, :y)
       @test sum(data) ≈ 7.690352275026747e8
 
       # AMR level
-      @test get_max_amr_level(meta) == 2
-      @test get_amr_level(meta, idlist[1]) == 1
+      @test get_max_amr_level(metaAMR) == 2
+      @test get_amr_level(metaAMR, idlist[1]) == 1
 
       # Compare two VLSV files
-      @test compare(filename, filename)
+      @test compare(filenames[1], filenames[1])
 
-      close(meta.fid) # required for Windows
-      rm("*.vlsv", force=true)
+      # Explicit IO closure required by Windows
+      close(meta.fid)
+      close(metaAMR.fid)
+
+      for file in filenames
+         rm(file, force=true)
+      end
    end
 
    @testset "Derived variables" begin
