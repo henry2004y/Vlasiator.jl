@@ -11,10 +11,12 @@ export plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
 struct PlotArgs
    sizes::Vector{Int}
    plotrange::Vector{Float32}
-   idlist::Vector{Int}
-   indexlist::Vector{Int}
-   maxreflevel::Int8
-   islinear::Bool
+   idlist::Vector{Int}        # cell IDs in the cut plane
+   indexlist::Vector{Int}     # mapping from original cell order to cut plane
+   maxreflevel::Int8          # maximum refinement level
+   islinear::Bool             # linear scale data
+   vmin::Float32              # minimum data value 
+   vmax::Float32              # maximum data value
    str_title::String
    strx::String
    stry::String
@@ -26,7 +28,8 @@ end
     streamline(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
 
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a
-subset of "xyz" in any order.
+subset of "xyz" in any order. `axisunit` can be chosen from `"Re", "SI"`.
+The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
 function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 
@@ -80,10 +83,18 @@ end
 
 """
     plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit="Re",
-       islinear=false)
+       islinear=false, vmin=-Inf, vmax=Inf, addcolorbar=true)
 
 Plot a variable using pseudocolor from 2D VLSV data. If `ax` is provided, then
-it tries to plot into that axes.
+it will plot on that axes.
+
+# Optional arguments
+- `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
+- `axisunit::String`: the unit of axis, `"Re", "SI"`.
+- `islinear::Bool`: whether to use linear scale for data.
+- `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
+- `vmax::Float`: maximum data range. Set to minimum of data if not specified.
+- `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
 `plot_pcolormesh(meta, var)`
 
@@ -92,13 +103,13 @@ it tries to plot into that axes.
 `plot_pcolormesh(data, func, islinear=false)`
 """
 function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
-   islinear=false, addcolorbar=true)
+   islinear=false, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, islinear; normal=:none)
+   pArgs = set_args(meta, var, axisunit, islinear; normal=:none, vmin, vmax)
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
-   cnorm, cticks = set_colorbar(data, pArgs)
+   cnorm, cticks = set_colorbar(pArgs, data)
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -113,7 +124,17 @@ end
     plot_colormap3dslice(meta::MetaData, var, ax=nothing (...))
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data. If `ax` is provided, then
-it tries to plot into that axes.
+it will plot on that axes.
+
+# Optional arguments
+- `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
+- `origin::Float`: center of slice plane in the normal direction.
+- `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
+- `axisunit::String`: the unit of axis, `"Re", "SI"`.
+- `islinear::Bool`: whether to use linear scale for data.
+- `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
+- `vmax::Float`: maximum data range. Set to minimum of data if not specified.
+- `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
 `plot_colormap3dslice(meta, var)`
 
@@ -122,9 +143,11 @@ it tries to plot into that axes.
 `plot_colormap3dslice(data, func, islinear=false)`
 """
 function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
-   normal=:y, axisunit="Re", islinear=false, addcolorbar=true)
+   normal=:y, axisunit="Re", islinear=false, addcolorbar=true,
+   vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, islinear; normal, origin)
+   pArgs = set_args(meta, var, axisunit, islinear;
+      normal, origin, vmin=-Inf, vmax=Inf)
 
    maxreflevel = pArgs.maxreflevel
    sizes = pArgs.sizes
@@ -233,7 +256,8 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
+function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
+   vmin=-Inf, vmax=Inf)
 
    maxreflevel = get_max_amr_level(meta)
 
@@ -302,22 +326,21 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0)
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
 
    PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, islinear,
-      str_title, strx, stry, cmap, cb_title_use)
+      vmin, vmax, str_title, strx, stry, cmap, cb_title_use)
 end
 
 "Return colorbar norm and ticks."
-function set_colorbar(data, pArgs)
+function set_colorbar(pArgs, data)
 
-   if !pArgs.islinear
-      # Logarithmic plot
-      vmin = minimum(data[data .> 0.0])
-      vmax = maximum(data)
-      
+   if !pArgs.islinear # Logarithmic plot
+      vmin = isinf(pArgs.vmin) ? minimum(data[data .> 0.0]) : pArgs.vmin
+      vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
+
       cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
    else
-      vmin = minimum(data)
-      vmax = maximum(data)
+      vmin = isinf(pArgs.vmin) ? minimum(data) : pArgs.vmin
+      vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
       nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=pArgs.cmap.N,

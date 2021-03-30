@@ -231,7 +231,10 @@ end
     getSliceCellID(meta, slicelocation, maxreflevel; xmin=-Inf, xmax=Inf,
        ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
-Find the cell ids which are needed to plot a 2d cut through of a 3d mesh.
+Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d
+mesh, in a direction with non infinity range at `slicelocation`, and the
+`indexlist`, which is a mapping from original order to the cut plane and can be
+used to select data onto the plane.
 """
 function getSliceCellID(meta, slicelocation, maxreflevel;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)

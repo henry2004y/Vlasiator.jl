@@ -26,17 +26,10 @@ cmap = matplotlib.cm.turbo
 vmin = 7.0e4
 vmax = 2.5e6
 
-if islinear
-   nticks = 7
-   levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
-   cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=cmap.N, clip=true)
-   cticks = range(vmin, vmax, length=nticks)
-else
-   cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
-   cticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
-end
+pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit, islinear;
+   normal=:none, vmin, vmax)
 
-pArgs = set_args(meta, vardict[varname], axisunit, islinear; normal=:none)
+cnorm, cticks = Vlasiator.set_colorbar(pArgs, [0.0])
 
 for (i, filename) in enumerate(filenames)
    @info "$i out of $nfile"
