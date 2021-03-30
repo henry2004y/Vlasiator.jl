@@ -67,14 +67,14 @@ More examples of customized plots can be found in the [repo](https://github.com/
 
 To trigger the Matplotlib plotting, `use PyPlot`.
 
-- Scaler colored contour for 2D simulation
+- Scalar colored contour for 2D simulation
 ```
 plot_pcolormesh(meta, "rho")
 ```
 
-- Vector z component colored contour for 2D simulation
+- Vector z component colored contour for 2D simulation in a manually set range
 ```
-plot_pcolormesh(meta, "rho", op=:z, islinear=false, axisunit="Re")
+plot_pcolormesh(meta, "rho", op=:z, islinear=false, axisunit="Re", vmin=1e6, vmax=2e6)
 ```
 
 - Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
