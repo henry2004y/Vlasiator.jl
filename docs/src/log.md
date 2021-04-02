@@ -72,10 +72,12 @@ The Plots package provides a lightweight [RecipesBase](http://juliaplots.org/Rec
 The solution I am adapting now for PyPlot is to use [Requires.jl](https://github.com/JuliaPackaging/Requires.jl).
 I am not alone.
 
+One side effect of using Requires.jl is that the documentation for the plotting functions are not shown correctly. Maybe there is a fix already.
+
 ## Parallelism
 
 At some point I may want to try multi-threading in data processing. First I need to make sure adding threads does not affect single thread performance, and then I need to identify proper places for using threads rather than abuse threads at any place.
 
 ## Large data
 
-If we are aiming at support large data in the future, we can take advantage of the memory mapping mechanism in Julia which allows reading files that do not fit in the memory.
+If we are aiming at support large data in the future, we can take advantage of the memory mapping mechanism in Julia which allows reading files that do not fit in the memory. For example, the 3D AMR data reading test above for fsgrid variables will crash the Julia session on the second attempt --- this can be solved with the mapping/paging technique that is more commonly used in big data processing.
