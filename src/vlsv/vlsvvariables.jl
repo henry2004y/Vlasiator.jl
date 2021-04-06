@@ -164,10 +164,10 @@ const latexunits_predefined = Dict(
 
 # Define derived parameters
 const variables_predefined = Dict(
-   "bmag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "vg_b_vol").^2, dims=1)), dims=1),
-   "emag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "vg_e_vol").^2, dims=1)), dims=1),
-   "vmag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "proton/vg_v").^2, dims=1)), dims=1),
-   "vs" => function (meta) # sound speed
+   "Bmag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "vg_b_vol").^2, dims=1)), dims=1),
+   "Emag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "vg_e_vol").^2, dims=1)), dims=1),
+   "Vmag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "proton/vg_v").^2, dims=1)), dims=1),
+   "VS" => function (meta) # sound speed
       Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
       P = dropdims(sum(Pdiag, dims=1) ./ 3, dims=1)
       ρm = read_variable(meta, "proton/vg_rho") .* mᵢ
@@ -177,30 +177,30 @@ const variables_predefined = Dict(
       end
       vs = @. √( (P*5.0/3.0) / ρm )
    end,
-   "va" => function (meta) # Alfvén speed
+   "VA" => function (meta) # Alfvén speed
       ρm = read_variable(meta, "proton/vg_rho") .* mᵢ
       # Handling sparse storage of the Vlasov solver
       for i = 1:length(ρm)
          ρm[i] == 0.0 && (ρm[i] = Inf)
       end
-      Bmag = get_variable_derived(meta, "bmag")
+      Bmag = get_variable_derived(meta, "Bmag")
       VA = @. Bmag / √(ρm*μ₀)
    end,
-   "MA" => function (meta) # Alfven Mach number
-      V = read_variable(meta, "vmag")
-      VA = get_variable_derived(meta, "va")
+   "MA" => function (meta) # Alfvén Mach number
+      V = read_variable(meta, "Vmag")
+      VA = get_variable_derived(meta, "VA")
       VA ./ V 
    end,
-   "upar" => function (meta) # Parallel velocity to the B field
+   "Upar" => function (meta) # Parallel velocity to the B field
       v = read_variable(meta, "proton/vg_v")
       B = read_variable(meta, "vg_b_vol")
-      BmagInv = inv.(get_variable_derived(meta, "bmag"))
+      BmagInv = inv.(get_variable_derived(meta, "Bmag"))
       [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
    end,
-   "uperp" => function (meta) # Perpendicular velocity to the B field
+   "Uperp" => function (meta) # Perpendicular velocity to the B field
       v = read_variable(meta, "proton/vg_v")
       B = read_variable(meta, "vg_b_vol")
-      BmagInv = inv.(get_variable_derived(meta, "bmag"))
+      BmagInv = inv.(get_variable_derived(meta, "Bmag"))
       upar = [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
       vmag2 = dropdims(sum(v.^2, dims=1), dims=1)
       uperp = @. √(vmag2 - upar^2) # This may be errorneous due to Float32!
@@ -208,13 +208,13 @@ const variables_predefined = Dict(
    "Tpar" => function (meta) # Parallel temperature to the B field
       P = get_variable_derived(meta, "PRotated")
       Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
-      BmagInv = inv.(get_variable_derived(meta, "bmag"))
+      BmagInv = inv.(get_variable_derived(meta, "Bmag"))
       [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
    end,
    "Tperp" => function (meta) # Perpendicular temperature to the B field
       T = get_variable_derived(meta, "temperature")
       B = read_variable(meta, "vg_b_vol")
-      BmagInv = inv.(get_variable_derived(meta, "bmag"))
+      BmagInv = inv.(get_variable_derived(meta, "Bmag"))
       upar = [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
       vmag2 = dropdims(sum(v.^2, dims=1), dims=1)
       uperp = @. √(vmag2 - upar^2) # This may be errorneous due to Float32!
@@ -244,7 +244,7 @@ const variables_predefined = Dict(
       @. 0.5*(P_rotated[1,1,:] + P_rotated[2,2,:]) / P_rotated[3,3,:]
    end,
    "Pdynamic" => function (meta)
-      vmag = get_variable_derived(meta, "vmag")
+      vmag = get_variable_derived(meta, "Vmag")
       ρm = read_variable(meta, "proton/vg_rho") .* mᵢ
       rhom.*Vmag.*Vmag
    end,
@@ -264,7 +264,7 @@ const variables_predefined = Dict(
          F[:,i] = E[:,i] × B[:,i] ./ μ₀
       end
    end,
-   "aGyrotropy" => function (meta)
+   "Agyrotropy" => function (meta)
       # non-gyrotropy measure Q [Swisdak 2016]
       I₁ = @. Pxxe + Pyye + Pzze
       I₂ = @. Pxxe*Pyye + Pxxe*Pzze + Pyye*Pzze - Pxye*Pxye - Pyze*Pyze - Pxze*Pxze
@@ -273,21 +273,25 @@ const variables_predefined = Dict(
 	      2*(Bx*By*Pxye + Bx*Bz*Pxze + By*Bz*Pyze))/B²
       Qsqr = @. √(1 - 4I₂/((I₁ - Ppar)*(I₁ + 3Ppar)))
    end,
-   "beta" => function (meta)
+   "Beta" => function (meta)
       Pressure = read_variable(meta, "pressure")
       Magneticfield = P = read_variable(meta, "B")   
       2.0 * μ₀ * Pressure / sum(Magneticfield^2)
    end,
-   "ion_inertial" => function (meta)
+   "IonInertial" => function (meta)
 
    end,
-   "larmor" => function (meta)
+   "Larmor" => function (meta)
 
    end,
-   "gyroperiod" => function (meta)
+   "Gyroperiod" => function (meta)
 
    end,
-   "plasmaperiod" => function (meta)
+   "Plasmaperiod" => function (meta)
 
+   end,
+   "P" => function (meta)
+      Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
+      P = dropdims(sum(Pdiag, dims=1) ./ 3, dims=1)
    end,
 )

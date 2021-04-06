@@ -42,13 +42,43 @@ More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator
 
 ## Computing derived quantities
 
-There are some predefined methods for computing derived quantities such as plasma β, velocity parallel/perpendicular to the magnetic field, pressure tensor with the third axis aligned with the magnetic field direction and so on.
-To compute such, for example, 
+Vlasiator is capable of computing moments and some derived quantities and save them directly into VLSV files.
+More derived quantities computed from the saved quantities are also available in postprocessing, such as plasma β, velocity parallel/perpendicular to the magnetic field, pressure tensor with the third axis aligned with the magnetic field direction and so on.
+To avoid confusion about variable names, the convention here is that
+* if it is directly stored in the VLSV file, read the raw data;
+* otherwise check the availability in the derived variable list. All predefined names start with a capital letter.
+
+To obtain a derived quantity, for example,
 ```
-beta = get_variable_derived(meta, "beta")
+beta = get_variable_derived(meta, "Beta")
 ```
 
-A full list of available quantities can be found in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
+Here is a full list of available quantities:
+
+| Derived variable name | Meaning                          | Required variable |
+|-----------------------|----------------------------------|-------------------|
+| Bmag                  | magnetic field magnitude         | vg\_b\_vol        |
+| Emag                  | electric field magnitude         | vg\_e\_vol        |
+| Vmag                  | bulk speed                       | vg\_v             |
+| VS                    | sound speed                      | vg\_ptensor\_diagonal; vg\_rho |
+| VA                    | Alfvén speed                     | vg\_rho; Bmag     |
+| MA                    | Alfvén Mach number               | Vmag; VA          |
+| Upar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol |
+| Uperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol |
+| Tpar                  | temperature $\parallel\mathbf{B}$| vg\_rho; vg\_ptensor\_diagonal; vg\_b\_vol |
+| Tperp                 | temperature $\perp \mathbf{B}$   | vg\_rho; vg\_ptensor\_offdiagonal; vg\_b\_vol |
+| PRotated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
+| Anisotropy            | $P_\perp / P_\parallel$          | PRotated          |
+| Pdynamic              | dynamic pressure                 | vg\_rho; Vmag     |
+| Poynting              | Poynting flux                    | E; B              |
+| Beta                  | plasma beta, $P / P_B$           |                   |
+| IonInertial           | ion inertial length              |                   | 
+| Larmor                | Larmor radius                    |                   |
+| Gyroperiod            | ion gyroperiod                   |                   |
+| Plasmaperiod          | plasma oscillation period        |                   |
+| P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |
+
+which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
 
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results!

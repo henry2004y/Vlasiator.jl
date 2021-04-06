@@ -50,10 +50,10 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
    end
 
-   if var in keys(Vlasiator.variables_predefined)
-      data = Vlasiator.variables_predefined[var](meta)
-   else
+   if has_variable(meta.footer, var)
       data = read_variable(meta, var)
+   else
+      data = Vlasiator.variables_predefined[var](meta)
    end
 
    if startswith(var, "fg_")
@@ -154,10 +154,10 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
    plotrange = pArgs.plotrange
    idlist, indexlist = pArgs.idlist, pArgs.indexlist
 
-   if var in keys(Vlasiator.variables_predefined)
-      data = Vlasiator.variables_predefined[var](meta)
-   else
+   if has_variable(meta.footer, var)
       data = read_variable(meta, var)
+   else
+      data = Vlasiator.variables_predefined[var](meta)
    end
 
    if startswith(var, "fg_") # field quantities, fsgrid
@@ -221,10 +221,10 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 
    sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
-   if var in keys(Vlasiator.variables_predefined)
-      dataRaw = Vlasiator.variables_predefined[var](meta)
-   else
+   if has_variable(meta.footer, var)
       dataRaw = read_variable(meta, var)
+   else
+      dataRaw = Vlasiator.variables_predefined[var](meta)
    end
 
    if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
