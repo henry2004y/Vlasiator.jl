@@ -53,7 +53,7 @@ To obtain a derived quantity, for example,
 beta = get_variable_derived(meta, "Beta")
 ```
 
-Here is a full list of available quantities:
+Here is a full list of available quantities[^1]:
 
 | Derived variable name | Meaning                          | Required variable |
 |-----------------------|----------------------------------|-------------------|
@@ -65,9 +65,11 @@ Here is a full list of available quantities:
 | MA                    | Alfvén Mach number               | Vmag; VA          |
 | Upar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol |
 | Uperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol |
+| P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |
+| T                     | scalar temperature               | P; vg\_rho        |
 | Tpar                  | temperature $\parallel\mathbf{B}$| vg\_rho; vg\_ptensor\_diagonal; vg\_b\_vol |
 | Tperp                 | temperature $\perp \mathbf{B}$   | vg\_rho; vg\_ptensor\_offdiagonal; vg\_b\_vol |
-| PRotated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
+| Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
 | Anisotropy            | $P_\perp / P_\parallel$          | PRotated          |
 | Pdynamic              | dynamic pressure                 | vg\_rho; Vmag     |
 | Poynting              | Poynting flux                    | E; B              |
@@ -76,9 +78,10 @@ Here is a full list of available quantities:
 | Larmor                | Larmor radius                    |                   |
 | Gyroperiod            | ion gyroperiod                   |                   |
 | Plasmaperiod          | plasma oscillation period        |                   |
-| P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |
 
 which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
+
+[^1]: for species specific variables, you need to add the species name at the front, separated by a slash. For example, the proton bulk velocity is a string `proton/vg_v`.
 
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results!
@@ -170,7 +173,7 @@ This backend supports all available attributes provided by [Plots.jl](http://doc
 ## Calling from Python
 
 It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
-Following the installation steps described in the manual[^1], and then inside Python REPL:
+Following the installation steps described in the manual[^2], and then inside Python REPL:
 ```
 # Handling initialization issue for Conda
 from julia.api import Julia
@@ -196,7 +199,7 @@ plt.show()
 !!! note
     This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
 
-[^1]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
+[^2]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
 
 ## Misc
 

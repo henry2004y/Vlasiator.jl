@@ -4,8 +4,9 @@ module Vlasiator
 
 using Requires
 
-include("vlsv/vlsvreader.jl")
+include("utility/rotation.jl")
 include("vlsv/vlsvutility.jl")
+include("vlsv/vlsvreader.jl")
 include("plot/plots.jl")
 
 function __init__()

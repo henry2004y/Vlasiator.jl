@@ -8,6 +8,7 @@ const qᵢ = 1.60217662e-19   # proton mass, [C]
 const mᵢ = 1.673557546e-27  # proton mass, [kg]
 const c  = 3e8              # speed of light, [m/s]
 const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
+const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)] 
 const Re = 6.371e6          # Earth radius, [m]
 
 export get_cellid, getSliceCellID, get_amr_level, get_max_amr_level,
