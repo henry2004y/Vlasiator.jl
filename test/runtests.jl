@@ -123,6 +123,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          meta = readmeta(filenames[2])
          p = plot_pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
+         p = streamline(meta, "proton/vg_v", comp="xy")
+         @test typeof(p) == PyPlot.PyObject
          close(meta.fid)
 
          # 3D AMR
