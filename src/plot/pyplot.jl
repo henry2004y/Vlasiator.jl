@@ -5,7 +5,7 @@
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 import LinearAlgebra: norm, ×
 
-export plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
+export plot_line, plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
 
 "Plotting arguments."
 struct PlotArgs
@@ -25,7 +25,24 @@ struct PlotArgs
 end
 
 """
-    streamline(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
+    plot_line(meta, var; kwargs)
+
+Plot `var` from `meta` of 1D VLSV data.
+"""
+function plot_line(meta, var; kwargs...)
+   if hasvariable(meta.footer, var)
+      data = readvariable(meta, var)
+   else
+      data = Vlasiator.variables_predefined[var](meta)
+   end
+
+   x = LinRange(meta.xmin, meta.xmax, meta.xcells)
+
+   c = plot(x, data; kwargs...)
+end
+
+"""
+    streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a
 subset of "xyz" in any order. `axisunit` can be chosen from `"Re", "SI"`.
@@ -288,17 +305,19 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
    else
       idlist = Int64[]
       indexlist = Int64[]
-      # Check if ecliptic or polar run
-      if meta.ycells == 1 && meta.zcells != 1
+
+      if meta.ycells == 1 && meta.zcells != 1 # polar
          plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
          sizes = [meta.xcells, meta.zcells]
          PLANE = "XZ"
          axislabels = ['X', 'Z']
-      elseif meta.zcells == 1 && meta.ycells != 1
+      elseif meta.zcells == 1 && meta.ycells != 1 # ecliptic
          plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
          sizes = [meta.xcells, meta.ycells]
          PLANE = "XY"
          axislabels = ['X', 'Y']
+      else # 1D
+         @error "1D data detected. Please use 1D plot functions."
       end
    end
 
