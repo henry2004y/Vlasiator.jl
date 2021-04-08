@@ -7,9 +7,8 @@ include("vlsvvariables.jl")
 using LightXML
 
 export MetaData, VarInfo
-export read_meta, read_variable, read_parameter, show_variables, has_variable,
-       has_parameter, has_name, read_variable_select, read_variable_info,
-       get_variable_derived, read_velocity_cells, get_velocity_cell_coordinates
+export readmeta, readvariable, readparameter, showvariables, hasvariable,
+       hasparameter, hasname, readvariableinfo, readvcells, getvcellcoordinates
 
 "Mesh size information."
 struct MeshInfo
@@ -82,7 +81,7 @@ function Base.show(io::IO, s::VarInfo)
 end
 
 "Return the xml footer of vlsv."
-function read_xml_footer(fid)
+function getfooter(fid)
 
    # First 8 bytes indicate big-endian or else
    endianness_offset = 8
@@ -99,7 +98,7 @@ end
 
 
 "Return size and type information for the object."
-function read_prep(fid, footer, name, tag, attr)
+function getObjInfo(fid, footer, name, tag, attr)
 
    arraysize = 0
    datasize = 0
@@ -143,9 +142,9 @@ function read_prep(fid, footer, name, tag, attr)
 end
 
 "Return vector data from vlsv file."
-function read_vector(fid, footer, name, tag)
+function readvector(fid, footer, name, tag)
 
-   T, _, arraysize, _, vectorsize = read_prep(fid, footer, name, tag, "name")
+   T, _, arraysize, _, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
    if vectorsize == 1
       w = Vector{T}(undef, arraysize)
@@ -160,27 +159,27 @@ end
 
 
 """
-    read_meta(filename; verbose=false)
+    readmeta(filename; verbose=false) -> MetaData
 
-Return a struct of MetaData from vlsv file.
+Return MetaData from a vlsv file.
 """
-function read_meta(filename::AbstractString; verbose=false)
+function readmeta(filename::AbstractString; verbose=false)
 
    fid = open(filename, "r")
 
-   footer = read_xml_footer(fid)
+   footer = getfooter(fid)
 
    meshName = "SpatialGrid"
 
-   cellid = read_vector(fid, footer, "CellID", "VARIABLE")
+   cellid = readvector(fid, footer, "CellID", "VARIABLE")
 
    cellIndex = sortperm(cellid)
 
-   bbox = read_mesh(fid, footer, meshName, "MESH_BBOX")
+   bbox = readmesh(fid, footer, meshName, "MESH_BBOX")
 
-   nodeCoordsX = read_mesh(fid, footer, meshName, "MESH_NODE_CRDS_X")
-   nodeCoordsY = read_mesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
-   nodeCoordsZ = read_mesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
+   nodeCoordsX = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_X")
+   nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
+   nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
   
    xcells, ycells, zcells = bbox[1:3]
    xblock_size, yblock_size, zblock_size = bbox[4:6]
@@ -202,11 +201,11 @@ function read_meta(filename::AbstractString; verbose=false)
          # New style vlsv file with bounding box
          popname = attribute(varinfo, "name")
 
-         bbox = read_mesh(fid, footer, popname, "MESH_BBOX")
+         bbox = readmesh(fid, footer, popname, "MESH_BBOX")
 
-         nodeCoordsX = read_mesh(fid, footer, popname, "MESH_NODE_CRDS_X")   
-         nodeCoordsY = read_mesh(fid, footer, popname, "MESH_NODE_CRDS_Y")   
-         nodeCoordsZ = read_mesh(fid, footer, popname, "MESH_NODE_CRDS_Z")   
+         nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")   
+         nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")   
+         nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")   
          vxblocks, vyblocks, vzblocks = bbox[1:3]
          vxblock_size, vyblock_size, vzblock_size = bbox[4:6]
          vxmin = nodeCoordsX[1]
@@ -223,18 +222,18 @@ function read_meta(filename::AbstractString; verbose=false)
 
          if "vxblocks_ini" in attribute.(footer["PARAMETER"],"name") 
             # Old vlsv files where the mesh is defined with parameters
-            vxblocks = read_parameter(fid, footer, "vxblocks_ini")
-            vyblocks = read_parameter(fid, footer, "vyblocks_ini")
-            vzblocks = read_parameter(fid, footer, "vzblocks_ini")
+            vxblocks = readparameter(fid, footer, "vxblocks_ini")
+            vyblocks = readparameter(fid, footer, "vyblocks_ini")
+            vzblocks = readparameter(fid, footer, "vzblocks_ini")
             vxblock_size = 4
             vyblock_size = 4
             vzblock_size = 4
-            vxmin = read_parameter(fid, footer, "vxmin")
-            vymin = read_parameter(fid, footer, "vymin")
-            vzmin = read_parameter(fid, footer, "vzmin")
-            vxmax = read_parameter(fid, footer, "vxmax")
-            vymax = read_parameter(fid, footer, "vymax")
-            vzmax = read_parameter(fid, footer, "vzmax")
+            vxmin = readparameter(fid, footer, "vxmin")
+            vymin = readparameter(fid, footer, "vymin")
+            vzmin = readparameter(fid, footer, "vzmin")
+            vxmax = readparameter(fid, footer, "vxmax")
+            vymax = readparameter(fid, footer, "vymax")
+            vzmax = readparameter(fid, footer, "vzmax")
             dvx = (vxmax - vxmin) / vxblocks / vxblock_size
             dvy = (vymax - vymin) / vyblocks / vyblock_size
             dvz = (vzmax - vzmin) / vzblocks / vzblock_size
@@ -275,11 +274,11 @@ end
 
 
 """
-    read_variable_info(meta::MetaData, var)
+    readvariableinfo(meta, var) -> VarInfo
 
-Return a struct of VarInfo.           
+Return VarInfo about `var` in the vlsv file linked to `meta`.           
 """
-function read_variable_info(meta, var)
+function readvariableinfo(meta, var)
 
    unit = ""
    unitLaTeX = ""
@@ -297,7 +296,7 @@ function read_variable_info(meta, var)
       varname = var
    end
 
-   if has_variable(meta.footer, var)
+   if hasvariable(meta.footer, var)
       if varname[1:3] == "vg_" || varname[1:3] == "fg_"
          # For Vlasiator 5 vlsv files, metadata is included
 
@@ -321,10 +320,10 @@ function read_variable_info(meta, var)
 end
 
 "Return mesh related variable."
-function read_mesh(fid, footer, typeMesh, varMesh)
+function readmesh(fid, footer, typeMesh, varMesh)
 
    T, variable_offset, arraysize, datasize, vectorsize = 
-      read_prep(fid, footer, typeMesh, varMesh, "mesh")
+      getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
 
    w = Vector{T}(undef, arraysize)
    read!(fid, w)
@@ -333,18 +332,24 @@ function read_mesh(fid, footer, typeMesh, varMesh)
 end
 
 """
-    read_variable(meta::MetaData, var, sorted=true)
+    readvariable(meta, var, sorted=true) -> Array
 
 Return variable value from the vlsv file. For DCCRG grid, the variables are
 sorted by cell ID by default.
 """
-function read_variable(meta, var, sorted=true)
-   data = read_vector(meta.fid, meta.footer, var, "VARIABLE")
-   
+function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
+
+   if var in keys(variables_predefined)
+      data = variables_predefined[var](meta)
+      return data
+   end
+
+   data = readvector(meta.fid, meta.footer, var, "VARIABLE")
+
    if startswith(var, "fg_") # fsgrid
-      bbox = read_mesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX")
+      bbox = readmesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX")
       # Determine fsgrid domain decomposition
-      nIORanks = read_parameter(meta, "numWritingRanks")
+      nIORanks = readparameter(meta, "numWritingRanks")
 
       if ndims(data) > 1
          orderedData = zeros(Float32, size(data,1), bbox[1:3]...)
@@ -391,7 +396,41 @@ function read_variable(meta, var, sorted=true)
          data = data[:, meta.cellIndex]
       end
    end
-   data
+   return data
+end
+
+"""
+    readvariable(meta, var, idIn) -> Array
+
+Read a variable in a collection of cells.
+"""
+function readvariable(meta::MetaData, var::AbstractString, idIn)
+
+   @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
+
+   if isempty(idIn)
+      w = readvariable(meta, var, false)
+      return [w]
+   end
+
+   T, variable_offset, arraysize, datasize, vectorsize = 
+      getObjInfo(meta.fid, meta.footer, var, "VARIABLE", "name")
+
+   cellids = readvariable(meta, "CellID", false)
+   rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in idIn]
+
+   v = fill(T[], length(rOffsets))
+
+   for (i, r) in enumerate(rOffsets)
+      loc = variable_offset + r
+      seek(meta.fid, loc)
+   
+      w = Vector{T}(undef, vectorsize)
+      read!(meta.fid, w)
+      v[i] = w
+   end
+
+   return v
 end
 
 # Optimize decomposition of this grid over the given number of processors.
@@ -446,78 +485,31 @@ function calcLocalSize(globalCells, nprocs, lcells)
 end
 
 "Check if the VLSV file contains a variable."
-has_variable(footer, var) = has_name(footer, "VARIABLE", var)
+hasvariable(footer, var) = hasname(footer, "VARIABLE", var)
 
 """
-    get_variable_derived(meta::MetaData, var)
-
-Calculate a derived variable from basic quantities.
-"""
-function get_variable_derived(meta::MetaData, var)
-   if var in keys(variables_predefined)
-      data = variables_predefined[var](meta)
-   else
-      @error "Derived variable not known!"
-   end
-end
-
-"""
-    read_variable_select(meta::MetaData, var, idIn=UInt[])
-
-Read a variable in a collection of cells.
-"""
-function read_variable_select(meta, var, idIn=UInt[])
-
-   @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
-
-   if isempty(idIn)
-      w = read_variable(meta, var, false)
-      return [w]
-   end
-
-   T, variable_offset, arraysize, datasize, vectorsize = 
-      read_prep(meta.fid, meta.footer, var, "VARIABLE", "name")
-
-   cellids = read_variable(meta, "CellID", false)
-   rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in idIn]
-
-   v = fill(T[], length(rOffsets))
-
-   for (i, r) in enumerate(rOffsets)
-      loc = variable_offset + r
-      seek(meta.fid, loc)
-   
-      w = Vector{T}(undef, vectorsize)
-      read!(meta.fid, w)
-      v[i] = w
-   end
-
-   return v
-end
-
-"""
-    read_parameter(meta::MetaData, param)
+    readparameter(meta, param)
 
 Return the parameter value from vlsv file.
 """
-read_parameter(meta::MetaData, param) = read_parameter(meta.fid, meta.footer, param)
+readparameter(meta::MetaData, param) = readparameter(meta.fid, meta.footer, param)
 
-function read_parameter(fid, footer, param)
+function readparameter(fid, footer, param)
    
-   T, _, _, _, _ = read_prep(fid, footer, param, "PARAMETER", "name")
+   T, _, _, _, _ = getObjInfo(fid, footer, param, "PARAMETER", "name")
 
    p = read(fid, T)
 end
 
 """
-    has_parameter(meta::MetaData, param)
+    hasparameter(meta, param) -> Bool
 
 Check if vlsv file contains a parameter.
 """
-has_parameter(meta::MetaData, param) = has_name(meta.footer, "PARAMETER", param)
+hasparameter(meta::MetaData, param) = hasname(meta.footer, "PARAMETER", param)
 
 "Check if the XMLElement `elem` contains a `tag` with `name`."
-function has_name(elem, tag, name)
+function hasname(elem, tag, name)
    isFound = false
    
    for varinfo in elem[tag]
@@ -529,7 +521,7 @@ function has_name(elem, tag, name)
 end
 
 "Display all variables in the VLSV file."
-function show_variables(meta::MetaData)
+function showvariables(meta::MetaData)
    nVar = length(meta.footer["VARIABLE"])
    vars = Vector{String}(undef, nVar)
    for i in 1:nVar
@@ -539,12 +531,12 @@ function show_variables(meta::MetaData)
 end
 
 """
-    read_velocity_cells(meta, cellid; pop="proton")
+    readvcells(meta, cellid; pop="proton")
 
 Read velocity cells from a spatial cell of ID `cellid`, and return a map of
 velocity cell ids and corresponding value.
 """
-function read_velocity_cells(meta, cellid; pop="proton")
+function readvcells(meta, cellid; pop="proton")
 
    vmesh = meta.meshes[pop]
    nblockx = vmesh.vxblock_size
@@ -552,8 +544,8 @@ function read_velocity_cells(meta, cellid; pop="proton")
    nblockz = vmesh.vzblock_size
    bsize = vmesh.vxblock_size * vmesh.vyblock_size * vmesh.vzblock_size
 
-   cellsWithVDF = read_vector(meta.fid, meta.footer, pop, "CELLSWITHBLOCKS")
-   nblock_C = read_vector(meta.fid, meta.footer, pop, "BLOCKSPERCELL")
+   cellsWithVDF = readvector(meta.fid, meta.footer, pop, "CELLSWITHBLOCKS")
+   nblock_C = readvector(meta.fid, meta.footer, pop, "BLOCKSPERCELL")
 
    nblock_C_offsets = zeros(Int, length(cellsWithVDF))
    nblock_C_offsets[2:end] = cumsum(nblock_C[1:end-1])
@@ -632,11 +624,11 @@ end
 
 
 """
-    get_velocity_cell_coordinates(meta, vcellids, pop="proton")
+    getvcellcoordinates(meta, vcellids, pop="proton")
 
 Return velocity cells' coordinates of population `pop` and id `vcellids`.
 """
-function get_velocity_cell_coordinates(meta, vcellids; pop="proton")
+function getvcellcoordinates(meta, vcellids; pop="proton")
 
    vmesh = meta.meshes[pop]
    bsize = vmesh.vxblock_size * vmesh.vyblock_size * vmesh.vzblock_size

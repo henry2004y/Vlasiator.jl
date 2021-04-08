@@ -22,8 +22,8 @@ using RecipesBase
       axislabels = ['X', 'Y']
    end
 
-   if has_variable(meta.footer, var)
-      dataRaw = read_variable(meta, var)
+   if hasvariable(meta.footer, var)
+      dataRaw = readvariable(meta, var)
    else
       dataRaw = Vlasiator.variables_predefined[var](meta)
    end

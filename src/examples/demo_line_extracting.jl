@@ -1,18 +1,18 @@
 # Sample postprocessing script for extracting data alone a line across frames.
 #
-# Hongyang Zhou, hyzhou@umich.edu 03/11/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob, PyPlot, Printf
 
 filenames = glob("run4/bulk*.vlsv")
 
-meta = read_meta(filenames[1])
-varnames = show_variables(meta)
+meta = readmeta(filenames[1])
+varnames = showvariables(meta)
 
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]
 
-cellids, distances, coords = get_cell_in_line(meta, point1, point2)
+cellids, distances, coords = getcellinline(meta, point1, point2)
 
 # time density temperature vx
 inputs = [
@@ -36,16 +36,16 @@ for (i, filename) in enumerate(filenames)
 
    fnameout = lpad(i, ndigits, '0')*".png"
 
-   local meta = read_meta(filename)
-   local rho = read_variable_select(meta, "proton/vg_rho", cellids)
-   local v = read_variable_select(meta, "proton/vg_v", cellids)
+   local meta = readmeta(filename)
+   local rho = readvariable(meta, "proton/vg_rho", cellids)
+   local v = readvariable(meta, "proton/vg_v", cellids)
    local vx = Vector{Float64}(undef, size(v,1))
 
    for k = 1:size(v,1)
       vx[k] = v[k][1]
    end
 
-   local t = read_parameter(meta, "time")
+   local t = readparameter(meta, "time")
 
    ax[1].plot(coords[1,:]./ Vlasiator.Re, rho, label="rho")
    ax[1].set_ylim(lim_rho)

@@ -164,13 +164,13 @@ const latexunits_predefined = Dict(
 
 # Define derived parameters
 const variables_predefined = Dict(
-   "Bmag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "vg_b_vol").^2, dims=1)), dims=1),
-   "Emag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "vg_e_vol").^2, dims=1)), dims=1),
-   "Vmag" => meta -> dropdims(sqrt.(sum(read_variable(meta, "proton/vg_v").^2, dims=1)), dims=1),
+   "Bmag" => meta -> dropdims(sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)), dims=1),
+   "Emag" => meta -> dropdims(sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)), dims=1),
+   "Vmag" => meta -> dropdims(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1)), dims=1),
    "VS" => function (meta) # sound speed
-      Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
+      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
       P = dropdims(sum(Pdiag, dims=1) ./ 3, dims=1)
-      ρm = read_variable(meta, "proton/vg_rho") .* mᵢ
+      ρm = readvariable(meta, "proton/vg_rho") .* mᵢ
       # Handle sparse storage and inner boundary
       for i = 1:length(ρm)
          ρm[i] == 0.0 && (ρm[i] = Inf)
@@ -178,56 +178,56 @@ const variables_predefined = Dict(
       vs = @. √( (P*5.0/3.0) / ρm )
    end,
    "VA" => function (meta) # Alfvén speed
-      ρm = read_variable(meta, "proton/vg_rho") .* mᵢ
+      ρm = readvariable(meta, "proton/vg_rho") .* mᵢ
       # Handle sparse storage and inner boundary
       for i = 1:length(ρm)
          ρm[i] == 0.0 && (ρm[i] = Inf)
       end
-      Bmag = get_variable_derived(meta, "Bmag")
+      Bmag = readvariable(meta, "Bmag")
       VA = @. Bmag / √(ρm*μ₀)
    end,
    "MA" => function (meta) # Alfvén Mach number
-      V = read_variable(meta, "Vmag")
-      VA = get_variable_derived(meta, "VA")
+      V = readvariable(meta, "Vmag")
+      VA = readvariable(meta, "VA")
       VA ./ V 
    end,
    "Upar" => function (meta) # velocity ∥ B
-      v = read_variable(meta, "proton/vg_v")
-      B = read_variable(meta, "vg_b_vol")
-      BmagInv = inv.(get_variable_derived(meta, "Bmag"))
+      v = readvariable(meta, "proton/vg_v")
+      B = readvariable(meta, "vg_b_vol")
+      BmagInv = inv.(readvariable(meta, "Bmag"))
       [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
    end,
    "Uperp" => function (meta) # velocity ⟂ B
-      v = read_variable(meta, "proton/vg_v")
-      B = read_variable(meta, "vg_b_vol")
-      BmagInv = inv.(get_variable_derived(meta, "Bmag"))
+      v = readvariable(meta, "proton/vg_v")
+      B = readvariable(meta, "vg_b_vol")
+      BmagInv = inv.(readvariable(meta, "Bmag"))
       upar = [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
       vmag2 = dropdims(sum(v.^2, dims=1), dims=1)
       uperp = @. √(vmag2 - upar^2) # This may be errorneous due to Float32!
    end,
    "P" => function (meta) # scalar pressure
-      Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
+      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
       P = dropdims(sum(Pdiag, dims=1) ./ 3, dims=1)
    end,
    "T" => function (meta) # scalar temperature
-      P = get_variable_derived(meta, "P")
-      n = read_variable(meta, "proton/vg_rho")
+      P = readvariable(meta, "P")
+      n = readvariable(meta, "proton/vg_rho")
       for i = 1:length(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = Inf)
       end
       T = @. P / (n*kB)
    end,
    "Tpar" => function (meta) # T component ∥ B
-      P = get_variable_derived(meta, "Protated")
-      n = read_variable(meta, "proton/vg_rho")
+      P = readvariable(meta, "Protated")
+      n = readvariable(meta, "proton/vg_rho")
       for i = 1:length(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = Inf)
       end
       @. P[3,3,:] / (n*kB) 
    end,
    "Tperp" => function (meta) # scalar T component ⟂ B
-      P = get_variable_derived(meta, "Protated")
-      n = read_variable(meta, "proton/vg_rho")
+      P = readvariable(meta, "Protated")
+      n = readvariable(meta, "proton/vg_rho")
       for i = 1:length(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = Inf)
       end
@@ -239,9 +239,9 @@ const variables_predefined = Dict(
    end,
    "Protated" => function (meta)
       # Rotate the pressure tensor to align the 3rd direction with B
-      B = read_variable(meta, "vg_b_vol")
-      Pdiag = read_variable(meta, "proton/vg_ptensor_diagonal")
-      Podiag = read_variable(meta, "proton/vg_ptensor_offdiagonal")
+      B = readvariable(meta, "vg_b_vol")
+      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
+      Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal")
       P = zeros(Float32, 3, 3, size(Pdiag, 2))
       @inbounds for i = 1:size(P, 3)
          P[1,1,i] = Pdiag[1,i]
@@ -255,24 +255,24 @@ const variables_predefined = Dict(
       P
    end,
    "Anisotropy" => function (meta) # P⟂ / P∥
-      PR = get_variable_derived(meta, "Protated")
+      PR = readvariable(meta, "Protated")
       @. 0.5*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
    end,
    "Pdynamic" => function (meta)
-      vmag = get_variable_derived(meta, "Vmag")
-      ρm = read_variable(meta, "proton/vg_rho") .* mᵢ
+      vmag = readvariable(meta, "Vmag")
+      ρm = readvariable(meta, "proton/vg_rho") .* mᵢ
       rhom.*Vmag.*Vmag
    end,
    "Poynting" => function (meta)
-      if has_variable(meta.footer, "vg_b_vol")
-         E = read_variable(meta, "vg_e_vol")
-         B = read_variable(meta, "vg_b_vol")
-      elseif has_variable(meta.footer, "B_vol")
-         E = read_variable(meta, "E_vol")
-         B = read_variable(meta, "B_vol")
+      if hasvariable(meta.footer, "vg_b_vol")
+         E = readvariable(meta, "vg_e_vol")
+         B = readvariable(meta, "vg_b_vol")
+      elseif hasvariable(meta.footer, "B_vol")
+         E = readvariable(meta, "E_vol")
+         B = readvariable(meta, "B_vol")
       else
-         E = read_variable(meta, "E")
-         B = read_variable(meta, "B")
+         E = readvariable(meta, "E")
+         B = readvariable(meta, "B")
       end
       F = similar(E)
       @inbounds for i = 1:size(F,2)
@@ -289,8 +289,8 @@ const variables_predefined = Dict(
       Qsqr = @. √(1 - 4I₂/((I₁ - Ppar)*(I₁ + 3Ppar)))
    end,
    "Beta" => function (meta)
-      Pressure = read_variable(meta, "pressure")
-      Magneticfield = P = read_variable(meta, "B")   
+      Pressure = readvariable(meta, "pressure")
+      Magneticfield = P = readvariable(meta, "B")   
       2.0 * μ₀ * Pressure / sum(Magneticfield^2)
    end,
    "IonInertial" => function (meta)

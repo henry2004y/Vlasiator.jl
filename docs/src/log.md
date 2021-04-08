@@ -1,26 +1,14 @@
 # Log
 
 This package was born when I was learning Vlasiator and its corresponding data structures.
+
+## Performance
+
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
-One of the key decision in boosting performance is to avoid the usage of dictionary with integer keys as much as possible.
 
-The function APIs are made trying to be consistent with Analysator.
+Besides the language difference in speed, one of the key decisions in boosting performance is to avoid the usage of dictionary with integer keys as much as possible.
 
-The IOstream handle for the VLSV file requires some special attention.
-In the current implementation, once the meta data is read, the file stays open until one explictly says `close(meta.fid)`.
-On the Windows platform, it is not allowed to delete the file before the IO is closed.
-However, this is allowed in Unix, so be careful.
-
-Vlasiator has come up with many different names for the same quantities, so it is really hard to collect them correctly in post-processing. Therefore for the derived quantities, it is not guaranteed to work properly. The user should be able to compute more complicated quantities given the basic outputs from the VLSV file.
-
-## Plotting Philosophy
-
-We should not take over what underlying plotting libraries like Matplotlib offers.
-Users should be able to modify the figures as they wish even if they only know how to use the well-known plotting libraries.
-Do not reinvent the wheel. For customized plotting, simply provide some sample scripts for the common tasks like zooming-in, change font sizes, add text boxes, etc..
-The original plotting APIs in Matplotlib are already complicated enough: instead of building a wrapper on top of them, it is considered a better approach to provide *recipes* such that the plotting package can understand what to do with the user defined types. Therefore the user can rely solely on the documentation of the plotting package to generate plots.
-
-## Benchmarks
+### Benchmarks
 
 Initial tests on reading variables from sample VLSV files: 
 
@@ -62,7 +50,36 @@ Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on Vor
 
 Note that the above timings are for a single CPU. With only one command added for multithreading, the Julia timings can be improved by n where n is the number of threads. For example, with 8 threads, Julia takes ~80s to finish.
 
-## Conditional Dependency
+## IO
+
+The IOstream handle for the VLSV file requires some special attention.
+In the current implementation, once the meta data is read, the file stays open until one explictly says `close(meta.fid)`.
+On the Windows platform, it is not allowed to delete the file before the IO is closed.
+However, this is allowed in Unix, so be careful.
+
+## API Design
+
+Good, uniform API design is an art.
+
+* Argument types are generally defined for APIs, but not internal functions.
+* How to get a derived quantity in a selection of cell IDs?
+
+### Naming Conventions
+
+The function APIs are made trying to be consistent with Analysator.
+However, in general we are following the [naming conventions consistent with Julia base](https://docs.julialang.org/en/v1/manual/style-guide/#Use-naming-conventions-consistent-with-Julia-base/).
+Exception to this guideline is when we call Python for plotting, where _snake case_ is applied to be consistent with Matplotlib.
+
+Vlasiator has come up with many different names for the same quantities, so it is really hard to collect them correctly in post-processing. Therefore for the derived quantities, it is not guaranteed to work properly. The user should be able to compute more complicated quantities given the basic outputs from the VLSV file.
+
+### Plotting Philosophy
+
+We should not take over what underlying plotting libraries like Matplotlib offers.
+Users should be able to modify the figures as they wish even if they only know how to use the well-known plotting libraries.
+Do not reinvent the wheel. For customized plotting, simply provide some sample scripts for the common tasks like zooming-in, change font sizes, add text boxes, etc..
+The original plotting APIs in Matplotlib are already complicated enough: instead of building a wrapper on top of them, it is considered a better approach to provide *recipes* such that the plotting package can understand what to do with the user defined types. Therefore the user can rely solely on the documentation of the plotting package to generate plots.
+
+### Conditional Dependency
 
 There are certain packages that I don't want to include as dependencies, but instead I want to compile some glue codes if they are loaded. For example, I do not want to include any plotting packages as dependencies because either they are heavy-weighted, or incompatible with one another if one wants to switch.
 

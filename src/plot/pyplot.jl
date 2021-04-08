@@ -50,8 +50,8 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
    end
 
-   if has_variable(meta.footer, var)
-      data = read_variable(meta, var)
+   if hasvariable(meta.footer, var)
+      data = readvariable(meta, var)
    else
       data = Vlasiator.variables_predefined[var](meta)
    end
@@ -121,7 +121,7 @@ function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
 end
 
 """
-    plot_colormap3dslice(meta::MetaData, var, ax=nothing (...))
+    plot_colormap3dslice(meta, var, ax=nothing (...))
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data. If `ax` is provided, then
 it will plot on that axes.
@@ -154,8 +154,8 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
    plotrange = pArgs.plotrange
    idlist, indexlist = pArgs.idlist, pArgs.indexlist
 
-   if has_variable(meta.footer, var)
-      data = read_variable(meta, var)
+   if hasvariable(meta.footer, var)
+      data = readvariable(meta, var)
    else
       data = Vlasiator.variables_predefined[var](meta)
    end
@@ -172,7 +172,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
 
       # Create the plotting grid
       if ndims(data) == 1
-         data = refine_data(meta, idlist, data, maxreflevel, normal)
+         data = refinedata(meta, idlist, data, maxreflevel, normal)
       elseif ndims(data) == 2
          if op in (:x, :y, :z)
             if op == :x
@@ -182,11 +182,11 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
             elseif op == :z
                slice = @view data[3,:]
             end
-            data = refine_data(meta, idlist, slice, maxreflevel, normal)
+            data = refinedata(meta, idlist, slice, maxreflevel, normal)
          elseif op == :mag
-            datax = @views refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-            datay = @views refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-            dataz = @views refine_data(meta, idlist, data[3,:], maxreflevel, normal)
+            datax = @views refinedata(meta, idlist, data[1,:], maxreflevel, normal)
+            datay = @views refinedata(meta, idlist, data[2,:], maxreflevel, normal)
+            dataz = @views refinedata(meta, idlist, data[3,:], maxreflevel, normal)
             data = hypot.(datax, datay, dataz)
          end
 
@@ -205,7 +205,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
-   cnorm, cticks = set_colorbar(data, pArgs)
+   cnorm, cticks = set_colorbar(pArgs, data)
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -221,8 +221,8 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 
    sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
-   if has_variable(meta.footer, var)
-      dataRaw = read_variable(meta, var)
+   if hasvariable(meta.footer, var)
+      dataRaw = readvariable(meta, var)
    else
       dataRaw = Vlasiator.variables_predefined[var](meta)
    end
@@ -259,7 +259,7 @@ end
 function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
    vmin=-Inf, vmax=Inf)
 
-   maxreflevel = get_max_amr_level(meta)
+   maxreflevel = getmaxamr(meta)
 
    if normal == :x
       sizes = [meta.ycells, meta.zcells]
@@ -267,7 +267,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
       sliceoffset = abs(meta.xmin) + origin
       axislabels = ['Y','Z']
 
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
          xmin=meta.xmin, xmax=meta.xmax)
    elseif normal == :y
       sizes = [meta.xcells, meta.zcells]
@@ -275,7 +275,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
       sliceoffset = abs(meta.ymin) + origin
       axislabels = ['X','Z']
 
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
          ymin=meta.ymin, ymax=meta.ymax)
    elseif normal == :z
       sizes = [meta.xcells, meta.ycells]
@@ -283,7 +283,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
       sliceoffset = abs(meta.zmin) + origin
       axislabels = ['X','Y']
 
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
          zmin=meta.zmin, zmax=meta.zmax)
    else
       idlist = Int64[]
@@ -308,11 +308,11 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
    strx = latexstring(axislabels[1]*"["*axisunit*"]")
    stry = latexstring(axislabels[2]*"["*axisunit*"]")
 
-   if has_parameter(meta, "t")
-      timesim = read_parameter(meta, "t")
+   if hasparameter(meta, "t")
+      timesim = readparameter(meta, "t")
       str_title = @sprintf "t= %4.1fs" timesim
-   elseif has_parameter(meta, "time")
-      timesim = read_parameter(meta, "time")
+   elseif hasparameter(meta, "time")
+      timesim = readparameter(meta, "time")
       str_title = @sprintf "t= %4.1fs" timesim
    else
       str_title = ""
@@ -320,7 +320,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
 
    cmap = matplotlib.cm.turbo
 
-   datainfo = read_variable_info(meta, var)
+   datainfo = readvariableinfo(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
@@ -411,14 +411,14 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    unit == "Re" && (location ./= Vlasiator.Re)
 
    if pop == "proton"
-      if !Vlasiator.has_name(meta.footer, "BLOCKIDS", "proton")
-         if Vlasiator.has_name(meta.footer, "BLOCKIDS", "avgs") # old versions
+      if !Vlasiator.hasname(meta.footer, "BLOCKIDS", "proton")
+         if Vlasiator.hasname(meta.footer, "BLOCKIDS", "avgs") # old versions
             pop = "avgs"
          else
             @error "Unable to detect population "*pop
          end
       end
-   elseif !Vlasiator.has_name(meta.footer, "BLOCKIDS", pop)
+   elseif !Vlasiator.hasname(meta.footer, "BLOCKIDS", pop)
       @error "Unable to detect population "*pop
    end
 
@@ -429,49 +429,49 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
 
    cellids = Int[]
    for i = 1:size(location, 2)
-      cidReq = get_cellid(meta, [xReq[i], yReq[i], zReq[i]])
-      cidNearest = getNearestCellWithVspace(meta, cidReq)
+      cidReq = getcell(meta, [xReq[i], yReq[i], zReq[i]])
+      cidNearest = getnearestcellwithvdf(meta, cidReq)
 
       if verbose
          @info "Point: $i out of $(size(location, 2)) requested"
          @info "Original coordinates : $(xReq[i]), $(yReq[i]), $(zReq[i])"
-         @info "Original cell        : $(get_cell_coordinates(meta, cidReq))"
-         @info "Nearest cell with VDF: $(get_cell_coordinates(meta, cidNearest))"
+         @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
+         @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
       end
       push!(cellids, cidNearest)
    end
    sort!(cellids); unique!(cellids)
 
    for cid in cellids
-      x, y, z = get_cell_coordinates(meta, cid)
+      x, y, z = getcellcoordinates(meta, cid)
       verbose && @info "cellid $cid, x = $x, y = $y, z = $z"
 
       # Extracts Vbulk
-      if has_variable(meta.footer, "moments")
+      if hasvariable(meta.footer, "moments")
          # This should be a restart file
-         Vbulk = read_variable_select(meta, "restart_V", cid)
-      elseif has_variable(meta.footer, pop*"/vg_v")
+         Vbulk = readvariable(meta, "restart_V", cid)
+      elseif hasvariable(meta.footer, pop*"/vg_v")
          # multipop v5 bulk file
-         Vbulk = read_variable_select(meta, pop*"/vg_v", cid)
-      elseif has_variable(meta.footer, pop*"/V")
+         Vbulk = readvariable(meta, pop*"/vg_v", cid)
+      elseif hasvariable(meta.footer, pop*"/V")
          # multipop bulk file
-         Vbulk = read_variable_select(meta, pop*"/V", cid)
+         Vbulk = readvariable(meta, pop*"/V", cid)
       else
          # regular bulk file, currently analysator supports pre- and
          # post-multipop files with "V"
-         Vbulk = read_variable(meta, "V", cid)
+         Vbulk = readvariable(meta, "V", cid)
       end
 
       for f in ("fsaved", "vg_f_saved")
-         if has_variable(meta.footer, f) &&
-            read_variable_select(meta, f, cid) != 1.0
+         if hasvariable(meta.footer, f) &&
+            readvariable(meta, f, cid) != 1.0
             @error "VDF not found in the given cell!"
          end
       end
       
-      vcellids, vcellf = read_velocity_cells(meta, cid; pop)
+      vcellids, vcellf = readvcells(meta, cid; pop)
 
-      V = get_velocity_cell_coordinates(meta, vcellids; pop)
+      V = getvcellcoordinates(meta, vcellids; pop)
 
       if center == "bulk" # center with bulk velocity
          verbose && @info "Transforming to plasma frame"
@@ -484,11 +484,10 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
       end
 
       # Set sparsity threshold
-      if has_variable(meta.footer, pop*"/EffectiveSparsityThreshold")
-         fThreshold = read_variable_select(meta,
-            pop*"/EffectiveSparsityThreshold", cid)
-      elseif has_variable(meta.footer, pop*"/vg_effectivesparsitythreshold")
-         fThreshold = read_variable_select(meta,
+      if hasvariable(meta.footer, pop*"/EffectiveSparsityThreshold")
+         fThreshold = readvariable(meta, pop*"/EffectiveSparsityThreshold", cid)
+      elseif hasvariable(meta.footer, pop*"/vg_effectivesparsitythreshold")
+         fThreshold = readvariable(meta,
             pop+"/vg_effectivesparsitythreshold", cid)
       else
          verbose && @info "Using a default f threshold value of 1e-16."
@@ -500,11 +499,11 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
       f = vcellf[fselect_]
       V = V[:,fselect_]
 
-      if has_parameter(meta, "t")
-         timesim = read_parameter(meta, "t")
+      if hasparameter(meta, "t")
+         timesim = readparameter(meta, "t")
          str_title = @sprintf "t= %4.1fs" timesim
-      elseif has_parameter(meta, "time")
-         timesim = read_parameter(meta, "time")
+      elseif hasparameter(meta, "time")
+         timesim = readparameter(meta, "time")
          str_title = @sprintf "t= %4.1fs" timesim
       else
          str_title = ""
@@ -526,10 +525,10 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
          stry = "vy [km/s]"
       elseif slicetype in ("bperp", "bpar", "bpar1")
          # If necessary, find magnetic field
-         if has_variable(meta.footer, "B_vol")
-            B = read_variable_select(meta, "B_vol", cid)
-         elseif has_variable(meta.footer, "vg_b_vol")
-            B = read_variable_select(meta, "vg_b_vol", cid)
+         if hasvariable(meta.footer, "B_vol")
+            B = readvariable(meta, "B_vol", cid)
+         elseif hasvariable(meta.footer, "vg_b_vol")
+            B = readvariable(meta, "vg_b_vol", cid)
          end
          BxV = B × Vbulk
          if slicetype == "bperp" # slice in b_perp1/b_perp2

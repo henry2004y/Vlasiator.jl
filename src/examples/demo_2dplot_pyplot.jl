@@ -3,7 +3,7 @@
 # Reading 2D simulation data, zooming-in to a region of interest,
 # adding streamlines and contour at specific levels on top of colored mesh.
 #
-# Hongyang Zhou, hyzhou@umich.edu 01/25/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot
 
@@ -11,7 +11,7 @@ filename = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
 
-meta = read_meta(filename)
+meta = readmeta(filename)
 
 plot_pcolormesh(meta, nameρ)
 streamline(meta, nameV, comp="xy", color="w", density=2.0)

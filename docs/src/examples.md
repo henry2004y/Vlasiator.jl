@@ -5,36 +5,36 @@
 - Read meta data
 ```
 filename = "bulk.0000004.vlsv"
-meta = read_meta(filename)
+meta = readmeta(filename)
 ```
 
 - Display all variable names
 ```
-vars = show_variables(meta)
+vars = showvariables(meta)
 ```
 
 - Read variable
 ```
-data = read_variable(meta, "proton/vg_rho")
+data = readvariable(meta, "proton/vg_rho")
 ```
 
 The same interface works for both DCCRG grid and FS grid variables.
 By default the returned DCCRG grid variable array is sorted by cell IDs.
 If in any case you want the original unsorted version as being stored in the file,
-simply say `read_variable(meta, var, false)`.
+simply say `readvariable(meta, var, false)`.
 
 - Get variable at a given location (This can be simplified even further later!)
 ```
 loc = [2.0, 0.0, 0.0]
-id = get_cellid(meta, loc)
-read_variable_select(meta, "proton/vg_rho", id)
+id = getcell(meta, loc)
+readvariable(meta, "proton/vg_rho", id)
 ```
 
 - Get variable along a line between two points
 ```
 point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
-cellids, distances, coords = get_cell_in_line(meta, point1, point2)
+cellids, distances, coords = getcellinline(meta, point1, point2)
 ```
 
 Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl), it is possible to do all kinds of in-depth analysis.
@@ -50,7 +50,7 @@ To avoid confusion about variable names, the convention here is that
 
 To obtain a derived quantity, for example,
 ```
-beta = get_variable_derived(meta, "Beta")
+beta = readvariable(meta, "Beta")
 ```
 
 Here is a full list of available quantities[^1]:
@@ -181,9 +181,9 @@ jl = Julia(compiled_modules=False)
 
 from julia import Vlasiator
 filename = "bulk1.0001000.vlsv"
-meta = Vlasiator.read_meta(filename)
+meta = Vlasiator.readmeta(filename)
 var = "proton/vg_rho"
-data = Vlasiator.read_variable(meta, var)
+data = Vlasiator.readvariable(meta, var)
 ```
 
 To run a Julia script in Python,
