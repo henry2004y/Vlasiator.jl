@@ -103,17 +103,18 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          plot_line(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == ρ
+         close(meta.fid)
 
          # 2D
          meta = readmeta(filenames[2])
          p = plot_pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
+         close(meta.fid)
 
          # 3D AMR
          meta = readmeta(filenames[3])
          p = plot_colormap3dslice(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
-
          close(meta.fid)
       end
    end
