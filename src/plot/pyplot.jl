@@ -441,220 +441,210 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
       @error "Unable to detect population "*pop
    end
 
-   # Calculate cell IDs from given coordinates        
-   xReq = @view location[1,:]
-   yReq = @view location[2,:]
-   zReq = @view location[3,:]
+   # Calculate cell ID from given coordinates
+   cidReq = getcell(meta, location)
+   cidNearest = getnearestcellwithvdf(meta, cidReq)
 
-   cellids = Int[]
-   for i = 1:size(location, 2)
-      cidReq = getcell(meta, [xReq[i], yReq[i], zReq[i]])
-      cidNearest = getnearestcellwithvdf(meta, cidReq)
-
-      if verbose
-         @info "Point: $i out of $(size(location, 2)) requested"
-         @info "Original coordinates : $(xReq[i]), $(yReq[i]), $(zReq[i])"
-         @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
-         @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
-      end
-      push!(cellids, cidNearest)
+   if verbose
+      @info "Original coordinates : $location"
+      @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
+      @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
    end
-   sort!(cellids); unique!(cellids)
 
-   for cid in cellids
-      x, y, z = getcellcoordinates(meta, cid)
-      verbose && @info "cellid $cid, x = $x, y = $y, z = $z"
+   x, y, z = getcellcoordinates(meta, cidNearest)
+   verbose && @info "cellid $cidNearest, x = $x, y = $y, z = $z"
 
-      # Extracts Vbulk
-      if hasvariable(meta.footer, "moments")
-         # This should be a restart file
-         Vbulk = readvariable(meta, "restart_V", cid)
-      elseif hasvariable(meta.footer, pop*"/vg_v")
-         # multipop v5 bulk file
-         Vbulk = readvariable(meta, pop*"/vg_v", cid)
-      elseif hasvariable(meta.footer, pop*"/V")
-         # multipop bulk file
-         Vbulk = readvariable(meta, pop*"/V", cid)
-      else
-         # regular bulk file, currently analysator supports pre- and
-         # post-multipop files with "V"
-         Vbulk = readvariable(meta, "V", cid)
+   # Extracts Vbulk
+   if hasvariable(meta.footer, "moments")
+      # This should be a restart file
+      Vbulk = readvariable(meta, "restart_V", cidNearest)
+   elseif hasvariable(meta.footer, pop*"/vg_v")
+      # multipop v5 bulk file
+      Vbulk = readvariable(meta, pop*"/vg_v", cidNearest)
+   elseif hasvariable(meta.footer, pop*"/V")
+      # multipop bulk file
+      Vbulk = readvariable(meta, pop*"/V", cidNearest)
+   else
+      # regular bulk file, currently analysator supports pre- and
+      # post-multipop files with "V"
+      Vbulk = readvariable(meta, "V", cidNearest)
+   end
+
+   for f in ("fsaved", "vg_f_saved")
+      if hasvariable(meta.footer, f) &&
+         readvariable(meta, f, cidNearest) != 1.0
+         @error "VDF not found in the given cell!"
       end
-
-      for f in ("fsaved", "vg_f_saved")
-         if hasvariable(meta.footer, f) &&
-            readvariable(meta, f, cid) != 1.0
-            @error "VDF not found in the given cell!"
-         end
-      end
+   end
       
-      vcellids, vcellf = readvcells(meta, cid; pop)
+   vcellids, vcellf = readvcells(meta, cidNearest; pop)
 
-      V = getvcellcoordinates(meta, vcellids; pop)
+   V = getvcellcoordinates(meta, vcellids; pop)
 
-      if center == "bulk" # center with bulk velocity
-         verbose && @info "Transforming to plasma frame"
-         V -= Vbulk
-      elseif center == "peak" # center on highest f-value
-         peakindex = argmax(vcellf)
-         Vpeak = V[:,peakindex]
-         V -= Vpeak
-         verbose && "Plot in frame of peak f-value, travelling at speed $Vpeak"
-      end
-
-      # Set sparsity threshold
-      if hasvariable(meta.footer, pop*"/EffectiveSparsityThreshold")
-         fThreshold = readvariable(meta, pop*"/EffectiveSparsityThreshold", cid)
-      elseif hasvariable(meta.footer, pop*"/vg_effectivesparsitythreshold")
-         fThreshold = readvariable(meta,
-            pop+"/vg_effectivesparsitythreshold", cid)
-      else
-         verbose && @info "Using a default f threshold value of 1e-16."
-         fThreshold = 1e-16
-      end
-
-      # Drop all velocity cells which are below the sparsity threshold
-      fselect_ = vcellf .≥ fThreshold
-      f = vcellf[fselect_]
-      V = V[:,fselect_]
-
-      if hasparameter(meta, "t")
-         timesim = readparameter(meta, "t")
-         str_title = @sprintf "t= %4.1fs" timesim
-      elseif hasparameter(meta, "time")
-         timesim = readparameter(meta, "time")
-         str_title = @sprintf "t= %4.1fs" timesim
-      else
-         str_title = ""
-      end
-
-      # Set normal direction
-      if ysize == 1 && zsize == 1 # 1D, select xz
-         slicetype = "xz"
-         sliceNormal = [0., 1., 0.]
-         strx = "vx [km/s]"
-         stry = "vz [km/s]"
-      elseif ysize == 1 && slicetype == "xz" # polar
-         sliceNormal = [0., 1., 0.]
-         strx = "vx [km/s]"
-         stry = "vz [km/s]"
-      elseif zsize == 1 && slicetype == "xy" # ecliptic
-         sliceNormal = [0., 0., 1.]
-         strx = "vx [km/s]"
-         stry = "vy [km/s]"
-      elseif slicetype in ("bperp", "bpar", "bpar1")
-         # If necessary, find magnetic field
-         if hasvariable(meta.footer, "B_vol")
-            B = readvariable(meta, "B_vol", cid)
-         elseif hasvariable(meta.footer, "vg_b_vol")
-            B = readvariable(meta, "vg_b_vol", cid)
-         end
-         BxV = B × Vbulk
-         if slicetype == "bperp" # slice in b_perp1/b_perp2
-            sliceNormal = B ./ norm(B)
-            strx = L"$v_{B \times V}$ "
-            stry = L"$v_{B \times (B \times V)}$ "
-         elseif slicetype == "bpar1" # slice in b_parallel/b_perp1 plane
-            sliceNormal = B × BxV
-            sliceNormal ./= norm(sliceNormal)
-            strx = L"$v_{B}$ "
-            stry = L"$v_{B \times V}$ "
-         else # slice in b_parallel/b_perp2 plane
-            sliceNormal = BxV ./ norm(BxV)
-            strx = L"$v_{B}$ "
-            stry = L"$v_{B \times (B \times V)}$ "
-         end
-      end
-
-      if slicetype == "xy"
-         v1 = V[1,:]
-         v2 = V[2,:]
-         vnormal = V[3,:]
-      elseif slicetype == "yz"
-         v1 = V[2,:]
-         v2 = V[3,:]
-         vnormal = V[1,:]
-      elseif slicetype == "xz"
-         v1 = V[1,:]
-         v2 = V[3,:]
-         vnormal = V[2,:]
-      elseif slicetype ∈ ("Bperp", "Bpar", "Bpar1")
-         #hyzhou: NOT working yet!
-         if slicetype == "Bperp"
-            v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
-            v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-            vnormal = Vrot2[3,:] # the Z axis of the slice is B
-         elseif slicetype == "Bpar"
-            v1 = Vrot2[3,:] # the X axis of the slice is B
-            v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-            vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
-         elseif slicetype == "Bpara1"
-            v1 = Vrot2[3,:] # the X axis of the slice is B
-            v2 = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
-            vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
-         end
-      end
-
-      # Weights using particle flux or phase-space density
-      fw = weight == :flux ? f*norm([v1, v2, vnormal]) : f
-
-      if verbose
-         if vslicethick > 0
-            @info "Performing slice with a counting thickness of $vslicethick"
-         else
-            @info "Projecting total VDF to a single plane"
-         end
-      end
-
-      if vslicethick < 0 # Trying to set a proper value automatically
-         # Assure that the slice cut through at least 1 velocity cell
-         if any(sliceNormal .== 1.0)
-            vslicethick = cellsize
-         else # Assume cubic vspace grid, add extra space
-            vslicethick = cellsize*(√3+0.05)
-         end
-      end
-
-      # Select cells which are within slice area
-      if vslicethick > 0.0
-         ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
-                 (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
-      else
-         ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
-      end
-
-      # [m/s] --> [km/s]
-      unitfactor = 1e3
-      v1, v2, fw = v1[ind_]./unitfactor, v2[ind_]./unitfactor, fw[ind_]
-
-      isinf(fmin) && (fmin = minimum(fw))
-      isinf(fmax) && (fmax = maximum(fw))
-
-      verbose && @info "Active f range is $fmin, $fmax"
-
-      if isnothing(ax) ax = plt.gca() end
-
-      cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
-      cmap = matplotlib.cm.turbo
-
-      rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
-      ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
-
-      h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm, cmap=cmap)
-
-      ax.set_title(str_title, fontsize=14, fontweight="bold")
-      ax.set_xlabel(strx, fontsize=14, weight="black")
-      ax.set_ylabel(stry, fontsize=14, weight="black")
-      ax.set_aspect("equal")
-      ax.grid(color="grey", linestyle="-")
-
-      cb = colorbar(h[4], ax=ax, fraction=0.046, pad=0.04)
-      cb_title = cb.ax.set_ylabel("f(v)", fontsize=14)
-
-      if slicetype in ("bperp", "bpar", "bpar1")
-         # Draw vector of magnetic field direction
-      end
-      plt.tight_layout()
+   if center == "bulk" # center with bulk velocity
+      verbose && @info "Transforming to plasma frame"
+      V -= Vbulk
+   elseif center == "peak" # center on highest f-value
+      peakindex = argmax(vcellf)
+      Vpeak = V[:,peakindex]
+      V -= Vpeak
+      verbose && "Plot in frame of peak f-value, travelling at speed $Vpeak"
    end
 
+   # Set sparsity threshold
+   if hasvariable(meta.footer, pop*"/EffectiveSparsityThreshold")
+      fThreshold = readvariable(meta,
+         pop*"/EffectiveSparsityThreshold", cidNearest)
+   elseif hasvariable(meta.footer, pop*"/vg_effectivesparsitythreshold")
+      fThreshold = readvariable(meta,
+         pop+"/vg_effectivesparsitythreshold", cidNearest)
+   else
+      verbose && @info "Using a default f threshold value of 1e-16."
+      fThreshold = 1e-16
+   end
+
+   # Drop all velocity cells which are below the sparsity threshold
+   fselect_ = vcellf .≥ fThreshold
+   f = vcellf[fselect_]
+   V = V[:,fselect_]
+
+   if hasparameter(meta, "t")
+      timesim = readparameter(meta, "t")
+      str_title = @sprintf "t= %4.1fs" timesim
+   elseif hasparameter(meta, "time")
+      timesim = readparameter(meta, "time")
+      str_title = @sprintf "t= %4.1fs" timesim
+   else
+      str_title = ""
+   end
+
+   # Set normal direction
+   if ysize == 1 && zsize == 1 # 1D, select xz
+      slicetype = "xz"
+      sliceNormal = [0., 1., 0.]
+      strx = "vx [km/s]"
+      stry = "vz [km/s]"
+   elseif ysize == 1 && slicetype == "xz" # polar
+      sliceNormal = [0., 1., 0.]
+      strx = "vx [km/s]"
+      stry = "vz [km/s]"
+   elseif zsize == 1 && slicetype == "xy" # ecliptic
+      sliceNormal = [0., 0., 1.]
+      strx = "vx [km/s]"
+      stry = "vy [km/s]"
+   elseif slicetype in ("bperp", "bpar", "bpar1")
+      # If necessary, find magnetic field
+      if hasvariable(meta.footer, "B_vol")
+         B = readvariable(meta, "B_vol", cidNearest)
+      elseif hasvariable(meta.footer, "vg_b_vol")
+         B = readvariable(meta, "vg_b_vol", cidNearest)
+      end
+      BxV = B × Vbulk
+      if slicetype == "bperp" # slice in b_perp1/b_perp2
+         sliceNormal = B ./ norm(B)
+         strx = L"$v_{B \times V}$ "
+         stry = L"$v_{B \times (B \times V)}$ "
+      elseif slicetype == "bpar1" # slice in b_parallel/b_perp1 plane
+         sliceNormal = B × BxV
+         sliceNormal ./= norm(sliceNormal)
+         strx = L"$v_{B}$ "
+         stry = L"$v_{B \times V}$ "
+      else # slice in b_parallel/b_perp2 plane
+         sliceNormal = BxV ./ norm(BxV)
+         strx = L"$v_{B}$ "
+         stry = L"$v_{B \times (B \times V)}$ "
+      end
+   end
+
+   if slicetype == "xy"
+      v1 = V[1,:]
+      v2 = V[2,:]
+      vnormal = V[3,:]
+   elseif slicetype == "yz"
+      v1 = V[2,:]
+      v2 = V[3,:]
+      vnormal = V[1,:]
+   elseif slicetype == "xz"
+      v1 = V[1,:]
+      v2 = V[3,:]
+      vnormal = V[2,:]
+   elseif slicetype ∈ ("Bperp", "Bpar", "Bpar1")
+      #hyzhou: NOT working yet!
+      if slicetype == "Bperp"
+         v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
+         v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
+         vnormal = Vrot2[3,:] # the Z axis of the slice is B
+      elseif slicetype == "Bpar"
+         v1 = Vrot2[3,:] # the X axis of the slice is B
+         v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
+         vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
+      elseif slicetype == "Bpara1"
+         v1 = Vrot2[3,:] # the X axis of the slice is B
+         v2 = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
+         vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
+      end
+   end
+
+   # Weights using particle flux or phase-space density
+   fw = weight == :flux ? f*norm([v1, v2, vnormal]) : f
+
+   if verbose
+      if vslicethick > 0
+         @info "Performing slice with a counting thickness of $vslicethick"
+      else
+         @info "Projecting total VDF to a single plane"
+      end
+   end
+
+   if vslicethick < 0 # Trying to set a proper value automatically
+      # Assure that the slice cut through at least 1 velocity cell
+      if any(sliceNormal .== 1.0)
+         vslicethick = cellsize
+      else # Assume cubic vspace grid, add extra space
+         vslicethick = cellsize*(√3+0.05)
+      end
+   end
+
+   # Select cells which are within slice area
+   if vslicethick > 0.0
+      ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
+              (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+   else
+      ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+   end
+
+   # [m/s] --> [km/s]
+   unitfactor = 1e3
+   v1, v2, fw = v1[ind_]./unitfactor, v2[ind_]./unitfactor, fw[ind_]
+
+   isinf(fmin) && (fmin = minimum(fw))
+   isinf(fmax) && (fmax = maximum(fw))
+
+   verbose && @info "Active f range is $fmin, $fmax"
+
+   if isnothing(ax) ax = plt.gca() end
+
+   cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
+   cmap = matplotlib.cm.turbo
+
+   rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
+   ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
+
+   h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm, cmap=cmap)
+
+   ax.set_title(str_title, fontsize=14, fontweight="bold")
+   ax.set_xlabel(strx, fontsize=14, weight="black")
+   ax.set_ylabel(stry, fontsize=14, weight="black")
+   ax.set_aspect("equal")
+   ax.grid(color="grey", linestyle="-")
+
+   cb = colorbar(h[4], ax=ax, fraction=0.046, pad=0.04)
+   cb_title = cb.ax.set_ylabel("f(v)", fontsize=14)
+
+   if slicetype in ("bperp", "bpar", "bpar1")
+      # Draw vector of magnetic field direction
+   end
+   plt.tight_layout()
+
+   h[4] # h[1] is 2D data, h[2] is x axis, h[3] is y axis
 end

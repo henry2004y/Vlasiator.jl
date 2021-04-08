@@ -36,7 +36,7 @@ function get_rotation_matrix(v, θ)
 end
 
 """
-    getRotationB(B)
+    getRotationB(B) -> SMatrix
 
 Obtain a rotation matrix with each column being a unit vector which is parallel
 (`v3`) and perpendicular (`v1,v2`) to the magnetic field `B`. The two
@@ -60,12 +60,23 @@ function getRotationB(B)
    R
 end
 
-"Rotate the tensor `T` with the 1st direction aligned with `B`."
+"""
+    rotateWithB(T, B) -> Matrix
+
+Rotate the tensor `T` with the 3rd direction aligned with `B`.
+See also: [`rotateWithB!`](@ref)
+"""
 function rotateWithB(T, B)
    R = getRotationB(B)
    R * T * R'
 end
 
+"""
+    rotateWithB!(T, B)
+
+Rotate the tensor `T` with the 3rd direction aligned with `B`.
+See also: [`rotateWithB`](@ref)
+"""
 function rotateWithB!(T, B)
    R = getRotationB(B)
    T[:] = R * T * R'

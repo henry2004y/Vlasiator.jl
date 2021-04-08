@@ -93,6 +93,17 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
       end
    end
 
+   if group in (:rotation, :all)
+      @testset "Rotation" begin
+         using LinearAlgebra
+         T = Diagonal([1.0, 2.0, 3.0])
+         B = [0.0, 1.0, 0.0]
+         Vlasiator.rotateWithB!(T, B)
+         @test T == Diagonal([1.0, 3.0, 2.0])
+         @test Vlasiator.rotateWithB(T, B) == Diagonal([1.0, 2.0, 3.0])
+      end
+   end
+
    if group in (:plot, :all)
       @testset "Plotting" begin
          using PyPlot
@@ -103,6 +114,9 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          plot_line(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == ρ
+         loc = [2.0, 0.0, 0.0]
+         p = plot_vdf(meta, loc)
+         @test p.get_array()[786] ≈ 229.8948609959216
          close(meta.fid)
 
          # 2D
