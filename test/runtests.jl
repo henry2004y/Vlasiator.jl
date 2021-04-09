@@ -72,8 +72,15 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test sum(data) ≈ 7.690352275026747e8
 
          # AMR level
-         @test getmaxamr(metaAMR) == 2
+         nAMR = getmaxamr(metaAMR)
+         @test nAMR == 2
          @test getamr(metaAMR, idlist[1]) == 1
+
+         # FS grid
+         data = readvariable(metaAMR, "fg_e")
+         @test size(data) == (3, metaAMR.xcells*nAMR^2, metaAMR.ycells*nAMR^2, metaAMR.zcells*nAMR^2)
+         @test data[:,16,8,8] == [-1.3758785f-7, 3.2213068f-4, -3.1518404f-4]
+            
 
          # Compare two VLSV files
          @test compare(filenames[1], filenames[1])
@@ -87,8 +94,48 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
    if group in (:derive, :all)
       @testset "Derived variables" begin
          meta = readmeta(filenames[1])
-         V = readvariable(meta, "Vmag") # derived quantity
+         V = readvariable(meta, "Vmag")
          @test sortperm(V) == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
+         close(meta.fid)
+
+         meta = readmeta(filenames[2])
+         B = readvariable(meta, "Bmag")
+         @test B[4] ≈ 3.005215661015543e-9
+
+         VS = readvariable(meta, "VS")
+         @test maximum(VS) == 1.3726345926284448e6
+
+         VA = readvariable(meta, "VA")
+         @test maximum(VA) == 2.3202627284651753e8
+
+         MA = readvariable(meta, "MA")
+         @test MA[end] == 0.09345330716812077
+
+         Vpar = readvariable(meta, "Vpar")
+         @test Vpar[1] == 698735.3045881701
+
+         Vperp = readvariable(meta, "Vperp")
+         @test Vperp[1] == 40982.48109657114
+
+         T = readvariable(meta, "T")
+         @test T[1] == 347619.97307130496
+
+         Beta = readvariable(meta, "Beta")
+         @test Beta[1] == 1.3359065776791028
+
+         Poynting = readvariable(meta, "Poynting")
+         @test Poynting[:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
+
+         di = readvariable(meta, "IonInertial")
+         @test di[1] == 8.584026161906034e7
+
+         rg = readvariable(meta, "Larmor")
+         @test rg[1] == 142415.61376655987
+
+         #Anisotropy = readvariable(meta, "Anisotropy")
+
+         #Agyrotropy = readvariable(metam "Agyrotropy")
+
          close(meta.fid)
       end
    end

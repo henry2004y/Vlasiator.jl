@@ -30,7 +30,7 @@ end
 Plot `var` from `meta` of 1D VLSV data.
 """
 function plot_line(meta, var; kwargs...)
-   if hasvariable(meta.footer, var)
+   if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
       data = Vlasiator.variables_predefined[var](meta)
@@ -67,7 +67,7 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
    end
 
-   if hasvariable(meta.footer, var)
+   if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
       data = Vlasiator.variables_predefined[var](meta)
@@ -171,7 +171,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
    plotrange = pArgs.plotrange
    idlist, indexlist = pArgs.idlist, pArgs.indexlist
 
-   if hasvariable(meta.footer, var)
+   if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
       data = Vlasiator.variables_predefined[var](meta)
@@ -238,7 +238,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 
    sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
-   if hasvariable(meta.footer, var)
+   if hasvariable(meta, var)
       dataRaw = readvariable(meta, var)
    else
       dataRaw = Vlasiator.variables_predefined[var](meta)
@@ -455,13 +455,13 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    verbose && @info "cellid $cidNearest, x = $x, y = $y, z = $z"
 
    # Extracts Vbulk
-   if hasvariable(meta.footer, "moments")
+   if hasvariable(meta, "moments")
       # This should be a restart file
       Vbulk = readvariable(meta, "restart_V", cidNearest)
-   elseif hasvariable(meta.footer, pop*"/vg_v")
+   elseif hasvariable(meta, pop*"/vg_v")
       # multipop v5 bulk file
       Vbulk = readvariable(meta, pop*"/vg_v", cidNearest)
-   elseif hasvariable(meta.footer, pop*"/V")
+   elseif hasvariable(meta, pop*"/V")
       # multipop bulk file
       Vbulk = readvariable(meta, pop*"/V", cidNearest)
    else
@@ -471,7 +471,7 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    end
 
    for f in ("fsaved", "vg_f_saved")
-      if hasvariable(meta.footer, f) &&
+      if hasvariable(meta, f) &&
          readvariable(meta, f, cidNearest) != 1.0
          @error "VDF not found in the given cell!"
       end
@@ -492,10 +492,10 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    end
 
    # Set sparsity threshold
-   if hasvariable(meta.footer, pop*"/EffectiveSparsityThreshold")
+   if hasvariable(meta, pop*"/EffectiveSparsityThreshold")
       fThreshold = readvariable(meta,
          pop*"/EffectiveSparsityThreshold", cidNearest)
-   elseif hasvariable(meta.footer, pop*"/vg_effectivesparsitythreshold")
+   elseif hasvariable(meta, pop*"/vg_effectivesparsitythreshold")
       fThreshold = readvariable(meta,
          pop+"/vg_effectivesparsitythreshold", cidNearest)
    else
@@ -534,9 +534,9 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
       stry = "vy [km/s]"
    elseif slicetype in ("bperp", "bpar", "bpar1")
       # If necessary, find magnetic field
-      if hasvariable(meta.footer, "B_vol")
+      if hasvariable(meta, "B_vol")
          B = readvariable(meta, "B_vol", cidNearest)
-      elseif hasvariable(meta.footer, "vg_b_vol")
+      elseif hasvariable(meta, "vg_b_vol")
          B = readvariable(meta, "vg_b_vol", cidNearest)
       end
       BxV = B × Vbulk

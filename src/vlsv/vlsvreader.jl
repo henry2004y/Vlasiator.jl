@@ -296,7 +296,7 @@ function readvariableinfo(meta, var)
       varname = var
    end
 
-   if hasvariable(meta.footer, var)
+   if hasvariable(meta, var)
       if varname[1:3] == "vg_" || varname[1:3] == "fg_"
          # For Vlasiator 5 vlsv files, metadata is included
 
@@ -485,7 +485,7 @@ function calcLocalSize(globalCells, nprocs, lcells)
 end
 
 "Check if the VLSV file contains a variable."
-hasvariable(footer, var) = hasname(footer, "VARIABLE", var)
+hasvariable(meta::MetaData, var) = hasname(meta.footer, "VARIABLE", var)
 
 """
     readparameter(meta, param)

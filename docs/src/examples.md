@@ -55,33 +55,34 @@ beta = readvariable(meta, "Beta")
 
 Here is a full list of available quantities[^1]:
 
-| Derived variable name | Meaning                          | Required variable |
-|-----------------------|----------------------------------|-------------------|
-| Bmag                  | magnetic field magnitude         | vg\_b\_vol        |
-| Emag                  | electric field magnitude         | vg\_e\_vol        |
-| Vmag                  | bulk speed                       | vg\_v             |
+| Derived variable name | Meaning                          | Required variable[^2] |
+|-----------------------|----------------------------------|-----------------------|
+| Bmag                  | magnetic field magnitude         | vg\_b\_vol            |
+| Emag                  | electric field magnitude         | vg\_e\_vol            |
+| Vmag                  | bulk speed                       | vg\_v                 |
 | VS                    | sound speed                      | vg\_ptensor\_diagonal; vg\_rho |
-| VA                    | Alfvén speed                     | vg\_rho; Bmag     |
-| MA                    | Alfvén Mach number               | Vmag; VA          |
-| Upar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol |
-| Uperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol |
+| VA                    | Alfvén speed                     | vg\_rho; Bmag         |
+| MA                    | Alfvén Mach number               | Vmag; VA              |
+| Vpar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol   |
+| Vperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol     |
 | P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |
-| T                     | scalar temperature               | P; vg\_rho        |
+| T                     | scalar temperature               | P; vg\_rho            |
 | Tpar                  | temperature $\parallel\mathbf{B}$| vg\_rho; vg\_ptensor\_diagonal; vg\_b\_vol |
 | Tperp                 | temperature $\perp \mathbf{B}$   | vg\_rho; vg\_ptensor\_offdiagonal; vg\_b\_vol |
 | Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
-| Anisotropy            | $P_\perp / P_\parallel$          | PRotated          |
-| Pdynamic              | dynamic pressure                 | vg\_rho; Vmag     |
-| Poynting              | Poynting flux                    | E; B              |
-| Beta                  | plasma beta, $P / P_B$           |                   |
-| IonInertial           | ion inertial length              |                   | 
-| Larmor                | Larmor radius                    |                   |
-| Gyroperiod            | ion gyroperiod                   |                   |
-| Plasmaperiod          | plasma oscillation period        |                   |
+| Anisotropy            | $P_\perp / P_\parallel$          | ptensor; B            |
+| Pdynamic              | dynamic pressure                 | vg\_rho; Vmag         |
+| Poynting              | Poynting flux                    | E; B                  |
+| Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
+| IonInertial           | ion inertial length              | vg\_rho               | 
+| Larmor                | Larmor radius                    | Vperp; Bmag           |
+| Gyrofrequency         | ion gyroperiod                   |                       |
+| Plasmaperiod          | plasma oscillation period        |                       |
 
 which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
 
-[^1]: for species specific variables, you need to add the species name at the front, separated by a slash. For example, the proton bulk velocity is a string `proton/vg_v`.
+[^1]: For species specific variables, you need to add the species name at the front, separated by a slash. For example, the proton bulk velocity is a string `proton/vg_v`.
+[^2]: If a required variable exists in the VLSV file, we try to use it directly instead of calculating from other variables. The interpolated FS grid variables onto DCCRG grid are preferred over original FS grid variables.
 
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results!
@@ -98,7 +99,8 @@ More examples of customized plots can be found in the [repo](https://github.com/
 
 ### PyPlot Backend
 
-To trigger the Matplotlib plotting, `use PyPlot`.
+To trigger the Matplotlib plotting, `using PyPlot`.
+All the functions with identical names as in Matplotlib accepts all possible keyword arguments.
 
 - Scalar colored contour for 2D simulation
 ```
@@ -139,7 +141,8 @@ plot_vdf(meta, coordinates)
 
 ### Plots Backend
 
-To trigger the Plots package plotting, `use Plots`.
+To trigger the Plots package plotting, `using Plots`.
+This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/).
 
 - Scaler colored contour for 2D simulation
 ```
@@ -150,8 +153,6 @@ heatmap(meta, "rho", aspect_ratio=:equal, c=:turbo)
 ```
 contourf(meta, "rho)
 ```
-
-This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/).
 
 ### Gallery
 
