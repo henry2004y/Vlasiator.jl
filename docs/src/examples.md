@@ -109,12 +109,12 @@ plot_pcolormesh(meta, "rho")
 
 - Vector z component colored contour for 2D simulation in a manually set range
 ```
-plot_pcolormesh(meta, "rho", op=:z, islinear=false, axisunit="Re", vmin=1e6, vmax=2e6)
+plot_pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
 - Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
 ```
-plot_pcolormesh(meta, "b", op=:z, islinear=false, axisunit="Re")
+plot_pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline for 2D simulation
@@ -127,7 +127,7 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log color scale, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit="Re"` etc..
+You can choose to use linear/log color scale via `colorscale=Linear` or `colorscale=Log`, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit=RE` etc..
 
 - Cut slice colored contour for 3D simulation
 ```

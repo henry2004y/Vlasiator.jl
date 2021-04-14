@@ -18,15 +18,15 @@ varname = "rho"
 
 fig, ax = plt.subplots()
 
-op= :z
-axisunit=""
-islinear = false
+op = :z
+axisunit = RE
+colorscale = Log
 addcolorbar = true
 cmap = matplotlib.cm.turbo
 vmin = 7.0e4
 vmax = 2.5e6
 
-pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit, islinear;
+pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit, colorscale;
    normal=:none, vmin, vmax)
 
 cnorm, cticks = Vlasiator.set_colorbar(pArgs, [0.0])

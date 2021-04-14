@@ -10,7 +10,7 @@ using Vlasiator, PyPlot, FieldTracer
 
 filename = "bulk.0000999.vlsv"
 meta = readmeta(filename)
-plot_pcolormesh(meta, "proton/vg_rho", islinear=true)
+plot_pcolormesh(meta, "proton/vg_rho", colorscale=Linear)
 
 Re = Vlasiator.Re
 # regular Cartesian mesh

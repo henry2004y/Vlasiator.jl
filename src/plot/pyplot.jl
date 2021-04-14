@@ -1,11 +1,15 @@
-# Vlasiator plotting in Julia.
-#
-# Hongyang Zhou, hyzhou@umich.edu
+# Plotting functionalities from Matplotlib.
 
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 import LinearAlgebra: norm, ×
 
 export plot_line, plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
+export SI, RE, Log, Linear
+
+"Axis unit type"
+@enum AxisUnit SI RE
+"Color scales for 2D plots"
+@enum ColorScale Log Linear
 
 "Plotting arguments."
 struct PlotArgs
@@ -14,7 +18,7 @@ struct PlotArgs
    idlist::Vector{Int}        # cell IDs in the cut plane
    indexlist::Vector{Int}     # mapping from original cell order to cut plane
    maxreflevel::Int8          # maximum refinement level
-   islinear::Bool             # linear scale data
+   colorscale::ColorScale     # linear scale data
    vmin::Float32              # minimum data value 
    vmax::Float32              # maximum data value
    str_title::String
@@ -42,13 +46,13 @@ function plot_line(meta, var; kwargs...)
 end
 
 """
-    streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
+    streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a
-subset of "xyz" in any order. `axisunit` can be chosen from `"Re", "SI"`.
+subset of "xyz" in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
-function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
+function streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 
    if occursin("x", comp)
       v1_ = 1
@@ -83,7 +87,7 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       v2 = data[v2_,:,:]'
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
    else
@@ -99,30 +103,30 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 end
 
 """
-    plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit="Re",
-       islinear=false, vmin=-Inf, vmax=Inf, addcolorbar=true)
+    plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit=RE,
+       colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true)
 
 Plot a variable using pseudocolor from 2D VLSV data. If `ax` is provided, then
 it will plot on that axes.
 
 # Optional arguments
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
-- `axisunit::String`: the unit of axis, `"Re", "SI"`.
-- `islinear::Bool`: whether to use linear scale for data.
+- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `colorscale::ColorScale`: whether to use linear scale for data.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
 `plot_pcolormesh(meta, var)`
 
-`plot_pcolormesh(meta, var, axisunit="SI")`
+`plot_pcolormesh(meta, var, axisunit=SI)`
 
-`plot_pcolormesh(data, func, islinear=false)`
+`plot_pcolormesh(data, func, colorscale=Linear)`
 """
-function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
-   islinear=false, addcolorbar=true, vmin=-Inf, vmax=Inf)
+function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit=RE,
+   colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, islinear; normal=:none, vmin, vmax)
+   pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
@@ -147,8 +151,8 @@ it will plot on that axes.
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
 - `origin::Float`: center of slice plane in the normal direction.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
-- `axisunit::String`: the unit of axis, `"Re", "SI"`.
-- `islinear::Bool`: whether to use linear scale for data.
+- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`)
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
@@ -157,13 +161,13 @@ it will plot on that axes.
 
 `plot_colormap3dslice(meta, var, op=:z, origin=1.0, normal=:x)`
 
-`plot_colormap3dslice(data, func, islinear=false)`
+`plot_colormap3dslice(data, func, colorscale=Log)`
 """
 function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
-   normal=:y, axisunit="Re", islinear=false, addcolorbar=true,
+   normal=:y, axisunit=RE, colorscale=Log, addcolorbar=true,
    vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, islinear;
+   pArgs = set_args(meta, var, axisunit, colorscale;
       normal, origin, vmin=-Inf, vmax=Inf)
 
    maxreflevel = pArgs.maxreflevel
@@ -214,7 +218,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
       end
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
    else
@@ -261,7 +265,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
       end
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
    else
@@ -273,7 +277,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
+function set_args(meta, var, axisunit, colorscale; normal=:z, origin=0.0,
    vmin=-Inf, vmax=Inf)
 
    maxreflevel = getmaxamr(meta)
@@ -324,8 +328,9 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
    # Scale the sizes to the highest refinement level
    sizes *= 2^maxreflevel # data needs to be refined later (WIP)
 
-   strx = latexstring(axislabels[1]*"["*axisunit*"]")
-   stry = latexstring(axislabels[2]*"["*axisunit*"]")
+   unitstr = axisunit == RE ? "R_E" : "m"
+   strx = latexstring(axislabels[1]*"["*unitstr*"]")
+   stry = latexstring(axislabels[2]*"["*unitstr*"]")
 
    if hasparameter(meta, "t")
       timesim = readparameter(meta, "t")
@@ -344,20 +349,20 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
    cb_title_use = datainfo.variableLaTeX
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
 
-   PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, islinear,
+   PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, colorscale,
       vmin, vmax, str_title, strx, stry, cmap, cb_title_use)
 end
 
 "Return colorbar norm and ticks."
 function set_colorbar(pArgs, data)
 
-   if !pArgs.islinear # Logarithmic plot
+   if pArgs.colorscale == Log # Logarithmic plot
       vmin = isinf(pArgs.vmin) ? minimum(data[data .> 0.0]) : pArgs.vmin
       vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
 
       cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
-   else
+   elseif pArgs.colorscale == Linear
       vmin = isinf(pArgs.vmin) ? minimum(data) : pArgs.vmin
       vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
       nticks = 7

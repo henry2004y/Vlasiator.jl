@@ -23,7 +23,7 @@ ax.set_xlim([boxcoords[1],boxcoords[2]])
 ax.set_ylim([boxcoords[3],boxcoords[4]])
 
 # Contour line at a specific level
-pArgs = Vlasiator.set_args(meta, nameρ, "Re", true)
-x, y, data = Vlasiator.plot_prep2d(meta, nameρ, pArgs, "", "Re")
+pArgs = Vlasiator.set_args(meta, nameρ, RE, Linear)
+x, y, data = Vlasiator.plot_prep2d(meta, nameρ, pArgs, "", RE)
 CS = plt.contour(x, y, data, levels = [1e7],
                  colors=("k",),linestyles=("-",),linewidths=(0.5,))
