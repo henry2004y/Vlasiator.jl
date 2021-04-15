@@ -79,6 +79,8 @@ Users should be able to modify the figures as they wish even if they only know h
 Do not reinvent the wheel. For customized plotting, simply provide some sample scripts for the common tasks like zooming-in, change font sizes, add text boxes, etc..
 The original plotting APIs in Matplotlib are already complicated enough: instead of building a wrapper on top of them, it is considered a better approach to provide *recipes* such that the plotting package can understand what to do with the user defined types. Therefore the user can rely solely on the documentation of the plotting package to generate plots.
 
+Neither Matplotlib nor Plots are good at 3D plotting. For 3D plots, it would be better to choose VisIt or ParaView.
+
 ### Conditional Dependency
 
 There are certain packages that I don't want to include as dependencies, but instead I want to compile some glue codes if they are loaded. For example, I do not want to include any plotting packages as dependencies because either they are heavy-weighted, or incompatible with one another if one wants to switch.
