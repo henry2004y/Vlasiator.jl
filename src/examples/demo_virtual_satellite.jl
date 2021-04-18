@@ -1,6 +1,6 @@
 # Sample postprocessing script for virtual satellite tracking.
 #
-# Hongyang Zhou, hyzhou@umich.edu 01/25/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, DelimitedFiles, Vlasiator
 
@@ -21,9 +21,9 @@ data_series = zeros(Float32, length(filenames))
 
 # Extract data from each frame
 Threads.@threads for i = 1:length(filenames)
-   meta = read_meta(filenames[i])
-   id = get_cellid(meta, loc)
-   data_series[i] = read_variable_select(meta, var, id)[1][1]
+   meta = readmeta(filenames[i])
+   id = getcell(meta, loc)
+   data_series[i] = readvariable(meta, var, id)[1][1]
 end
 
 # Save into text file
@@ -36,8 +36,8 @@ point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 
 # Extract data along the line segment in one snapshot
-meta = read_meta(filenames[1])
-cellIDs, distances, coords = get_cell_in_line(meta, point1, point2)
+meta = readmeta(filenames[1])
+cellIDs, distances, coords = getcellinline(meta, point1, point2)
 
 ## Visualization
 #=

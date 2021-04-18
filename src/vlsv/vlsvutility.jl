@@ -8,18 +8,18 @@ const qᵢ = 1.60217662e-19   # proton mass, [C]
 const mᵢ = 1.673557546e-27  # proton mass, [kg]
 const c  = 3e8              # speed of light, [m/s]
 const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
+const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)] 
 const Re = 6.371e6          # Earth radius, [m]
 
-export get_cellid, getSliceCellID, get_amr_level, get_max_amr_level,
-   refine_data, get_cell_coordinates, get_cell_in_line,
-   getNearestCellWithVspace, compare
+export getcell, getslicecell, getamr, getmaxamr, refinedata, getcellcoordinates,
+   getcellinline, getnearestcellwithvdf, compare
 
 """
-    get_cell_id(meta::MetaData, location)
+    getcell(meta, location) -> Int
 
 Return cell ID containing the given spatial location.
 """
-function get_cellid(meta, loc)
+function getcell(meta, loc)
 
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
    xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
@@ -40,7 +40,7 @@ function get_cellid(meta, loc)
    ncells_lowerlevel = 0
 
    cellids = meta.cellid
-   maxlevel = get_max_amr_level(meta)
+   maxlevel = getmaxamr(meta)
 
    while ilevel < maxlevel + 1
       if cellid in cellids
@@ -66,11 +66,11 @@ function get_cellid(meta, loc)
 end
 
 """
-    get_amr_level(meta::MetaData, cellid)
+    getamr(meta, cellid) -> Int
 
-Return the AMR level of a given cell id.
+Return the AMR level of a given cell ID.
 """
-function get_amr_level(meta, cellid)
+function getamr(meta, cellid)
 
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
 
@@ -83,11 +83,11 @@ function get_amr_level(meta, cellid)
 end
 
 """
-    get_max_amr_level(meta::MetaData)
+    getmaxamr(meta) -> Int
 
-Find the highest refinement level.
+Find the highest refinement level of a given vlsv file.
 """
-function get_max_amr_level(meta)
+function getmaxamr(meta)
    xcells, ycells, zcells= meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
    maxreflevel = 0
@@ -101,11 +101,11 @@ function get_max_amr_level(meta)
 end
 
 """
-    get_cell_coordinates(meta::MetaData, cellid)
+    getcellcoordinates(meta, cellid) -> Vector{Float}
 
-Return a given cellid's coordinates.
+Return a given cell's coordinates.
 """    
-function get_cell_coordinates(meta, cellid)
+function getcellcoordinates(meta, cellid)
 
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
@@ -150,12 +150,12 @@ function isInsideDomain(meta, point)
 end
 
 """
-    get_cell_in_line(meta::MetaData, point1, point2)
+    getcellinline(meta, point1, point2)
 
 Returns cell IDs, distances and coordinates for every cell in a line between two
 given points. May be improved later with preallocation!
 """
-function get_cell_in_line(meta, point1, point2)
+function getcellinline(meta, point1, point2)
 
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
    xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
@@ -163,16 +163,16 @@ function get_cell_in_line(meta, point1, point2)
    dx, dy, dz = meta.dx, meta.dy, meta.dz
 
    if !isInsideDomain(meta, point1)
-      @error "point1 in get_cell_in_line out of bounds!"
+      @error "point1 in getcellinline out of bounds!"
    elseif !isInsideDomain(meta, point2)
-      @error "point2 in get_cell_in_line out of bounds!"
+      @error "point2 in getcellinline out of bounds!"
    end
 
    cell_lengths = [(xmax-xmin)/xcells, (ymax-ymin)/ycells, (zmax-zmin)/zcells]
 
    distances = [0.0]
 
-   cellids = [get_cellid(meta, point1)]
+   cellids = [getcell(meta, point1)]
 
    coords = point1
 
@@ -182,11 +182,11 @@ function get_cell_in_line(meta, point1, point2)
    unit_vector = @. (point2 - point1) / $hypot(point2 - point1 + ϵ...)
 
    while true
-      cellid = get_cellid(meta, p)
-      amrlvl = get_amr_level(meta, cellid)
+      cellid = getcell(meta, p)
+      amrlvl = getamr(meta, cellid)
 
       # Get the max and min cell boundaries
-      min_bounds = get_cell_coordinates(meta, cellid) -
+      min_bounds = getcellcoordinates(meta, cellid) -
          0.5 * cell_lengths * 0.5^amrlvl
       max_bounds = min_bounds + cell_lengths
 
@@ -215,7 +215,7 @@ function get_cell_in_line(meta, point1, point2)
 
       dot(point2 - coordnew, unit_vector) ≥ 0 || break
 
-      cellidnew = get_cellid(meta, coordnew)
+      cellidnew = getcell(meta, coordnew)
 
       push!(cellids, cellidnew)
       coords = hcat(coords, coordnew)
@@ -228,7 +228,7 @@ function get_cell_in_line(meta, point1, point2)
 end
 
 """
-    getSliceCellID(meta, slicelocation, maxreflevel; xmin=-Inf, xmax=Inf,
+    getslicecell(meta, slicelocation, maxreflevel; xmin=-Inf, xmax=Inf,
        ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
 Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d
@@ -236,7 +236,7 @@ mesh, in a direction with non infinity range at `slicelocation`, and the
 `indexlist`, which is a mapping from original order to the cut plane and can be
 used to select data onto the plane.
 """
-function getSliceCellID(meta, slicelocation, maxreflevel;
+function getslicecell(meta, slicelocation, maxreflevel;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
@@ -305,11 +305,11 @@ function getSliceCellID(meta, slicelocation, maxreflevel;
 end
 
 """
-    refine_data(meta, idlist, data, maxreflevel, normal)
+    refinedata(meta, idlist, data, maxreflevel, normal) -> Array
 
 Generate scalar data on the finest refinement level.
 """
-function refine_data(meta, idlist, data, maxreflevel, normal)
+function refinedata(meta, idlist, data, maxreflevel, normal)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
@@ -377,22 +377,22 @@ function refine_data(meta, idlist, data, maxreflevel, normal)
 end
 
 "Find the nearest spatial cell with f saved of a given cell `id`."
-function getNearestCellWithVspace(meta, id)
-   cells = Vlasiator.read_mesh(meta.fid, meta.footer, "SpatialGrid",
+function getnearestcellwithvdf(meta, id)
+   cells = Vlasiator.readmesh(meta.fid, meta.footer, "SpatialGrid",
       "CELLSWITHBLOCKS")
    coords = Matrix{Float32}(undef, 3, length(cells))
    for i = 1:length(cells)
-      coords[:,i] = get_cell_coordinates(meta, cells[i])
+      coords[:,i] = getcellcoordinates(meta, cells[i])
    end
-   coords_orig = get_cell_coordinates(meta, id)
+   coords_orig = getcellcoordinates(meta, id)
    d2 = sum((coords .- coords_orig).^2, dims=1)
    cells[argmin(d2)[2]]
 end
 
 """
-    compare(filename1, filename2, tol=1e-4)
+    compare(filename1, filename2, tol=1e-4) -> Bool
 
-Compare if two VLSV files are identical.
+Check if two VLSV files are approximately identical.
 """
 function compare(f1, f2, tol::AbstractFloat=1e-4)
    # 1st sanity check: minimal filesize difference
@@ -400,16 +400,16 @@ function compare(f1, f2, tol::AbstractFloat=1e-4)
       return false
    end
 
-   meta1 = read_meta(f1)
-   meta2 = read_meta(f2)
-   varnames = show_variables(meta1)
+   meta1 = readmeta(f1)
+   meta2 = readmeta(f2)
+   varnames = showvariables(meta1)
    strskip = r"CellID|rank|blocks"
    deleteat!(varnames, findall(x->endswith(x, strskip), varnames))
 
    isIdentical = true
    for vname in varnames
-      v1 = read_variable(meta1, vname)
-      v2 = read_variable(meta2, vname)
+      v1 = readvariable(meta1, vname)
+      v2 = readvariable(meta2, vname)
 
       s1, s2 = sum(v1), sum(v2)
       if abs(s1 - s2) > tol * abs(s1) && abs(s1 - s2) > tol * abs(s2)

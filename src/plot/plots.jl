@@ -22,10 +22,10 @@ using RecipesBase
       axislabels = ['X', 'Y']
    end
 
-   if var in keys(variables_predefined)
-      dataRaw = variables_predefined[var](meta)
+   if hasvariable(meta.footer, var)
+      dataRaw = readvariable(meta, var)
    else
-      dataRaw = read_variable(meta, var)
+      dataRaw = Vlasiator.variables_predefined[var](meta)
    end
 
    if startswith(var, "fg_") # fsgrid

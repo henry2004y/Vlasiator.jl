@@ -3,40 +3,40 @@
 # Plotting of the same style from a series of input files. Combined with ffmpeg,
 # we can easily make animations from data.
 #
-# Hongyang Zhou, hyzhou@umich.edu 03/07/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob, PyPlot, Printf
 
 filenames = glob("BCtest/run8_coarse/bulk*.vlsv")
 nfile = length(filenames)
 
-meta = read_meta(filenames[1])
-varnames = show_variables(meta)
+meta = readmeta(filenames[1])
+varnames = showvariables(meta)
 vardict = Dict("v"=>"proton/vg_v", "rho"=>"proton/vg_rho", "b"=>"vg_b_vol",
    "b2"=>"fg_b")
 varname = "rho"
 
 fig, ax = plt.subplots()
 
-op= :z
-axisunit=""
-islinear = false
+op = :z
+axisunit = RE
+colorscale = Log
 addcolorbar = true
 cmap = matplotlib.cm.turbo
 vmin = 7.0e4
 vmax = 2.5e6
 
-pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit, islinear;
+pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit, colorscale;
    normal=:none, vmin, vmax)
 
 cnorm, cticks = Vlasiator.set_colorbar(pArgs, [0.0])
 
 for (i, filename) in enumerate(filenames)
    @info "$i out of $nfile"
-   local meta = read_meta(filename)
+   local meta = readmeta(filename)
 
-   var = read_variable(meta, vardict[varname])
-   t = read_parameter(meta, "time")
+   var = readvariable(meta, vardict[varname])
+   t = readparameter(meta, "time")
 
    if i == 1
       x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op, axisunit)

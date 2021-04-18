@@ -1,6 +1,6 @@
 # Sample script for stream tracing from a given starting point.
 #
-# Hongyang Zhou, hyzhou@umich.edu 01/27/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 # FieldTracer is not a registered pkg yet
 # using Pkg
@@ -13,11 +13,11 @@ filename = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
 
-meta = read_meta(filename)
+meta = readmeta(filename)
 
 plot_pcolormesh(meta, nameρ)
 
-v = read_variable(meta, nameV)
+v = readvariable(meta, nameV)
 vx = reshape(v[1,:], meta.xcells, meta.ycells)
 vy = reshape(v[2,:], meta.xcells, meta.ycells)
 # tracing starting point

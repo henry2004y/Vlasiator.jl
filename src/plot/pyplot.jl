@@ -1,11 +1,15 @@
-# Vlasiator plotting in Julia.
-#
-# Hongyang Zhou, hyzhou@umich.edu
+# Plotting functionalities from Matplotlib.
 
 using Vlasiator, PyPlot, Printf, LaTeXStrings
 import LinearAlgebra: norm, ×
 
-export plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
+export plot_line, plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
+export SI, RE, Log, Linear
+
+"Axis unit type"
+@enum AxisUnit SI RE
+"Color scales for 2D plots"
+@enum ColorScale Log Linear
 
 "Plotting arguments."
 struct PlotArgs
@@ -14,7 +18,7 @@ struct PlotArgs
    idlist::Vector{Int}        # cell IDs in the cut plane
    indexlist::Vector{Int}     # mapping from original cell order to cut plane
    maxreflevel::Int8          # maximum refinement level
-   islinear::Bool             # linear scale data
+   colorscale::ColorScale     # linear scale data
    vmin::Float32              # minimum data value 
    vmax::Float32              # maximum data value
    str_title::String
@@ -25,13 +29,30 @@ struct PlotArgs
 end
 
 """
-    streamline(meta::MetaData, var; comp="xy", axisunit="Re", kwargs...)
+    plot_line(meta, var; kwargs)
+
+Plot `var` from `meta` of 1D VLSV data.
+"""
+function plot_line(meta, var; kwargs...)
+   if hasvariable(meta, var)
+      data = readvariable(meta, var)
+   else
+      data = Vlasiator.variables_predefined[var](meta)
+   end
+
+   x = LinRange(meta.xmin, meta.xmax, meta.xcells)
+
+   c = plot(x, data; kwargs...)
+end
+
+"""
+    streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a
-subset of "xyz" in any order. `axisunit` can be chosen from `"Re", "SI"`.
+subset of "xyz" in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
-function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
+function streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 
    if occursin("x", comp)
       v1_ = 1
@@ -50,10 +71,10 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
    end
 
-   if var in keys(Vlasiator.variables_predefined)
-      data = Vlasiator.variables_predefined[var](meta)
+   if hasvariable(meta, var)
+      data = readvariable(meta, var)
    else
-      data = read_variable(meta, var)
+      data = Vlasiator.variables_predefined[var](meta)
    end
 
    if startswith(var, "fg_")
@@ -66,7 +87,7 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
       v2 = data[v2_,:,:]'
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
    else
@@ -82,30 +103,30 @@ function streamline(meta, var; comp="xy", axisunit="Re", kwargs...)
 end
 
 """
-    plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit="Re",
-       islinear=false, vmin=-Inf, vmax=Inf, addcolorbar=true)
+    plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit=RE,
+       colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true)
 
 Plot a variable using pseudocolor from 2D VLSV data. If `ax` is provided, then
 it will plot on that axes.
 
 # Optional arguments
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
-- `axisunit::String`: the unit of axis, `"Re", "SI"`.
-- `islinear::Bool`: whether to use linear scale for data.
+- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `colorscale::ColorScale`: whether to use linear scale for data.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
 `plot_pcolormesh(meta, var)`
 
-`plot_pcolormesh(meta, var, axisunit="SI")`
+`plot_pcolormesh(meta, var, axisunit=SI)`
 
-`plot_pcolormesh(data, func, islinear=false)`
+`plot_pcolormesh(data, func, colorscale=Linear)`
 """
-function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
-   islinear=false, addcolorbar=true, vmin=-Inf, vmax=Inf)
+function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit=RE,
+   colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, islinear; normal=:none, vmin, vmax)
+   pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
@@ -121,7 +142,7 @@ function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit="Re",
 end
 
 """
-    plot_colormap3dslice(meta::MetaData, var, ax=nothing (...))
+    plot_colormap3dslice(meta, var, ax=nothing (...))
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data. If `ax` is provided, then
 it will plot on that axes.
@@ -130,8 +151,8 @@ it will plot on that axes.
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
 - `origin::Float`: center of slice plane in the normal direction.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
-- `axisunit::String`: the unit of axis, `"Re", "SI"`.
-- `islinear::Bool`: whether to use linear scale for data.
+- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`)
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
@@ -140,13 +161,13 @@ it will plot on that axes.
 
 `plot_colormap3dslice(meta, var, op=:z, origin=1.0, normal=:x)`
 
-`plot_colormap3dslice(data, func, islinear=false)`
+`plot_colormap3dslice(data, func, colorscale=Log)`
 """
 function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
-   normal=:y, axisunit="Re", islinear=false, addcolorbar=true,
+   normal=:y, axisunit=RE, colorscale=Log, addcolorbar=true,
    vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, islinear;
+   pArgs = set_args(meta, var, axisunit, colorscale;
       normal, origin, vmin=-Inf, vmax=Inf)
 
    maxreflevel = pArgs.maxreflevel
@@ -154,10 +175,10 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
    plotrange = pArgs.plotrange
    idlist, indexlist = pArgs.idlist, pArgs.indexlist
 
-   if var in keys(Vlasiator.variables_predefined)
-      data = Vlasiator.variables_predefined[var](meta)
+   if hasvariable(meta, var)
+      data = readvariable(meta, var)
    else
-      data = read_variable(meta, var)
+      data = Vlasiator.variables_predefined[var](meta)
    end
 
    if startswith(var, "fg_") # field quantities, fsgrid
@@ -172,7 +193,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
 
       # Create the plotting grid
       if ndims(data) == 1
-         data = refine_data(meta, idlist, data, maxreflevel, normal)
+         data = refinedata(meta, idlist, data, maxreflevel, normal)
       elseif ndims(data) == 2
          if op in (:x, :y, :z)
             if op == :x
@@ -182,11 +203,11 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
             elseif op == :z
                slice = @view data[3,:]
             end
-            data = refine_data(meta, idlist, slice, maxreflevel, normal)
+            data = refinedata(meta, idlist, slice, maxreflevel, normal)
          elseif op == :mag
-            datax = @views refine_data(meta, idlist, data[1,:], maxreflevel, normal)
-            datay = @views refine_data(meta, idlist, data[2,:], maxreflevel, normal)
-            dataz = @views refine_data(meta, idlist, data[3,:], maxreflevel, normal)
+            datax = @views refinedata(meta, idlist, data[1,:], maxreflevel, normal)
+            datay = @views refinedata(meta, idlist, data[2,:], maxreflevel, normal)
+            dataz = @views refinedata(meta, idlist, data[3,:], maxreflevel, normal)
             data = hypot.(datax, datay, dataz)
          end
 
@@ -197,7 +218,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
       end
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
    else
@@ -205,7 +226,7 @@ function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
-   cnorm, cticks = set_colorbar(data, pArgs)
+   cnorm, cticks = set_colorbar(pArgs, data)
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -221,10 +242,10 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 
    sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
-   if var in keys(Vlasiator.variables_predefined)
-      dataRaw = Vlasiator.variables_predefined[var](meta)
+   if hasvariable(meta, var)
+      dataRaw = readvariable(meta, var)
    else
-      dataRaw = read_variable(meta, var)
+      dataRaw = Vlasiator.variables_predefined[var](meta)
    end
 
    if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
@@ -244,7 +265,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
       end
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
    else
@@ -256,10 +277,10 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
+function set_args(meta, var, axisunit, colorscale; normal=:z, origin=0.0,
    vmin=-Inf, vmax=Inf)
 
-   maxreflevel = get_max_amr_level(meta)
+   maxreflevel = getmaxamr(meta)
 
    if normal == :x
       sizes = [meta.ycells, meta.zcells]
@@ -267,7 +288,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
       sliceoffset = abs(meta.xmin) + origin
       axislabels = ['Y','Z']
 
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
          xmin=meta.xmin, xmax=meta.xmax)
    elseif normal == :y
       sizes = [meta.xcells, meta.zcells]
@@ -275,7 +296,7 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
       sliceoffset = abs(meta.ymin) + origin
       axislabels = ['X','Z']
 
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
          ymin=meta.ymin, ymax=meta.ymax)
    elseif normal == :z
       sizes = [meta.xcells, meta.ycells]
@@ -283,36 +304,39 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
       sliceoffset = abs(meta.zmin) + origin
       axislabels = ['X','Y']
 
-      idlist, indexlist = getSliceCellID(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
          zmin=meta.zmin, zmax=meta.zmax)
    else
       idlist = Int64[]
       indexlist = Int64[]
-      # Check if ecliptic or polar run
-      if meta.ycells == 1 && meta.zcells != 1
+
+      if meta.ycells == 1 && meta.zcells != 1 # polar
          plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
          sizes = [meta.xcells, meta.zcells]
          PLANE = "XZ"
          axislabels = ['X', 'Z']
-      elseif meta.zcells == 1 && meta.ycells != 1
+      elseif meta.zcells == 1 && meta.ycells != 1 # ecliptic
          plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
          sizes = [meta.xcells, meta.ycells]
          PLANE = "XY"
          axislabels = ['X', 'Y']
+      else # 1D
+         @error "1D data detected. Please use 1D plot functions."
       end
    end
 
    # Scale the sizes to the highest refinement level
    sizes *= 2^maxreflevel # data needs to be refined later (WIP)
 
-   strx = latexstring(axislabels[1]*"["*axisunit*"]")
-   stry = latexstring(axislabels[2]*"["*axisunit*"]")
+   unitstr = axisunit == RE ? "R_E" : "m"
+   strx = latexstring(axislabels[1]*"["*unitstr*"]")
+   stry = latexstring(axislabels[2]*"["*unitstr*"]")
 
-   if has_parameter(meta, "t")
-      timesim = read_parameter(meta, "t")
+   if hasparameter(meta, "t")
+      timesim = readparameter(meta, "t")
       str_title = @sprintf "t= %4.1fs" timesim
-   elseif has_parameter(meta, "time")
-      timesim = read_parameter(meta, "time")
+   elseif hasparameter(meta, "time")
+      timesim = readparameter(meta, "time")
       str_title = @sprintf "t= %4.1fs" timesim
    else
       str_title = ""
@@ -320,25 +344,25 @@ function set_args(meta, var, axisunit, islinear; normal=:z, origin=0.0,
 
    cmap = matplotlib.cm.turbo
 
-   datainfo = read_variable_info(meta, var)
+   datainfo = readvariableinfo(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
 
-   PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, islinear,
+   PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, colorscale,
       vmin, vmax, str_title, strx, stry, cmap, cb_title_use)
 end
 
 "Return colorbar norm and ticks."
 function set_colorbar(pArgs, data)
 
-   if !pArgs.islinear # Logarithmic plot
+   if pArgs.colorscale == Log # Logarithmic plot
       vmin = isinf(pArgs.vmin) ? minimum(data[data .> 0.0]) : pArgs.vmin
       vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
 
       cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
-   else
+   elseif pArgs.colorscale == Linear
       vmin = isinf(pArgs.vmin) ? minimum(data) : pArgs.vmin
       vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
       nticks = 7
@@ -411,232 +435,221 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    unit == "Re" && (location ./= Vlasiator.Re)
 
    if pop == "proton"
-      if !Vlasiator.has_name(meta.footer, "BLOCKIDS", "proton")
-         if Vlasiator.has_name(meta.footer, "BLOCKIDS", "avgs") # old versions
+      if !Vlasiator.hasname(meta.footer, "BLOCKIDS", "proton")
+         if Vlasiator.hasname(meta.footer, "BLOCKIDS", "avgs") # old versions
             pop = "avgs"
          else
             @error "Unable to detect population "*pop
          end
       end
-   elseif !Vlasiator.has_name(meta.footer, "BLOCKIDS", pop)
+   elseif !Vlasiator.hasname(meta.footer, "BLOCKIDS", pop)
       @error "Unable to detect population "*pop
    end
 
-   # Calculate cell IDs from given coordinates        
-   xReq = @view location[1,:]
-   yReq = @view location[2,:]
-   zReq = @view location[3,:]
+   # Calculate cell ID from given coordinates
+   cidReq = getcell(meta, location)
+   cidNearest = getnearestcellwithvdf(meta, cidReq)
 
-   cellids = Int[]
-   for i = 1:size(location, 2)
-      cidReq = get_cellid(meta, [xReq[i], yReq[i], zReq[i]])
-      cidNearest = getNearestCellWithVspace(meta, cidReq)
-
-      if verbose
-         @info "Point: $i out of $(size(location, 2)) requested"
-         @info "Original coordinates : $(xReq[i]), $(yReq[i]), $(zReq[i])"
-         @info "Original cell        : $(get_cell_coordinates(meta, cidReq))"
-         @info "Nearest cell with VDF: $(get_cell_coordinates(meta, cidNearest))"
-      end
-      push!(cellids, cidNearest)
+   if verbose
+      @info "Original coordinates : $location"
+      @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
+      @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
    end
-   sort!(cellids); unique!(cellids)
 
-   for cid in cellids
-      x, y, z = get_cell_coordinates(meta, cid)
-      verbose && @info "cellid $cid, x = $x, y = $y, z = $z"
+   x, y, z = getcellcoordinates(meta, cidNearest)
+   verbose && @info "cellid $cidNearest, x = $x, y = $y, z = $z"
 
-      # Extracts Vbulk
-      if has_variable(meta.footer, "moments")
-         # This should be a restart file
-         Vbulk = read_variable_select(meta, "restart_V", cid)
-      elseif has_variable(meta.footer, pop*"/vg_v")
-         # multipop v5 bulk file
-         Vbulk = read_variable_select(meta, pop*"/vg_v", cid)
-      elseif has_variable(meta.footer, pop*"/V")
-         # multipop bulk file
-         Vbulk = read_variable_select(meta, pop*"/V", cid)
-      else
-         # regular bulk file, currently analysator supports pre- and
-         # post-multipop files with "V"
-         Vbulk = read_variable(meta, "V", cid)
+   # Extracts Vbulk
+   if hasvariable(meta, "moments")
+      # This should be a restart file
+      Vbulk = readvariable(meta, "restart_V", cidNearest)
+   elseif hasvariable(meta, pop*"/vg_v")
+      # multipop v5 bulk file
+      Vbulk = readvariable(meta, pop*"/vg_v", cidNearest)
+   elseif hasvariable(meta, pop*"/V")
+      # multipop bulk file
+      Vbulk = readvariable(meta, pop*"/V", cidNearest)
+   else
+      # regular bulk file, currently analysator supports pre- and
+      # post-multipop files with "V"
+      Vbulk = readvariable(meta, "V", cidNearest)
+   end
+
+   for f in ("fsaved", "vg_f_saved")
+      if hasvariable(meta, f) &&
+         readvariable(meta, f, cidNearest) != 1.0
+         @error "VDF not found in the given cell!"
       end
-
-      for f in ("fsaved", "vg_f_saved")
-         if has_variable(meta.footer, f) &&
-            read_variable_select(meta, f, cid) != 1.0
-            @error "VDF not found in the given cell!"
-         end
-      end
+   end
       
-      vcellids, vcellf = read_velocity_cells(meta, cid; pop)
+   vcellids, vcellf = readvcells(meta, cidNearest; pop)
 
-      V = get_velocity_cell_coordinates(meta, vcellids; pop)
+   V = getvcellcoordinates(meta, vcellids; pop)
 
-      if center == "bulk" # center with bulk velocity
-         verbose && @info "Transforming to plasma frame"
-         V -= Vbulk
-      elseif center == "peak" # center on highest f-value
-         peakindex = argmax(vcellf)
-         Vpeak = V[:,peakindex]
-         V -= Vpeak
-         verbose && "Plot in frame of peak f-value, travelling at speed $Vpeak"
-      end
-
-      # Set sparsity threshold
-      if has_variable(meta.footer, pop*"/EffectiveSparsityThreshold")
-         fThreshold = read_variable_select(meta,
-            pop*"/EffectiveSparsityThreshold", cid)
-      elseif has_variable(meta.footer, pop*"/vg_effectivesparsitythreshold")
-         fThreshold = read_variable_select(meta,
-            pop+"/vg_effectivesparsitythreshold", cid)
-      else
-         verbose && @info "Using a default f threshold value of 1e-16."
-         fThreshold = 1e-16
-      end
-
-      # Drop all velocity cells which are below the sparsity threshold
-      fselect_ = vcellf .≥ fThreshold
-      f = vcellf[fselect_]
-      V = V[:,fselect_]
-
-      if has_parameter(meta, "t")
-         timesim = read_parameter(meta, "t")
-         str_title = @sprintf "t= %4.1fs" timesim
-      elseif has_parameter(meta, "time")
-         timesim = read_parameter(meta, "time")
-         str_title = @sprintf "t= %4.1fs" timesim
-      else
-         str_title = ""
-      end
-
-      # Set normal direction
-      if ysize == 1 && zsize == 1 # 1D, select xz
-         slicetype = "xz"
-         sliceNormal = [0., 1., 0.]
-         strx = "vx [km/s]"
-         stry = "vz [km/s]"
-      elseif ysize == 1 && slicetype == "xz" # polar
-         sliceNormal = [0., 1., 0.]
-         strx = "vx [km/s]"
-         stry = "vz [km/s]"
-      elseif zsize == 1 && slicetype == "xy" # ecliptic
-         sliceNormal = [0., 0., 1.]
-         strx = "vx [km/s]"
-         stry = "vy [km/s]"
-      elseif slicetype in ("bperp", "bpar", "bpar1")
-         # If necessary, find magnetic field
-         if has_variable(meta.footer, "B_vol")
-            B = read_variable_select(meta, "B_vol", cid)
-         elseif has_variable(meta.footer, "vg_b_vol")
-            B = read_variable_select(meta, "vg_b_vol", cid)
-         end
-         BxV = B × Vbulk
-         if slicetype == "bperp" # slice in b_perp1/b_perp2
-            sliceNormal = B ./ norm(B)
-            strx = L"$v_{B \times V}$ "
-            stry = L"$v_{B \times (B \times V)}$ "
-         elseif slicetype == "bpar1" # slice in b_parallel/b_perp1 plane
-            sliceNormal = B × BxV
-            sliceNormal ./= norm(sliceNormal)
-            strx = L"$v_{B}$ "
-            stry = L"$v_{B \times V}$ "
-         else # slice in b_parallel/b_perp2 plane
-            sliceNormal = BxV ./ norm(BxV)
-            strx = L"$v_{B}$ "
-            stry = L"$v_{B \times (B \times V)}$ "
-         end
-      end
-
-      if slicetype == "xy"
-         v1 = V[1,:]
-         v2 = V[2,:]
-         vnormal = V[3,:]
-      elseif slicetype == "yz"
-         v1 = V[2,:]
-         v2 = V[3,:]
-         vnormal = V[1,:]
-      elseif slicetype == "xz"
-         v1 = V[1,:]
-         v2 = V[3,:]
-         vnormal = V[2,:]
-      elseif slicetype ∈ ("Bperp", "Bpar", "Bpar1")
-         #hyzhou: NOT working yet!
-         if slicetype == "Bperp"
-            v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
-            v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-            vnormal = Vrot2[3,:] # the Z axis of the slice is B
-         elseif slicetype == "Bpar"
-            v1 = Vrot2[3,:] # the X axis of the slice is B
-            v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-            vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
-         elseif slicetype == "Bpara1"
-            v1 = Vrot2[3,:] # the X axis of the slice is B
-            v2 = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
-            vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
-         end
-      end
-
-      # Weights using particle flux or phase-space density
-      fw = weight == :flux ? f*norm([v1, v2, vnormal]) : f
-
-      if verbose
-         if vslicethick > 0
-            @info "Performing slice with a counting thickness of $vslicethick"
-         else
-            @info "Projecting total VDF to a single plane"
-         end
-      end
-
-      if vslicethick < 0 # Trying to set a proper value automatically
-         # Assure that the slice cut through at least 1 velocity cell
-         if any(sliceNormal .== 1.0)
-            vslicethick = cellsize
-         else # Assume cubic vspace grid, add extra space
-            vslicethick = cellsize*(√3+0.05)
-         end
-      end
-
-      # Select cells which are within slice area
-      if vslicethick > 0.0
-         ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
-                 (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
-      else
-         ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
-      end
-
-      # [m/s] --> [km/s]
-      unitfactor = 1e3
-      v1, v2, fw = v1[ind_]./unitfactor, v2[ind_]./unitfactor, fw[ind_]
-
-      isinf(fmin) && (fmin = minimum(fw))
-      isinf(fmax) && (fmax = maximum(fw))
-
-      verbose && @info "Active f range is $fmin, $fmax"
-
-      if isnothing(ax) ax = plt.gca() end
-
-      cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
-      cmap = matplotlib.cm.turbo
-
-      rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
-      ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
-
-      h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm, cmap=cmap)
-
-      ax.set_title(str_title, fontsize=14, fontweight="bold")
-      ax.set_xlabel(strx, fontsize=14, weight="black")
-      ax.set_ylabel(stry, fontsize=14, weight="black")
-      ax.set_aspect("equal")
-      ax.grid(color="grey", linestyle="-")
-
-      cb = colorbar(h[4], ax=ax, fraction=0.046, pad=0.04)
-      cb_title = cb.ax.set_ylabel("f(v)", fontsize=14)
-
-      if slicetype in ("bperp", "bpar", "bpar1")
-         # Draw vector of magnetic field direction
-      end
-      plt.tight_layout()
+   if center == "bulk" # center with bulk velocity
+      verbose && @info "Transforming to plasma frame"
+      V -= Vbulk
+   elseif center == "peak" # center on highest f-value
+      peakindex = argmax(vcellf)
+      Vpeak = V[:,peakindex]
+      V -= Vpeak
+      verbose && "Plot in frame of peak f-value, travelling at speed $Vpeak"
    end
 
+   # Set sparsity threshold
+   if hasvariable(meta, pop*"/EffectiveSparsityThreshold")
+      fThreshold = readvariable(meta,
+         pop*"/EffectiveSparsityThreshold", cidNearest)
+   elseif hasvariable(meta, pop*"/vg_effectivesparsitythreshold")
+      fThreshold = readvariable(meta,
+         pop+"/vg_effectivesparsitythreshold", cidNearest)
+   else
+      verbose && @info "Using a default f threshold value of 1e-16."
+      fThreshold = 1e-16
+   end
+
+   # Drop all velocity cells which are below the sparsity threshold
+   fselect_ = vcellf .≥ fThreshold
+   f = vcellf[fselect_]
+   V = V[:,fselect_]
+
+   if hasparameter(meta, "t")
+      timesim = readparameter(meta, "t")
+      str_title = @sprintf "t= %4.1fs" timesim
+   elseif hasparameter(meta, "time")
+      timesim = readparameter(meta, "time")
+      str_title = @sprintf "t= %4.1fs" timesim
+   else
+      str_title = ""
+   end
+
+   # Set normal direction
+   if ysize == 1 && zsize == 1 # 1D, select xz
+      slicetype = "xz"
+      sliceNormal = [0., 1., 0.]
+      strx = "vx [km/s]"
+      stry = "vz [km/s]"
+   elseif ysize == 1 && slicetype == "xz" # polar
+      sliceNormal = [0., 1., 0.]
+      strx = "vx [km/s]"
+      stry = "vz [km/s]"
+   elseif zsize == 1 && slicetype == "xy" # ecliptic
+      sliceNormal = [0., 0., 1.]
+      strx = "vx [km/s]"
+      stry = "vy [km/s]"
+   elseif slicetype in ("bperp", "bpar", "bpar1")
+      # If necessary, find magnetic field
+      if hasvariable(meta, "B_vol")
+         B = readvariable(meta, "B_vol", cidNearest)
+      elseif hasvariable(meta, "vg_b_vol")
+         B = readvariable(meta, "vg_b_vol", cidNearest)
+      end
+      BxV = B × Vbulk
+      if slicetype == "bperp" # slice in b_perp1/b_perp2
+         sliceNormal = B ./ norm(B)
+         strx = L"$v_{B \times V}$ "
+         stry = L"$v_{B \times (B \times V)}$ "
+      elseif slicetype == "bpar1" # slice in b_parallel/b_perp1 plane
+         sliceNormal = B × BxV
+         sliceNormal ./= norm(sliceNormal)
+         strx = L"$v_{B}$ "
+         stry = L"$v_{B \times V}$ "
+      else # slice in b_parallel/b_perp2 plane
+         sliceNormal = BxV ./ norm(BxV)
+         strx = L"$v_{B}$ "
+         stry = L"$v_{B \times (B \times V)}$ "
+      end
+   end
+
+   if slicetype == "xy"
+      v1 = V[1,:]
+      v2 = V[2,:]
+      vnormal = V[3,:]
+   elseif slicetype == "yz"
+      v1 = V[2,:]
+      v2 = V[3,:]
+      vnormal = V[1,:]
+   elseif slicetype == "xz"
+      v1 = V[1,:]
+      v2 = V[3,:]
+      vnormal = V[2,:]
+   elseif slicetype ∈ ("Bperp", "Bpar", "Bpar1")
+      #hyzhou: NOT working yet!
+      if slicetype == "Bperp"
+         v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
+         v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
+         vnormal = Vrot2[3,:] # the Z axis of the slice is B
+      elseif slicetype == "Bpar"
+         v1 = Vrot2[3,:] # the X axis of the slice is B
+         v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
+         vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
+      elseif slicetype == "Bpara1"
+         v1 = Vrot2[3,:] # the X axis of the slice is B
+         v2 = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
+         vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
+      end
+   end
+
+   # Weights using particle flux or phase-space density
+   fw = weight == :flux ? f*norm([v1, v2, vnormal]) : f
+
+   if verbose
+      if vslicethick > 0
+         @info "Performing slice with a counting thickness of $vslicethick"
+      else
+         @info "Projecting total VDF to a single plane"
+      end
+   end
+
+   if vslicethick < 0 # Trying to set a proper value automatically
+      # Assure that the slice cut through at least 1 velocity cell
+      if any(sliceNormal .== 1.0)
+         vslicethick = cellsize
+      else # Assume cubic vspace grid, add extra space
+         vslicethick = cellsize*(√3+0.05)
+      end
+   end
+
+   # Select cells which are within slice area
+   if vslicethick > 0.0
+      ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
+              (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+   else
+      ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+   end
+
+   # [m/s] --> [km/s]
+   unitfactor = 1e3
+   v1, v2, fw = v1[ind_]./unitfactor, v2[ind_]./unitfactor, fw[ind_]
+
+   isinf(fmin) && (fmin = minimum(fw))
+   isinf(fmax) && (fmax = maximum(fw))
+
+   verbose && @info "Active f range is $fmin, $fmax"
+
+   if isnothing(ax) ax = plt.gca() end
+
+   cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
+   cmap = matplotlib.cm.turbo
+
+   rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
+   ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
+
+   h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm, cmap=cmap)
+
+   ax.set_title(str_title, fontsize=14, fontweight="bold")
+   ax.set_xlabel(strx, fontsize=14, weight="black")
+   ax.set_ylabel(stry, fontsize=14, weight="black")
+   ax.set_aspect("equal")
+   ax.grid(color="grey", linestyle="-")
+
+   cb = colorbar(h[4], ax=ax, fraction=0.046, pad=0.04)
+   cb_title = cb.ax.set_ylabel("f(v)", fontsize=14)
+
+   if slicetype in ("bperp", "bpar", "bpar1")
+      # Draw vector of magnetic field direction
+   end
+   plt.tight_layout()
+
+   h[4] # h[1] is 2D data, h[2] is x axis, h[3] is y axis
 end

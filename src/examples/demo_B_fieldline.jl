@@ -1,6 +1,6 @@
 # Sample script for plotting fieldlines with handpicked seeds.
 #
-# Hongyang Zhou, hyzhou@umich.edu 01/27/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 # FieldTracer is not a registered pkg yet
 # using Pkg
@@ -9,8 +9,8 @@
 using Vlasiator, PyPlot, FieldTracer
 
 filename = "bulk.0000999.vlsv"
-meta = read_meta(filename)
-plot_pcolormesh(meta, "proton/vg_rho", islinear=true)
+meta = readmeta(filename)
+plot_pcolormesh(meta, "proton/vg_rho", colorscale=Linear)
 
 Re = Vlasiator.Re
 # regular Cartesian mesh
@@ -38,7 +38,7 @@ for i in 1:ns4
    seeds[2,ns1+2*ns2+ns4+i] = -30Re
 end
 
-b = read_variable(meta, "vg_b_vol")
+b = readvariable(meta, "vg_b_vol")
 bx = reshape(b[1,:], meta.xcells, meta.zcells)
 bz = reshape(b[3,:], meta.xcells, meta.zcells)
 

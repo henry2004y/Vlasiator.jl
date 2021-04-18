@@ -29,6 +29,9 @@ jobs:
         arch:
           - x64
     steps:
+      - name: Install dependencies
+        run: |
+          pip install matplotlib
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:
@@ -37,6 +40,7 @@ jobs:
       - uses: actions/cache@v1
         env:
           cache-name: cache-artifacts
+          TEST_GROUP: "all"
         with:
           path: ~/.julia/artifacts
           key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}

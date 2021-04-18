@@ -1,90 +1,188 @@
 using Vlasiator
 using Test
 
+group = get(ENV, "TEST_GROUP", :all) |> Symbol
+
 @testset "Vlasiator.jl" begin
-   @testset "Reading files" begin
-      if Sys.iswindows()
-         using ZipFile
-         r = ZipFile.Reader("data/bulk_vlsv.zip")
-         for file in r.files
-            open(file.name, "w") do io
-               write(io, read(file, String))
-            end
+   if Sys.iswindows()
+      using ZipFile
+      r = ZipFile.Reader("data/bulk_vlsv.zip")
+      for file in r.files
+         open(file.name, "w") do io
+            write(io, read(file, String))
          end
-      else
-         run(`unzip data/bulk_vlsv.zip`)
       end
+   else
+      run(`unzip data/bulk_vlsv.zip`)
+   end
 
-      filenames = ["bulk.0000004.vlsv", "bulk.amr.vlsv"]
-      meta = read_meta(filenames[1])
-      # Variable strings reading
-      varnames = show_variables(meta)
-      @test length(varnames) == 7 && varnames[end] == "vg_rhom"
-      # Variable info reading
-      varinfo = read_variable_info(meta, "proton/vg_rho")
-      @test varinfo.unit == "1/m^3"
-      # Parameter checking
-      @test has_parameter(meta, "dt") == true
-      # Parameter reading
-      t = read_parameter(meta, "time")
-      @test t == 8.0
-      # ID reading, unsorted
-      cellIDs = read_variable(meta, "CellID", false)
-      IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
-      @test cellIDs == IDRef
-      indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
-      @test meta.cellIndex == indexRef
-      # ID finding
-      loc = [2.0, 0.0, 0.0]
-      id = get_cellid(meta, loc)
-      coords = get_cell_coordinates(meta, id)
-      @test coords == [2.5, 0.0, 0.0]
-      @test read_variable_select(meta, "proton/vg_rho", id)[1][1] ≈ 1.77599 atol=1e-5
-      # ID in a line
-      point1 = [-2.0, 0.0, 0.0]
-      point2 = [2.0, 0.0, 0.0]
-      cellids, _, _ = get_cell_in_line(meta, point1, point2)
-      @test cellids == collect(4:7)
-      # Nearest ID with VDF stored
-      @test getNearestCellWithVspace(meta, id) == 8
+   filenames = ["bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv"]
 
-      # velocity space reading
-      vcellids, vcellf = read_velocity_cells(meta, 2; pop="proton")
-      V = get_velocity_cell_coordinates(meta, vcellids; pop="proton")
-      @test V[:,end] == Float32[2.45, 1.95, 1.95]
+   if group in (:read, :all)
+      @testset "Reading files" begin
+         meta = readmeta(filenames[1])
+         # Variable strings reading
+         varnames = showvariables(meta)
+         @test length(varnames) == 7 && varnames[end] == "vg_rhom"
+         # Variable info reading
+         varinfo = readvariableinfo(meta, "proton/vg_rho")
+         @test varinfo.unit == "1/m^3"
+         # Parameter checking
+         @test hasparameter(meta, "dt") == true
+         # Parameter reading
+         t = readparameter(meta, "time")
+         @test t == 8.0
+         # unsorted ID
+         cellIDs = readvariable(meta, "CellID", false)
+         IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
+         @test cellIDs == IDRef
+         indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
+         @test meta.cellIndex == indexRef
+         # sorted var by default
+         BC = readvariable(meta, "vg_boundarytype")
+         @test BC == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
+         # ID finding
+         loc = [2.0, 0.0, 0.0]
+         id = getcell(meta, loc)
+         coords = getcellcoordinates(meta, id)
+         @test coords == [2.5, 0.0, 0.0]
+         @test readvariable(meta, "proton/vg_rho", id)[1][1] ≈ 1.77599 atol=1e-5
+         # ID in a line
+         point1 = [-2.0, 0.0, 0.0]
+         point2 = [2.0, 0.0, 0.0]
+         cellids, _, _ = getcellinline(meta, point1, point2)
+         @test cellids == collect(4:7)
+         # Nearest ID with VDF stored
+         @test getnearestcellwithvdf(meta, id) == 8
 
-      # AMR data reading, dccrg grid
-      metaAMR = read_meta(filenames[2])
-      maxreflevel = get_max_amr_level(metaAMR)
-      sliceoffset = abs(metaAMR.ymin)
-      idlist, indexlist = getSliceCellID(metaAMR, sliceoffset, maxreflevel,
-         ymin=metaAMR.ymin, ymax=metaAMR.ymax)
+         # velocity space reading
+         vcellids, vcellf = readvcells(meta, 2; pop="proton")
+         V = getvcellcoordinates(meta, vcellids; pop="proton")
+         @test V[:,end] == Float32[2.45, 1.95, 1.95]
 
-      data = read_variable(metaAMR, "proton/vg_rho")
-      data = refine_data(metaAMR, idlist, data[indexlist], maxreflevel, :y)
-      @test sum(data) ≈ 7.690352275026747e8
+         # AMR data reading, dccrg grid
+         metaAMR = readmeta(filenames[3])
+         maxreflevel = getmaxamr(metaAMR)
+         sliceoffset = abs(metaAMR.ymin)
+         idlist, indexlist = getslicecell(metaAMR, sliceoffset, maxreflevel,
+            ymin=metaAMR.ymin, ymax=metaAMR.ymax)
 
-      # AMR level
-      @test get_max_amr_level(metaAMR) == 2
-      @test get_amr_level(metaAMR, idlist[1]) == 1
+         data = readvariable(metaAMR, "proton/vg_rho")
+         data = refinedata(metaAMR, idlist, data[indexlist], maxreflevel, :y)
+         @test sum(data) ≈ 7.690352275026747e8
 
-      # Compare two VLSV files
-      @test compare(filenames[1], filenames[1])
+         # AMR level
+         nAMR = getmaxamr(metaAMR)
+         @test nAMR == 2
+         @test getamr(metaAMR, idlist[1]) == 1
 
-      # Explicit IO closure required by Windows
-      close(meta.fid)
-      close(metaAMR.fid)
+         # FS grid
+         data = readvariable(metaAMR, "fg_e")
+         @test size(data) == (3, metaAMR.xcells*nAMR^2, metaAMR.ycells*nAMR^2, metaAMR.zcells*nAMR^2)
+         @test data[:,16,8,8] == [-1.3758785f-7, 3.2213068f-4, -3.1518404f-4]
+            
 
-      for file in filenames
-         rm(file, force=true)
+         # Compare two VLSV files
+         @test compare(filenames[1], filenames[1])
+
+         # Explicit IO closure required by Windows
+         close(meta.fid)
+         close(metaAMR.fid)
       end
    end
 
-   @testset "Derived variables" begin
+   if group in (:derive, :all)
+      @testset "Derived variables" begin
+         meta = readmeta(filenames[1])
+         V = readvariable(meta, "Vmag")
+         @test sortperm(V) == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
+         close(meta.fid)
 
+         meta = readmeta(filenames[2])
+         B = readvariable(meta, "Bmag")
+         @test B[4] ≈ 3.005215661015543e-9
+
+         VS = readvariable(meta, "VS")
+         @test maximum(VS) == 1.3726345926284448e6
+
+         VA = readvariable(meta, "VA")
+         @test maximum(VA) == 2.3202627284651753e8
+
+         MA = readvariable(meta, "MA")
+         @test MA[end] == 0.09345330716812077
+
+         Vpar = readvariable(meta, "Vpar")
+         @test Vpar[1] == 698735.3045881701
+
+         Vperp = readvariable(meta, "Vperp")
+         @test Vperp[1] == 40982.48109657114
+
+         T = readvariable(meta, "T")
+         @test T[1] == 347619.97307130496
+
+         Beta = readvariable(meta, "Beta")
+         @test Beta[1] == 1.3359065776791028
+
+         Poynting = readvariable(meta, "Poynting")
+         @test Poynting[:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
+
+         di = readvariable(meta, "IonInertial")
+         @test di[1] == 8.584026161906034e7
+
+         rg = readvariable(meta, "Larmor")
+         @test rg[1] == 142415.61376655987
+
+         #Anisotropy = readvariable(meta, "Anisotropy")
+
+         #Agyrotropy = readvariable(metam "Agyrotropy")
+
+         close(meta.fid)
+      end
    end
 
-   @testset "Plotting" begin
+   if group in (:rotation, :all)
+      @testset "Rotation" begin
+         using LinearAlgebra
+         T = Diagonal([1.0, 2.0, 3.0])
+         B = [0.0, 1.0, 0.0]
+         Vlasiator.rotateWithB!(T, B)
+         @test T == Diagonal([1.0, 3.0, 2.0])
+         @test Vlasiator.rotateWithB(T, B) == Diagonal([1.0, 2.0, 3.0])
+      end
+   end
 
+   if group in (:plot, :all)
+      @testset "Plotting" begin
+         using PyPlot
+         ENV["MPLBACKEND"]="agg" # no GUI
+         # 1D
+         meta = readmeta(filenames[1])
+         ρ = readvariable(meta, "proton/vg_rho")
+         plot_line(meta, "proton/vg_rho")
+         line = gca().lines[1]
+         @test line.get_ydata() == ρ
+         loc = [2.0, 0.0, 0.0]
+         p = plot_vdf(meta, loc)
+         @test p.get_array()[786] ≈ 229.8948609959216
+         close(meta.fid)
+
+         # 2D
+         meta = readmeta(filenames[2])
+         p = plot_pcolormesh(meta, "proton/vg_rho")
+         @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
+         p = streamline(meta, "proton/vg_v", comp="xy")
+         @test typeof(p) == PyPlot.PyObject
+         close(meta.fid)
+
+         # 3D AMR
+         meta = readmeta(filenames[3])
+         p = plot_colormap3dslice(meta, "proton/vg_rho")
+         @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
+         close(meta.fid)
+      end
+   end
+         
+   for file in filenames
+      rm(file, force=true)
    end
 end

@@ -7,4 +7,5 @@
 *.png
 *.mp4
 *.dat
+test*
 /docs/build/

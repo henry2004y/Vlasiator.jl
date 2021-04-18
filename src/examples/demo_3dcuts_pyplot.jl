@@ -2,7 +2,7 @@
 #
 # Reading 3D simulation data and plotting density in 3 cuts in the same figure.
 #
-# Hongyang Zhou, hyzhou@umich.edu 02/01/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
@@ -11,7 +11,7 @@ AxesGrid = axes_grid1.AxesGrid
 filename = "bulk1.0001000.vlsv"
 nameρ = "proton/vg_rho"
 
-meta = read_meta(filename)
+meta = readmeta(filename)
 
 # normal cuts in the x,y,z directions
 fig = plt.figure(figsize=(12, 4))
@@ -30,7 +30,7 @@ c2 = plot_colormap3dslice(meta, nameρ, grid[2]; normal=:y, addcolorbar=false)
 c3 = plot_colormap3dslice(meta, nameρ, grid[3]; normal=:z, addcolorbar=false)
 
 cb = fig.colorbar(c3, cax=grid.cbar_axes[1])
-datainfo = read_variable_info(meta, nameρ)
+datainfo = readvariableinfo(meta, nameρ)
 
 cb_title_str = datainfo.variableLaTeX
 cb_title_str *= ",["*datainfo.unitLaTeX*"]"

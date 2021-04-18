@@ -5,50 +5,84 @@
 - Read meta data
 ```
 filename = "bulk.0000004.vlsv"
-meta = read_meta(filename)
+meta = readmeta(filename)
 ```
 
 - Display all variable names
 ```
-vars = show_variables(meta)
+vars = showvariables(meta)
 ```
 
 - Read variable
 ```
-data = read_variable(meta, "proton/vg_rho")
+data = readvariable(meta, "proton/vg_rho")
 ```
 
 The same interface works for both DCCRG grid and FS grid variables.
 By default the returned DCCRG grid variable array is sorted by cell IDs.
 If in any case you want the original unsorted version as being stored in the file,
-simply say `read_variable(meta, var, false)`.
+simply say `readvariable(meta, var, false)`.
 
 - Get variable at a given location (This can be simplified even further later!)
 ```
 loc = [2.0, 0.0, 0.0]
-id = get_cellid(meta, loc)
-read_variable_select(meta, "proton/vg_rho", id)
+id = getcell(meta, loc)
+readvariable(meta, "proton/vg_rho", id)
 ```
 
 - Get variable along a line between two points
 ```
 point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
-cellids, distances, coords = get_cell_in_line(meta, point1, point2)
+cellids, distances, coords = getcellinline(meta, point1, point2)
 ```
 
-Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl), it is possible to do all kinds of in-depth analysis.
+Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl), it is possible to do all kinds of in-depth analysis.
 More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
 ## Computing derived quantities
 
-There are some predefined methods for computing derived quantities such as plasma β, velocity parallel/perpendicular to the magnetic field, pressure tensor with the third axis aligned with the magnetic field direction and so on.
-To compute such, for example, 
+Vlasiator is capable of computing moments and some derived quantities and save them directly into VLSV files.
+More derived quantities computed from the saved quantities are also available in postprocessing, such as plasma β, velocity parallel/perpendicular to the magnetic field, pressure tensor with the third axis aligned with the magnetic field direction and so on.
+To avoid confusion about variable names, the convention here is that
+* if it is directly stored in the VLSV file, read the raw data;
+* otherwise check the availability in the derived variable list. All predefined names start with a capital letter.
+
+To obtain a derived quantity, for example,
 ```
-beta = get_variable_derived(meta, "beta")
+beta = readvariable(meta, "Beta")
 ```
 
-A full list of available quantities can be found in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
+Here is a full list of available quantities[^1]:
+
+| Derived variable name | Meaning                          | Required variable[^2] |
+|-----------------------|----------------------------------|-----------------------|
+| Bmag                  | magnetic field magnitude         | vg\_b\_vol            |
+| Emag                  | electric field magnitude         | vg\_e\_vol            |
+| Vmag                  | bulk speed                       | vg\_v                 |
+| VS                    | sound speed                      | vg\_ptensor\_diagonal; vg\_rho |
+| VA                    | Alfvén speed                     | vg\_rho; Bmag         |
+| MA                    | Alfvén Mach number               | Vmag; VA              |
+| Vpar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol   |
+| Vperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol     |
+| P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |
+| T                     | scalar temperature               | P; vg\_rho            |
+| Tpar                  | temperature $\parallel\mathbf{B}$| vg\_rho; vg\_ptensor\_diagonal; vg\_b\_vol |
+| Tperp                 | temperature $\perp \mathbf{B}$   | vg\_rho; vg\_ptensor\_offdiagonal; vg\_b\_vol |
+| Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
+| Anisotropy            | $P_\perp / P_\parallel$          | ptensor; B            |
+| Pdynamic              | dynamic pressure                 | vg\_rho; Vmag         |
+| Poynting              | Poynting flux                    | E; B                  |
+| Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
+| IonInertial           | ion inertial length              | vg\_rho               | 
+| Larmor                | Larmor radius                    | Vperp; Bmag           |
+| Gyrofrequency         | ion gyroperiod                   |                       |
+| Plasmaperiod          | plasma oscillation period        |                       |
+
+which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
+
+[^1]: For species specific variables, you need to add the species name at the front, separated by a slash. For example, the proton bulk velocity is a string `proton/vg_v`.
+[^2]: If a required variable exists in the VLSV file, we try to use it directly instead of calculating from other variables. The interpolated FS grid variables onto DCCRG grid are preferred over original FS grid variables.
 
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results!
@@ -65,7 +99,8 @@ More examples of customized plots can be found in the [repo](https://github.com/
 
 ### PyPlot Backend
 
-To trigger the Matplotlib plotting, `use PyPlot`.
+To trigger the Matplotlib plotting, `using PyPlot`.
+All the functions with identical names as in Matplotlib accepts all possible keyword arguments.
 
 - Scalar colored contour for 2D simulation
 ```
@@ -74,12 +109,12 @@ plot_pcolormesh(meta, "rho")
 
 - Vector z component colored contour for 2D simulation in a manually set range
 ```
-plot_pcolormesh(meta, "rho", op=:z, islinear=false, axisunit="Re", vmin=1e6, vmax=2e6)
+plot_pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
 - Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
 ```
-plot_pcolormesh(meta, "b", op=:z, islinear=false, axisunit="Re")
+plot_pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline for 2D simulation
@@ -92,7 +127,7 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log color scale, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit="Re"` etc..
+You can choose to use linear/log color scale via `colorscale=Linear` or `colorscale=Log`, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit=RE` etc..
 
 - Cut slice colored contour for 3D simulation
 ```
@@ -106,7 +141,8 @@ plot_vdf(meta, coordinates)
 
 ### Plots Backend
 
-To trigger the Plots package plotting, `use Plots`.
+To trigger the Plots package plotting, `using Plots`.
+This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/).
 
 - Scaler colored contour for 2D simulation
 ```
@@ -117,8 +153,6 @@ heatmap(meta, "rho", aspect_ratio=:equal, c=:turbo)
 ```
 contourf(meta, "rho)
 ```
-
-This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/).
 
 ### Gallery
 
@@ -140,7 +174,7 @@ This backend supports all available attributes provided by [Plots.jl](http://doc
 ## Calling from Python
 
 It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
-Following the installation steps described in the manual[^1], and then inside Python REPL:
+Following the installation steps described in the manual[^2], and then inside Python REPL:
 ```
 # Handling initialization issue for Conda
 from julia.api import Julia
@@ -148,9 +182,9 @@ jl = Julia(compiled_modules=False)
 
 from julia import Vlasiator
 filename = "bulk1.0001000.vlsv"
-meta = Vlasiator.read_meta(filename)
+meta = Vlasiator.readmeta(filename)
 var = "proton/vg_rho"
-data = Vlasiator.read_variable(meta, var)
+data = Vlasiator.readvariable(meta, var)
 ```
 
 To run a Julia script in Python,
@@ -166,7 +200,7 @@ plt.show()
 !!! note
     This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
 
-[^1]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
+[^2]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
 
 ## Misc
 

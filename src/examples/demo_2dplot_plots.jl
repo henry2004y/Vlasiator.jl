@@ -3,7 +3,7 @@
 # Reading 2D simulation data, zooming-in to a region of interest, and
 # adding streamlines on top of colored mesh.
 #
-# Hongyang Zhou, hyzhou@umich.edu 1/25/2021
+# Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Plots
 
@@ -13,7 +13,7 @@ nameV = "rho_v"
 
 boxcoords = [0, 20, -15, 15]
 
-meta = read_meta(filename)
+meta = readmeta(filename)
 
 heatmap(meta, nameρ, 
    xlim=(boxcoords[1], boxcoords[2]),
