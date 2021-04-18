@@ -4,12 +4,6 @@ using Vlasiator, PyPlot, Printf, LaTeXStrings
 import LinearAlgebra: norm, ×
 
 export plot_line, plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
-export SI, RE, Log, Linear
-
-"Axis unit type"
-@enum AxisUnit SI RE
-"Color scales for 2D plots"
-@enum ColorScale Log Linear
 
 "Plotting arguments."
 struct PlotArgs
@@ -353,7 +347,7 @@ function set_args(meta, var, axisunit, colorscale; normal=:z, origin=0.0,
       vmin, vmax, str_title, strx, stry, cmap, cb_title_use)
 end
 
-"Return colorbar norm and ticks."
+"Set colorbar norm and ticks."
 function set_colorbar(pArgs, data)
 
    if pArgs.colorscale == Log # Logarithmic plot

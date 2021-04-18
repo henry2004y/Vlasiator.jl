@@ -7,7 +7,7 @@ using RecipesBase
 # set of types early in the pipeline.
 # It will work on all functions given the correct dimensions, e.g.
 # contourf(data, "rho", xlabel="x")
-@recipe function f(meta::MetaData, var::AbstractString; op="mag", axisunit="Re")
+@recipe function f(meta::MetaData, var::AbstractString; op=:mag, axisunit=RE)
 
    # Check if ecliptic or polar run
    if meta.ycells == 1 && meta.zcells != 1
@@ -35,19 +35,19 @@ using RecipesBase
          data = reshape(dataRaw, sizes[1], sizes[2])
       elseif ndims(dataRaw) == 2
          dataRaw = reshape(dataRaw, 3, sizes...)
-         if op == "x"
+         if op == :x
             data = @view dataRaw[1,:,:]
-         elseif op == "y"
+         elseif op == :y
             data = @view dataRaw[2,:,:]
-         elseif op == "z"
+         elseif op == :z
             data = @view dataRaw[3,:,:]
-         elseif startswith("mag", op)
+         elseif op == :mag
             data = @views hypot.(dataRaw[1,:,:,], dataRaw[2,:,:], dataRaw[3,:,:])
          end
       end
    end
 
-   if axisunit == "Re"
+   if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Re      
    else
