@@ -2,22 +2,20 @@
 
 ## Public APIs
 
-## Reader
-
 ```@autodocs
 Modules = [Vlasiator]
 Private = false
 Order = [:constant, :type, :function]
 ```
 
-## Plotter
+## PyPlot helpers
 
 ```@autodocs
 Modules = [Vlasiator]
 Pages   = ["plot/pyplot.jl"]
 ```
 
-## Private types and methods
+## Private APIs
 
 ```@autodocs
 Modules = [Vlasiator]
