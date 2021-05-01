@@ -3,10 +3,6 @@
 using RecipesBase
 
 # Build a recipe which acts on a custom type.
-# The function name here is meaningless: it is only used to process a unique 
-# set of types early in the pipeline.
-# It will work on all functions given the correct dimensions, e.g.
-# contourf(data, "rho", xlabel="x")
 @recipe function f(meta::MetaData, var::AbstractString; op="mag", axisunit="Re")
 
    # Check if ecliptic or polar run

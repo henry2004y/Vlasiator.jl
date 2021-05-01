@@ -13,18 +13,31 @@ export SI, RE, Log, Linear
 
 "Plotting arguments."
 struct PlotArgs
+   "data array size"
    sizes::Vector{Int}
+   "plotting data range"
    plotrange::Vector{Float32}
-   idlist::Vector{Int}        # cell IDs in the cut plane
-   indexlist::Vector{Int}     # mapping from original cell order to cut plane
-   maxreflevel::Int8          # maximum refinement level
-   colorscale::ColorScale     # linear scale data
-   vmin::Float32              # minimum data value 
-   vmax::Float32              # maximum data value
+   "cell IDs in the cut plane"
+   idlist::Vector{Int}
+   "mapping from original cell order to cut plane"
+   indexlist::Vector{Int}
+   "maximum refinement level"
+   maxreflevel::Int8
+   "scale of data"
+   colorscale::ColorScale
+   "minimum data value"
+   vmin::Float32
+   "maximum data value"
+   vmax::Float32
+   "title"
    str_title::String
+   "xlabel"
    strx::String
+   "ylabel"
    stry::String
+   "colormap used in colorbar"
    cmap::ColorMap
+   "colorbar title"
    cb_title_use::String
 end
 
@@ -48,8 +61,8 @@ end
 """
     streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 
-Wrapper over Matplotlib's streamplot function. The `comp` option can take a
-subset of "xyz" in any order. `axisunit` can be chosen from `RE, SI`.
+Wrapper over Matplotlib's streamplot function. The `comp` option can take a subset of "xyz"
+in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
 function streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
@@ -103,11 +116,11 @@ function streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 end
 
 """
-    plot_pcolormesh(meta::MetaData, var, ax=nothing; op=:mag, axisunit=RE,
-       colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true)
+    plot_pcolormesh(meta::MetaData, var, ax=nothing;
+       op=:mag, axisunit=RE, colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true)
 
-Plot a variable using pseudocolor from 2D VLSV data. If `ax` is provided, then
-it will plot on that axes.
+Plot a variable using pseudocolor from 2D VLSV data.
+If `ax` is provided, then it will plot on that axes.
 
 # Optional arguments
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
@@ -123,8 +136,8 @@ it will plot on that axes.
 
 `plot_pcolormesh(data, func, colorscale=Linear)`
 """
-function plot_pcolormesh(meta, var, ax=nothing; op=:mag, axisunit=RE,
-   colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
+function plot_pcolormesh(meta, var, ax=nothing;
+   op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
 
@@ -144,8 +157,8 @@ end
 """
     plot_colormap3dslice(meta, var, ax=nothing (...))
 
-Plot pseudocolor var on a 2D slice of 3D vlsv data. If `ax` is provided, then
-it will plot on that axes.
+Plot pseudocolor var on a 2D slice of 3D vlsv data.
+If `ax` is provided, then it will plot on that axes.
 
 # Optional arguments
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
@@ -163,12 +176,10 @@ it will plot on that axes.
 
 `plot_colormap3dslice(data, func, colorscale=Log)`
 """
-function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0,
-   normal=:y, axisunit=RE, colorscale=Log, addcolorbar=true,
-   vmin=-Inf, vmax=Inf)
+function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0, normal=:y,
+   axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
-   pArgs = set_args(meta, var, axisunit, colorscale;
-      normal, origin, vmin=-Inf, vmax=Inf)
+   pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin=-Inf, vmax=Inf)
 
    maxreflevel = pArgs.maxreflevel
    sizes = pArgs.sizes
@@ -277,8 +288,8 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, colorscale; normal=:z, origin=0.0,
-   vmin=-Inf, vmax=Inf)
+function set_args(meta, var, axisunit, colorscale;
+   normal=:z, origin=0.0, vmin=-Inf, vmax=Inf)
 
    maxreflevel = getmaxamr(meta)
 
@@ -379,8 +390,8 @@ end
 "Configure customized plot."
 function set_plot(c, ax, pArgs, cticks, addcolorbar)
 
-   str_title, strx, stry, cb_title_use = pArgs.str_title,
-      pArgs.strx, pArgs.stry, pArgs.cb_title_use
+   str_title, strx, stry, cb_title_use = pArgs.str_title, pArgs.strx, pArgs.stry,
+      pArgs.cb_title_use
 
    if addcolorbar
       cb = colorbar(c, ax=ax, ticks=cticks, fraction=0.046, pad=0.04)
@@ -403,19 +414,19 @@ end
 """
     plot_vdf(meta, location; kwargs...)
 
-Plot the 2D slice cut of phase space distribution function at `location` within
-velocity range `limits`.
+Plot the 2D slice cut of phase space distribution function at `location` within velocity
+range `limits`.
 # Optional arguments
 - `limits`: velocity space range given in [xmin, xmax, ymin, ymax].
-- `slicetype`: string for choosing the slice type from "xy", "xz",
-"yz", "bperp", "bpar", "bpar1".
+- `slicetype`: string for choosing the slice type from "xy", "xz", "yz", "bperp", "bpar",
+"bpar1".
 - `center`: string for setting the reference frame from "bulk", "peak".
-- `vslicethick`: setting the velocity space slice thickness in the normal
-direction. If set to 0, the whole distribution along the normal direction is
-projected onto a plane. Currently this is only meaningful when `center` is set
-such that a range near the bulk/peak normal velocity is selected! 
-- `weight`: symbol for choosing distribution weights from phase space
-density or particle flux.
+- `vslicethick`: setting the velocity space slice thickness in the normal direction. If set
+to 0, the whole distribution along the normal direction is projected onto a plane. Currently
+this is only meaningful when `center` is set such that a range near the bulk/peak normal
+velocity is selected! 
+- `weight`: symbol for choosing distribution weights from phase space density or particle
+flux.
 """
 function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit="SI", slicetype="xy",

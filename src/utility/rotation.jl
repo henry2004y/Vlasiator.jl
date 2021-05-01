@@ -38,10 +38,9 @@ end
 """
     getRotationB(B) -> SMatrix
 
-Obtain a rotation matrix with each column being a unit vector which is parallel
-(`v3`) and perpendicular (`v1,v2`) to the magnetic field `B`. The two
-perpendicular directions are chosen based on the reference vector of z-axis in
-the Cartesian coordinates.
+Obtain a rotation matrix with each column being a unit vector which is parallel (`v3`) and
+perpendicular (`v1,v2`) to the magnetic field `B`. The two perpendicular directions are
+chosen based on the reference vector of z-axis in the Cartesian coordinates.
 """
 function getRotationB(B)
    # reference vector

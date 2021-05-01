@@ -1,14 +1,12 @@
 # VLSV reader in Julia
-#
-# Hongyang Zhou, hyzhou@umich.edu
 
 include("vlsvvariables.jl")
 
 using LightXML
 
 export MetaData, VarInfo
-export readmeta, readvariable, readparameter, showvariables, hasvariable,
-       hasparameter, hasname, readvariableinfo, readvcells, getvcellcoordinates
+export readmeta, readvariable, readparameter, showvariables, hasvariable, hasparameter,
+   hasname, readvariableinfo, readvcells, getvcellcoordinates
 
 "Mesh size information."
 struct MeshInfo
@@ -30,15 +28,16 @@ struct MeshInfo
 end
 
 """
-Variable metadata from the vlsv footer, including the unit of the variable as a
-regular string, the unit of the variable as a LaTeX-formatted string, the
-description of the variable as a LaTeX-formatted string, and the 
-conversion factor to SI units as a string.
+Variable metadata from the vlsv footer.
 """
 struct VarInfo
+   "unit of the variable as a string"
    unit::String
+   "unit of the variable as a LaTeX-formatted string"
    unitLaTeX::LaTeXString
+   "description of the variable as a LaTeX-formatted string"
    variableLaTeX::LaTeXString
+   "conversion factor to SI units as a string"
    unitConversion::String
 end
 
@@ -334,8 +333,8 @@ end
 """
     readvariable(meta, var, sorted=true) -> Array
 
-Return variable value from the vlsv file. For DCCRG grid, the variables are
-sorted by cell ID by default.
+Return variable value from the vlsv file. By default `sorted=true`, which means that for
+DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
 
@@ -376,14 +375,12 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
             ldata = data[:,currentOffset:currentOffset+totalSize-1]
             ldata = reshape(ldata, size(data,1), lsize...)
 
-            orderedData[:,
-               lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+            orderedData[:,lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
          else
             ldata = data[currentOffset:currentOffset+totalSize-1]
             ldata = reshape(ldata, lsize...)
 
-            orderedData[
-               lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+            orderedData[lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
          end
 
          currentOffset += totalSize
@@ -533,8 +530,8 @@ end
 """
     readvcells(meta, cellid; pop="proton")
 
-Read velocity cells from a spatial cell of ID `cellid`, and return a map of
-velocity cell ids and corresponding value.
+Read velocity cells from a spatial cell of ID `cellid`, and return a map of velocity cell
+ids and corresponding value.
 """
 function readvcells(meta, cellid; pop="proton")
 

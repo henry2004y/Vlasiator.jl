@@ -152,8 +152,8 @@ end
 """
     getcellinline(meta, point1, point2)
 
-Returns cell IDs, distances and coordinates for every cell in a line between two
-given points. May be improved later with preallocation!
+Returns cell IDs, distances and coordinates for every cell in a line between two given
+points. May be improved later with preallocation!
 """
 function getcellinline(meta, point1, point2)
 
@@ -228,13 +228,12 @@ function getcellinline(meta, point1, point2)
 end
 
 """
-    getslicecell(meta, slicelocation, maxreflevel; xmin=-Inf, xmax=Inf,
-       ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
+    getslicecell(meta, slicelocation, maxreflevel;
+       xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
-Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d
-mesh, in a direction with non infinity range at `slicelocation`, and the
-`indexlist`, which is a mapping from original order to the cut plane and can be
-used to select data onto the plane.
+Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
+direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
+mapping from original order to the cut plane and can be used to select data onto the plane.
 """
 function getslicecell(meta, slicelocation, maxreflevel;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
@@ -290,8 +289,8 @@ function getslicecell(meta, slicelocation, maxreflevel;
          coords = z
       end
 
-      # Find the needed elements to create the cut and puts the results in the
-      # indexlist and the idlist
+      # Find the needed elements to create the cut and puts the results
+      # in the indexlist and the idlist
       elements = coords .== depths[i+1]
       append!(indexlist, (nlen+1:nlen+length(coords))[elements])
       append!(idlist, ids[elements])
@@ -378,8 +377,7 @@ end
 
 "Find the nearest spatial cell with f saved of a given cell `id`."
 function getnearestcellwithvdf(meta, id)
-   cells = Vlasiator.readmesh(meta.fid, meta.footer, "SpatialGrid",
-      "CELLSWITHBLOCKS")
+   cells = Vlasiator.readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    coords = Matrix{Float32}(undef, 3, length(cells))
    for i = 1:length(cells)
       coords[:,i] = getcellcoordinates(meta, cells[i])

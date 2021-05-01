@@ -38,7 +38,7 @@ cellids, distances, coords = getcellinline(meta, point1, point2)
 ```
 
 Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl), it is possible to do all kinds of in-depth analysis.
-More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
+More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples).
 
 ## Computing derived quantities
 
@@ -192,7 +192,7 @@ To run a Julia script in Python,
 # Handling initialization issue for Conda
 from julia.api import Julia
 jl = Julia(compiled_modules=False)
-jl.eval('include("src/examples/demo_2dplot_pyplot.jl")')
+jl.eval('include("examples/demo_2dplot_pyplot.jl")')
 import matplotlib.pyplot as plt
 plt.show()
 ```
