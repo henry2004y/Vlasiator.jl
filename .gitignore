@@ -7,5 +7,5 @@
 *.png
 *.mp4
 *.dat
-test*.jl
+test*
 /docs/build/
