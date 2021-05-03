@@ -1,7 +1,7 @@
 # Plotting functionalities from Matplotlib.
 
-using Vlasiator, PyPlot, Printf, LaTeXStrings
-import LinearAlgebra: norm, ×
+using PyPlot, Printf, LaTeXStrings
+using LinearAlgebra: norm, ×
 
 export plot_line, plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
 
