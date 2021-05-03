@@ -377,7 +377,8 @@ end
 
 "Find the nearest spatial cell with f saved of a given cell `id`."
 function getnearestcellwithvdf(meta, id)
-   cells = Vlasiator.readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
+   cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
+   isempty(cells) && @error "No distribution saved in $(meta)"
    coords = Matrix{Float32}(undef, 3, length(cells))
    for i = 1:length(cells)
       coords[:,i] = getcellcoordinates(meta, cells[i])
