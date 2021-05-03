@@ -15,7 +15,7 @@ nameV = "rho_v"
 
 meta = readmeta(filename)
 
-plot_pcolormesh(meta, nameρ)
+pcolormesh(meta, nameρ)
 
 v = readvariable(meta, nameV)
 vx = reshape(v[1,:], meta.xcells, meta.ycells)
@@ -34,4 +34,4 @@ y1 ./= Re
 
 plot(x1, y1)
 
-streamline(meta, nameV, comp="xy", color="w", density=1.0)
+streamplot(meta, nameV, comp="xy", color="w", density=1.0)

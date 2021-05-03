@@ -13,8 +13,8 @@ nameV = "rho_v"
 
 meta = readmeta(filename)
 
-plot_pcolormesh(meta, nameρ)
-streamline(meta, nameV, comp="xy", color="w", density=2.0)
+pcolormesh(meta, nameρ)
+streamplot(meta, nameV, comp="xy", color="w", density=2.0)
 
 f, ax = plt.gcf(), plt.gca()
 cbar = ax.collections[end].colorbar

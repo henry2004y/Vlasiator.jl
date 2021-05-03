@@ -158,7 +158,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          # 1D
          meta = readmeta(filenames[1])
          ρ = readvariable(meta, "proton/vg_rho")
-         plot_line(meta, "proton/vg_rho")
+         plot(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == ρ
          loc = [2.0, 0.0, 0.0]
@@ -168,15 +168,15 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
          # 2D
          meta = readmeta(filenames[2])
-         p = plot_pcolormesh(meta, "proton/vg_rho")
+         p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
-         p = streamline(meta, "proton/vg_v", comp="xy")
+         p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
          close(meta.fid)
 
          # 3D AMR
          meta = readmeta(filenames[3])
-         p = plot_colormap3dslice(meta, "proton/vg_rho")
+         p = pcolormeshslice(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
          close(meta.fid)
       end

@@ -3,7 +3,8 @@
 using PyPlot, Printf, LaTeXStrings
 using LinearAlgebra: norm, ×
 
-export plot_line, plot_pcolormesh, plot_colormap3dslice, plot_vdf, streamline
+import PyPlot: plot, quiver, streamplot, pcolormesh
+export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver
 
 "Plotting arguments."
 struct PlotArgs
@@ -36,11 +37,11 @@ struct PlotArgs
 end
 
 """
-    plot_line(meta, var; kwargs)
+    plot(meta, var; kwargs)
 
 Plot `var` from `meta` of 1D VLSV data.
 """
-function plot_line(meta, var; kwargs...)
+function plot(meta::MetaData, var; kwargs...)
    if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
@@ -53,13 +54,13 @@ function plot_line(meta, var; kwargs...)
 end
 
 """
-    streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
+    streamplot(meta, var; comp="xy", axisunit=RE, kwargs...)
 
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a subset of "xyz"
 in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
-function streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
+function streamplot(meta::MetaData, var; comp="xy", axisunit=RE, kwargs...)
 
    if occursin("x", comp)
       v1_ = 1
@@ -110,7 +111,64 @@ function streamline(meta, var; comp="xy", axisunit=RE, kwargs...)
 end
 
 """
-    plot_pcolormesh(meta::MetaData, var, ax=nothing;
+    quiver(meta, var; comp="xy", axisunit=RE, kwargs...)
+
+Wrapper over Matplotlib's quiver function. The `comp` option can take a subset of "xyz"
+in any order. `axisunit` can be chosen from `RE, SI`.
+The keyword arguments can be any valid Matplotlib arguments into quiver.
+"""
+function quiver(meta::MetaData, var; comp="xy", axisunit=RE, kwargs...)
+
+   if occursin("x", comp)
+      v1_ = 1
+      if occursin("y", comp)
+         v2_ = 2
+         sizes = [meta.xcells, meta.ycells]
+         plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
+      else
+         v2_ = 3
+         sizes = [meta.xcells, meta.zcells]
+         plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
+      end
+   else
+      v1_, v2_ = 2, 3
+      sizes = [meta.ycells, meta.zcells]
+      plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
+   end
+
+   if hasvariable(meta, var)
+      data = readvariable(meta, var)
+   else
+      data = Vlasiator.variables_predefined[var](meta)
+   end
+
+   if startswith(var, "fg_")
+      v1 = data[v1_,:,:]'
+      v2 = data[v2_,:,:]'
+   else # vlasov grid
+      @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required!"
+      data = reshape(data, 3, sizes...)
+      v1 = data[v1_,:,:]'
+      v2 = data[v2_,:,:]'
+   end
+
+   if axisunit == RE
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
+   else
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
+   end
+
+   # Be careful about array ordering difference between Julia and Python!
+   X = [i for _ in y, i in x]
+   Y = [j for j in y, _ in x]
+
+   c = quiver(X, Y, v1, v2; kwargs...)
+end
+
+"""
+    pcolormesh(meta::MetaData, var, ax=nothing;
        op=:mag, axisunit=RE, colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true)
 
 Plot a variable using pseudocolor from 2D VLSV data.
@@ -124,13 +182,13 @@ If `ax` is provided, then it will plot on that axes.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
-`plot_pcolormesh(meta, var)`
+`pcolormesh(meta, var)`
 
-`plot_pcolormesh(meta, var, axisunit=SI)`
+`pcolormesh(meta, var, axisunit=SI)`
 
-`plot_pcolormesh(data, func, colorscale=Linear)`
+`pcolormesh(data, func, colorscale=Linear)`
 """
-function plot_pcolormesh(meta, var, ax=nothing;
+function pcolormesh(meta::MetaData, var, ax=nothing;
    op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
@@ -149,7 +207,7 @@ function plot_pcolormesh(meta, var, ax=nothing;
 end
 
 """
-    plot_colormap3dslice(meta, var, ax=nothing (...))
+    pcolormeshslice(meta, var, ax=nothing (...))
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data.
 If `ax` is provided, then it will plot on that axes.
@@ -164,13 +222,13 @@ If `ax` is provided, then it will plot on that axes.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
-`plot_colormap3dslice(meta, var)`
+`pcolormeshslice(meta, var)`
 
-`plot_colormap3dslice(meta, var, op=:z, origin=1.0, normal=:x)`
+`pcolormeshslice(meta, var, op=:z, origin=1.0, normal=:x)`
 
-`plot_colormap3dslice(data, func, colorscale=Log)`
+`pcolormeshslice(data, func, colorscale=Log)`
 """
-function plot_colormap3dslice(meta, var, ax=nothing; op=:mag, origin=0.0, normal=:y,
+function pcolormeshslice(meta::MetaData, var, ax=nothing; op=:mag, origin=0.0, normal=:y,
    axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin=-Inf, vmax=Inf)

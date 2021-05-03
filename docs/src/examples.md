@@ -104,22 +104,27 @@ All the functions with identical names as in Matplotlib accepts all possible key
 
 - Scalar colored contour for 2D simulation
 ```
-plot_pcolormesh(meta, "rho")
+pcolormesh(meta, "rho")
 ```
 
 - Vector z component colored contour for 2D simulation in a manually set range
 ```
-plot_pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
 - Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
 ```
-plot_pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
+pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline for 2D simulation
 ```
-streamline(meta, "rho_v", comp="xy")
+streamplot(meta, "rho_v", comp="xy")
+```
+
+- Quiver for 2D simulation
+```
+quiver(meta, "rho_v", comp="xy")
 ```
 
 The `comp` option is used to specify the two vector components.
@@ -131,7 +136,7 @@ You can choose to use linear/log color scale via `colorscale=Linear` or `colorsc
 
 - Cut slice colored contour for 3D simulation
 ```
-plot_colormap3dslice(meta, "proton/vg_rho", normal=:y)
+pcolormeshslice(meta, "proton/vg_rho", normal=:y)
 ```
 
 - Velocity distribution function near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
