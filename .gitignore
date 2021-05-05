@@ -9,3 +9,4 @@
 *.dat
 test*
 /docs/build/
+Manifest.toml
