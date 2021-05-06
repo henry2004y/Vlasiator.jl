@@ -37,11 +37,11 @@ struct PlotArgs
 end
 
 """
-    plot(meta, var; kwargs)
+    plot(meta, var, ax=nothing; kwargs)
 
-Plot `var` from `meta` of 1D VLSV data.
+Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
 """
-function plot(meta::MetaData, var; kwargs...)
+function plot(meta::MetaData, var, ax=nothing; kwargs...)
    if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
@@ -50,17 +50,19 @@ function plot(meta::MetaData, var; kwargs...)
 
    x = LinRange(meta.xmin, meta.xmax, meta.xcells)
 
-   c = plot(x, data; kwargs...)
+   if isnothing(ax) ax = plt.gca() end
+
+   c = ax.plot(x, data; kwargs...)
 end
 
 """
-    streamplot(meta, var; comp="xy", axisunit=RE, kwargs...)
+    streamplot(meta, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
 
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a subset of "xyz"
 in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
-function streamplot(meta::MetaData, var; comp="xy", axisunit=RE, kwargs...)
+function streamplot(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
 
    if occursin("x", comp)
       v1_ = 1
@@ -106,18 +108,21 @@ function streamplot(meta::MetaData, var; comp="xy", axisunit=RE, kwargs...)
    # Be careful about array ordering difference between Julia and Python!
    X = [i for _ in y, i in x]
    Y = [j for j in y, _ in x]
+
+   if isnothing(ax) ax = plt.gca() end
 
    c = streamplot(X, Y, v1, v2; kwargs...)
 end
 
 """
-    quiver(meta, var; comp="xy", axisunit=RE, kwargs...)
+    quiver(meta, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
 
-Wrapper over Matplotlib's quiver function. The `comp` option can take a subset of "xyz"
-in any order. `axisunit` can be chosen from `RE, SI`.
+Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current active
+axes. The `comp` option can take a subset of "xyz" in any order. `axisunit` can be chosen
+from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into quiver.
 """
-function quiver(meta::MetaData, var; comp="xy", axisunit=RE, kwargs...)
+function quiver(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
 
    if occursin("x", comp)
       v1_ = 1
@@ -164,7 +169,9 @@ function quiver(meta::MetaData, var; comp="xy", axisunit=RE, kwargs...)
    X = [i for _ in y, i in x]
    Y = [j for j in y, _ in x]
 
-   c = quiver(X, Y, v1, v2; kwargs...)
+   if isnothing(ax) ax = plt.gca() end
+
+   c = ax.quiver(X, Y, v1, v2; kwargs...)
 end
 
 """
@@ -207,7 +214,7 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
 end
 
 """
-    pcolormeshslice(meta, var, ax=nothing (...))
+    pcolormeshslice(meta, var, ax=nothing; kwargs...)
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data.
 If `ax` is provided, then it will plot on that axes.
@@ -218,8 +225,8 @@ If `ax` is provided, then it will plot on that axes.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
 - `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`)
-- `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
-- `vmax::Float`: maximum data range. Set to minimum of data if not specified.
+- `vmin::Real`: minimum data range. Set to maximum of data if not specified. 
+- `vmax::Real`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
 `pcolormeshslice(meta, var)`
@@ -228,8 +235,9 @@ If `ax` is provided, then it will plot on that axes.
 
 `pcolormeshslice(data, func, colorscale=Log)`
 """
-function pcolormeshslice(meta::MetaData, var, ax=nothing; op=:mag, origin=0.0, normal=:y,
-   axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
+function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origin=0.0,
+   normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Log, addcolorbar=true,
+   vmin::Real=-Inf, vmax::Real=Inf)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin=-Inf, vmax=Inf)
 
@@ -301,7 +309,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op=:mag, origin=0.0, n
 end
 
 "Generate axis and data for 2D plotting."
-function plot_prep2d(meta, var, pArgs, op, axisunit)
+function plot_prep2d(meta, var, pArgs, op, axisunit::AxisUnit)
 
    sizes, plotrange = pArgs.sizes, pArgs.plotrange
 
@@ -340,8 +348,8 @@ function plot_prep2d(meta, var, pArgs, op, axisunit)
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit, colorscale;
-   normal=:z, origin=0.0, vmin=-Inf, vmax=Inf)
+function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
+   normal::Symbol=:z, origin=0.0, vmin=-Inf, vmax=Inf)
 
    maxreflevel = getmaxamr(meta)
 
@@ -464,12 +472,13 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
 end
 
 """
-    plot_vdf(meta, location; kwargs...)
+    plot_vdf(meta, location, ax=nothing; kwargs...)
 
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
-range `limits`.
+range `limits`. If `ax===nothing`, plot on the current active axes.
 # Optional arguments
-- `limits`: velocity space range given in [xmin, xmax, ymin, ymax].
+- `unit::AxisUnit`: axis unit in `SI`, `RE`.
+- `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
 - `slicetype`: string for choosing the slice type from "xy", "xz", "yz", "bperp", "bpar",
 "bpar1".
 - `center`: string for setting the reference frame from "bulk", "peak".
@@ -477,12 +486,12 @@ range `limits`.
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
 velocity is selected! 
-- `weight`: symbol for choosing distribution weights from phase space density or particle
-flux.
+- `weight::Symbol`: choosing distribution weights from phase space density or particle flux
+between `:particle` and `:flux`.
 """
-function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
-   verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit="SI", slicetype="xy",
-   vslicethick=0.0, center="0", weight=:particle, fThreshold=-1.0)
+function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
+   verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI, slicetype="xy",
+   vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
@@ -495,7 +504,7 @@ function plot_vdf(meta, location; limits=[-Inf, Inf, -Inf, Inf], ax=nothing,
    vzmin, vzmax = vmesh.vzmin, vmesh.vzmax
    cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
-   unit == "Re" && (location ./= Vlasiator.Re)
+   unit == RE && (location ./= Vlasiator.Re)
 
    if pop == "proton"
       if !Vlasiator.hasname(meta.footer, "BLOCKIDS", "proton")

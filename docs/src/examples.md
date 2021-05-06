@@ -100,7 +100,10 @@ More examples of customized plots can be found in the [repo](https://github.com/
 ### PyPlot Backend
 
 To trigger the Matplotlib plotting, `using PyPlot`.
-All the functions with identical names as in Matplotlib accepts all possible keyword arguments.
+All the functions with identical names as in Matplotlib accept all possible keyword arguments.
+
+!!! note
+    The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`!
 
 - Scalar colored contour for 2D simulation
 ```
