@@ -454,7 +454,7 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
       pArgs.cb_title_use
 
    if addcolorbar
-      cb = colorbar(c, ax=ax, ticks=cticks, fraction=0.046, pad=0.04)
+      cb = colorbar(c; ax, ticks=cticks, fraction=0.046, pad=0.04)
       cb_title = cb.ax.set_ylabel(cb_title_use, fontsize=14)
       cb.outline.set_linewidth(1.0)
    end
@@ -715,7 +715,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    ax.set_aspect("equal")
    ax.grid(color="grey", linestyle="-")
 
-   cb = colorbar(h[4], ax=ax, fraction=0.046, pad=0.04)
+   cb = colorbar(h[4]; ax=ax, fraction=0.046, pad=0.04)
    cb_title = cb.ax.set_ylabel("f(v)", fontsize=14)
 
    if slicetype in ("bperp", "bpar", "bpar1")
