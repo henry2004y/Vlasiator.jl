@@ -5,8 +5,9 @@ include("vlsvvariables.jl")
 using LightXML
 
 export MetaData, VarInfo
-export readmeta, readvariable, readparameter, showvariables, hasvariable, hasparameter,
-   hasname, readvariableinfo, readvcells, getvcellcoordinates
+export hasvariable, hasparameter, hasname, hasvdf
+export readmeta, readvariable, readparameter, readvariablemeta, readvcells
+export showvariables, showdimension, getvcellcoordinates
 
 "Mesh size information."
 struct MeshInfo
@@ -68,8 +69,14 @@ struct MetaData
 end
 
 
-function Base.show(io::IO, s::MetaData)
-   println(io, "filename = ", s.name)
+function Base.show(io::IO, meta::MetaData)
+   println(io, "filename = ", meta.name)
+   dim = showdimension(meta)
+   println("dimension: $dim")
+   println("contains VDF: $(hasvdf(meta))")
+   vars = showvariables(meta)
+   print("variables: ")
+   println(vars)
 end
 
 function Base.show(io::IO, s::VarInfo)
@@ -273,11 +280,11 @@ end
 
 
 """
-    readvariableinfo(meta, var) -> VarInfo
+    readvariablemeta(meta, var) -> VarInfo
 
 Return VarInfo about `var` in the vlsv file linked to `meta`.           
 """
-function readvariableinfo(meta, var)
+function readvariablemeta(meta, var)
 
    unit = ""
    unitLaTeX = ""
@@ -517,7 +524,7 @@ function hasname(elem, tag, name)
    isFound
 end
 
-"Display all variables in the VLSV file."
+"Return all variable names in the VLSV file."
 function showvariables(meta::MetaData)
    nVar = length(meta.footer["VARIABLE"])
    vars = Vector{String}(undef, nVar)
@@ -525,6 +532,19 @@ function showvariables(meta::MetaData)
       vars[i] = attribute(meta.footer["VARIABLE"][i], "name")
    end
    vars
+end
+
+"Return the dimension of data."
+showdimension(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
+
+"Check if VLSV file contains VDF."
+function hasvdf(meta::MetaData) 
+   cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
+   if isempty(cells)
+      return false
+   else
+      return true
+   end
 end
 
 """
@@ -547,7 +567,7 @@ function readvcells(meta, cellid; pop="proton")
    nblock_C_offsets = zeros(Int, length(cellsWithVDF))
    nblock_C_offsets[2:end] = cumsum(nblock_C[1:end-1])
 
-   # Check that cells has vspace
+   # Check if cells have vspace stored
    if cellid ∈ cellsWithVDF
       cellWithVDFIndex = findfirst(x->x==cellid, cellsWithVDF)
    else

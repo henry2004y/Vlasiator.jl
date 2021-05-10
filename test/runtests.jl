@@ -21,11 +21,14 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
    if group in (:read, :all)
       @testset "Reading files" begin
          meta = readmeta(filenames[1])
+         @test showdimension(meta) == 1
+         @test startswith(repr(meta), "filename = bulk.1d.vlsv")
          # Variable strings reading
          varnames = showvariables(meta)
          @test length(varnames) == 7 && varnames[end] == "vg_rhom"
          # Variable info reading
-         varinfo = readvariableinfo(meta, "proton/vg_rho")
+         varinfo = readvariablemeta(meta, "proton/vg_rho")
+         @test startswith(repr(varinfo), "var in LaTeX")
          @test varinfo.unit == "1/m^3"
          # Parameter checking
          @test hasparameter(meta, "dt") == true
@@ -52,6 +55,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          point2 = [2.0, 0.0, 0.0]
          cellids, _, _ = getcellinline(meta, point1, point2)
          @test cellids == collect(4:7)
+
+         @test hasvdf(meta) == true
          # Nearest ID with VDF stored
          @test getnearestcellwithvdf(meta, id) == 8
 

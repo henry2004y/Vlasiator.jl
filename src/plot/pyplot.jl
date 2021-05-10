@@ -415,7 +415,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
 
    cmap = matplotlib.cm.turbo
 
-   datainfo = readvariableinfo(meta, var)
+   datainfo = readvariablemeta(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
