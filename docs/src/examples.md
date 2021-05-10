@@ -37,7 +37,23 @@ point2 = [15Re, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
 ```
 
-Combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl), it is possible to do all kinds of in-depth analysis.
+- Compare VLSV files
+
+One may want to check if two vlsv files are identical. This is tricky because
+1. the structure of VLSV format does not guarantee parallel writing order;
+2. numerical error accumulates with floating point representation.
+
+The key is that we should not check quantities that are related to MPI writing sequence.
+Note that even file sizes may vary depending on the number of MPI processes!
+
+```
+compare(filename1, filename2)
+```
+
+There is an optional third argument to `compare` for setting the relative difference tolerance, with default being 1e-4.
+In practice relative difference works better for "large" numbers, and absolute difference works better for "small" numbers.
+
+
 More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples).
 
 ## Computing derived quantities
@@ -150,7 +166,7 @@ plot_vdf(meta, coordinates)
 ### Plots Backend
 
 To trigger the Plots package plotting, `using Plots`.
-This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/).
+This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but a wide range of other options are also presented.
 
 - Scaler colored contour for 2D simulation
 ```
@@ -209,19 +225,3 @@ plt.show()
     This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
 
 [^2]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
-
-## Misc
-
-One may want to check if two vlsv files are identical. This is tricky because
-1. the structure of VLSV format does not guarantee parallel writing order;
-2. numerical error accumulates with floating point representation.
-
-The key is that we should not check quantities that are related to MPI writing sequence.
-Note that even file sizes may vary depending on the number of MPI processes!
-
-```
-compare(filename1, filename2)
-```
-
-There is an optional third argument to `compare` for setting the relative difference tolerance, with default being 1e-4.
-In practice relative difference works better for "large" numbers, and absolute difference works better for "small" numbers.
