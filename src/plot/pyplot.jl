@@ -196,7 +196,7 @@ If `ax` is provided, then it will plot on that axes.
 `pcolormesh(data, func, colorscale=Linear)`
 """
 function pcolormesh(meta::MetaData, var, ax=nothing;
-   op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf)
+   op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
 
@@ -206,7 +206,7 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=pArgs.cmap, shading="auto")
+   c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=pArgs.cmap, shading="auto", kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
@@ -237,9 +237,9 @@ If `ax` is provided, then it will plot on that axes.
 """
 function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origin=0.0,
    normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Log, addcolorbar=true,
-   vmin::Real=-Inf, vmax::Real=Inf)
+   vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
 
-   pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin=-Inf, vmax=Inf)
+   pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin, vmax)
 
    maxreflevel = pArgs.maxreflevel
    sizes = pArgs.sizes
@@ -301,7 +301,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data', norm=cnorm, cmap=pArgs.cmap, shading="auto")
+   c = ax.pcolormesh(x, y, data'; norm=cnorm, cmap=pArgs.cmap, shading="auto", kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
@@ -428,7 +428,11 @@ end
 function set_colorbar(pArgs, data)
 
    if pArgs.colorscale == Log # Logarithmic plot
-      vmin = isinf(pArgs.vmin) ? minimum(data[data .> 0.0]) : pArgs.vmin
+      datapositive = data[data .> 0.0]
+      if isempty(datapositive)
+         throw(DomainError(data, "Nonpositive data detected: use linear scale instead!"))
+      end
+      vmin = isinf(pArgs.vmin) ? minimum(datapositive) : pArgs.vmin
       vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
 
       cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
