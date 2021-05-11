@@ -11,7 +11,7 @@ const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
 const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)] 
 const Re = 6.371e6          # Earth radius, [m]
 
-export getcell, getslicecell, getamr, getmaxamr, refinedata, getcellcoordinates,
+export getcell, getslicecell, getlevel, getmaxamr, refinedata, getcellcoordinates,
    getcellinline, getnearestcellwithvdf, compare
 
 """
@@ -66,11 +66,11 @@ function getcell(meta, loc)
 end
 
 """
-    getamr(meta, cellid) -> Int
+    getlevel(meta, cellid) -> Int
 
 Return the AMR level of a given cell ID.
 """
-function getamr(meta, cellid)
+function getlevel(meta, cellid)
 
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
 
@@ -183,7 +183,7 @@ function getcellinline(meta, point1, point2)
 
    while true
       cellid = getcell(meta, p)
-      amrlvl = getamr(meta, cellid)
+      amrlvl = getlevel(meta, cellid)
 
       # Get the max and min cell boundaries
       min_bounds = getcellcoordinates(meta, cellid) -

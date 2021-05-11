@@ -79,7 +79,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          # AMR level
          nAMR = getmaxamr(metaAMR)
          @test nAMR == 2
-         @test getamr(metaAMR, idlist[1]) == 1
+         @test getlevel(metaAMR, idlist[1]) == 1
 
          # FS grid
          data = readvariable(metaAMR, "fg_e")
@@ -166,6 +166,9 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == ρ
+         centers = plotmesh(meta, projection="y")
+         points = centers.get_offsets()
+         @test size(points) == (10,2)
          loc = [2.0, 0.0, 0.0]
          p = plot_vdf(meta, loc)
          @test p.get_array()[786] ≈ 229.8948609959216

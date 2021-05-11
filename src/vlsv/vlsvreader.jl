@@ -488,7 +488,11 @@ function calcLocalSize(globalCells, nprocs, lcells)
    lsize = lcells < remainder ? ncells + 1 : ncells
 end
 
-"Check if the VLSV file contains a variable."
+"""
+    hasvariable(meta, var) -> Bool
+
+Check if the VLSV file contains a variable.
+"""
 hasvariable(meta::MetaData, var) = hasname(meta.footer, "VARIABLE", var)
 
 """
@@ -524,7 +528,11 @@ function hasname(elem, tag, name)
    isFound
 end
 
-"Return all variable names in the VLSV file."
+"""
+    showvariables(meta) -> Vector{String}
+
+Return all variable names in the VLSV file.
+"""
 function showvariables(meta::MetaData)
    nVar = length(meta.footer["VARIABLE"])
    vars = Vector{String}(undef, nVar)
@@ -534,10 +542,18 @@ function showvariables(meta::MetaData)
    vars
 end
 
-"Return the dimension of data."
+"""
+    showdimension(meta) -> Int
+
+Return the dimension of data.
+"""
 showdimension(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
 
-"Check if VLSV file contains VDF."
+"""
+    hasvdf(meta) -> Bool
+
+Check if VLSV file contains VDF.
+"""
 function hasvdf(meta::MetaData) 
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    if isempty(cells)

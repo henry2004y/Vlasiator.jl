@@ -4,7 +4,7 @@ using PyPlot, Printf, LaTeXStrings
 using LinearAlgebra: norm, ×
 
 import PyPlot: plot, quiver, streamplot, pcolormesh
-export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver
+export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
 
 "Plotting arguments."
 struct PlotArgs
@@ -728,4 +728,28 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    plt.tight_layout()
 
    h[4] # h[1] is 2D data, h[2] is x axis, h[3] is y axis
+end
+
+"""
+    plotmesh(meta; projection="3d", marker="+", kwargs...)
+
+Plot mesh cell centers from axis view `projection`. `projection` should be either "3d", "x",
+"y" or "z".
+"""
+function plotmesh(meta::MetaData; projection="3d", marker="+", kwargs...)
+   ids = meta.cellid
+   centers = Matrix{Float32}(undef, 3, length(ids))
+   for (i, id) in enumerate(ids)
+      centers[:,i] = getcellcoordinates(meta, id)
+   end
+
+   if projection == "x"
+      scatter(centers[2,:], centers[3,:]; marker, kwargs...)
+   elseif projection == "y"
+      scatter(centers[1,:], centers[3,:]; marker, kwargs...)
+   elseif projection == "z"
+      scatter(centers[1,:], centers[2,:]; marker, kwargs...)
+   else
+      scatter(centers[1,:], centers[2,:], centers[3,:]; marker, kwargs...)
+   end
 end

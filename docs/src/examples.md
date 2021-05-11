@@ -160,6 +160,11 @@ The `comp` option is used to specify the two vector components.
 
 You can choose to use linear/log color scale via `colorscale=Linear` or `colorscale=Log`, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit=RE` etc..
 
+- Mesh denoted by cell centers
+```
+plotmesh(meta; projection="z", color="w")
+```
+
 - Cut slice colored contour for 3D simulation
 ```
 pcolormeshslice(meta, "proton/vg_rho", normal=:y)
