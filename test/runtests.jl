@@ -168,7 +168,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test line.get_ydata() == ρ
          centers = plotmesh(meta, projection="y")
          points = centers.get_offsets()
-         @test size(points) == (10,2)
+         @test size(points) == (10, 2)
          loc = [2.0, 0.0, 0.0]
          p = plot_vdf(meta, loc)
          @test p.get_array()[786] ≈ 229.8948609959216
@@ -180,6 +180,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
+         p = quiver(meta, "proton/vg_v", axisunit=SI)
+         @test size(p.get_offsets()) == (6300, 2)
          close(meta.fid)
 
          # 3D AMR
