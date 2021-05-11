@@ -192,6 +192,9 @@ contourf(meta, "rho)
 
 ### Gallery
 
+* Proton density in advection flow with points denoting cell centers
+![](figures/mesh.png)
+
 * Proton density of Earth's magnetosphere in the meridional plane from 3D simulation
 ![](figures/magnetosphere_earth_proton_density_ycut.png)
 
