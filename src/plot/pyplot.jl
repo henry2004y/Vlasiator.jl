@@ -357,25 +357,25 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
       sizes = [meta.ycells, meta.zcells]
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
       sliceoffset = abs(meta.xmin) + origin
-      axislabels = ['Y','Z']
+      axislabels = ['Y', 'Z']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel;
          xmin=meta.xmin, xmax=meta.xmax)
    elseif normal == :y
       sizes = [meta.xcells, meta.zcells]
       plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
       sliceoffset = abs(meta.ymin) + origin
-      axislabels = ['X','Z']
+      axislabels = ['X', 'Z']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel;
          ymin=meta.ymin, ymax=meta.ymax)
    elseif normal == :z
       sizes = [meta.xcells, meta.ycells]
       plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
       sliceoffset = abs(meta.zmin) + origin
-      axislabels = ['X','Y']
+      axislabels = ['X', 'Y']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel,
+      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel;
          zmin=meta.zmin, zmax=meta.zmax)
    else
       idlist = Int64[]

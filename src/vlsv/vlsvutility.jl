@@ -17,7 +17,7 @@ export getcell, getslicecell, getlevel, getmaxamr, refinedata, getcellcoordinate
 """
     getcell(meta, location) -> Int
 
-Return cell ID containing the given spatial location.
+Return cell ID containing the given spatial `location`.
 """
 function getcell(meta, loc)
 
@@ -48,7 +48,7 @@ function getcell(meta, loc)
       else
          ncells_lowerlevel += 2^(3*ilevel)*(xcells*ycells*zcells)           
          ilevel += 1
-         dx /= 2; dy /= 2; dz /= 2
+         dx *= 0.5; dy *= 0.5; dz *= 0.5
 
          indices = floor.(Int, [(loc[1] - xmin)/dx, (loc[2] - ymin)/dy, (loc[3] - zmin)/dz])
 
@@ -59,7 +59,7 @@ function getcell(meta, loc)
    end
    
    if ilevel == maxlevel + 1
-      @error "CellID does not exist in any AMR level"
+      throw(DomainError(cellid, "CellID does not exist in any AMR level!"))
    end
 
    cellid
@@ -150,22 +150,21 @@ function isInsideDomain(meta, point)
 end
 
 """
-    getcellinline(meta, point1, point2)
+    getcellinline(meta, point1, point2) -> cellids, distances, coords
 
 Returns cell IDs, distances and coordinates for every cell in a line between two given
-points. May be improved later with preallocation!
+points `point1` and `point2`. May be improved later with preallocation!
 """
 function getcellinline(meta, point1, point2)
 
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
    xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   dx, dy, dz = meta.dx, meta.dy, meta.dz
 
    if !isInsideDomain(meta, point1)
-      @error "point1 in getcellinline out of bounds!"
+      throw(DomainError(point1, "point location out of bounds!"))
    elseif !isInsideDomain(meta, point2)
-      @error "point2 in getcellinline out of bounds!"
+      throw(DomainError(point1, "point location out of bounds!"))
    end
 
    cell_lengths = [(xmax-xmin)/xcells, (ymax-ymin)/ycells, (zmax-zmin)/zcells]
@@ -229,7 +228,7 @@ end
 
 """
     getslicecell(meta, slicelocation, maxreflevel;
-       xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
+       xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf) -> idlist, indexlist
 
 Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
 direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
@@ -252,11 +251,12 @@ function getslicecell(meta, slicelocation, maxreflevel;
    end
 
    # Find the cut plane index for each refinement level
-   sliceratio = slicelocation/(maxCoord-minCoord)
+   sliceratio = slicelocation / (maxCoord - minCoord)
    depths = zeros(maxreflevel+1)
    for i = 0:maxreflevel
       sliceoffset = floor(Int32, sliceratio*nsize*2^i) + 1
-      sliceoffset ≤ nsize*2^i || @error "slice plane index out of bound!"
+      sliceoffset ≤ nsize*2^i || 
+         throw(DomainError(sliceoffset, "slice plane index out of bound!"))
       depths[i+1] = sliceoffset
    end
 
@@ -271,15 +271,7 @@ function getslicecell(meta, slicelocation, maxreflevel;
 
    for i = 0:maxreflevel
       ids = cellids[nCellUptoLowerLvl .< cellids .≤ nCellUptoCurrentLvl]
-
-      # Compute every cell ids' x, y and z indexes
-      z = @. (ids - nCellUptoLowerLvl - 1) ÷ (xsize*ysize*4^i) + 1
-
-      # number of ids up to the coordinate z in the refinement level i
-      idUpToZ = @. (z-1)*xsize*ysize*4^i + nCellUptoLowerLvl
-
-      y = @. (ids - idUpToZ - 1) ÷ (xsize*2^i) + 1
-      x = @. ids - idUpToZ - (y-1)*xsize*2^i
+      x, y, z = getindexes(i, xsize, ysize, nCellUptoLowerLvl, ids)
 
       if idim == 1
          coords = x
@@ -306,7 +298,8 @@ end
 """
     refinedata(meta, idlist, data, maxreflevel, normal) -> Array
 
-Generate scalar data on the finest refinement level.
+Generate scalar data on the finest refinement level given cellids `idlist` and variable
+`data` on the slice perpendicular to `normal`.
 """
 function refinedata(meta, idlist, data, maxreflevel, normal)
 
@@ -329,17 +322,9 @@ function refinedata(meta, idlist, data, maxreflevel, normal)
 
    for i = 0:maxreflevel
       ids = idlist[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
-
       d = data[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
 
-      # Compute every cell ids' x, y and z indexes on this refinement level
-      z = @. (ids - nCellUptoLowerLvl - 1) ÷ (xsize*ysize*4^i) + 1
-
-      # number of ids up to the coordinate z in the refinement level i
-      idUpToZ = @. (z-1)*xsize*ysize*4^i + nCellUptoLowerLvl
-
-      y = @. (ids - idUpToZ - 1) ÷ (xsize*2^i) + 1
-      x = @. ids - idUpToZ - (y-1)*xsize*2^i
+      x, y, z = getindexes(i, xsize, ysize, nCellUptoLowerLvl, ids)
 
       # Get the correct coordinate values and the widths for the plot
       if normal == :x
@@ -375,10 +360,28 @@ function refinedata(meta, idlist, data, maxreflevel, normal)
    dpoints
 end
 
-"Find the nearest spatial cell with f saved of a given cell `id`."
+"Compute every cell id's x, y and z indexes on the given refinement level."
+@inline function getindexes(i, xsize, ysize, nCellUptoLowerLvl, ids)
+   
+   z = @. (ids - nCellUptoLowerLvl - 1) ÷ (xsize*ysize*4^i) + 1
+
+   # number of ids up to the coordinate z in the refinement level i
+   idUpToZ = @. (z-1)*xsize*ysize*4^i + nCellUptoLowerLvl
+
+   y = @. (ids - idUpToZ - 1) ÷ (xsize*2^i) + 1
+   x = @. ids - idUpToZ - (y-1)*xsize*2^i
+
+   x, y, z
+end
+
+"""
+    getnearestcellwithvdf(meta, id) -> Int
+
+Find the nearest spatial cell with VDF saved of a given cell `id` in the file `meta`.
+"""
 function getnearestcellwithvdf(meta, id)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
-   isempty(cells) && @error "No distribution saved in $(meta)"
+   isempty(cells) && @error "No distribution saved in $(meta.name)"
    coords = Matrix{Float32}(undef, 3, length(cells))
    for i = 1:length(cells)
       coords[:,i] = getcellcoordinates(meta, cells[i])
