@@ -731,25 +731,50 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
 end
 
 """
-    plotmesh(meta; projection="3d", marker="+", kwargs...)
+    plotmesh(meta; projection="3d", origin=0.0, marker="+", kwargs...)
 
 Plot mesh cell centers from axis view `projection`. `projection` should be either "3d", "x",
-"y" or "z".
+"y" or "z". `origin` is center of projection plane in the normal direction.
 """
-function plotmesh(meta::MetaData; projection="3d", marker="+", kwargs...)
-   ids = meta.cellid
+function plotmesh(meta::MetaData, ax=nothing; projection="3d", origin=0.0, marker="+",
+   kwargs...)
+
+   maxreflevel = getmaxamr(meta)
+
+   if projection == "x"
+      sliceoffset = abs(meta.xmin) + origin
+
+      ids, _ = getslicecell(meta, sliceoffset, maxreflevel;
+         xmin=meta.xmin, xmax=meta.xmax)
+   elseif projection == "y"
+      sliceoffset = abs(meta.ymin) + origin
+
+      ids, _ = getslicecell(meta, sliceoffset, maxreflevel;
+         ymin=meta.ymin, ymax=meta.ymax)
+   elseif projection == "z"
+      sliceoffset = abs(meta.zmin) + origin
+
+      ids, _ = getslicecell(meta, sliceoffset, maxreflevel;
+         zmin=meta.zmin, zmax=meta.zmax)
+   else
+      ids = meta.cellid
+   end
+
    centers = Matrix{Float32}(undef, 3, length(ids))
    for (i, id) in enumerate(ids)
       centers[:,i] = getcellcoordinates(meta, id)
    end
 
+   if isnothing(ax) ax = plt.gca() end
+
    if projection == "x"
-      scatter(centers[2,:], centers[3,:]; marker, kwargs...)
+      s = ax.scatter(centers[2,:], centers[3,:]; marker, kwargs...)
    elseif projection == "y"
-      scatter(centers[1,:], centers[3,:]; marker, kwargs...)
+      s = ax.scatter(centers[1,:], centers[3,:]; marker, kwargs...)
    elseif projection == "z"
-      scatter(centers[1,:], centers[2,:]; marker, kwargs...)
+      s = ax.scatter(centers[1,:], centers[2,:]; marker, kwargs...)
    else
-      scatter(centers[1,:], centers[2,:], centers[3,:]; marker, kwargs...)
+      s = ax.scatter(centers[1,:], centers[2,:], centers[3,:]; marker, kwargs...)
    end
+   s
 end

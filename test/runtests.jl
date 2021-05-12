@@ -166,9 +166,22 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == ρ
+         centers = plotmesh(meta, projection="x")
+         points = centers.get_offsets()
+         @test size(points) == (1, 2)
          centers = plotmesh(meta, projection="y")
          points = centers.get_offsets()
          @test size(points) == (10, 2)
+         centers = plotmesh(meta, projection="z")
+         points = centers.get_offsets()
+         @test size(points) == (10, 2)
+         fig = plt.figure()
+         ax = fig.add_subplot(projection="3d")
+         centers = plotmesh(meta, projection="3d")
+         points = centers.get_offsets() # only 2D from 3D coords, might be improved
+         @test size(points) == (10, 2)
+         close(fig)
+
          loc = [2.0, 0.0, 0.0]
          p = plot_vdf(meta, loc)
          @test p.get_array()[786] ≈ 229.8948609959216

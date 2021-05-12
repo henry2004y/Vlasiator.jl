@@ -76,7 +76,7 @@ function getlevel(meta, cellid)
 
    ilevel = 0
    while cellid > 0
-      cellid -= 2^(3*(ilevel))*(xcells*ycells*zcells)
+      cellid -= 2^(3*ilevel)*(xcells*ycells*zcells)
       ilevel += 1
    end
    ilevel - 1 
