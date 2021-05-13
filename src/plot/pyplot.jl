@@ -52,7 +52,7 @@ function plot(meta::MetaData, var, ax=nothing; kwargs...)
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.plot(x, data; kwargs...)
+   ax.plot(x, data; kwargs...)
 end
 
 """
@@ -111,7 +111,7 @@ function streamplot(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwa
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = streamplot(X, Y, v1, v2; kwargs...)
+   streamplot(X, Y, v1, v2; kwargs...)
 end
 
 """
@@ -171,7 +171,7 @@ function quiver(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs.
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.quiver(X, Y, v1, v2; kwargs...)
+   ax.quiver(X, Y, v1, v2; kwargs...)
 end
 
 """
@@ -180,6 +180,7 @@ end
 
 Plot a variable using pseudocolor from 2D VLSV data.
 If `ax` is provided, then it will plot on that axes.
+If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
@@ -198,6 +199,16 @@ If `ax` is provided, then it will plot on that axes.
 function pcolormesh(meta::MetaData, var, ax=nothing;
    op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
 
+   if showdimension(meta) == 3 || getmaxamr(meta) > 0
+      # check if origin and normal exist in kwargs
+      normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
+      origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
+      kwargs = Base.structdiff(kwargs.data, (normal = normal, origin = origin))
+      c = pcolormeshslice(meta, var, ax; op, axisunit, colorscale, addcolorbar, vmin, vmax,
+         normal, origin, kwargs...)
+      return c
+   end
+
    pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
@@ -210,7 +221,7 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
-   c
+   return c
 end
 
 """
@@ -218,6 +229,7 @@ end
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data.
 If `ax` is provided, then it will plot on that axes.
+It would be easier to call [`pcolormesh`](@ref).
 
 # Optional arguments
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
@@ -284,8 +296,6 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
       elseif ndims(data) == 3
          @error "not implemented yet!"
-      else
-         @error "Dimension error in constructing 2D AMR slice!"
       end
    end
 
@@ -397,7 +407,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    end
 
    # Scale the sizes to the highest refinement level
-   sizes *= 2^maxreflevel # data needs to be refined later (WIP)
+   sizes *= 2^maxreflevel # data needs to be refined later
 
    unitstr = axisunit == RE ? "R_E" : "m"
    strx = latexstring(axislabels[1]*"["*unitstr*"]")

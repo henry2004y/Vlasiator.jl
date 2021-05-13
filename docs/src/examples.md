@@ -167,7 +167,7 @@ plotmesh(meta; projection="z", color="w")
 
 - Cut slice colored contour for 3D simulation
 ```
-pcolormeshslice(meta, "proton/vg_rho", normal=:y)
+pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 ```
 
 - Velocity distribution function near a given spatial location `coordinates = [0.0, 0.0, 0.0]`

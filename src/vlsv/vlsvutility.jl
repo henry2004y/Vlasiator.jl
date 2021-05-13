@@ -88,7 +88,7 @@ end
 Find the highest refinement level of a given vlsv file.
 """
 function getmaxamr(meta)
-   xcells, ycells, zcells= meta.xcells, meta.ycells, meta.zcells
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
    maxreflevel = 0
    cellID = ncells

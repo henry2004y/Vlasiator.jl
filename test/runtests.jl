@@ -199,7 +199,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
          # 3D AMR
          meta = readmeta(filenames[3])
-         p = pcolormeshslice(meta, "proton/vg_rho")
+         p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
          close(meta.fid)
       end
