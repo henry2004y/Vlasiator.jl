@@ -68,7 +68,8 @@ end
 """
     getlevel(meta, cellid) -> Int
 
-Return the AMR level of a given cell ID.
+Return the AMR level of a given cell ID. Note that this function does not check if the VLSV
+file of `meta` actually contains `cellid`: it may be shadowed by refined children.
 """
 function getlevel(meta, cellid)
 
