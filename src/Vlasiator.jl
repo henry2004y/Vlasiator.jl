@@ -6,8 +6,8 @@ using Requires
 
 include("utility/rotation.jl")
 include("utility/plot.jl")
-include("vlsv/vlsvutility.jl")
 include("vlsv/vlsvreader.jl")
+include("vlsv/vlsvutility.jl")
 include("plot/plots.jl")
 
 function __init__()

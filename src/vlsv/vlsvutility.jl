@@ -12,6 +12,7 @@ const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)]
 const Re = 6.371e6          # Earth radius, [m]
 
 export getcell, getslicecell, getlevel, getmaxamr, refinedata, getcellcoordinates,
+   getchildren, getparent, haschildren, getsiblings,
    getcellinline, getnearestcellwithvdf, compare
 
 """
@@ -19,7 +20,7 @@ export getcell, getslicecell, getlevel, getmaxamr, refinedata, getcellcoordinate
 
 Return cell ID containing the given spatial `location`.
 """
-function getcell(meta, loc)
+function getcell(meta::MetaData, loc)
 
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
    xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
@@ -71,13 +72,12 @@ end
 Return the AMR level of a given cell ID. Note that this function does not check if the VLSV
 file of `meta` actually contains `cellid`: it may be shadowed by refined children.
 """
-function getlevel(meta, cellid)
-
+function getlevel(meta::MetaData, cellid::Integer)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-
+   ncells = xcells*ycells*zcells
    ilevel = 0
    while cellid > 0
-      cellid -= 2^(3*ilevel)*(xcells*ycells*zcells)
+      cellid -= 2^(3*ilevel)*ncells
       ilevel += 1
    end
    ilevel - 1 
@@ -88,17 +88,178 @@ end
 
 Find the highest refinement level of a given vlsv file.
 """
-function getmaxamr(meta)
+function getmaxamr(meta::MetaData)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
    maxreflevel = 0
    cellID = ncells
    while cellID < meta.cellid[end]
       maxreflevel += 1
-      cellID += Int(ncells*8^maxreflevel)
+      cellID += ncells*8^maxreflevel
    end
 
    maxreflevel
+end
+
+"""
+    getparent(meta, cellid) -> Int
+
+Return the parent cell ID of given child `cellid`.
+"""
+function getparent(meta::MetaData, cellid::Integer)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+
+   mylvl = getlevel(meta, cellid)
+   parentlvl = mylvl - 1
+
+   if parentlvl < 0
+      @error "no parent cell!"
+   else
+      # get the first cellid on my level
+      cid1st = 1
+      for i = 0:mylvl-1
+         cid1st += ncells*8^i
+      end
+      # get my row and column sequence on my level (starting with 0)
+      nx = xcells*2^mylvl
+      ny = ycells*2^mylvl
+
+      myseq = cellid - cid1st
+      ix = myseq % nx
+      iz = myseq ÷ (nx*ny)
+      iy = (myseq - iz*nx*ny) ÷ nx
+      # indexes on the parent level
+      ixparent = ix ÷ 2
+      iyparent = iy ÷ 2
+      izparent = iz ÷ 2
+     
+      # get the first cellid on parent level
+      cid1st -= ncells*8^parentlvl
+      # get parent cellid
+      parentid = cid1st + izparent*nx*ny÷4 + iyparent*nx÷2 + ixparent
+   end
+   parentid
+end
+
+"""
+    getchildren(meta, cellid) -> Vector{Int}
+
+Return children of `cellid`.
+"""
+function getchildren(meta::MetaData, cellid::Integer)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+
+   mylvl = getlevel(meta, cellid)
+
+   # get the first cell ID on the my level
+   cid1st = 1
+   for i = 0:mylvl-1
+      cid1st += ncells*8^i
+   end
+   # get my row and column sequence on my level (starting with 0)
+   nx = xcells*2^mylvl
+   ny = ycells*2^mylvl
+   
+   myseq = cellid - cid1st
+   ix = myseq % nx
+   iz = myseq ÷ (nx*ny)
+   iy = (myseq - iz*nx*ny) ÷ nx
+
+   # get the children sequences on the finer level
+   ix *= 2
+   iy *= 2
+   iz *= 2
+
+   # get the first cel ID on the finer level
+   cid1st += ncells*8^mylvl
+
+   if zcells == 1
+      # Maybe I don't need to have a separate branch here. 
+      cid = Vector{Int}(undef, 4)
+      for (n,i) in enumerate(Iterators.product([ix, ix+1], [iy, iy+1]))
+         cid[n] = cid1st + iz*nx*ny*4 + i[2]*nx*2 + i[1]
+      end
+   else
+      cid = Vector{Int}(undef, 8)
+      for (n,i) in enumerate(Iterators.product([ix, ix+1], [iy, iy+1], [iz, iz+1]))
+         cid[n] = cid1st + i[3]*nx*ny*4 + i[2]*nx*2 + i[1]
+      end
+   end
+
+   cid
+end
+
+"""
+    getsiblings(meta, cellid) -> Vector{Int}
+
+Return sibling cells of a given `cellid`, including itself.
+"""
+function getsiblings(meta::MetaData, cellid::Integer)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+
+   mylvl = getlevel(meta, cellid)
+
+   if mylvl == 0
+      @error "$cellid is not a child cell!"
+   end
+
+   # get the first cellid on my level
+   cid1st = 1
+   for i = 0:mylvl-1
+      cid1st += ncells*8^i
+   end
+   # get my row and column sequence on my level (starting with 0)
+   nx = xcells*2^mylvl
+   ny = ycells*2^mylvl
+
+   myseq = cellid - cid1st
+   ix = myseq % nx
+   iz = myseq ÷ (nx*ny)
+   iy = (myseq - iz*nx*ny) ÷ nx
+   
+   ix1 = iseven(ix) ? ix + 1 : ix - 1
+   iy1 = iseven(iy) ? iy + 1 : iy - 1
+   iz1 = iseven(iz) ? iz + 1 : iz - 1
+   # reorder
+   ix, ix1 = minmax(ix, ix1)
+   iy, iy1 = minmax(iy, iy1)
+   iz, iz1 = minmax(iz, iz1)
+
+   if zcells == 1
+      # Maybe I don't need to have a separate branch here. 
+      cid = Vector{Int}(undef, 4)
+      for (n,i) in enumerate(Iterators.product([ix, ix1], [iy, iy1]))
+         cid[n] = cid1st + iz*nx*ny + i[2]*nx + i[1]
+      end
+   else
+      cid = Vector{Int}(undef, 8)
+      for (n,i) in enumerate(Iterators.product([ix, ix1], [iy, iy1], [iz, iz1]))
+         cid[n] = cid1st + i[3]*nx*ny + i[2]*nx + i[1]
+      end
+   end
+
+   cid
+end
+
+"""
+    haschildren(meta, cellid) -> Bool
+
+Check if `cellid` is a parent cell.
+"""
+function haschildren(meta::MetaData, cellid::Integer)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+   amrmax = getmaxamr(meta)
+
+   ncells_accum = 0
+   for i = 0:amrmax-1
+      ncells_accum += ncells*8^i
+   end
+
+   cellid ∉ meta.cellid && 0 < cellid ≤ ncells_accum 
 end
 
 """
@@ -106,7 +267,7 @@ end
 
 Return a given cell's coordinates.
 """    
-function getcellcoordinates(meta, cellid)
+function getcellcoordinates(meta::MetaData, cellid::Integer)
 
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
@@ -139,7 +300,7 @@ function getcellcoordinates(meta, cellid)
    coords
 end
 
-function isInsideDomain(meta, point)
+function isInsideDomain(meta::MetaData, point)
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
    xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
 
@@ -156,7 +317,7 @@ end
 Returns cell IDs, distances and coordinates for every cell in a line between two given
 points `point1` and `point2`. May be improved later with preallocation!
 """
-function getcellinline(meta, point1, point2)
+function getcellinline(meta::MetaData, point1, point2)
 
    xmin, ymin, zmin = meta.xmin, meta.ymin, meta.zmin
    xmax, ymax, zmax = meta.xmax, meta.ymax, meta.zmax
@@ -235,7 +396,7 @@ Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mes
 direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
 mapping from original order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta, slicelocation, maxreflevel;
+function getslicecell(meta::MetaData, slicelocation, maxreflevel;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
@@ -302,7 +463,7 @@ end
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
-function refinedata(meta, idlist, data, maxreflevel, normal)
+function refinedata(meta::MetaData, idlist, data, maxreflevel, normal)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
@@ -380,7 +541,7 @@ end
 
 Find the nearest spatial cell with VDF saved of a given cell `id` in the file `meta`.
 """
-function getnearestcellwithvdf(meta, id)
+function getnearestcellwithvdf(meta::MetaData, id)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    isempty(cells) && @error "No distribution saved in $(meta.name)"
    coords = Matrix{Float32}(undef, 3, length(cells))

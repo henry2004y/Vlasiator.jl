@@ -65,7 +65,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          V = getvcellcoordinates(meta, vcellids; pop="proton")
          @test V[:,end] == Float32[2.45, 1.95, 1.95]
 
-         # AMR data reading, dccrg grid
+         # AMR data reading, DCCRG grid
          metaAMR = readmeta(filenames[3])
          maxreflevel = getmaxamr(metaAMR)
          sliceoffset = abs(metaAMR.ymin)
@@ -80,6 +80,12 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          nAMR = getmaxamr(metaAMR)
          @test nAMR == 2
          @test getlevel(metaAMR, idlist[1]) == 1
+
+         # DCCRG utilities
+         @test haschildren(metaAMR, 1)
+         @test !haschildren(metaAMR, 1080)
+         @test getchildren(metaAMR, 1) == getsiblings(metaAMR, 129)
+         @test getparent(metaAMR, 129) == 1
 
          # FS grid
          data = readvariable(metaAMR, "fg_e")
