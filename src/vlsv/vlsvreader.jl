@@ -72,12 +72,12 @@ end
 function Base.show(io::IO, meta::MetaData)
    println(io, "filename = ", meta.name)
    dim = showdimension(meta)
-   println("dimension: $dim")
-   println("maximum AMR level: $(getmaxamr(meta))")
-   println("contains VDF: $(hasvdf(meta))")
+   println(io, "dimension: $dim")
+   println(io, "maximum AMR level: $(getmaxamr(meta))")
+   println(io, "contains VDF: $(hasvdf(meta))")
    vars = showvariables(meta)
-   print("variables: ")
-   println(vars)
+   print(io, "variables: ")
+   println(io, vars)
 end
 
 function Base.show(io::IO, s::VarInfo)
