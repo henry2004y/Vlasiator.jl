@@ -49,7 +49,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          id = getcell(meta, loc)
          coords = getcellcoordinates(meta, id)
          @test coords == [2.5, 0.0, 0.0]
-         @test readvariable(meta, "proton/vg_rho", id)[1][1] ≈ 1.77599 atol=1e-5
+         @test readvariable(meta, "proton/vg_rho", id)[1,1] ≈ 1.77599 atol=1e-5
          # ID in a line
          point1 = [-2.0, 0.0, 0.0]
          point2 = [2.0, 0.0, 0.0]

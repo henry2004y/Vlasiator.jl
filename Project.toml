@@ -12,6 +12,7 @@ PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
 [compat]
 LaTeXStrings = "1.2"

@@ -7,6 +7,8 @@
 *.png
 *.mp4
 *.dat
+*.vti
+*.vthb
 test*
 /docs/build/
 Manifest.toml

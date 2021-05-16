@@ -405,15 +405,15 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
 end
 
 """
-    readvariable(meta, var, idIn) -> Array
+    readvariable(meta, var, ids) -> Array
 
-Read a variable in a collection of cells.
+Read a variable `var` in a collection of cells `ids`.
 """
-function readvariable(meta::MetaData, var::AbstractString, idIn)
+function readvariable(meta::MetaData, var::AbstractString, ids)
 
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
 
-   if isempty(idIn)
+   if isempty(ids)
       w = readvariable(meta, var, false)
       return [w]
    end
@@ -422,9 +422,9 @@ function readvariable(meta::MetaData, var::AbstractString, idIn)
       getObjInfo(meta.fid, meta.footer, var, "VARIABLE", "name")
 
    cellids = readvariable(meta, "CellID", false)
-   rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in idIn]
+   rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in ids]
 
-   v = fill(T[], length(rOffsets))
+   v = Array{T}(undef, vectorsize, length(ids))
 
    for (i, r) in enumerate(rOffsets)
       loc = variable_offset + r
@@ -432,7 +432,7 @@ function readvariable(meta::MetaData, var::AbstractString, idIn)
    
       w = Vector{T}(undef, vectorsize)
       read!(meta.fid, w)
-      v[i] = w
+      v[:,i] = w
    end
 
    return v

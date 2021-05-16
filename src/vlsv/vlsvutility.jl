@@ -1,6 +1,7 @@
 # Utility functions for processing VLSV data.
 
-import LinearAlgebra: dot
+using LinearAlgebra: dot
+using WriteVTK, Printf
 
 const qₑ = -1.60217662e-19  # electron charge, [C]
 const mₑ = 9.10938356e-31   # electron mass, [kg]
@@ -114,13 +115,10 @@ function getparent(meta::MetaData, cellid::Integer)
    parentlvl = mylvl - 1
 
    if parentlvl < 0
-      @error "no parent cell!"
+      throw(ArgumentError("$cellid has no parent cell!"))
    else
       # get the first cellid on my level
-      cid1st = 1
-      for i = 0:mylvl-1
-         cid1st += ncells*8^i
-      end
+      cid1st = get1stcell(mylvl, ncells) + 1
       # get my row and column sequence on my level (starting with 0)
       nx = xcells*2^mylvl
       ny = ycells*2^mylvl
@@ -145,7 +143,7 @@ end
 """
     getchildren(meta, cellid) -> Vector{Int}
 
-Return children of `cellid`.
+Return direct children of `cellid`.
 """
 function getchildren(meta::MetaData, cellid::Integer)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
@@ -172,22 +170,15 @@ function getchildren(meta::MetaData, cellid::Integer)
    iy *= 2
    iz *= 2
 
-   # get the first cel ID on the finer level
+   dim = showdimension(meta)
+   cid = Vector{Int}(undef, 2^dim)
+   # get the first cell ID on the finer level
    cid1st += ncells*8^mylvl
-
-   if zcells == 1
-      # Maybe I don't need to have a separate branch here. 
-      cid = Vector{Int}(undef, 4)
-      for (n,i) in enumerate(Iterators.product([ix, ix+1], [iy, iy+1]))
-         cid[n] = cid1st + iz*nx*ny*4 + i[2]*nx*2 + i[1]
-      end
-   else
-      cid = Vector{Int}(undef, 8)
-      for (n,i) in enumerate(Iterators.product([ix, ix+1], [iy, iy+1], [iz, iz+1]))
-         cid[n] = cid1st + i[3]*nx*ny*4 + i[2]*nx*2 + i[1]
-      end
+   ix_, iy_ = [ix, ix+1], [iy, iy+1]
+   iz_ = zcells != 1 ? [iz, iz+1] : [iz]
+   for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
+      cid[n] = cid1st + i[3]*nx*ny*4 + i[2]*nx*2 + i[1]
    end
-
    cid
 end
 
@@ -202,19 +193,15 @@ function getsiblings(meta::MetaData, cellid::Integer)
 
    mylvl = getlevel(meta, cellid)
 
-   if mylvl == 0
-      @error "$cellid is not a child cell!"
-   end
+   mylvl == 0 && @error "$cellid is not a child cell!"
+
+   nx = xcells * 2^mylvl
+   ny = ycells * 2^mylvl
 
    # get the first cellid on my level
-   cid1st = 1
-   for i = 0:mylvl-1
-      cid1st += ncells*8^i
-   end
-   # get my row and column sequence on my level (starting with 0)
-   nx = xcells*2^mylvl
-   ny = ycells*2^mylvl
+   cid1st = get1stcell(mylvl, ncells) + 1
 
+   # get the row and column sequence on my level (starting with 0)
    myseq = cellid - cid1st
    ix = myseq % nx
    iz = myseq ÷ (nx*ny)
@@ -228,19 +215,13 @@ function getsiblings(meta::MetaData, cellid::Integer)
    iy, iy1 = minmax(iy, iy1)
    iz, iz1 = minmax(iz, iz1)
 
-   if zcells == 1
-      # Maybe I don't need to have a separate branch here. 
-      cid = Vector{Int}(undef, 4)
-      for (n,i) in enumerate(Iterators.product([ix, ix1], [iy, iy1]))
-         cid[n] = cid1st + iz*nx*ny + i[2]*nx + i[1]
-      end
-   else
-      cid = Vector{Int}(undef, 8)
-      for (n,i) in enumerate(Iterators.product([ix, ix1], [iy, iy1], [iz, iz1]))
-         cid[n] = cid1st + i[3]*nx*ny + i[2]*nx + i[1]
-      end
+   dim = showdimension(meta)
+   cid = Vector{Int}(undef, 2^dim)
+   ix_, iy_ = [ix, ix1], [iy, iy1]
+   iz_ = zcells != 1 ? [iz, iz1] : [iz]
+   for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
+      cid[n] = cid1st + i[3]*nx*ny + i[2]*nx + i[1]
    end
-
    cid
 end
 
@@ -254,12 +235,188 @@ function haschildren(meta::MetaData, cellid::Integer)
    ncells = xcells*ycells*zcells
    amrmax = getmaxamr(meta)
 
-   ncells_accum = 0
-   for i = 0:amrmax-1
-      ncells_accum += ncells*8^i
-   end
+   ncells_accum = get1stcell(amrmax, ncells)
 
    cellid ∉ meta.cellid && 0 < cellid ≤ ncells_accum 
+end
+
+"Return the first cellid - 1 on my level."
+function get1stcell(mylevel, ncells)
+   cid1st = 0
+   for i = 0:mylevel-1
+      cid1st += ncells*8^i
+   end
+   cid1st
+end
+
+"""
+    fillmesh(meta::MetaData, vars; verbose=false)
+
+Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
+# Return Arguments
+- `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
+- `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
+"""
+function fillmesh(meta::MetaData, vars; verbose=false)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+   cellid = meta.cellid
+
+   maxamr = getmaxamr(meta)
+
+   nv = length(vars)
+   T = Vector{DataType}(undef, nv)
+   vsize = Vector{Int8}(undef, nv)
+   for i = 1:nv
+      T[i], _, _, _, vsize[i] =
+         getObjInfo(meta.fid, meta.footer, vars[i], "VARIABLE", "name")
+   end
+
+   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i)
+      for i = 0:maxamr] for iv in 1:nv]
+
+   vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
+
+   if maxamr == 0 # no AMR
+      for iv = 1:nv
+         v = readvariable(meta, vars[iv])
+         for i in LinearIndices(celldata[1])
+            celldata[iv][1][:,i] = v[:,i]
+         end
+      end
+      return celldata, vtkGhostType
+   end
+
+   for (iv, var) = enumerate(vars)
+      # TODO: handle non-floating point data in averaging!
+      if !(T[iv] <: AbstractFloat) continue end
+      ## fill the data on the highest refinement level
+      index_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
+   
+      for (i, cid) = enumerate(get1stcell(maxamr, ncells)+1:get1stcell(maxamr+1, ncells))
+         cidparent = getparent(meta, cid)
+         if cidparent in cellid
+            celldata[iv][end][:,index_[i]] = readvariable(meta, var, cidparent)
+         end
+      end
+
+      cidfine1st = get1stcell(maxamr, ncells) # 1st cell ID - 1 on max amr level
+   
+      index1st_ = findfirst(x->x>cidfine1st, cellid)
+      cids = cellid[index1st_:end]
+      celldata[iv][end][:, index_[cids .- cidfine1st]] = readvariable(meta, var, cids)
+
+      # fill the data on other refinement levels
+      # inverse order, since all the intermediate values are needed!
+      for ilevel = maxamr-1:-1:0
+         data = celldata[iv][ilevel+1]
+         ghost = vtkGhostType[ilevel+1]
+
+         cid1st = get1stcell(ilevel, ncells) # 1st cell ID - 1 on my level
+
+         ic = LinearIndices(ghost)
+
+         for cid = CartesianIndices(ghost)
+            if !haschildren(meta, ic[cid]+cid1st)
+               data[:,cid] = readvariable(meta, var, ic[cid]+cid1st)
+               ghost[cid] = 0
+            else
+               ghost[cid] = 8 # I don't understand this. https://blog.kitware.com/ghost-and-blanking-visibility-changes/
+               children = getchildren(meta, ic[cid]+cid1st)
+
+               if verbose
+                  @info "cell $(ic[cid]+cid1st) is refined.\nchildren: $children"
+               end
+
+               if ilevel == maxamr - 1
+                  v = readvariable(meta, var, children)
+               else
+                  v = celldata[iv][ilevel+2][children .- (cid1st + ncells*8^ilevel) .+ 1]
+               end
+               data[:,cid] .= sum(v) / length(v)
+            end
+         end
+      end
+   end
+
+   celldata, vtkGhostType
+end
+
+fillmesh(meta::MetaData, vars::AbstractString; verbose=false) =
+   fillmesh(meta, [vars]; verbose)
+
+
+"""
+    write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+
+Convert VLSV file linked with `meta` to VTK OverlappingAMR format.
+Users can select which variables to convert through `vars`.
+If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
+"""
+function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
+
+   append = ascii ? false : true
+
+   maxamr = getmaxamr(meta)
+   filedata = Vector{String}(undef, maxamr+1)
+   for i in 1:maxamr+1
+      filedata[i] = meta.name[1:end-5]*"_$i.vti"
+   end
+
+   # Generate vthb file
+   filemeta = meta.name[1:end-4]*"vthb"
+   xvthb = XMLDocument()
+   xroot = create_root(xvthb, "VTKFile")
+   set_attribute(xroot, "type", "vtkOverlappingAMR")
+   set_attribute(xroot, "version", "1.1")
+   set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
+   set_attribute(xroot, "header_type", "UInt64")
+   xamr = new_child(xroot, "vtkOverlappingAMR")
+   origin = @sprintf "%f %f %f" meta.xmin meta.ymin meta.zmin
+   set_attribute(xamr, "origin", origin)
+   set_attribute(xamr, "grid_description", "XYZ")
+
+   for i = 0:maxamr
+      xBlock = new_child(xamr, "Block")
+      set_attribute(xBlock, "level", string(i))
+      spacing_str = @sprintf "%f %f %f" meta.dx/2^i meta.dy/2^i meta.dz/2^i
+      set_attribute(xBlock, "spacing", spacing_str)
+      xDataSet = new_child(xBlock, "DataSet")
+      set_attribute(xDataSet, "index", "0")
+      amr_box = [0, nx*2^i-1, 0, ny*2^i-1, 0, nz*2^i-1]
+      box_str = @sprintf "%d %d %d %d %d %d" amr_box...
+      set_attribute(xDataSet, "amr_box", box_str)
+      set_attribute(xDataSet, "file", filedata[i+1])
+   end
+
+   save_file(xvthb, filemeta)
+
+   if isempty(vars[1])
+      vars = showvariables(meta)
+      deleteat!(vars, findfirst(x->x=="CellID", vars))
+      deleteat!(vars, findall(x->startswith(x, "fg"), vars)) # TODO: handle fg grid later
+   end
+
+   data, vtkGhostType = fillmesh(meta, vars; verbose)
+
+   # Generate image file on each refinement level
+   for i = 1:length(vtkGhostType) 
+      origin = (meta.xmin, meta.ymin, meta.zmin)
+      spacing = (meta.dx / 2^(i-1), meta.dy / 2^(i-1), meta.dz / 2^(i-1))
+   
+      vtk = vtk_grid(filedata[i], nx*2^(i-1)+1, ny*2^(i-1)+1, nz*2^(i-1)+1;
+         origin, spacing, append, ascii)
+
+      for (iv, var) in enumerate(vars)
+         vtk[var, VTKCellData()] = data[iv][i]
+      end
+
+      vtk["vtkGhostType", VTKCellData()] = vtkGhostType[i]
+
+      vtk_save(vtk)
+   end
+   return
 end
 
 """

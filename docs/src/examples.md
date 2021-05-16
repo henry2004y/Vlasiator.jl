@@ -210,6 +210,10 @@ contourf(meta, "rho)
 * Proton phase space distribution
 ![](figures/phase_space_distribution.png)
 
+## Converting to VTK
+
+We can convert VLSV files into VTK files! WIP, available in v0.5.
+
 ## Calling from Python
 
 It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
