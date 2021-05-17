@@ -12,9 +12,9 @@ const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
 const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)] 
 const Re = 6.371e6          # Earth radius, [m]
 
-export getcell, getslicecell, getlevel, getmaxamr, refinedata, getcellcoordinates,
+export getcell, getslicecell, getlevel, getmaxamr, refineslice, getcellcoordinates,
    getchildren, getparent, haschildren, getsiblings,
-   getcellinline, getnearestcellwithvdf, compare
+   getcellinline, getnearestcellwithvdf, write_vtk, compare
 
 """
     getcell(meta, location) -> Int
@@ -240,197 +240,6 @@ function haschildren(meta::MetaData, cellid::Integer)
    cellid ∉ meta.cellid && 0 < cellid ≤ ncells_accum 
 end
 
-"Return the first cellid - 1 on my level."
-function get1stcell(mylevel, ncells)
-   cid1st = 0
-   for i = 0:mylevel-1
-      cid1st += ncells*8^i
-   end
-   cid1st
-end
-
-"""
-    fillmesh(meta::MetaData, vars; verbose=false)
-
-Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
-# Return Arguments
-- `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
-- `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
-"""
-function fillmesh(meta::MetaData, vars; verbose=false)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
-   cellid = meta.cellid
-
-   maxamr = getmaxamr(meta)
-
-   nv = length(vars)
-   T = Vector{DataType}(undef, nv)
-   vsize = Vector{Int8}(undef, nv)
-   for i = 1:nv
-      T[i], _, _, _, vsize[i] =
-         getObjInfo(meta.fid, meta.footer, vars[i], "VARIABLE", "name")
-   end
-
-   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i)
-      for i = 0:maxamr] for iv in 1:nv]
-
-   vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
-
-   if maxamr == 0 # no AMR
-      for iv = 1:nv
-         v = readvariable(meta, vars[iv])
-         for i in LinearIndices(celldata[1])
-            celldata[iv][1][:,i] = v[:,i]
-         end
-      end
-      return celldata, vtkGhostType
-   end
-
-   index_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
-
-   for (iv, var) = enumerate(vars)
-      # TODO: handle non-floating point data in averaging!
-      if !(T[iv] <: AbstractFloat) continue end
-      ## fill the data on the highest refinement level
-      if startswith(var, "fg_")
-         celldata[iv][end] = readvariable(meta, var)
-         continue
-      else         
-         cidrange = [get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells)]
-         cidparents = Vector{Int64}(undef, cidrange[2]-cidrange[1]+1)
-         cidmask = similar(cidparents)
-         nc = 0
-         for (i, cid) = enumerate(cidrange[1]:cidrange[2])
-            if cid ∉ cellid
-               nc += 1
-               cidmask[nc] = i
-               cidparents[nc] = getparent(meta, cid)
-            end
-         end
-
-         celldata[iv][end][:,index_[cidmask[1:nc]]] =
-            readvariable(meta, var, cidparents[1:nc])
-
-         cidfine1st = cidrange[1] - 1 # 1st cell ID - 1 on max amr level   
-         index1st_ = findfirst(x->x>cidfine1st, cellid)
-
-         cids = @view cellid[index1st_:end]
-         celldata[iv][end][:, index_[cids .- cidfine1st]] = readvariable(meta, var, cids)
-      end
-
-      # fill the data on other refinement levels
-      # inverse order, since all the intermediate values are needed!
-      for ilevel = maxamr-1:-1:0
-         data = celldata[iv][ilevel+1]
-         ghost = vtkGhostType[ilevel+1]
-
-         cid1st = get1stcell(ilevel, ncells) # 1st cell ID - 1 on my level
-
-         ic = LinearIndices(ghost)
-
-         for cid = CartesianIndices(ghost)
-            if !haschildren(meta, ic[cid]+cid1st)
-               data[:,cid] = readvariable(meta, var, ic[cid]+cid1st)
-               ghost[cid] = 0
-            else
-               ghost[cid] = 8 # I don't understand this. https://blog.kitware.com/ghost-and-blanking-visibility-changes/
-               children = getchildren(meta, ic[cid]+cid1st)
-
-               if verbose
-                  @info "cell $(ic[cid]+cid1st) is refined.\nchildren: $children"
-               end
-
-               if ilevel == maxamr - 1
-                  v = readvariable(meta, var, children)
-               else
-                  v = celldata[iv][ilevel+2][children .- (cid1st + ncells*8^ilevel) .+ 1]
-               end
-               data[:,cid] .= sum(v) / length(v)
-            end
-         end
-      end
-   end
-
-   celldata, vtkGhostType
-end
-
-fillmesh(meta::MetaData, vars::AbstractString; verbose=false) =
-   fillmesh(meta, [vars]; verbose)
-
-
-"""
-    write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
-
-Convert VLSV file linked with `meta` to VTK OverlappingAMR format.
-Users can select which variables to convert through `vars`.
-If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
-"""
-function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
-   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
-
-   append = ascii ? false : true
-
-   maxamr = getmaxamr(meta)
-   filedata = Vector{String}(undef, maxamr+1)
-   for i in 1:maxamr+1
-      filedata[i] = meta.name[1:end-5]*"_$i.vti"
-   end
-
-   # Generate vthb file
-   filemeta = meta.name[1:end-4]*"vthb"
-   xvthb = XMLDocument()
-   xroot = create_root(xvthb, "VTKFile")
-   set_attribute(xroot, "type", "vtkOverlappingAMR")
-   set_attribute(xroot, "version", "1.1")
-   set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
-   set_attribute(xroot, "header_type", "UInt64")
-   xamr = new_child(xroot, "vtkOverlappingAMR")
-   origin = @sprintf "%f %f %f" meta.xmin meta.ymin meta.zmin
-   set_attribute(xamr, "origin", origin)
-   set_attribute(xamr, "grid_description", "XYZ")
-
-   for i = 0:maxamr
-      xBlock = new_child(xamr, "Block")
-      set_attribute(xBlock, "level", string(i))
-      spacing_str = @sprintf "%f %f %f" meta.dx/2^i meta.dy/2^i meta.dz/2^i
-      set_attribute(xBlock, "spacing", spacing_str)
-      xDataSet = new_child(xBlock, "DataSet")
-      set_attribute(xDataSet, "index", "0")
-      amr_box = [0, nx*2^i-1, 0, ny*2^i-1, 0, nz*2^i-1]
-      box_str = @sprintf "%d %d %d %d %d %d" amr_box...
-      set_attribute(xDataSet, "amr_box", box_str)
-      set_attribute(xDataSet, "file", filedata[i+1])
-   end
-
-   save_file(xvthb, filemeta)
-
-   if isempty(vars[1])
-      vars = showvariables(meta)
-      deleteat!(vars, findfirst(x->x=="CellID", vars))
-   end
-
-   data, vtkGhostType = fillmesh(meta, vars; verbose)
-
-   # Generate image file on each refinement level
-   for i = 1:length(vtkGhostType) 
-      origin = (meta.xmin, meta.ymin, meta.zmin)
-      spacing = (meta.dx / 2^(i-1), meta.dy / 2^(i-1), meta.dz / 2^(i-1))
-   
-      vtk = vtk_grid(filedata[i], nx*2^(i-1)+1, ny*2^(i-1)+1, nz*2^(i-1)+1;
-         origin, spacing, append, ascii)
-
-      for (iv, var) in enumerate(vars)
-         vtk[var, VTKCellData()] = data[iv][i]
-      end
-
-      vtk["vtkGhostType", VTKCellData()] = vtkGhostType[i]
-
-      vtk_save(vtk)
-   end
-   return
-end
-
 """
     getcellcoordinates(meta, cellid) -> Vector{Float}
 
@@ -627,12 +436,12 @@ function getslicecell(meta::MetaData, slicelocation, maxreflevel;
 end
 
 """
-    refinedata(meta, idlist, data, maxreflevel, normal) -> Array
+    refineslice(meta, idlist, data, maxreflevel, normal) -> Array
 
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
-function refinedata(meta::MetaData, idlist, data, maxreflevel, normal)
+function refineslice(meta::MetaData, idlist, data, maxreflevel, normal)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
@@ -721,6 +530,220 @@ function getnearestcellwithvdf(meta::MetaData, id)
    d2 = sum((coords .- coords_orig).^2, dims=1)
    cells[argmin(d2)[2]]
 end
+
+
+"Return the first cellid - 1 on my level."
+function get1stcell(mylevel, ncells)
+   cid1st = 0
+   for i = 0:mylevel-1
+      cid1st += ncells*8^i
+   end
+   cid1st
+end
+
+"""
+    fillmesh(meta::MetaData, vars; verbose=false)
+
+Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
+# Return Arguments
+- `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
+- `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
+"""
+function fillmesh(meta::MetaData, vars; verbose=false)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+
+   maxamr = getmaxamr(meta)
+
+   nv = length(vars)
+   T = Vector{DataType}(undef, nv)
+   vsize = Vector{Int8}(undef, nv)
+   for i = 1:nv
+      T[i], _, _, _, vsize[i] =
+         getObjInfo(meta.fid, meta.footer, vars[i], "VARIABLE", "name")
+   end
+
+   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i)
+      for i = 0:maxamr] for iv in 1:nv]
+
+   vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
+
+   if maxamr == 0 # no AMR
+      for iv = 1:nv
+         v = readvariable(meta, vars[iv])
+         for i in LinearIndices(celldata[1])
+            celldata[iv][1][:,i] = v[:,i]
+         end
+      end
+      return celldata, vtkGhostType
+   end
+
+   for (iv, var) = enumerate(vars)
+      # TODO: handle non-floating point data in averaging!
+      if !(T[iv] <: AbstractFloat) continue end
+
+      refinedata!(meta, celldata[iv][end], var, maxamr, ncells)
+
+      startswith(var, "fg_") && continue
+
+      # fill the data on other refinement levels
+      # inverse order, since all the intermediate values are needed!
+      for ilevel = maxamr-1:-1:0
+         data = celldata[iv][ilevel+1]
+         ghost = vtkGhostType[ilevel+1]
+
+         cid1st = get1stcell(ilevel, ncells) # 1st cell ID - 1 on my level
+
+         ic = LinearIndices(ghost)
+
+         for cid = CartesianIndices(ghost)
+            if !haschildren(meta, ic[cid]+cid1st)
+               data[:,cid] = readvariable(meta, var, ic[cid]+cid1st)
+               ghost[cid] = 0
+            else
+               ghost[cid] = 8 # I don't understand this. https://blog.kitware.com/ghost-and-blanking-visibility-changes/
+               children = getchildren(meta, ic[cid]+cid1st)
+
+               if verbose
+                  @info "cell $(ic[cid]+cid1st) is refined.\nchildren: $children"
+               end
+
+               if ilevel == maxamr - 1
+                  v = readvariable(meta, var, children)
+               else
+                  v = celldata[iv][ilevel+2][children .- (cid1st + ncells*8^ilevel)]
+               end
+               data[:,cid] .= sum(v) / length(v)
+            end
+         end
+      end
+   end
+
+   celldata, vtkGhostType
+end
+
+fillmesh(meta::MetaData, vars::AbstractString; verbose=false) =
+   fillmesh(meta, [vars]; verbose)
+
+"Fill the `data` on the highest refinement level."
+function refinedata!(meta::MetaData, data, var, maxamr, ncells)
+
+   seq_ = CartesianIndices(
+      (meta.xcells*2^maxamr, meta.ycells*2^maxamr, meta.zcells*2^maxamr))
+
+   if startswith(var, "fg_")
+      data[:,:,:,:] = readvariable(meta, var)
+   else         
+      cidrange = [get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells)]
+      cidparents = Vector{Int64}(undef, cidrange[2]-cidrange[1]+1)
+      cidmask = similar(cidparents)
+      nc = 0
+      for (i, cid) = enumerate(cidrange[1]:cidrange[2])
+         if cid ∉ meta.cellid
+            nc += 1
+            cidmask[nc] = i
+            cidparents[nc] = getparent(meta, cid)
+         end
+      end
+   
+      data[:, seq_[cidmask[1:nc]]] = readvariable(meta, var, cidparents[1:nc])
+   
+      cidfine1st = cidrange[1] - 1 # 1st cell ID - 1 on max amr level   
+      index1st_ = findfirst(x->x>cidfine1st, meta.cellid)
+   
+      cids = @view meta.cellid[index1st_:end]
+      data[:, seq_[cids .- cidfine1st]] = readvariable(meta, var, cids)
+   end
+   return
+end
+
+"""
+    write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+
+Convert VLSV file linked with `meta` to VTK OverlappingAMR format.
+Users can select which variables to convert through `vars`.
+If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
+"""
+function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
+
+   append = ascii ? false : true
+
+   maxamr = getmaxamr(meta)
+   filedata = Vector{String}(undef, maxamr+1)
+   for i in 1:maxamr+1
+      filedata[i] = meta.name[1:end-5]*"_$i.vti"
+   end
+
+   # Generate vthb file
+   filemeta = meta.name[1:end-4]*"vthb"
+   xvthb = XMLDocument()
+   xroot = create_root(xvthb, "VTKFile")
+   set_attribute(xroot, "type", "vtkOverlappingAMR")
+   set_attribute(xroot, "version", "1.1")
+   set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
+   set_attribute(xroot, "header_type", "UInt64")
+   xamr = new_child(xroot, "vtkOverlappingAMR")
+   origin = @sprintf "%f %f %f" meta.xmin meta.ymin meta.zmin
+   set_attribute(xamr, "origin", origin)
+   set_attribute(xamr, "grid_description", "XYZ")
+
+   for i = 0:maxamr
+      xBlock = new_child(xamr, "Block")
+      set_attribute(xBlock, "level", string(i))
+      spacing_str = @sprintf "%f %f %f" meta.dx/2^i meta.dy/2^i meta.dz/2^i
+      set_attribute(xBlock, "spacing", spacing_str)
+      xDataSet = new_child(xBlock, "DataSet")
+      set_attribute(xDataSet, "index", "0")
+      amr_box = [0, nx*2^i-1, 0, ny*2^i-1, 0, nz*2^i-1]
+      box_str = @sprintf "%d %d %d %d %d %d" amr_box...
+      set_attribute(xDataSet, "amr_box", box_str)
+      set_attribute(xDataSet, "file", filedata[i+1])
+   end
+
+   save_file(xvthb, filemeta)
+
+   if isempty(vars[1])
+      vars = showvariables(meta)
+      deleteat!(vars, findfirst(x->x=="CellID", vars))
+   end
+
+   data, vtkGhostType = fillmesh(meta, vars; verbose)
+
+   # Generate image file on each refinement level
+   for i = 1:length(vtkGhostType)
+      ghost = vtkGhostType[i]
+      save_image(meta, filedata[i], vars, data, ghost, i, nx, ny, nz, append)
+   end
+   return
+end
+
+"""
+    save_image(meta::MetaData, file, vars, data, vtkGhostType, level, nx, ny, nz)
+
+Save `data` of `vars` at AMR `level` into VTK image file of name `file`. `vtkGhostType` is
+used for visibility control. `nx`, `ny`, `nz` are the original mesh sizes. The `level`
+starts from 1, which is different from the 0-based VLSV output.
+`ascii` determines if output is in ASCII format; `append` determines whether to append data
+at the end of file or do in-block writing.
+"""
+function save_image(meta::MetaData, file, vars, data, vtkGhostType, level, nx, ny, nz,
+   ascii=false, append=true)
+   origin = (meta.xmin, meta.ymin, meta.zmin)
+   ratio = 2^(level-1)
+   spacing = (meta.dx / ratio, meta.dy / ratio, meta.dz / ratio)
+
+   vtk = vtk_grid(file, nx*ratio+1, ny*ratio+1, nz*ratio+1; origin, spacing, append, ascii)
+
+   for (iv, var) in enumerate(vars)
+      vtk[var, VTKCellData()] = data[iv][level]
+   end
+
+   vtk["vtkGhostType", VTKCellData()] = vtkGhostType
+
+   vtk_save(vtk)
+end
+
 
 """
     compare(filename1, filename2, tol=1e-4) -> Bool

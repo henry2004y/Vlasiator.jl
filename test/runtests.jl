@@ -1,4 +1,4 @@
-using Vlasiator
+using Vlasiator, SHA
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -73,7 +73,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
             ymin=metaAMR.ymin, ymax=metaAMR.ymax)
 
          data = readvariable(metaAMR, "proton/vg_rho")
-         data = refinedata(metaAMR, idlist, data[indexlist], maxreflevel, :y)
+         data = refineslice(metaAMR, idlist, data[indexlist], maxreflevel, :y)
          @test sum(data) ≈ 7.690352275026747e8
 
          # AMR level
@@ -159,6 +159,16 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          Vlasiator.rotateWithB!(T, B)
          @test T == Diagonal([1.0, 3.0, 2.0])
          @test Vlasiator.rotateWithB(T, B) == Diagonal([1.0, 2.0, 3.0])
+      end
+   end
+
+   if group in (:vtk, :all)
+      @testset "VTK" begin
+         meta = readmeta(filenames[3])
+         write_vtk(meta)
+         sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
+         @test sha_str == "33d5be3872b86e328acbc0469ecbba34dd9b867a"
+         close(meta.fid)
       end
    end
 

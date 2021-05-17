@@ -276,7 +276,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
       # Create the plotting grid
       if ndims(data) == 1
-         data = refinedata(meta, idlist, data, maxreflevel, normal)
+         data = refineslice(meta, idlist, data, maxreflevel, normal)
       elseif ndims(data) == 2
          if op in (:x, :y, :z)
             if op == :x
@@ -286,11 +286,11 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
             elseif op == :z
                slice = @view data[3,:]
             end
-            data = refinedata(meta, idlist, slice, maxreflevel, normal)
+            data = refineslice(meta, idlist, slice, maxreflevel, normal)
          elseif op == :mag
-            datax = @views refinedata(meta, idlist, data[1,:], maxreflevel, normal)
-            datay = @views refinedata(meta, idlist, data[2,:], maxreflevel, normal)
-            dataz = @views refinedata(meta, idlist, data[3,:], maxreflevel, normal)
+            datax = @views refineslice(meta, idlist, data[1,:], maxreflevel, normal)
+            datay = @views refineslice(meta, idlist, data[2,:], maxreflevel, normal)
+            dataz = @views refineslice(meta, idlist, data[3,:], maxreflevel, normal)
             data = hypot.(datax, datay, dataz)
          end
 
