@@ -287,24 +287,37 @@ function fillmesh(meta::MetaData, vars; verbose=false)
       return celldata, vtkGhostType
    end
 
+   index_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
+
    for (iv, var) = enumerate(vars)
       # TODO: handle non-floating point data in averaging!
       if !(T[iv] <: AbstractFloat) continue end
       ## fill the data on the highest refinement level
-      index_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
-   
-      for (i, cid) = enumerate(get1stcell(maxamr, ncells)+1:get1stcell(maxamr+1, ncells))
-         cidparent = getparent(meta, cid)
-         if cidparent in cellid
-            celldata[iv][end][:,index_[i]] = readvariable(meta, var, cidparent)
+      if startswith(var, "fg_")
+         celldata[iv][end] = readvariable(meta, var)
+         continue
+      else         
+         cidrange = [get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells)]
+         cidparents = Vector{Int64}(undef, cidrange[2]-cidrange[1]+1)
+         cidmask = similar(cidparents)
+         nc = 0
+         for (i, cid) = enumerate(cidrange[1]:cidrange[2])
+            if cid ∉ cellid
+               nc += 1
+               cidmask[nc] = i
+               cidparents[nc] = getparent(meta, cid)
+            end
          end
-      end
 
-      cidfine1st = get1stcell(maxamr, ncells) # 1st cell ID - 1 on max amr level
-   
-      index1st_ = findfirst(x->x>cidfine1st, cellid)
-      cids = cellid[index1st_:end]
-      celldata[iv][end][:, index_[cids .- cidfine1st]] = readvariable(meta, var, cids)
+         celldata[iv][end][:,index_[cidmask[1:nc]]] =
+            readvariable(meta, var, cidparents[1:nc])
+
+         cidfine1st = cidrange[1] - 1 # 1st cell ID - 1 on max amr level   
+         index1st_ = findfirst(x->x>cidfine1st, cellid)
+
+         cids = @view cellid[index1st_:end]
+         celldata[iv][end][:, index_[cids .- cidfine1st]] = readvariable(meta, var, cids)
+      end
 
       # fill the data on other refinement levels
       # inverse order, since all the intermediate values are needed!
@@ -395,7 +408,6 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
    if isempty(vars[1])
       vars = showvariables(meta)
       deleteat!(vars, findfirst(x->x=="CellID", vars))
-      deleteat!(vars, findall(x->startswith(x, "fg"), vars)) # TODO: handle fg grid later
    end
 
    data, vtkGhostType = fillmesh(meta, vars; verbose)
