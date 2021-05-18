@@ -10,6 +10,7 @@ It becomes even more powerful when using together with other fantastic packages:
 
 Vlasiator.jl contains the following features:
 * Reading [VLSV](https://github.com/fmihpc/vlsv) format data.
+* Converting VLSV into VTK format.
 * Extracting quantities from the simulation at a given point/line/cut.
 * Plotting 2D cuts.
 * Plotting phase space distributions.

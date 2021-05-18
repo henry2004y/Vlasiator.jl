@@ -198,10 +198,10 @@ function getsiblings(meta::MetaData, cellid::Integer)
    nx = xcells * 2^mylvl
    ny = ycells * 2^mylvl
 
-   # get the first cellid on my level
+   # 1st cellid on my level
    cid1st = get1stcell(mylvl, ncells) + 1
 
-   # get the row and column sequence on my level (starting with 0)
+   # xyz sequences on my level (starting with 0)
    myseq = cellid - cid1st
    ix = myseq % nx
    iz = myseq ÷ (nx*ny)
@@ -542,14 +542,14 @@ function get1stcell(mylevel, ncells)
 end
 
 """
-    fillmesh(meta::MetaData, vars; verbose=false)
+    fillmesh(meta::MetaData, vars)
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return Arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
 """
-function fillmesh(meta::MetaData, vars; verbose=false)
+function fillmesh(meta::MetaData, vars)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
 
@@ -557,7 +557,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
-   vsize = Vector{Int8}(undef, nv)
+   vsize = Vector{Int}(undef, nv)
    for i = 1:nv
       T[i], _, _, _, vsize[i] =
          getObjInfo(meta.fid, meta.footer, vars[i], "VARIABLE", "name")
@@ -579,15 +579,12 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    end
 
    for (iv, var) = enumerate(vars)
-      # TODO: handle non-floating point data in averaging!
-      if !(T[iv] <: AbstractFloat) continue end
-
       refinedata!(meta, celldata[iv][end], var, maxamr, ncells)
 
-      startswith(var, "fg_") && continue
-
+      (startswith(var, "fg_") || !(T[iv] <: AbstractFloat)) && continue
+      
       # fill the data on other refinement levels
-      # inverse order, since all the intermediate values are needed!
+      # inverse order, since all the intermediate values are needed
       for ilevel = maxamr-1:-1:0
          data = celldata[iv][ilevel+1]
          ghost = vtkGhostType[ilevel+1]
@@ -595,44 +592,51 @@ function fillmesh(meta::MetaData, vars; verbose=false)
          cid1st = get1stcell(ilevel, ncells) # 1st cell ID - 1 on my level
 
          idsOnLevel = CartesianIndices(ghost)
-         idLinear = LinearIndices(ghost)
          
-         for id = idsOnLevel
-            if !haschildren(meta, idLinear[id]+cid1st)
-               data[:,id] = readvariable(meta, var, idLinear[id]+cid1st)
-               ghost[id] = 0
-            else
-               ghost[id] = 8 # I don't understand this. https://blog.kitware.com/ghost-and-blanking-visibility-changes/
-               children = getchildren(meta, idLinear[id]+cid1st)
+         children = Vector{Int}(undef, 8*length(ghost))
+         cidMaskChildren = zeros(Bool, length(ghost))
 
-               if verbose
-                  @info "cell $(idLinear[id]+cid1st) is refined.\nchildren: $children"
-               end
-
-               if ilevel == maxamr - 1
-                  v = readvariable(meta, var, children)
-               else
-                  ids = children .- (cid1st + 1 + ncells*8^ilevel)
-                  # get the row and column sequence on child level (starting with 0)
-                  ix = ids .% (xcells*2^(ilevel+1))
-                  iz = ids .÷ (xcells*ycells*4^(ilevel+1))
-                  iy = (ids .- iz*xcells*ycells*4^(ilevel+1)) .÷ (xcells*2^(ilevel+1))
-                  v = Array{T[iv]}(undef, vsize[iv], length(ids))
-                  for i = 1:length(ids)
-                     v[:,i] = celldata[iv][ilevel+2][:, ix[i]+1, iy[i]+1, iz[i]+1]
-                  end
-               end
-               data[:,id] = sum(v, dims=2) ./ size(v, 2)
+         nc = 0
+         for i = 1:length(ghost)
+            if haschildren(meta, i+cid1st)
+               cidMaskChildren[i] = true
+               ghost[i] = 8 # WIP, https://discourse.paraview.org/t/vthb-file-structure/7224
+               nc += 1
+               children[8*(nc-1)+1:8*nc] = getchildren(meta, i+cid1st)
             end
          end
+
+         # indexes where the cell does not have children
+         ind_ = findall(x->!x, cidMaskChildren)
+
+         if !isempty(ind_)
+            data[:,idsOnLevel[.!cidMaskChildren]] = readvariable(meta, var, ind_.+cid1st)
+         end
+
+         if ilevel == maxamr - 1
+            v = readvariable(meta, var, children[1:8*nc])
+            v = reshape(v, vsize[iv], 8, nc)
+         else
+            ids = children[1:8*nc] .- (cid1st + 1 + ncells*8^ilevel)
+            # xyz sequences on child level (starting with 0)
+            ix = ids .% (xcells*2^(ilevel+1))
+            iz = ids .÷ (xcells*ycells*4^(ilevel+1))
+            iy = (ids .- iz*xcells*ycells*4^(ilevel+1)) .÷ (xcells*2^(ilevel+1))
+
+            v = Array{T[iv]}(undef, vsize[iv], 8, nc)
+            for i = 1:nc, j = 1:8
+               k = 8*(i-1) + j
+               v[:,j,i] = celldata[iv][ilevel+2][:, ix[k]+1, iy[k]+1, iz[k]+1]
+            end
+         end
+         data[:,idsOnLevel[cidMaskChildren]] = sum(v, dims=2) / 8
       end
    end
 
    celldata, vtkGhostType
 end
 
-fillmesh(meta::MetaData, vars::AbstractString; verbose=false) =
-   fillmesh(meta, [vars]; verbose)
+fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 
 "Fill the `data` on the highest refinement level."
 function refinedata!(meta::MetaData, data, var, maxamr, ncells)
@@ -667,13 +671,13 @@ function refinedata!(meta::MetaData, data, var, maxamr, ncells)
 end
 
 """
-    write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+    write_vtk(meta::MetaData; vars=[""], ascii=false)
 
 Convert VLSV file linked with `meta` to VTK OverlappingAMR format.
 Users can select which variables to convert through `vars`.
 If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
 """
-function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+function write_vtk(meta::MetaData; vars=[""], ascii=false)
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
 
    append = ascii ? false : true
@@ -717,7 +721,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
       deleteat!(vars, findfirst(x->x=="CellID", vars))
    end
 
-   data, vtkGhostType = fillmesh(meta, vars; verbose)
+   data, vtkGhostType = fillmesh(meta, vars)
 
    # Generate image file on each refinement level
    for i = 1:length(vtkGhostType)

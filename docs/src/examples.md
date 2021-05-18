@@ -212,7 +212,15 @@ contourf(meta, "rho)
 
 ## Converting to VTK
 
-We can convert VLSV files into VTK files! WIP, available in v0.5.
+We can convert VLSV files into VTK files! Since DCCRG is Cartesian based with uniform spacing, each level of refinement corresponds to a VTK image file, and the cell refinement relationships are defined by `vtkGhostType` as well as the `vthb` file.
+
+To convert a VLSV file into VTK,
+```
+write_vtk(meta)
+```
+
+!!! warning
+    As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly.
 
 ## Calling from Python
 
