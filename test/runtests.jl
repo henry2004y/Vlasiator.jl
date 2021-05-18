@@ -167,8 +167,10 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          meta = readmeta(filenames[3])
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
-         @test sha_str == "33d5be3872b86e328acbc0469ecbba34dd9b867a"
+         @test sha_str == "1ea74ac3c2d9fe5d780945912d01e4b42f05b4dc"
          close(meta.fid)
+         filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
+         rm.(filesaved, force=true)
       end
    end
 

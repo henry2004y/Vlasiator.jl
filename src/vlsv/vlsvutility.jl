@@ -594,26 +594,35 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
          cid1st = get1stcell(ilevel, ncells) # 1st cell ID - 1 on my level
 
-         ic = LinearIndices(ghost)
-
-         for cid = CartesianIndices(ghost)
-            if !haschildren(meta, ic[cid]+cid1st)
-               data[:,cid] = readvariable(meta, var, ic[cid]+cid1st)
-               ghost[cid] = 0
+         idsOnLevel = CartesianIndices(ghost)
+         idLinear = LinearIndices(ghost)
+         
+         for id = idsOnLevel
+            if !haschildren(meta, idLinear[id]+cid1st)
+               data[:,id] = readvariable(meta, var, idLinear[id]+cid1st)
+               ghost[id] = 0
             else
-               ghost[cid] = 8 # I don't understand this. https://blog.kitware.com/ghost-and-blanking-visibility-changes/
-               children = getchildren(meta, ic[cid]+cid1st)
+               ghost[id] = 8 # I don't understand this. https://blog.kitware.com/ghost-and-blanking-visibility-changes/
+               children = getchildren(meta, idLinear[id]+cid1st)
 
                if verbose
-                  @info "cell $(ic[cid]+cid1st) is refined.\nchildren: $children"
+                  @info "cell $(idLinear[id]+cid1st) is refined.\nchildren: $children"
                end
 
                if ilevel == maxamr - 1
                   v = readvariable(meta, var, children)
                else
-                  v = celldata[iv][ilevel+2][children .- (cid1st + ncells*8^ilevel)]
+                  ids = children .- (cid1st + 1 + ncells*8^ilevel)
+                  # get the row and column sequence on child level (starting with 0)
+                  ix = ids .% (xcells*2^(ilevel+1))
+                  iz = ids .÷ (xcells*ycells*4^(ilevel+1))
+                  iy = (ids .- iz*xcells*ycells*4^(ilevel+1)) .÷ (xcells*2^(ilevel+1))
+                  v = Array{T[iv]}(undef, vsize[iv], length(ids))
+                  for i = 1:length(ids)
+                     v[:,i] = celldata[iv][ilevel+2][:, ix[i]+1, iy[i]+1, iz[i]+1]
+                  end
                end
-               data[:,cid] .= sum(v) / length(v)
+               data[:,id] = sum(v, dims=2) ./ size(v, 2)
             end
          end
       end
