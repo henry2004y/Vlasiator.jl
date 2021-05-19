@@ -82,8 +82,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test getlevel(metaAMR, idlist[1]) == 1
 
          # DCCRG utilities
-         @test haschildren(metaAMR, 1)
-         @test !haschildren(metaAMR, 1080)
+         @test isparent(metaAMR, 1)
+         @test !isparent(metaAMR, 1080)
          @test getchildren(metaAMR, 1) == getsiblings(metaAMR, 129)
          @test getparent(metaAMR, 129) == 1
 
@@ -171,7 +171,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          meta = readmeta(filenames[3])
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
-         @test sha_str == "1ea74ac3c2d9fe5d780945912d01e4b42f05b4dc"
+         @test sha_str == "b127749f30b23d08c814cf169cfaf7fee954bdce"
          close(meta.fid)
          filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
          rm.(filesaved, force=true)

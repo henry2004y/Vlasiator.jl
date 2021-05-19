@@ -13,7 +13,7 @@ const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)]
 const Re = 6.371e6          # Earth radius, [m]
 
 export getcell, getslicecell, getlevel, getmaxamr, refineslice, getcellcoordinates,
-   getchildren, getparent, haschildren, getsiblings,
+   getchildren, getparent, isparent, getsiblings,
    getcellinline, getnearestcellwithvdf, write_vtk, compare
 
 """
@@ -91,14 +91,14 @@ Find the highest refinement level of a given vlsv file.
 function getmaxamr(meta::MetaData)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
-   maxreflevel = 0
+   maxamr = 0
    cellID = ncells
    while cellID < meta.cellid[end]
-      maxreflevel += 1
-      cellID += ncells*8^maxreflevel
+      maxamr += 1
+      cellID += ncells*8^maxamr
    end
 
-   maxreflevel
+   maxamr
 end
 
 """
@@ -204,6 +204,18 @@ function getchildren(meta::MetaData, cellid::Integer)
    cid
 end
 
+"Return all children of `cellid` on the finest AMR level."
+function getchildrenall(meta::MetaData, cellid::Integer)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+   maxamr = meta.maxamr
+   mylvl = getlevel(meta, cellid)
+   if mylvl == maxamr - 1
+
+   end
+end
+
+
 """
     getsiblings(meta, cellid) -> Vector{Int}
 
@@ -248,11 +260,11 @@ function getsiblings(meta::MetaData, cellid::Integer)
 end
 
 """
-    haschildren(meta, cellid) -> Bool
+    isparent(meta, cellid) -> Bool
 
 Check if `cellid` is a parent cell.
 """
-function haschildren(meta::MetaData, cellid::Integer)
+function isparent(meta::MetaData, cellid::Integer)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
    amrmax = getmaxamr(meta)
@@ -389,34 +401,34 @@ function getcellinline(meta::MetaData, point1, point2)
 end
 
 """
-    getslicecell(meta, slicelocation, maxreflevel;
+    getslicecell(meta, slicelocation, maxamr;
        xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf) -> idlist, indexlist
 
 Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
 direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
 mapping from original order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaData, slicelocation, maxreflevel;
+function getslicecell(meta::MetaData, slicelocation, maxamr;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
-   xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
+   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
    cellids = meta.cellid # sorted cell IDs
 
    if !isinf(xmin) && !isinf(xmax)
-      minCoord = xmin; maxCoord = xmax; nsize = xsize; idim = 1
+      minCoord = xmin; maxCoord = xmax; nsize = nx; idim = 1
    elseif !isinf(ymin) && !isinf(ymax)
-      minCoord = ymin; maxCoord = ymax; nsize = ysize; idim = 2
+      minCoord = ymin; maxCoord = ymax; nsize = ny; idim = 2
    elseif !isinf(zmin) && !isinf(zmax)
-      minCoord = zmin; maxCoord = zmax; nsize = zsize; idim = 3
+      minCoord = zmin; maxCoord = zmax; nsize = nz; idim = 3
    else
       @error "Unspecified slice direction!"
    end
 
-   # Find the cut plane index for each refinement level
+   # Find the cut plane index for each refinement level (0-based)
    sliceratio = slicelocation / (maxCoord - minCoord)
-   depths = zeros(maxreflevel+1)
-   for i = 0:maxreflevel
-      sliceoffset = floor(Int32, sliceratio*nsize*2^i) + 1
+   depths = zeros(maxamr+1)
+   for i = 0:maxamr
+      sliceoffset = floor(Int, sliceratio*nsize*2^i)
       sliceoffset ≤ nsize*2^i || 
          throw(DomainError(sliceoffset, "slice plane index out of bound!"))
       depths[i+1] = sliceoffset
@@ -424,23 +436,23 @@ function getslicecell(meta::MetaData, slicelocation, maxreflevel;
 
    # Find the ids
    nlen = 0
-   ncell = xsize*ysize*zsize
+   ncell = nx*ny*nz
    nCellUptoCurrentLvl = ncell # the number of cells up to refinement level i
    nCellUptoLowerLvl = 0 # the number of cells up to refinement level i-1
 
    indexlist = Int[]
    idlist = Int[]
 
-   for i = 0:maxreflevel
+   for i = 0:maxamr
       ids = cellids[nCellUptoLowerLvl .< cellids .≤ nCellUptoCurrentLvl]
-      x, y, z = getindexes(i, xsize, ysize, nCellUptoLowerLvl, ids)
+      ix, iy, iz = getindexes(i, nx, ny, nCellUptoLowerLvl, ids)
 
       if idim == 1
-         coords = x
+         coords = ix
       elseif idim == 2
-         coords = y
+         coords = iy
       elseif idim == 3
-         coords = z
+         coords = iz
       end
 
       # Find the needed elements to create the cut and puts the results
@@ -458,57 +470,57 @@ function getslicecell(meta::MetaData, slicelocation, maxreflevel;
 end
 
 """
-    refineslice(meta, idlist, data, maxreflevel, normal) -> Array
+    refineslice(meta, idlist, data, maxamr, normal) -> Array
 
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
-function refineslice(meta::MetaData, idlist, data, maxreflevel, normal)
+function refineslice(meta::MetaData, idlist, data, maxamr, normal)
 
-   xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
+   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
 
    if normal == :x
-      dims = [ysize, zsize] .* 2^maxreflevel
+      dims = [ny, nz] .* 2^maxamr
    elseif normal == :y
-      dims = [xsize, zsize] .* 2^maxreflevel
+      dims = [nx, nz] .* 2^maxamr
    elseif normal == :z
-      dims = [xsize, ysize] .* 2^maxreflevel
+      dims = [nx, ny] .* 2^maxamr
    end
 
    dpoints = zeros(dims...)
 
    # Create the plot grid
-   ncell = xsize*ysize*zsize
+   ncell = nx*ny*nz
    nCellUptoCurrentLvl = ncell
    nCellUptoLowerLvl = 0
 
-   for i = 0:maxreflevel
+   for i = 0:maxamr
       ids = idlist[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
       d = data[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
 
-      x, y, z = getindexes(i, xsize, ysize, nCellUptoLowerLvl, ids)
+      ix, iy, iz = getindexes(i, nx, ny, nCellUptoLowerLvl, ids)
 
       # Get the correct coordinate values and the widths for the plot
       if normal == :x
-         a = y
-         b = z
+         a = iy
+         b = iz
       elseif normal == :y
-         a = x
-         b = z
+         a = ix
+         b = iz
       elseif normal == :z
-         a = x
-         b = y
+         a = ix
+         b = iy
       end
 
       # Insert the data values into dpoints
-      iRange = 0:2^(maxreflevel - i)-1
+      iRange = 0:2^(maxamr - i)-1
       X = [x for x in iRange, _ in iRange]
       Y = [y for _ in iRange, y in iRange]
 
-      coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxreflevel-i)))
-      @inbounds for ic = 1:length(a), ir = 1:2^((maxreflevel-i)*2)
-         coords[1,ic,ir] = (a[ic] - 1)*2^(maxreflevel - i) + 1 + X[ir]
-         coords[2,ic,ir] = (b[ic] - 1)*2^(maxreflevel - i) + 1 + Y[ir]
+      coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
+      @inbounds for ic = 1:length(a), ir = 1:2^((maxamr-i)*2)
+         coords[1,ic,ir] = a[ic]*2^(maxamr - i) + 1 + X[ir]
+         coords[2,ic,ir] = b[ic]*2^(maxamr - i) + 1 + Y[ir]
       end
 
       @inbounds for ic = 1:length(a)
@@ -522,18 +534,29 @@ function refineslice(meta::MetaData, idlist, data, maxreflevel, normal)
    dpoints
 end
 
-"Compute every cell id's x, y and z indexes on the given refinement level."
-@inline function getindexes(i, xsize, ysize, nCellUptoLowerLvl, ids)
-   
-   z = @. (ids - nCellUptoLowerLvl - 1) ÷ (xsize*ysize*4^i) + 1
+"Compute every cell id's x, y and z indexes on the given refinement level (0-based)."
+@inline function getindexes(ilevel, nx, ny, nCellUptoLowerLvl, ids)
 
-   # number of ids up to the coordinate z in the refinement level i
-   idUpToZ = @. (z-1)*xsize*ysize*4^i + nCellUptoLowerLvl
+   slicesize = nx*ny*4^ilevel
 
-   y = @. (ids - idUpToZ - 1) ÷ (xsize*2^i) + 1
-   x = @. ids - idUpToZ - (y-1)*xsize*2^i
+   iz = @. (ids - nCellUptoLowerLvl - 1) ÷ slicesize
 
-   x, y, z
+   # number of ids up to the coordinate z in the refinement level ilevel
+   idUpToZ = @. iz*slicesize + nCellUptoLowerLvl
+
+   iy = @. (ids - idUpToZ - 1) ÷ (nx*2^ilevel)
+   ix = @. ids - idUpToZ - iy*nx*2^ilevel - 1
+
+   ix, iy, iz
+end
+
+function getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id::Int)
+   slicesize = nx*ny*4^ilvl
+   iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
+   idUpToZ = iz*slicesize + nCellUptoLowerLvl
+   iy = (id - idUpToZ - 1) ÷ (nx*2^ilvl)
+   ix = id - idUpToZ - iy*nx*2^ilvl - 1
+   ix, iy, iz
 end
 
 """
@@ -563,6 +586,8 @@ function get1stcell(mylevel, ncells)
    cid1st
 end
 
+fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
+
 """
     fillmesh(meta::MetaData, vars)
 
@@ -572,22 +597,22 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
 """
 function fillmesh(meta::MetaData, vars)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
-   maxamr = meta.maxamr
 
+   cellid, maxamr, fid, footer = meta.cellid, meta.maxamr, meta.fid, meta.footer
+   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
+
+   nvarvg = findall(x->!startswith(x, "fg_"), vars)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
    vsize = Vector{Int}(undef, nv)
    for i = 1:nv
-      T[i], _, _, _, vsize[i] =
-         getObjInfo(meta.fid, meta.footer, vars[i], "VARIABLE", "name")
+      T[i], _, _, _, vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
-   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i)
-      for i = 0:maxamr] for iv in 1:nv]
+   celldata = [[zeros(T[iv], vsize[iv], nx*2^i, ny*2^i, nz*2^i) for i = 0:maxamr]
+      for iv in 1:nv]
 
-   vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
+   vtkGhostType = [zeros(UInt8, nx*2^i, ny*2^i, nz*2^i) for i = 0:maxamr]
 
    if maxamr == 0
       for iv = 1:nv
@@ -596,76 +621,65 @@ function fillmesh(meta::MetaData, vars)
       return celldata, vtkGhostType
    end
 
-   cidparents, cidmask, cids, cidfine1st = findparents(meta)
+   # Find the ids
+   ncell = nx*ny*nz
+   nCellUptoCurrentLvl = ncell # the number of cells up to refinement level i
+   nCellUptoLowerLvl = 0 # the number of cells up to refinement level i-1
+
+   for ilvl = 0:maxamr-1
+      ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
+      
+      # indicate the condition of non-existing cells
+      idrefined = setdiff(nCellUptoLowerLvl+1:nCellUptoCurrentLvl, ids)
+
+      for id in idrefined
+         ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
+         vtkGhostType[ilvl+1][ix+1,iy+1,iz+1] = 8
+      end
+         
+      for iv in nvarvg
+         data = readvariable(meta, vars[iv], ids)
+         r = 1 # ratio
+         for ilvlup = ilvl:maxamr
+            for (ic, id) in enumerate(ids)
+               ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
+               for k = 1:r, j = 1:r, i = 1:r
+                  @inbounds celldata[iv][ilvlup+1][:,r*ix+i,r*iy+j,r*iz+k] = data[:,ic]
+               end
+            end
+            r *= 2 # ratio on refined level
+         end
+      end
+      nCellUptoLowerLvl = nCellUptoCurrentLvl
+      nCellUptoCurrentLvl += ncell*8^(ilvl+1)
+   end
+   
+   # finest refinement level
+   ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
+
+   # indicate the non-existing cells
+   idrefined = setdiff(nCellUptoLowerLvl+1:nCellUptoCurrentLvl, ids)
+   for id = idrefined
+      ix, iy, iz = getindexes(maxamr, nx, ny, nCellUptoLowerLvl, id)
+      @inbounds vtkGhostType[end][ix+1,iy+1,iz+1] = 16
+   end
 
    for (iv, var) = enumerate(vars)
-      # fill the finest refinement level
       if startswith(var, "fg_")
          celldata[iv][end][:,:,:,:] = readvariable(meta, var)
       else
-         seq_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
-         # fill the empty cells with their parents' value
-         celldata[iv][end][:, seq_[cidmask]] = readvariable(meta, var, cidparents)
-         # fill the existing cells
-         celldata[iv][end][:, seq_[cids .- cidfine1st]] = readvariable(meta, var, cids)
-      end
+         data = readvariable(meta, var, ids)
+         for (ic, id) in enumerate(ids)
+            ix, iy, iz = getindexes(maxamr, nx, ny, nCellUptoLowerLvl, id)
 
-      (startswith(var, "fg_") || !(T[iv] <: AbstractFloat)) && continue
-      
-      # fill the data on other refinement levels
-      # inverse order, since all the intermediate values are needed
-      for ilevel = maxamr-1:-1:0
-         data = celldata[iv][ilevel+1]
-         ghost = vtkGhostType[ilevel+1]
-
-         cid1st = get1stcell(ilevel, ncells) # 1st cell ID - 1 on my level
-
-         idsOnLevel = CartesianIndices(ghost)
-         
-         children = Vector{Int}(undef, 8*length(ghost))
-         cidMaskChildren = zeros(Bool, length(ghost))
-
-         nc = 0
-         for i = 1:length(ghost)
-            if haschildren(meta, i+cid1st)
-               cidMaskChildren[i] = true
-               ghost[i] = 8 # WIP, https://discourse.paraview.org/t/vthb-file-structure/7224
-               nc += 1
-               children[8*(nc-1)+1:8*nc] = getchildren(meta, i+cid1st)
-            end
+            @inbounds celldata[iv][end][:,ix+1,iy+1,iz+1] = data[:,ic]
          end
-
-         # indexes where the cell does not have children
-         ind_ = findall(x->!x, cidMaskChildren)
-
-         if !isempty(ind_)
-            data[:,idsOnLevel[.!cidMaskChildren]] = readvariable(meta, var, ind_.+cid1st)
-         end
-
-         if ilevel == maxamr - 1
-            v = readvariable(meta, var, children[1:8*nc])
-            v = reshape(v, vsize[iv], 8, nc)
-         else
-            ids = children[1:8*nc] .- (cid1st + 1 + ncells*8^ilevel)
-            # xyz sequences on child level (starting with 0)
-            ix = ids .% (xcells*2^(ilevel+1))
-            iz = ids .÷ (xcells*ycells*4^(ilevel+1))
-            iy = (ids .- iz*xcells*ycells*4^(ilevel+1)) .÷ (xcells*2^(ilevel+1))
-
-            v = Array{T[iv]}(undef, vsize[iv], 8, nc)
-            for i = 1:nc, j = 1:8
-               k = 8*(i-1) + j
-               v[:,j,i] = celldata[iv][ilevel+2][:, ix[k]+1, iy[k]+1, iz[k]+1]
-            end
-         end
-         data[:,idsOnLevel[cidMaskChildren]] = sum(v, dims=2) / 8
       end
    end
 
    celldata, vtkGhostType
 end
 
-fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 
 "Return parent cell IDs, masks and 1st cell ID -1 on the finest refinement level."
 function findparents(meta::MetaData)
