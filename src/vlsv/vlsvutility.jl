@@ -74,8 +74,7 @@ Return the AMR level of a given cell ID. Note that this function does not check 
 file of `meta` actually contains `cellid`: it may be shadowed by refined children.
 """
 function getlevel(meta::MetaData, cellid::Integer)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
+   ncells = meta.xcells*meta.ycells*meta.zcells
    ilevel = 0
    while cellid > 0
       cellid -= 2^(3*ilevel)*ncells
@@ -134,11 +133,34 @@ function getparent(meta::MetaData, cellid::Integer)
      
       # get the first cellid on parent level
       cid1st -= ncells*8^parentlvl
-      # get parent cellid
+      # get parent cellid (may not exist!!!)
       parentid = cid1st + izparent*nx*ny÷4 + iyparent*nx÷2 + ixparent
    end
    parentid
 end
+
+function getparent(meta::MetaData, cellid::Integer, mylvl, cid1st, nx, ny)
+   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
+   ncells = xcells*ycells*zcells
+
+   parentlvl = mylvl - 1
+   # row and column No. (starting with 0)
+   myseq = cellid - cid1st
+   ix = myseq % nx
+   iz = myseq ÷ (nx*ny)
+   iy = (myseq - iz*nx*ny) ÷ nx
+   # indexes on the parent level
+   ixparent = ix ÷ 2
+   iyparent = iy ÷ 2
+   izparent = iz ÷ 2
+     
+   # get the first cellid on parent level
+   cid1st -= ncells*8^parentlvl
+   # get parent cellid
+   parentid = cid1st + izparent*nx*ny÷4 + iyparent*nx÷2 + ixparent
+   parentid
+end
+
 
 """
     getchildren(meta, cellid) -> Vector{Int}
@@ -552,8 +574,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 function fillmesh(meta::MetaData, vars)
    xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
    ncells = xcells*ycells*zcells
-
-   maxamr = getmaxamr(meta)
+   maxamr = meta.maxamr
 
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
@@ -575,16 +596,17 @@ function fillmesh(meta::MetaData, vars)
       return celldata, vtkGhostType
    end
 
-   cidparents, cidmask, cids, cidfine1st = findparents(meta, maxamr, ncells)
+   cidparents, cidmask, cids, cidfine1st = findparents(meta)
 
    for (iv, var) = enumerate(vars)
+      # fill the finest refinement level
       if startswith(var, "fg_")
          celldata[iv][end][:,:,:,:] = readvariable(meta, var)
       else
          seq_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
-   
+         # fill the empty cells with their parents' value
          celldata[iv][end][:, seq_[cidmask]] = readvariable(meta, var, cidparents)
-      
+         # fill the existing cells
          celldata[iv][end][:, seq_[cids .- cidfine1st]] = readvariable(meta, var, cids)
       end
 
@@ -646,12 +668,17 @@ end
 fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 
 "Return parent cell IDs, masks and 1st cell ID -1 on the finest refinement level."
-function findparents(meta::MetaData, maxamr, ncells)
+function findparents(meta::MetaData)
+   maxamr = meta.maxamr
+   ncells = meta.xcells*meta.ycells*meta.zcells
 
-   cidrange = [get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells)]
+   cidrange = ( get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells) )
    nctotal = cidrange[2] - cidrange[1] + 1
-
+   # 1st existing cell on max AMR level
    index1st_ = findfirst(x->x≥cidrange[1], meta.cellid)
+   # rows and columns on max AMR level
+   nx = meta.xcells*2^maxamr
+   ny = meta.ycells*2^maxamr
 
    cidparents = Vector{Int64}(undef, nctotal - (length(meta.cellid) - index1st_ + 1))
    cidmask = similar(cidparents)
@@ -660,7 +687,7 @@ function findparents(meta::MetaData, maxamr, ncells)
       if cid ∉ meta.cellid
          nc += 1
          cidmask[nc] = i
-         cidparents[nc] = getparent(meta, cid)
+         cidparents[nc] = getparent(meta, cid, maxamr, cidrange[1], nx, ny)
       end
    end
    cids = @view meta.cellid[index1st_:end]
@@ -677,10 +704,10 @@ If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
 """
 function write_vtk(meta::MetaData; vars=[""], ascii=false)
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
+   maxamr = meta.maxamr
 
    append = ascii ? false : true
 
-   maxamr = getmaxamr(meta)
    filedata = Vector{String}(undef, maxamr+1)
    for i in 1:maxamr+1
       filedata[i] = meta.name[1:end-5]*"_$i.vti"

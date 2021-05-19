@@ -49,6 +49,7 @@ struct MetaData
    footer::XMLElement
    cellid::Vector{UInt64}  # sorted cell IDs
    cellIndex::Vector{Int64}
+   maxamr::Int64
    xcells::Int64
    ycells::Int64
    zcells::Int64
@@ -73,7 +74,7 @@ function Base.show(io::IO, meta::MetaData)
    println(io, "filename = ", meta.name)
    dim = showdimension(meta)
    println(io, "dimension: $dim")
-   println(io, "maximum AMR level: $(getmaxamr(meta))")
+   println(io, "maximum AMR level: $(meta.maxamr)")
    println(io, "contains VDF: $(hasvdf(meta))")
    vars = showvariables(meta)
    print(io, "variables: ")
@@ -271,10 +272,19 @@ function readmeta(filename::AbstractString; verbose=false)
          @info "Found population " * popname
       end
    end
+   
+   # Obtain maximum refinement level
+   ncells = xcells*ycells*zcells
+   maxamr = 0
+   cid = ncells
+   while cid < cellid[cellIndex[end]]
+      maxamr += 1
+      cid += ncells*8^maxamr
+   end
 
    #close(fid) # Is it safe not to close it?
 
-   meta = MetaData(filename, fid, footer, cellid[cellIndex], cellIndex,
+   meta = MetaData(filename, fid, footer, cellid[cellIndex], cellIndex, maxamr,
       xcells, ycells, zcells, xblock_size, yblock_size, zblock_size,
       xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, meshes, populations)
 end
