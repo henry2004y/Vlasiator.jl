@@ -568,12 +568,9 @@ function fillmesh(meta::MetaData, vars)
 
    vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
 
-   if maxamr == 0 # no AMR
+   if maxamr == 0
       for iv = 1:nv
-         v = readvariable(meta, vars[iv])
-         for i in LinearIndices(celldata[1])
-            celldata[iv][1][:,i] = v[:,i]
-         end
+         celldata[iv][1][:] = readvariable(meta, vars[iv])
       end
       return celldata, vtkGhostType
    end

@@ -164,6 +164,10 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
    if group in (:vtk, :all)
       @testset "VTK" begin
+         meta = readmeta(filenames[2])
+         data, ghostType = Vlasiator.fillmesh(meta, "proton/vg_rho")
+         @test size(data[1][1]) == (1, 63, 100, 1)
+         close(meta.fid)
          meta = readmeta(filenames[3])
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
