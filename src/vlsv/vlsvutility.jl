@@ -575,8 +575,18 @@ function fillmesh(meta::MetaData, vars)
       return celldata, vtkGhostType
    end
 
+   cidparents, cidmask, cids, cidfine1st = findparents(meta, maxamr, ncells)
+
    for (iv, var) = enumerate(vars)
-      refinedata!(meta, celldata[iv][end], var, maxamr, ncells)
+      if startswith(var, "fg_")
+         celldata[iv][end][:,:,:,:] = readvariable(meta, var)
+      else
+         seq_ = CartesianIndices((xcells*2^maxamr, ycells*2^maxamr, zcells*2^maxamr))
+   
+         celldata[iv][end][:, seq_[cidmask]] = readvariable(meta, var, cidparents)
+      
+         celldata[iv][end][:, seq_[cids .- cidfine1st]] = readvariable(meta, var, cids)
+      end
 
       (startswith(var, "fg_") || !(T[iv] <: AbstractFloat)) && continue
       
@@ -635,36 +645,27 @@ end
 
 fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 
-"Fill the `data` on the highest refinement level."
-function refinedata!(meta::MetaData, data, var, maxamr, ncells)
+"Return parent cell IDs, masks and 1st cell ID -1 on the finest refinement level."
+function findparents(meta::MetaData, maxamr, ncells)
 
-   seq_ = CartesianIndices(
-      (meta.xcells*2^maxamr, meta.ycells*2^maxamr, meta.zcells*2^maxamr))
+   cidrange = [get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells)]
+   nctotal = cidrange[2] - cidrange[1] + 1
 
-   if startswith(var, "fg_")
-      data[:,:,:,:] = readvariable(meta, var)
-   else         
-      cidrange = [get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells)]
-      cidparents = Vector{Int64}(undef, cidrange[2]-cidrange[1]+1)
-      cidmask = similar(cidparents)
-      nc = 0
-      for (i, cid) = enumerate(cidrange[1]:cidrange[2])
-         if cid ∉ meta.cellid
-            nc += 1
-            cidmask[nc] = i
-            cidparents[nc] = getparent(meta, cid)
-         end
+   index1st_ = findfirst(x->x≥cidrange[1], meta.cellid)
+
+   cidparents = Vector{Int64}(undef, nctotal - (length(meta.cellid) - index1st_ + 1))
+   cidmask = similar(cidparents)
+   nc = 0
+   for (i, cid) = enumerate(cidrange[1]:cidrange[2])
+      if cid ∉ meta.cellid
+         nc += 1
+         cidmask[nc] = i
+         cidparents[nc] = getparent(meta, cid)
       end
-   
-      data[:, seq_[cidmask[1:nc]]] = readvariable(meta, var, cidparents[1:nc])
-   
-      cidfine1st = cidrange[1] - 1 # 1st cell ID - 1 on max amr level   
-      index1st_ = findfirst(x->x>cidfine1st, meta.cellid)
-   
-      cids = @view meta.cellid[index1st_:end]
-      data[:, seq_[cids .- cidfine1st]] = readvariable(meta, var, cids)
    end
-   return
+   cids = @view meta.cellid[index1st_:end]
+
+   cidparents, cidmask, cids, cidrange[1]-1
 end
 
 """
