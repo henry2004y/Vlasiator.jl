@@ -589,14 +589,14 @@ end
 fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 
 """
-    fillmesh(meta::MetaData, vars)
+    fillmesh(meta::MetaData, vars; verbose=false)
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return Arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
 """
-function fillmesh(meta::MetaData, vars)
+function fillmesh(meta::MetaData, vars; verbose=false)
 
    cellid, maxamr, fid, footer = meta.cellid, meta.maxamr, meta.fid, meta.footer
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
@@ -627,6 +627,7 @@ function fillmesh(meta::MetaData, vars)
    nCellUptoLowerLvl = 0 # the number of cells up to refinement level i-1
 
    for ilvl = 0:maxamr-1
+      verbose && @info "scanning AMR level $ilvl..."
       ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
       
       # indicate the condition of non-existing cells
@@ -638,6 +639,7 @@ function fillmesh(meta::MetaData, vars)
       end
          
       for iv in nvarvg
+         verbose && @info "reading variable $(vars[iv])..."
          data = readvariable(meta, vars[iv], ids)
          r = 1 # ratio
          for ilvlup = ilvl:maxamr
@@ -655,6 +657,7 @@ function fillmesh(meta::MetaData, vars)
    end
    
    # finest refinement level
+   verbose && @info "scanning maximum AMR level..."
    ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
 
    # indicate the non-existing cells
@@ -665,6 +668,7 @@ function fillmesh(meta::MetaData, vars)
    end
 
    for (iv, var) = enumerate(vars)
+      verbose && @info "reading variable $var..."
       if startswith(var, "fg_")
          celldata[iv][end][:,:,:,:] = readvariable(meta, var)
       else
@@ -710,13 +714,13 @@ function findparents(meta::MetaData)
 end
 
 """
-    write_vtk(meta::MetaData; vars=[""], ascii=false)
+    write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
 
 Convert VLSV file linked with `meta` to VTK OverlappingAMR format.
 Users can select which variables to convert through `vars`.
 If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
 """
-function write_vtk(meta::MetaData; vars=[""], ascii=false)
+function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
    maxamr = meta.maxamr
 
@@ -760,7 +764,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false)
       deleteat!(vars, findfirst(x->x=="CellID", vars))
    end
 
-   data, vtkGhostType = fillmesh(meta, vars)
+   data, vtkGhostType = fillmesh(meta, vars; verbose)
 
    # Generate image file on each refinement level
    for i = 1:length(vtkGhostType)
