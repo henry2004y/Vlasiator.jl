@@ -219,6 +219,8 @@ To convert a VLSV file into VTK,
 write_vtk(meta)
 ```
 
+To see the full list of options, please refer to the documentation in [internal](internal.md). Demo usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
+
 !!! warning
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly.
 

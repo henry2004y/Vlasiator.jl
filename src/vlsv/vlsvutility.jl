@@ -719,10 +719,10 @@ end
 
 Convert VLSV file to VTK format.
 # Optional Arguments
-`vars=[""]`: select which variables to convert.
-`ascii=false`: output stored in ASCII or compressed binary format.
-`vti=false`: generate image files on the highest refinement level only.
-`verbose=false`: display logs during conversion.
+- `vars=[""]`: select which variables to convert.
+- `ascii=false`: output stored in ASCII or compressed binary format.
+- `vti=false`: generate image files on the highest refinement level only.
+- `verbose=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
