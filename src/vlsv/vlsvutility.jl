@@ -715,12 +715,16 @@ end
 
 """
     write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+    write_vtk(filename; kwargs...)
 
-Convert VLSV file linked with `meta` to VTK OverlappingAMR format.
-Users can select which variables to convert through `vars`.
-If `ascii==true`, stored in ascii format; otherwise in compressed binary format.
+Convert VLSV file to VTK format.
+# Optional Arguments
+`vars=[""]`: select which variables to convert.
+`ascii=false`: output stored in ASCII or compressed binary format.
+`vti=false`: generate image files on the highest refinement level only.
+`verbose=false`: display logs during conversion.
 """
-function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
    maxamr = meta.maxamr
 
@@ -731,34 +735,6 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
       filedata[i] = meta.name[1:end-5]*"_$i.vti"
    end
 
-   # Generate vthb file
-   filemeta = meta.name[1:end-4]*"vthb"
-   xvthb = XMLDocument()
-   xroot = create_root(xvthb, "VTKFile")
-   set_attribute(xroot, "type", "vtkOverlappingAMR")
-   set_attribute(xroot, "version", "1.1")
-   set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
-   set_attribute(xroot, "header_type", "UInt64")
-   xamr = new_child(xroot, "vtkOverlappingAMR")
-   origin = @sprintf "%f %f %f" meta.xmin meta.ymin meta.zmin
-   set_attribute(xamr, "origin", origin)
-   set_attribute(xamr, "grid_description", "XYZ")
-
-   for i = 0:maxamr
-      xBlock = new_child(xamr, "Block")
-      set_attribute(xBlock, "level", string(i))
-      spacing_str = @sprintf "%f %f %f" meta.dx/2^i meta.dy/2^i meta.dz/2^i
-      set_attribute(xBlock, "spacing", spacing_str)
-      xDataSet = new_child(xBlock, "DataSet")
-      set_attribute(xDataSet, "index", "0")
-      amr_box = [0, nx*2^i-1, 0, ny*2^i-1, 0, nz*2^i-1]
-      box_str = @sprintf "%d %d %d %d %d %d" amr_box...
-      set_attribute(xDataSet, "amr_box", box_str)
-      set_attribute(xDataSet, "file", filedata[i+1])
-   end
-
-   save_file(xvthb, filemeta)
-
    if isempty(vars[1])
       vars = showvariables(meta)
       deleteat!(vars, findfirst(x->x=="CellID", vars))
@@ -766,33 +742,74 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
 
    data, vtkGhostType = fillmesh(meta, vars; verbose)
 
-   # Generate image file on each refinement level
-   for i = 1:length(vtkGhostType)
-      ghost = vtkGhostType[i]
-      save_image(meta, filedata[i], vars, data, ghost, i, nx, ny, nz, append)
+   if vti
+      save_image(meta, meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end], maxamr,
+         nx, ny, nz, append)
+   else
+      # Generate image file on each refinement level
+      for i = 1:length(vtkGhostType)
+         ghost = vtkGhostType[i]
+         save_image(meta, filedata[i], vars, data, ghost, i-1, nx, ny, nz, append)
+      end
+
+      # Generate vthb file
+      filemeta = meta.name[1:end-4]*"vthb"
+      xvthb = XMLDocument()
+      xroot = create_root(xvthb, "VTKFile")
+      set_attribute(xroot, "type", "vtkOverlappingAMR")
+      set_attribute(xroot, "version", "1.1")
+      set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
+      set_attribute(xroot, "header_type", "UInt64")
+      xamr = new_child(xroot, "vtkOverlappingAMR")
+      origin = @sprintf "%f %f %f" meta.xmin meta.ymin meta.zmin
+      set_attribute(xamr, "origin", origin)
+      set_attribute(xamr, "grid_description", "XYZ")
+
+      for i = 0:maxamr
+         xBlock = new_child(xamr, "Block")
+         set_attribute(xBlock, "level", string(i))
+         spacing_str = @sprintf "%f %f %f" meta.dx/2^i meta.dy/2^i meta.dz/2^i
+         set_attribute(xBlock, "spacing", spacing_str)
+         xDataSet = new_child(xBlock, "DataSet")
+         set_attribute(xDataSet, "index", "0")
+         amr_box = [0, nx*2^i-1, 0, ny*2^i-1, 0, nz*2^i-1]
+         box_str = @sprintf "%d %d %d %d %d %d" amr_box...
+         set_attribute(xDataSet, "amr_box", box_str)
+         set_attribute(xDataSet, "file", filedata[i+1])
+      end
+
+      save_file(xvthb, filemeta)
    end
+
    return
 end
+
+write_vtk(filename; kwargs...) = write_vtk(readmeta(filename); kwargs...)
 
 """
     save_image(meta::MetaData, file, vars, data, vtkGhostType, level, nx, ny, nz)
 
-Save `data` of `vars` at AMR `level` into VTK image file of name `file`. `vtkGhostType` is
-used for visibility control. `nx`, `ny`, `nz` are the original mesh sizes. The `level`
-starts from 1, which is different from the 0-based VLSV output.
-`ascii` determines if output is in ASCII format; `append` determines whether to append data
-at the end of file or do in-block writing.
+Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
+# Arguments
+`file::String`: output file name.
+`vars::Vector{String}`: variable names to be saved.
+`data::Vector{Vector}`: data for all the variables on each refinement level.
+`vtkGhostType::Array{UInt8}`: array for visibility control.
+`level::Int`: refinement level (0-based).
+`nx, ny, nz`: original mesh sizes.
+`ascii=false`: save output in ASCII or binary format.
+`append=true`: determines whether to append data at the end of file or do in-block writing.
 """
 function save_image(meta::MetaData, file, vars, data, vtkGhostType, level, nx, ny, nz,
    ascii=false, append=true)
    origin = (meta.xmin, meta.ymin, meta.zmin)
-   ratio = 2^(level-1)
+   ratio = 2^level
    spacing = (meta.dx / ratio, meta.dy / ratio, meta.dz / ratio)
 
    vtk = vtk_grid(file, nx*ratio+1, ny*ratio+1, nz*ratio+1; origin, spacing, append, ascii)
 
    for (iv, var) in enumerate(vars)
-      vtk[var, VTKCellData()] = data[iv][level]
+      vtk[var, VTKCellData()] = data[iv][level+1]
    end
 
    vtk["vtkGhostType", VTKCellData()] = vtkGhostType
