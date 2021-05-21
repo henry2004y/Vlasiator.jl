@@ -515,7 +515,7 @@ end
    ix, iy, iz
 end
 
-function getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id::Int)
+@inline function getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id::Int)
    slicesize = nx*ny*4^ilvl
    iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
    idUpToZ = iz*slicesize + nCellUptoLowerLvl
@@ -588,18 +588,21 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
    # Find the ids
    ncell = nx*ny*nz
-   nCellUptoCurrentLvl = ncell # the number of cells up to refinement level i
-   nCellUptoLowerLvl = 0 # the number of cells up to refinement level i-1
+   nStart = zeros(Int, maxamr+2) # number of cells up to each refinement level
+   nStart[2] = ncell
+   for ilvl = 1:maxamr
+      nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
+   end
 
    for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
-      ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
-      
-      # indicate the condition of non-existing cells
-      idrefined = setdiff(nCellUptoLowerLvl+1:nCellUptoCurrentLvl, ids)
+      ids = cellid[nStart[ilvl+1] .< cellid .≤ nStart[ilvl+2]]
 
-      for id in idrefined
-         ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
+      # indicate the condition of non-existing cells
+      idrefined = setdiff(nStart[ilvl+1]+1:nStart[ilvl+2], ids)
+
+      @floop ThreadedEx() for id in idrefined
+         ix, iy, iz = getindexes(ilvl, nx, ny, nStart[ilvl+1], id)
          vtkGhostType[ilvl+1][ix+1,iy+1,iz+1] = 8
       end
       
@@ -610,8 +613,8 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
-               for (ic, id) in enumerate(ids)
-                  ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
+               @floop ThreadedEx() for (ic, id) in enumerate(ids)
+                  ix, iy, iz = getindexes(ilvl, nx, ny, nStart[ilvl+1], id)
                   for k = 1:r, j = 1:r, i = 1:r
                      @inbounds celldata[iv][ilvlup+1][:,r*ix+i,r*iy+j,r*iz+k] = data[:,ic]
                   end
@@ -625,16 +628,14 @@ function fillmesh(meta::MetaData, vars; verbose=false)
                celldata[iv][end][:,:,:,:] = readvariable(meta, var)
             else
                data = readvariable(meta, var, ids)
-               for (ic, id) in enumerate(ids)
-                  ix, iy, iz = getindexes(maxamr, nx, ny, nCellUptoLowerLvl, id)
+               @floop ThreadedEx() for (ic, id) in enumerate(ids)
+                  ix, iy, iz = getindexes(maxamr, nx, ny, nStart[end-1], id)
 
                   @inbounds celldata[iv][end][:,ix+1,iy+1,iz+1] = data[:,ic]
                end
             end
          end
       end
-      nCellUptoLowerLvl = nCellUptoCurrentLvl
-      nCellUptoCurrentLvl += ncell*8^(ilvl+1)
    end
 
    celldata, vtkGhostType

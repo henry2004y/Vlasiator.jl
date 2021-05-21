@@ -216,8 +216,9 @@ We can convert VLSV files into VTK files! Since DCCRG is Cartesian based with un
 
 To convert a VLSV file into VTK,
 ```
-write_vtk(meta)
+write_vtk(filename)
 ```
+This function accepts both file names and file meta.
 
 To see the full list of options, please refer to the documentation in [internal](internal.md). Demo usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
 

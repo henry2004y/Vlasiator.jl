@@ -2,7 +2,7 @@ module Vlasiator
 
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Requires
+using Requires, FLoops
 
 include("utility/rotation.jl")
 include("utility/plot.jl")

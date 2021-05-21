@@ -374,34 +374,39 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
          orderedData = zeros(Float32, bbox[1:3]...)
       end
 
-      currentOffset = 1
       fgDecomposition = getDomainDecomposition(bbox[1:3], nIORanks)
 
-      @inbounds for i = 0:nIORanks-1
+      currentOffset = ones(Int, nIORanks+1)
+      lsize = ones(Int, 3, nIORanks)
+      lstart = similar(lsize)
+      @inbounds @floop for i = 0:nIORanks-1
          x = i ÷ fgDecomposition[3] ÷ fgDecomposition[2]
          y = i ÷ fgDecomposition[3] % fgDecomposition[2]
          z = i % fgDecomposition[3]
 
-         lsize = calcLocalSize.(bbox[1:3], fgDecomposition, [x,y,z])
-         lstart = calcLocalStart.(bbox[1:3], fgDecomposition, [x,y,z])
-         lend = @. lstart + lsize - 1
+         lsize[:,i+1] = calcLocalSize.(bbox[1:3], fgDecomposition, [x,y,z])
+         lstart[:,i+1] = calcLocalStart.(bbox[1:3], fgDecomposition, [x,y,z])
 
-         totalSize = prod(lsize)
+         totalSize = prod(lsize[:,i+1])
+         currentOffset[i+2] = currentOffset[i+1] + totalSize
+      end
+
+      @inbounds @floop for i = 1:nIORanks
+         lend = lstart[:,i] + lsize[:,i] .- 1
 
          # Reorder data
          if ndims(data) > 1
-            ldata = data[:,currentOffset:currentOffset+totalSize-1]
-            ldata = reshape(ldata, size(data,1), lsize...)
+            ldata = data[:,currentOffset[i]:currentOffset[i+1]-1]
+            ldata = reshape(ldata, size(data,1), lsize[:,i]...)
 
-            orderedData[:,lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+            orderedData[:,lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] =
+               ldata
          else
-            ldata = data[currentOffset:currentOffset+totalSize-1]
-            ldata = reshape(ldata, lsize...)
+            ldata = data[currentOffset[i]:currentOffset[i+1]-1]
+            ldata = reshape(ldata, lsize[:,i]...)
 
-            orderedData[lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+            orderedData[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
          end
-
-         currentOffset += totalSize
       end
       data = dropdims(orderedData, dims=(findall(size(orderedData) .== 1)...,))
    elseif sorted # dccrg grid
@@ -548,7 +553,7 @@ function showvariables(meta::MetaData)
    nVar = length(meta.footer["VARIABLE"])
    vars = Vector{String}(undef, nVar)
    for i in 1:nVar
-      vars[i] = attribute(meta.footer["VARIABLE"][i], "name")
+      @inbounds vars[i] = attribute(meta.footer["VARIABLE"][i], "name")
    end
    vars
 end
@@ -656,7 +661,7 @@ function readvcells(meta, cellid; pop="proton")
    vcellid_local = [i + nblockx*j + nblockx*nblocky*k
       for i in 0:nblockx-1, j in 0:nblocky-1, k in 0:nblockz-1]
 
-   @inbounds for i in 1:nblocks
+   @inbounds @floop ThreadedEx() for i in 1:nblocks
       vblockid = blockIDs[i]
       for j = 1:bsize
          vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*vblockid
@@ -691,7 +696,7 @@ function getvcellcoordinates(meta, vcellids; pop="proton")
    cellidz = @. cellids ÷ (vmesh.vxblock_size * vmesh.vyblock_size)
    # Get cell coordinates
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
-   @inbounds for i = 1:length(cellids)
+   @inbounds @floop ThreadedEx() for i = 1:length(cellids)
       cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * vmesh.dvx
       cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * vmesh.dvy
       cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * vmesh.dvz
