@@ -377,7 +377,7 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
       currentOffset = 1
       fgDecomposition = getDomainDecomposition(bbox[1:3], nIORanks)
 
-      for i = 0:nIORanks-1
+      @inbounds for i = 0:nIORanks-1
          x = i ÷ fgDecomposition[3] ÷ fgDecomposition[2]
          y = i ÷ fgDecomposition[3] % fgDecomposition[2]
          z = i % fgDecomposition[3]
@@ -472,10 +472,10 @@ function getDomainDecomposition(globalsize, nprocs)
             nzx = j > 1 ? procBox[1] * procBox[3] : 0
             nxy = k > 1 ? procBox[1] * procBox[2] : 0
 
-            value = 10*procBox[1]*procBox[2]*procBox[3] + nyz + nzx + nxy            
+            v = 10*procBox[1]*procBox[2]*procBox[3] + nyz + nzx + nxy            
 
-            if i * j * k == nprocs && value < minValue
-               minValue = value
+            if i * j * k == nprocs && v < minValue
+               minValue = v
                domainDecomp[1:3] = [i, j, k]
             end
          end
@@ -582,14 +582,14 @@ ids and corresponding value.
 """
 function readvcells(meta, cellid; pop="proton")
 
-   vmesh = meta.meshes[pop]
+   fid, footer, vmesh = meta.fid, meta.footer, meta.meshes[pop]
    nblockx = vmesh.vxblock_size
    nblocky = vmesh.vyblock_size
    nblockz = vmesh.vzblock_size
-   bsize = vmesh.vxblock_size * vmesh.vyblock_size * vmesh.vzblock_size
+   bsize = nblockx * nblocky * nblockz
 
-   cellsWithVDF = readvector(meta.fid, meta.footer, pop, "CELLSWITHBLOCKS")
-   nblock_C = readvector(meta.fid, meta.footer, pop, "BLOCKSPERCELL")
+   cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS")
+   nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
 
    nblock_C_offsets = zeros(Int, length(cellsWithVDF))
    nblock_C_offsets[2:end] = cumsum(nblock_C[1:end-1])
@@ -606,7 +606,7 @@ function readvcells(meta, cellid; pop="proton")
    nblocks = nblock_C[cellWithVDFIndex]
 
    # Read in avgs
-   varinfo = meta.footer["BLOCKVARIABLE"][1]
+   varinfo = footer["BLOCKVARIABLE"][1]
    arraysize = parse(Int, attribute(varinfo, "arraysize"))
    datasize = parse(Int, attribute(varinfo, "datasize"))
    datatype = attribute(varinfo, "datatype")
@@ -616,7 +616,7 @@ function readvcells(meta, cellid; pop="proton")
    # Navigate to the correct position
    offset_data = offset * vectorsize * datasize + variable_offset
 
-   seek(meta.fid, offset_data)
+   seek(fid, offset_data)
 
    if datatype == "float" && datasize == 4
       Tavg = Float32
@@ -625,10 +625,10 @@ function readvcells(meta, cellid; pop="proton")
    end
 
    data = Array{Tavg,2}(undef, vectorsize, nblocks)
-   read!(meta.fid, data)
+   read!(fid, data)
 
    # Read in block IDs
-   varinfo = meta.footer["BLOCKIDS"][1]
+   varinfo = footer["BLOCKIDS"][1]
    arraysize = parse(Int, attribute(varinfo, "arraysize"))
    datasize = parse(Int, attribute(varinfo, "datasize"))
    datatype = attribute(varinfo, "datatype")
@@ -638,7 +638,7 @@ function readvcells(meta, cellid; pop="proton")
    # Navigate to the correct position
    offset_f = offset * vectorsize * datasize + variable_offset
 
-   seek(meta.fid, offset_f)
+   seek(fid, offset_f)
 
    if datatype == "uint" && datasize == 4
       T = UInt32
@@ -647,7 +647,7 @@ function readvcells(meta, cellid; pop="proton")
    end
 
    blockIDs = Vector{T}(undef, nblocks*vectorsize)
-   read!(meta.fid, blockIDs)
+   read!(fid, blockIDs)
 
    # Velocity cell IDs and corresponding avg distributions
    vcellids = zeros(Int, bsize*nblocks)
@@ -656,7 +656,7 @@ function readvcells(meta, cellid; pop="proton")
    vcellid_local = [i + nblockx*j + nblockx*nblocky*k
       for i in 0:nblockx-1, j in 0:nblocky-1, k in 0:nblockz-1]
 
-   for i in 1:nblocks
+   @inbounds for i in 1:nblocks
       vblockid = blockIDs[i]
       for j = 1:bsize
          vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*vblockid
@@ -691,7 +691,7 @@ function getvcellcoordinates(meta, vcellids; pop="proton")
    cellidz = @. cellids ÷ (vmesh.vxblock_size * vmesh.vyblock_size)
    # Get cell coordinates
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
-   for i = 1:length(cellids)
+   @inbounds for i = 1:length(cellids)
       cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * vmesh.dvx
       cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * vmesh.dvy
       cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * vmesh.dvz
