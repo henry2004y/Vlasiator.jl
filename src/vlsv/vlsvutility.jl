@@ -641,7 +641,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 end
 
 """
-    write_vtk(meta::MetaData; vars=[""], ascii=false, verbose=false)
+    write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
     write_vtk(filename; kwargs...)
 
 Convert VLSV file to VTK format.
