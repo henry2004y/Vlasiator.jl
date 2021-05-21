@@ -139,29 +139,6 @@ function getparent(meta::MetaData, cellid::Integer)
    parentid
 end
 
-function getparent(meta::MetaData, cellid::Integer, mylvl, cid1st, nx, ny)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
-
-   parentlvl = mylvl - 1
-   # row and column No. (starting with 0)
-   myseq = cellid - cid1st
-   ix = myseq % nx
-   iz = myseq ÷ (nx*ny)
-   iy = (myseq - iz*nx*ny) ÷ nx
-   # indexes on the parent level
-   ixparent = ix ÷ 2
-   iyparent = iy ÷ 2
-   izparent = iz ÷ 2
-     
-   # get the first cellid on parent level
-   cid1st -= ncells*8^parentlvl
-   # get parent cellid
-   parentid = cid1st + izparent*nx*ny÷4 + iyparent*nx÷2 + ixparent
-   parentid
-end
-
-
 """
     getchildren(meta, cellid) -> Vector{Int}
 
@@ -199,22 +176,10 @@ function getchildren(meta::MetaData, cellid::Integer)
    ix_, iy_ = [ix, ix+1], [iy, iy+1]
    iz_ = zcells != 1 ? [iz, iz+1] : [iz]
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
-      cid[n] = cid1st + i[3]*nx*ny*4 + i[2]*nx*2 + i[1]
+      @inbounds cid[n] = cid1st + i[3]*nx*ny*4 + i[2]*nx*2 + i[1]
    end
    cid
 end
-
-"Return all children of `cellid` on the finest AMR level."
-function getchildrenall(meta::MetaData, cellid::Integer)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
-   maxamr = meta.maxamr
-   mylvl = getlevel(meta, cellid)
-   if mylvl == maxamr - 1
-
-   end
-end
-
 
 """
     getsiblings(meta, cellid) -> Vector{Int}
@@ -254,7 +219,7 @@ function getsiblings(meta::MetaData, cellid::Integer)
    ix_, iy_ = [ix, ix1], [iy, iy1]
    iz_ = zcells != 1 ? [iz, iz1] : [iz]
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
-      cid[n] = cid1st + i[3]*nx*ny + i[2]*nx + i[1]
+      @inbounds cid[n] = cid1st + i[3]*nx*ny + i[2]*nx + i[1]
    end
    cid
 end
@@ -626,7 +591,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    nCellUptoCurrentLvl = ncell # the number of cells up to refinement level i
    nCellUptoLowerLvl = 0 # the number of cells up to refinement level i-1
 
-   for ilvl = 0:maxamr-1
+   for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
       ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
       
@@ -637,80 +602,42 @@ function fillmesh(meta::MetaData, vars; verbose=false)
          ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
          vtkGhostType[ilvl+1][ix+1,iy+1,iz+1] = 8
       end
-         
-      for iv in nvarvg
-         verbose && @info "reading variable $(vars[iv])..."
-         data = readvariable(meta, vars[iv], ids)
-         r = 1 # ratio
-         for ilvlup = ilvl:maxamr
-            for (ic, id) in enumerate(ids)
-               ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
-               for k = 1:r, j = 1:r, i = 1:r
-                  @inbounds celldata[iv][ilvlup+1][:,r*ix+i,r*iy+j,r*iz+k] = data[:,ic]
+      
+      if ilvl != maxamr
+         for iv in nvarvg
+            verbose && @info "reading variable $(vars[iv])..."
+            data = readvariable(meta, vars[iv], ids)
+
+            for ilvlup = ilvl:maxamr
+               r = 2^(ilvlup-ilvl) # ratio on refined level
+               for (ic, id) in enumerate(ids)
+                  ix, iy, iz = getindexes(ilvl, nx, ny, nCellUptoLowerLvl, id)
+                  for k = 1:r, j = 1:r, i = 1:r
+                     @inbounds celldata[iv][ilvlup+1][:,r*ix+i,r*iy+j,r*iz+k] = data[:,ic]
+                  end
                end
             end
-            r *= 2 # ratio on refined level
+         end
+      else # max amr level
+         for (iv, var) = enumerate(vars)
+            verbose && @info "reading variable $var..."
+            if startswith(var, "fg_")
+               celldata[iv][end][:,:,:,:] = readvariable(meta, var)
+            else
+               data = readvariable(meta, var, ids)
+               for (ic, id) in enumerate(ids)
+                  ix, iy, iz = getindexes(maxamr, nx, ny, nCellUptoLowerLvl, id)
+
+                  @inbounds celldata[iv][end][:,ix+1,iy+1,iz+1] = data[:,ic]
+               end
+            end
          end
       end
       nCellUptoLowerLvl = nCellUptoCurrentLvl
       nCellUptoCurrentLvl += ncell*8^(ilvl+1)
    end
-   
-   # finest refinement level
-   verbose && @info "scanning maximum AMR level..."
-   ids = cellid[nCellUptoLowerLvl .< cellid .≤ nCellUptoCurrentLvl]
-
-   # indicate the non-existing cells
-   idrefined = setdiff(nCellUptoLowerLvl+1:nCellUptoCurrentLvl, ids)
-   for id = idrefined
-      ix, iy, iz = getindexes(maxamr, nx, ny, nCellUptoLowerLvl, id)
-      @inbounds vtkGhostType[end][ix+1,iy+1,iz+1] = 16
-   end
-
-   for (iv, var) = enumerate(vars)
-      verbose && @info "reading variable $var..."
-      if startswith(var, "fg_")
-         celldata[iv][end][:,:,:,:] = readvariable(meta, var)
-      else
-         data = readvariable(meta, var, ids)
-         for (ic, id) in enumerate(ids)
-            ix, iy, iz = getindexes(maxamr, nx, ny, nCellUptoLowerLvl, id)
-
-            @inbounds celldata[iv][end][:,ix+1,iy+1,iz+1] = data[:,ic]
-         end
-      end
-   end
 
    celldata, vtkGhostType
-end
-
-
-"Return parent cell IDs, masks and 1st cell ID -1 on the finest refinement level."
-function findparents(meta::MetaData)
-   maxamr = meta.maxamr
-   ncells = meta.xcells*meta.ycells*meta.zcells
-
-   cidrange = ( get1stcell(maxamr, ncells)+1, get1stcell(maxamr+1, ncells) )
-   nctotal = cidrange[2] - cidrange[1] + 1
-   # 1st existing cell on max AMR level
-   index1st_ = findfirst(x->x≥cidrange[1], meta.cellid)
-   # rows and columns on max AMR level
-   nx = meta.xcells*2^maxamr
-   ny = meta.ycells*2^maxamr
-
-   cidparents = Vector{Int64}(undef, nctotal - (length(meta.cellid) - index1st_ + 1))
-   cidmask = similar(cidparents)
-   nc = 0
-   for (i, cid) = enumerate(cidrange[1]:cidrange[2])
-      if cid ∉ meta.cellid
-         nc += 1
-         cidmask[nc] = i
-         cidparents[nc] = getparent(meta, cid, maxamr, cidrange[1], nx, ny)
-      end
-   end
-   cids = @view meta.cellid[index1st_:end]
-
-   cidparents, cidmask, cids, cidrange[1]-1
 end
 
 """
