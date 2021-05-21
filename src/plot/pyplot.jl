@@ -478,11 +478,15 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
    ax.set_ylabel(stry, fontsize=14, weight="black")
    ax.set_aspect("equal")
 
-   for axis in ["top","bottom","left","right"]
-      ax.spines[axis].set_linewidth(2.0)
+   # Set border line widths
+   for loc in ("left", "bottom", "right", "top")
+      edge = get(ax.spines, loc, nothing)
+      edge.set_linewidth(2.0)
    end
-   ax.xaxis.set_tick_params(width=2.0,length=3)
-   ax.yaxis.set_tick_params(width=2.0,length=3)
+
+   ax.xaxis.set_tick_params(width=2.0, length=3)
+   ax.yaxis.set_tick_params(width=2.0, length=3)
+   return
 end
 
 """
