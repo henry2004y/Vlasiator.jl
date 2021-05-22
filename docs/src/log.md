@@ -39,7 +39,7 @@ Initial tests on reading variables from sample VLSV files:
 | Julia  | 13   |
 | Python | 45   |
 
-[^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time!
+[^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time! This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
 
 I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
 Same thing for Julia costs 1.0s (first time ~8s including everything).
