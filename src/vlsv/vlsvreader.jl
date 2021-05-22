@@ -2,7 +2,7 @@
 
 include("vlsvvariables.jl")
 
-using LightXML
+using LightXML, FLoops
 
 export MetaData, VarInfo
 export hasvariable, hasparameter, hasname, hasvdf

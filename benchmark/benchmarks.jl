@@ -21,5 +21,6 @@ SUITE["read"]["VDF"] = @benchmarkable readvcells($meta, 2; pop="proton")
 
 SUITE["VTK"] = BenchmarkGroup(["conversion"])
 filename = "test/data/bulk.amr.vlsv"
-SUITE["VTK"]["image"] = @benchmarkable write_vtk($filename; vti=true)
-SUITE["VTK"]["clean"] = @benchmarkable rm("test/data/bulk.amr.vti", force=true)
+meta = readmeta(filename)
+SUITE["VTK"]["AMR"] = @benchmarkable Vlasiator.fillmesh($meta,
+   $["proton/vg_rho", "proton/vg_v", "fg_b", "vg_boundarytype"])

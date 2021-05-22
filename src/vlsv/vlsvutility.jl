@@ -377,7 +377,7 @@ function getslicecell(meta::MetaData, slicelocation, maxamr;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
    nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
-   cellids = meta.cellid # sorted cell IDs
+   cellid = meta.cellid # sorted
 
    if !isinf(xmin) && !isinf(xmax)
       minCoord = xmin; maxCoord = xmax; nsize = nx; idim = 1
@@ -391,7 +391,7 @@ function getslicecell(meta::MetaData, slicelocation, maxamr;
 
    # Find the cut plane index for each refinement level (0-based)
    sliceratio = slicelocation / (maxCoord - minCoord)
-   depths = zeros(maxamr+1)
+   depths = zeros(Int, maxamr+1)
    for i = 0:maxamr
       sliceoffset = floor(Int, sliceratio*nsize*2^i)
       sliceoffset ≤ nsize*2^i || 
@@ -402,15 +402,19 @@ function getslicecell(meta::MetaData, slicelocation, maxamr;
    # Find the ids
    nlen = 0
    ncell = nx*ny*nz
-   nCellUptoCurrentLvl = ncell # the number of cells up to refinement level i
-   nCellUptoLowerLvl = 0 # the number of cells up to refinement level i-1
+   nStart = zeros(Int, maxamr+2) # number of cells up to each refinement level
+   nStart[2] = ncell
+   for ilvl = 1:maxamr
+      nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
+   end
 
    indexlist = Int[]
    idlist = Int[]
 
-   for i = 0:maxamr
-      ids = cellids[nCellUptoLowerLvl .< cellids .≤ nCellUptoCurrentLvl]
-      ix, iy, iz = getindexes(i, nx, ny, nCellUptoLowerLvl, ids)
+   for ilvl = 0:maxamr
+      nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
+      ids = cellid[nLow .< cellid .≤ nHigh]
+      ix, iy, iz = getindexes(ilvl, nx, ny, nLow, ids)
 
       if idim == 1
          coords = ix
@@ -420,15 +424,12 @@ function getslicecell(meta::MetaData, slicelocation, maxamr;
          coords = iz
       end
 
-      # Find the needed elements to create the cut and puts the results
-      # in the indexlist and the idlist
-      elements = coords .== depths[i+1]
-      append!(indexlist, (nlen+1:nlen+length(coords))[elements])
+      # Find the needed elements to create the cut and save the results
+      elements = coords .== depths[ilvl+1]
+      append!(indexlist, (nlen+1:nlen+length(ids))[elements])
       append!(idlist, ids[elements])
 
-      nlen += length(coords)
-      nCellUptoLowerLvl = nCellUptoCurrentLvl
-      nCellUptoCurrentLvl += ncell*8^(i+1)
+      nlen += length(ids)
    end
 
    idlist, indexlist
@@ -588,22 +589,18 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
    # Find the ids
    ncell = nx*ny*nz
-   nStart = zeros(Int, maxamr+2) # number of cells up to each refinement level
-   nStart[2] = ncell
-   for ilvl = 1:maxamr
-      nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
-   end
+   nLow, nHigh = 0, ncell
 
    for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
-      ids = cellid[nStart[ilvl+1] .< cellid .≤ nStart[ilvl+2]]
+      ids = cellid[nLow .< cellid .≤ nHigh]
 
       # indicate the condition of non-existing cells
-      idrefined = setdiff(nStart[ilvl+1]+1:nStart[ilvl+2], ids)
+      idrefined = setdiff(nLow+1:nHigh, ids)
 
-      @floop ThreadedEx() for id in idrefined
-         ix, iy, iz = getindexes(ilvl, nx, ny, nStart[ilvl+1], id)
-         vtkGhostType[ilvl+1][ix+1,iy+1,iz+1] = 8
+      for id in idrefined
+         ix, iy, iz = getindexes(ilvl, nx, ny, nLow, id) .+ 1
+         @inbounds vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
       
       if ilvl != maxamr
@@ -613,10 +610,10 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
-               @floop ThreadedEx() for (ic, id) in enumerate(ids)
-                  ix, iy, iz = getindexes(ilvl, nx, ny, nStart[ilvl+1], id)
+               for (ic, id) in enumerate(ids)
+                  ixr, iyr, izr = getindexes(ilvl, nx, ny, nLow, id) .* r
                   for k = 1:r, j = 1:r, i = 1:r
-                     @inbounds celldata[iv][ilvlup+1][:,r*ix+i,r*iy+j,r*iz+k] = data[:,ic]
+                     @inbounds celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,ic]
                   end
                end
             end
@@ -628,14 +625,15 @@ function fillmesh(meta::MetaData, vars; verbose=false)
                celldata[iv][end][:,:,:,:] = readvariable(meta, var)
             else
                data = readvariable(meta, var, ids)
-               @floop ThreadedEx() for (ic, id) in enumerate(ids)
-                  ix, iy, iz = getindexes(maxamr, nx, ny, nStart[end-1], id)
-
-                  @inbounds celldata[iv][end][:,ix+1,iy+1,iz+1] = data[:,ic]
+               for (ic, id) in enumerate(ids)
+                  ix, iy, iz = getindexes(maxamr, nx, ny, nLow, id) .+ 1
+                  @inbounds celldata[iv][end][:,ix,iy,iz] = data[:,ic]
                end
             end
          end
       end
+      nLow = nHigh
+      nHigh += ncell*8^(ilvl+1)
    end
 
    celldata, vtkGhostType
