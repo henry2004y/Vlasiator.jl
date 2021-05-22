@@ -557,7 +557,7 @@ fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
     fillmesh(meta::MetaData, vars; verbose=false)
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
-# Return Arguments
+# Return arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
 """
@@ -642,11 +642,11 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 end
 
 """
-    write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
+    write_vtk(meta::MetaData; kwargs...)
     write_vtk(filename; kwargs...)
 
 Convert VLSV file to VTK format.
-# Optional Arguments
+# Keyword arguments
 - `vars=[""]`: select which variables to convert.
 - `ascii=false`: output stored in ASCII or compressed binary format.
 - `vti=false`: generate image files on the highest refinement level only.

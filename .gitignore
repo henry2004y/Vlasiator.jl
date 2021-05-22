@@ -10,5 +10,6 @@
 *.vti
 *.vthb
 test*
+/benchmark/*.json
 /docs/build/
 Manifest.toml

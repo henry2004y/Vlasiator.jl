@@ -7,6 +7,17 @@ The VLSV loader inherits the basic structure from [Analysator](https://github.co
 * Besides the language difference in speed, one of the key decisions in boosting performance is to avoid the usage of dictionary with integer keys as much as possible.
 * It is generally faster to read a bunch of cell IDs together than to read each cell one-by-one.
 
+For development, it is recommended to use [PkgBenchmark.jl](https://github.com/JuliaCI/PkgBenchmark.jl) to run the test suite:
+```
+using PkgBenchmark, Vlasiator
+benchmarkpkg(Vlasiator)
+```
+or if you want to compare the current status of the package against a different git version
+```
+judge(Vlasiator, "97e3dca6b2474d7bdc5b62b5bf98ecf070516e5e")
+```
+See more in the PkgBenchmark manual.
+
 ### Benchmarks
 
 Initial tests on reading variables from sample VLSV files: 
