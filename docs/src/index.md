@@ -33,4 +33,13 @@ You can then get started with
 julia> using Vlasiator
 ```
 
-More usages can be found in the [examples](examples.md).
+If you want to use Plots.jl for visualization, add it also through the pkg manager; if you aim at using Matplotlib, besides adding `PyPlot`, you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
+```
+ENV["PYTHON"]="your python executable"
+Pkg.build("PyCall")
+```
+Details are described in [automated matplotlib installation](https://github.com/JuliaPy/PyPlot.jl#automated-matplotlib-installation).
+
+## Author
+
+This module is written by Hongyang Zhou.

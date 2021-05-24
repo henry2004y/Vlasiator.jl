@@ -6,6 +6,10 @@ using LinearAlgebra: norm, ×
 import PyPlot: plot, quiver, streamplot, pcolormesh
 export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
 
+if matplotlib.__version__ >= "3.3"
+   matplotlib.rc("image", cmap="turbo") # set default colormap
+end
+
 "Plotting arguments."
 struct PlotArgs
    "data array size"
@@ -30,8 +34,6 @@ struct PlotArgs
    strx::String
    "ylabel"
    stry::String
-   "colormap used in colorbar"
-   cmap::ColorMap
    "colorbar title"
    cb_title_use::String
 end
@@ -176,7 +178,8 @@ end
 
 """
     pcolormesh(meta::MetaData, var, ax=nothing;
-       op=:mag, axisunit=RE, colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true)
+       op=:mag, axisunit=RE, colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true,
+       kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
 If `ax` is provided, then it will plot on that axes.
@@ -217,7 +220,7 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=pArgs.cmap, shading="auto", kwargs...)
+   c = ax.pcolormesh(x, y, data; norm=cnorm, shading="auto", kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
@@ -311,7 +314,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data'; norm=cnorm, cmap=pArgs.cmap, shading="auto", kwargs...)
+   c = ax.pcolormesh(x, y, data'; norm=cnorm, shading="auto", kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
@@ -423,15 +426,13 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
       str_title = ""
    end
 
-   cmap = matplotlib.cm.turbo
-
    datainfo = readvariablemeta(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
 
    PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, colorscale,
-      vmin, vmax, str_title, strx, stry, cmap, cb_title_use)
+      vmin, vmax, str_title, strx, stry, cb_title_use)
 end
 
 "Set colorbar norm and ticks."
@@ -452,8 +453,7 @@ function set_colorbar(pArgs, data=[1.0])
       vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
       nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
-      cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=pArgs.cmap.N,
-         clip=true)
+      cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
       ticks = range(vmin, vmax, length=nticks)
    end
 
@@ -506,10 +506,11 @@ this is only meaningful when `center` is set such that a range near the bulk/pea
 velocity is selected! 
 - `weight::Symbol`: choosing distribution weights from phase space density or particle flux
 between `:particle` and `:flux`.
+- `kwargs...`: any valid keyword argument for hist2d.
 """
 function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI, slicetype="xy",
-   vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0)
+   vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
    xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
 
@@ -720,12 +721,11 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    if isnothing(ax) ax = plt.gca() end
 
    cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
-   cmap = matplotlib.cm.turbo
 
    rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
    ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
 
-   h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm, cmap=cmap)
+   h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm)
 
    ax.set_title(str_title, fontsize=14, fontweight="bold")
    ax.set_xlabel(strx, fontsize=14, weight="black")
