@@ -28,7 +28,7 @@ vmax = 2.5e6
 
 pArgs = set_args(meta, vardict[varname], axisunit, colorscale; normal=:none, vmin, vmax)
 
-cnorm, cticks = set_colorbar(pArgs, [0.0])
+cnorm, cticks = set_colorbar(pArgs)
 
 for (i, filename) in enumerate(filenames)
    @info "$i out of $nfile"

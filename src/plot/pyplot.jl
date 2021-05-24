@@ -435,7 +435,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
 end
 
 "Set colorbar norm and ticks."
-function set_colorbar(pArgs, data)
+function set_colorbar(pArgs, data=[1.0])
 
    if pArgs.colorscale == Log # Logarithmic plot
       datapositive = data[data .> 0.0]
