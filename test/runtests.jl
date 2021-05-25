@@ -24,8 +24,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test showdimension(meta) == 1
          @test startswith(repr(meta), "filename = bulk.1d.vlsv")
          # Variable strings reading
-         varnames = showvariables(meta)
-         @test length(varnames) == 7 && varnames[end] == "vg_rhom"
+         @test meta.variable[end] == "vg_rhom"
          # Variable info reading
          varinfo = readvariablemeta(meta, "proton/vg_rho")
          @test startswith(repr(varinfo), "var in LaTeX")

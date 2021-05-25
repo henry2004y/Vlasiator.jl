@@ -8,11 +8,6 @@ filename = "bulk.0000004.vlsv"
 meta = readmeta(filename)
 ```
 
-- Display all variable names
-```
-vars = showvariables(meta)
-```
-
 - Read variable meta data
 ```
 showvariablemeta(meta, "proton/vg_rho")

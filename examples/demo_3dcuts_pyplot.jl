@@ -25,12 +25,12 @@ grid = AxesGrid(fig, 111,
                 label_mode="all"
                 )
 
-c1 = pcolormeshslice(meta, nameρ, grid[1]; normal=:x, addcolorbar=false)
-c2 = pcolormeshslice(meta, nameρ, grid[2]; normal=:y, addcolorbar=false)
-c3 = pcolormeshslice(meta, nameρ, grid[3]; normal=:z, addcolorbar=false)
+c1 = pcolormesh(meta, nameρ, grid[1]; normal=:x, addcolorbar=false)
+c2 = pcolormesh(meta, nameρ, grid[2]; normal=:y, addcolorbar=false)
+c3 = pcolormesh(meta, nameρ, grid[3]; normal=:z, addcolorbar=false)
 
 cb = fig.colorbar(c3, cax=grid.cbar_axes[1])
-datainfo = readvariableinfo(meta, nameρ)
+datainfo = readvariablemeta(meta, nameρ)
 
 cb_title_str = datainfo.variableLaTeX
 cb_title_str *= ",["*datainfo.unitLaTeX*"]"

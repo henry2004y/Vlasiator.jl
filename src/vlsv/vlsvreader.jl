@@ -7,7 +7,7 @@ using LightXML, FLoops
 export MetaData, VarInfo
 export hasvariable, hasparameter, hasname, hasvdf
 export readmeta, readvariable, readparameter, readvariablemeta, readvcells
-export showvariables, showdimension, getvcellcoordinates
+export showdimension, getvcellcoordinates
 
 "Mesh size information."
 struct MeshInfo
@@ -47,6 +47,7 @@ struct MetaData
    name::AbstractString
    fid::IOStream
    footer::XMLElement
+   variable::Vector{String}
    cellid::Vector{UInt64}  # sorted cell IDs
    cellIndex::Vector{Int64}
    maxamr::Int64
@@ -76,9 +77,8 @@ function Base.show(io::IO, meta::MetaData)
    println(io, "dimension: $dim")
    println(io, "maximum AMR level: $(meta.maxamr)")
    println(io, "contains VDF: $(hasvdf(meta))")
-   vars = showvariables(meta)
    print(io, "variables: ")
-   println(io, vars)
+   println(io, meta.variable)
 end
 
 function Base.show(io::IO, s::VarInfo)
@@ -282,9 +282,15 @@ function readmeta(filename::AbstractString; verbose=false)
       cid += ncells*8^maxamr
    end
 
+   nVar = length(footer["VARIABLE"])
+   vars = Vector{String}(undef, nVar)
+   for i in 1:nVar
+      @inbounds vars[i] = attribute(footer["VARIABLE"][i], "name")
+   end
+
    #close(fid) # Is it safe not to close it?
 
-   meta = MetaData(filename, fid, footer, cellid[cellIndex], cellIndex, maxamr,
+   meta = MetaData(filename, fid, footer, vars, cellid[cellIndex], cellIndex, maxamr,
       xcells, ycells, zcells, xblock_size, yblock_size, zblock_size,
       xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, meshes, populations)
 end
@@ -542,20 +548,6 @@ function hasname(elem, tag, name)
    end
    
    isFound
-end
-
-"""
-    showvariables(meta) -> Vector{String}
-
-Return all variable names in the VLSV file.
-"""
-function showvariables(meta::MetaData)
-   nVar = length(meta.footer["VARIABLE"])
-   vars = Vector{String}(undef, nVar)
-   for i in 1:nVar
-      @inbounds vars[i] = attribute(meta.footer["VARIABLE"][i], "name")
-   end
-   vars
 end
 
 """

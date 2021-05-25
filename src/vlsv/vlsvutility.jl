@@ -662,7 +662,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
    end
 
    if isempty(vars[1])
-      vars = showvariables(meta)
+      vars = meta.variable
       deleteat!(vars, findfirst(x->x=="CellID", vars))
    end
 
@@ -757,7 +757,7 @@ function compare(f1, f2, tol::AbstractFloat=1e-4)
 
    meta1 = readmeta(f1)
    meta2 = readmeta(f2)
-   varnames = showvariables(meta1)
+   varnames = meta1.variable
    strskip = r"CellID|rank|blocks"
    deleteat!(varnames, findall(x->endswith(x, strskip), varnames))
 
