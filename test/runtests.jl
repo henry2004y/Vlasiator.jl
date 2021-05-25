@@ -211,6 +211,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          meta = readmeta(filenames[2])
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
+         p = pcolormesh(meta, "fg_b")
+         @test p.get_array()[1] ≈ 3.0058909f-9
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
          p = quiver(meta, "proton/vg_v", axisunit=SI)
