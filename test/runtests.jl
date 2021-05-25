@@ -16,7 +16,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
       run(`unzip data/bulk_vlsv.zip`)
    end
 
-   filenames = ["bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv"]
+   filenames = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
 
    if group in (:read, :all)
       @testset "Reading files" begin
