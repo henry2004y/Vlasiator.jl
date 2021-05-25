@@ -12,7 +12,7 @@ const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
 const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)] 
 const Re = 6.371e6          # Earth radius, [m]
 
-export getcell, getslicecell, getlevel, getmaxamr, refineslice, getcellcoordinates,
+export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
    getcellinline, getnearestcellwithvdf, write_vtk, compare
 
@@ -41,10 +41,9 @@ function getcell(meta::MetaData, loc)
    ilevel = 0
    ncells_lowerlevel = 0
 
-   cellids = meta.cellid
-   maxlevel = getmaxamr(meta)
+   cellids, maxamr = meta.cellid, meta.maxamr
 
-   while ilevel < maxlevel + 1
+   while ilevel < maxamr + 1
       if cellid in cellids
          break
       else
@@ -60,7 +59,7 @@ function getcell(meta::MetaData, loc)
       end
    end
    
-   if ilevel == maxlevel + 1
+   if ilevel == maxamr + 1
       throw(DomainError(cellid, "CellID does not exist in any AMR level!"))
    end
 
@@ -81,24 +80,6 @@ function getlevel(meta::MetaData, cellid::Integer)
       ilevel += 1
    end
    ilevel - 1 
-end
-
-"""
-    getmaxamr(meta) -> Int
-
-Find the highest refinement level of a given vlsv file.
-"""
-function getmaxamr(meta::MetaData)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
-   maxamr = 0
-   cellID = ncells
-   while cellID < meta.cellid[end]
-      maxamr += 1
-      cellID += ncells*8^maxamr
-   end
-
-   maxamr
 end
 
 """
@@ -230,11 +211,10 @@ end
 Check if `cellid` is a parent cell.
 """
 function isparent(meta::MetaData, cellid::Integer)
-   xcells, ycells, zcells = meta.xcells, meta.ycells, meta.zcells
-   ncells = xcells*ycells*zcells
-   amrmax = getmaxamr(meta)
+   nx, ny, nz, maxamr = meta.xcells, meta.ycells, meta.zcells, meta.maxamr
+   ncells = nx*ny*nz
 
-   ncells_accum = get1stcell(amrmax, ncells)
+   ncells_accum = get1stcell(maxamr, ncells)
 
    cellid ∉ meta.cellid && 0 < cellid ≤ ncells_accum 
 end
@@ -366,17 +346,17 @@ function getcellinline(meta::MetaData, point1, point2)
 end
 
 """
-    getslicecell(meta, slicelocation, maxamr;
+    getslicecell(meta, slicelocation;
        xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf) -> idlist, indexlist
 
 Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
 direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
 mapping from original order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaData, slicelocation, maxamr;
+function getslicecell(meta::MetaData, slicelocation;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
-   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
+   nx, ny, nz, maxamr = meta.xcells, meta.ycells, meta.zcells, meta.maxamr
    cellid = meta.cellid # sorted
 
    if !isinf(xmin) && !isinf(xmax)
@@ -436,14 +416,14 @@ function getslicecell(meta::MetaData, slicelocation, maxamr;
 end
 
 """
-    refineslice(meta, idlist, data, maxamr, normal) -> Array
+    refineslice(meta, idlist, data, normal) -> Array
 
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
-function refineslice(meta::MetaData, idlist, data, maxamr, normal)
+function refineslice(meta::MetaData, idlist, data, normal)
 
-   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
+   nx, ny, nz, maxamr = meta.xcells, meta.ycells, meta.zcells, meta.maxamr
 
    if normal == :x
       dims = [ny, nz] .* 2^maxamr
@@ -651,8 +631,7 @@ Convert VLSV file to VTK format.
 - `verbose=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
-   nx, ny, nz = meta.xcells, meta.ycells, meta.zcells
-   maxamr = meta.maxamr
+   nx, ny, nz, maxamr = meta.xcells, meta.ycells, meta.zcells, meta.maxamr
 
    append = ascii ? false : true
 

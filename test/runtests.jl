@@ -66,18 +66,16 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
          # AMR data reading, DCCRG grid
          metaAMR = readmeta(filenames[3])
-         maxreflevel = getmaxamr(metaAMR)
          sliceoffset = abs(metaAMR.ymin)
-         idlist, indexlist = getslicecell(metaAMR, sliceoffset, maxreflevel,
+         idlist, indexlist = getslicecell(metaAMR, sliceoffset;
             ymin=metaAMR.ymin, ymax=metaAMR.ymax)
 
          data = readvariable(metaAMR, "proton/vg_rho")
-         data = refineslice(metaAMR, idlist, data[indexlist], maxreflevel, :y)
+         data = refineslice(metaAMR, idlist, data[indexlist], :y)
          @test sum(data) ≈ 7.690352275026747e8
 
          # AMR level
-         nAMR = getmaxamr(metaAMR)
-         @test nAMR == 2
+         @test metaAMR.maxamr == 2
          @test getlevel(metaAMR, idlist[1]) == 1
 
          # DCCRG utilities
@@ -88,7 +86,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
          # FS grid
          data = readvariable(metaAMR, "fg_e")
-         @test size(data) == (3, metaAMR.xcells*nAMR^2, metaAMR.ycells*nAMR^2, metaAMR.zcells*nAMR^2)
+         nx, ny, nz, namr = metaAMR.xcells, metaAMR.ycells, metaAMR.zcells, metaAMR.maxamr
+         @test size(data) == (3, nx*namr^2, ny*namr^2, nz*namr^2)
          @test data[:,16,8,8] == [-1.3758785f-7, 3.2213068f-4, -3.1518404f-4]
             
 

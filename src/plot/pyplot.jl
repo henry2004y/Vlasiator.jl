@@ -20,8 +20,6 @@ struct PlotArgs
    idlist::Vector{Int}
    "mapping from original cell order to cut plane"
    indexlist::Vector{Int}
-   "maximum refinement level"
-   maxreflevel::Int8
    "scale of data"
    colorscale::ColorScale
    "minimum data value"
@@ -202,7 +200,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 function pcolormesh(meta::MetaData, var, ax=nothing;
    op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
 
-   if showdimension(meta) == 3 || getmaxamr(meta) > 0
+   if showdimension(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
       normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
       origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
@@ -274,7 +272,6 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin, vmax)
 
-   maxreflevel = pArgs.maxreflevel
    sizes = pArgs.sizes
    plotrange = pArgs.plotrange
    idlist, indexlist = pArgs.idlist, pArgs.indexlist
@@ -297,7 +294,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
       # Create the plotting grid
       if ndims(data) == 1
-         data = refineslice(meta, idlist, data, maxreflevel, normal)
+         data = refineslice(meta, idlist, data, normal)
       elseif ndims(data) == 2
          if op in (:x, :y, :z)
             if op == :x
@@ -307,11 +304,11 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
             elseif op == :z
                slice = @view data[3,:]
             end
-            data = refineslice(meta, idlist, slice, maxreflevel, normal)
+            data = refineslice(meta, idlist, slice, normal)
          elseif op == :mag
-            datax = @views refineslice(meta, idlist, data[1,:], maxreflevel, normal)
-            datay = @views refineslice(meta, idlist, data[2,:], maxreflevel, normal)
-            dataz = @views refineslice(meta, idlist, data[3,:], maxreflevel, normal)
+            datax = @views refineslice(meta, idlist, data[1,:], normal)
+            datay = @views refineslice(meta, idlist, data[2,:], normal)
+            dataz = @views refineslice(meta, idlist, data[3,:], normal)
             data = hypot.(datax, datay, dataz)
          end
 
@@ -382,15 +379,13 @@ end
 function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    normal::Symbol=:z, origin=0.0, vmin=-Inf, vmax=Inf)
 
-   maxreflevel = getmaxamr(meta)
-
    if normal == :x
       sizes = [meta.ycells, meta.zcells]
       plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
       sliceoffset = abs(meta.xmin) + origin
       axislabels = ['Y', 'Z']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel;
+      idlist, indexlist = getslicecell(meta, sliceoffset;
          xmin=meta.xmin, xmax=meta.xmax)
    elseif normal == :y
       sizes = [meta.xcells, meta.zcells]
@@ -398,7 +393,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
       sliceoffset = abs(meta.ymin) + origin
       axislabels = ['X', 'Z']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel;
+      idlist, indexlist = getslicecell(meta, sliceoffset;
          ymin=meta.ymin, ymax=meta.ymax)
    elseif normal == :z
       sizes = [meta.xcells, meta.ycells]
@@ -406,7 +401,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
       sliceoffset = abs(meta.zmin) + origin
       axislabels = ['X', 'Y']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset, maxreflevel;
+      idlist, indexlist = getslicecell(meta, sliceoffset;
          zmin=meta.zmin, zmax=meta.zmax)
    else
       idlist = Int64[]
@@ -428,7 +423,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    end
 
    # Scale the sizes to the highest refinement level
-   sizes *= 2^maxreflevel # data needs to be refined later
+   sizes *= 2^meta.maxamr # data needs to be refined later
 
    unitstr = axisunit == RE ? "R_E" : "m"
    strx = latexstring(axislabels[1]*"["*unitstr*"]")
@@ -449,7 +444,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    cb_title_use = datainfo.variableLaTeX
    cb_title_use *= ",["*datainfo.unitLaTeX*"]"
 
-   PlotArgs(sizes, plotrange, idlist, indexlist, maxreflevel, colorscale,
+   PlotArgs(sizes, plotrange, idlist, indexlist, colorscale,
       vmin, vmax, str_title, strx, stry, cb_title_use)
 end
 
@@ -771,23 +766,18 @@ Plot mesh cell centers from axis view `projection`. `projection` should be eithe
 function plotmesh(meta::MetaData, ax=nothing; projection="3d", origin=0.0, marker="+",
    kwargs...)
 
-   maxreflevel = getmaxamr(meta)
-
    if projection == "x"
       sliceoffset = abs(meta.xmin) + origin
 
-      ids, _ = getslicecell(meta, sliceoffset, maxreflevel;
-         xmin=meta.xmin, xmax=meta.xmax)
+      ids, _ = getslicecell(meta, sliceoffset; xmin=meta.xmin, xmax=meta.xmax)
    elseif projection == "y"
       sliceoffset = abs(meta.ymin) + origin
 
-      ids, _ = getslicecell(meta, sliceoffset, maxreflevel;
-         ymin=meta.ymin, ymax=meta.ymax)
+      ids, _ = getslicecell(meta, sliceoffset; ymin=meta.ymin, ymax=meta.ymax)
    elseif projection == "z"
       sliceoffset = abs(meta.zmin) + origin
 
-      ids, _ = getslicecell(meta, sliceoffset, maxreflevel;
-         zmin=meta.zmin, zmax=meta.zmax)
+      ids, _ = getslicecell(meta, sliceoffset; zmin=meta.zmin, zmax=meta.zmax)
    else
       ids = meta.cellid
    end
