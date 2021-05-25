@@ -216,6 +216,24 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
+   if var == "fg_b"
+      rho_ = findfirst(x->endswith(x, "rho"), meta.variable)
+      if !isnothing(rho_)
+         rho = readvariable(meta, meta.variable[rho_])
+         rho = reshape(rho, pArgs.sizes[1], pArgs.sizes[2])
+         mask = findall(x->x==0.0, rho')
+
+         if ndims(data) == 2
+            @inbounds data[mask] .= NaN
+         else
+            ind = CartesianIndices((pArgs.sizes[1], pArgs.sizes[2]))
+            for m in mask
+               @inbounds data[:, ind[m][1], ind[m][2]] .= NaN
+            end
+         end
+      end
+   end
+
    cnorm, cticks = set_colorbar(pArgs, data)
 
    if isnothing(ax) ax = plt.gca() end
@@ -268,7 +286,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
    end
 
    if startswith(var, "fg_") # field quantities, fsgrid
-
+      @error "plotting fs grid variable in cut currently not supported!"
    else # moments, dccrg grid
       # vlasov grid, AMR
       if ndims(data) == 1
@@ -444,13 +462,13 @@ function set_colorbar(pArgs, data=[1.0])
          throw(DomainError(data, "Nonpositive data detected: use linear scale instead!"))
       end
       vmin = isinf(pArgs.vmin) ? minimum(datapositive) : pArgs.vmin
-      vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
+      vmax = isinf(pArgs.vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : pArgs.vmax
 
       cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
    elseif pArgs.colorscale == Linear
-      vmin = isinf(pArgs.vmin) ? minimum(data) : pArgs.vmin
-      vmax = isinf(pArgs.vmax) ? maximum(data) : pArgs.vmax
+      vmin = isinf(pArgs.vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : pArgs.vmin
+      vmax = isinf(pArgs.vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : pArgs.vmax
       nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
