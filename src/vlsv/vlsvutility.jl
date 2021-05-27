@@ -437,14 +437,14 @@ function refineslice(meta::MetaData, idlist, data, normal)
 
    # Create the plot grid
    ncell = nx*ny*nz
-   nCellUptoCurrentLvl = ncell
-   nCellUptoLowerLvl = 0
+   nHigh = ncell
+   nLow = 0
 
    for i = 0:maxamr
-      ids = idlist[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
-      d = data[nCellUptoLowerLvl .< idlist .≤ nCellUptoCurrentLvl]
+      ids = idlist[nLow .< idlist .≤ nHigh]
+      d = data[nLow .< idlist .≤ nHigh]
 
-      ix, iy, iz = getindexes(i, nx, ny, nCellUptoLowerLvl, ids)
+      ix, iy, iz = getindexes(i, nx, ny, nLow, ids)
 
       # Get the correct coordinate values and the widths for the plot
       if normal == :x
@@ -473,8 +473,8 @@ function refineslice(meta::MetaData, idlist, data, normal)
          dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
       end
 
-      nCellUptoLowerLvl = nCellUptoCurrentLvl
-      nCellUptoCurrentLvl += ncell*8^(i+1)
+      nLow = nHigh
+      nHigh += ncell*8^(i+1)
    end
 
    dpoints
