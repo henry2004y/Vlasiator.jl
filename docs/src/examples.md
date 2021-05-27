@@ -218,7 +218,8 @@ This function accepts both file names and file meta.
 To see the full list of options, please refer to the documentation in [internal](internal.md). Demo usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
 
 !!! warning
-    As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly.
+    As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `vti`: when it is set to `true`, then only the image file at the highest refinement level is generated.
+    This part is experimental and subject to change in the future.
 
 ## Calling from Python
 
