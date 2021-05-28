@@ -7,7 +7,6 @@ using Vlasiator, Glob, PyPlot, Printf
 filenames = glob("run4/bulk*.vlsv")
 
 meta = readmeta(filenames[1])
-varnames = showvariables(meta)
 
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]

@@ -12,7 +12,6 @@ filenames = glob("out/bulk*.vlsv")
 nfile = length(filenames)
 
 meta = readmeta(filenames[1])
-varnames = showvariables(meta)
 vardict = Dict("v"=>"proton/vg_v", "rho"=>"proton/vg_rho", "b"=>"vg_b_vol", "b2"=>"fg_b")
 varname = "rho"
 
