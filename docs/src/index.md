@@ -19,7 +19,7 @@ Vlasiator.jl contains the following features:
     This package is still young, so be careful for any future breaking changes!
 
 !!! warning
-    This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standard for outputs, and is not guaranteed to work.
+    This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standard for outputs, and is not guaranteed to work. [This analysator wiki page](https://github.com/fmihpc/analysator/wiki/Supported-variables-and-data-reducers) describes the old and new naming standards in detail.
 
 ## Getting started
 
