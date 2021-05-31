@@ -95,7 +95,6 @@ function getfooter(fid)
    endianness_offset = 8
    seek(fid, endianness_offset)
    # Obtain the offset of the XML file
-   uint64_byte_amount = 8
    offset = read(fid, UInt64)
    seek(fid, offset)
    xmldata = read(fid, String)
@@ -688,7 +687,7 @@ function getvcellcoordinates(meta, vcellids; pop="proton")
    cellidz = @. cellids ÷ (vmesh.vxblock_size * vmesh.vyblock_size)
    # Get cell coordinates
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
-   @inbounds @floop ThreadedEx() for i = 1:length(cellids)
+   @inbounds @floop ThreadedEx() for i in eachindex(cellids)
       cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * vmesh.dvx
       cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * vmesh.dvy
       cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * vmesh.dvz

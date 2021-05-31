@@ -464,12 +464,12 @@ function refineslice(meta::MetaData, idlist, data, normal)
       Y = [y for _ in iRange, y in iRange]
 
       coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
-      @inbounds for ic = 1:length(a), ir = 1:2^((maxamr-i)*2)
+      @inbounds for ic in eachindex(a, b), ir = 1:2^((maxamr-i)*2)
          coords[1,ic,ir] = a[ic]*2^(maxamr - i) + 1 + X[ir]
          coords[2,ic,ir] = b[ic]*2^(maxamr - i) + 1 + Y[ir]
       end
 
-      @inbounds for ic = 1:length(a)
+      @inbounds for ic in eachindex(d)
          dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
       end
 
@@ -514,7 +514,7 @@ function getnearestcellwithvdf(meta::MetaData, id)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    isempty(cells) && @error "No distribution saved in $(meta.name)"
    coords = Matrix{Float32}(undef, 3, length(cells))
-   for i = 1:length(cells)
+   @inbounds for i in eachindex(cells) 
       coords[:,i] = getcellcoordinates(meta, cells[i])
    end
    coords_orig = getcellcoordinates(meta, id)
@@ -652,7 +652,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
          nx, ny, nz, append)
    else
       # Generate image file on each refinement level
-      for i = 1:length(vtkGhostType)
+      for i in eachindex(vtkGhostType)
          ghost = vtkGhostType[i]
          save_image(meta, filedata[i], vars, data, ghost, i-1, nx, ny, nz, append)
       end
