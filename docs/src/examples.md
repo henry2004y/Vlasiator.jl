@@ -224,7 +224,7 @@ To see the full list of options, please refer to the documentation in [internal]
 ## Calling from Python
 
 It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
-Following the installation steps described in the manual[^2], and then inside Python REPL:
+Following the installation steps described in the manual[^3], and then inside Python REPL:
 ```
 # Handling initialization issue for Conda
 from julia.api import Julia
@@ -250,4 +250,4 @@ plt.show()
 !!! note
     This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
 
-[^2]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
+[^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.

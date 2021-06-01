@@ -42,7 +42,7 @@ Initial tests on reading variables from sample VLSV files:
 [^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time! This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
 
 I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
-Same thing for Julia costs 1.0s (first time ~8s including everything).
+Same operation for Julia 1.5 costs 1.0s (first time ~8s including everything).
 
 Reading and plotting one 2d slice of proton density out of 3D AMR data:
 
@@ -53,9 +53,9 @@ Reading and plotting one 2d slice of proton density out of 3D AMR data:
 
 Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on Vorna:
 
-| 1 CPU   | tmean [m] |
+| 1 CPU   | tmean [m][^2] |
 |:-------|:---------:|
 | Julia  | 11    |
 | Python | 125   |
 
-Note that the above timings are for a single CPU. With only one command added for multithreading, the Julia timings can be improved by n where n is the number of threads. For example, with 8 threads, Julia takes ~80s to finish.
+[^2]: The timings are for a single CPU. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.

@@ -1,4 +1,4 @@
-using Vlasiator, PyPlot
+using Vlasiator
 using Documenter
 
 makedocs(;
@@ -10,6 +10,7 @@ makedocs(;
         prettyurls=get(ENV, "CI", "false") == "true",
         canonical="https://henry2004y.github.io/Vlasiator.jl",
         assets=String[],
+        sidebar_sitename=false
     ),
     pages=[
         "Home" => "index.md",
