@@ -272,9 +272,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin, vmax)
 
-   sizes = pArgs.sizes
-   plotrange = pArgs.plotrange
-   idlist, indexlist = pArgs.idlist, pArgs.indexlist
+   @unpack sizes, plotrange, idlist, indexlist = pArgs
 
    if hasvariable(meta, var)
       data = readvariable(meta, var)
@@ -338,8 +336,7 @@ end
 
 "Generate axis and data for 2D plotting."
 function plot_prep2d(meta, var, pArgs, op, axisunit::AxisUnit)
-
-   sizes, plotrange = pArgs.sizes, pArgs.plotrange
+   @unpack sizes, plotrange = pArgs
 
    if hasvariable(meta, var)
       dataRaw = readvariable(meta, var)
@@ -450,24 +447,24 @@ end
 
 "Set colorbar norm and ticks."
 function set_colorbar(pArgs, data=[1.0])
-
-   if pArgs.colorscale == Log # Logarithmic plot
+   @unpack colorscale, vmin, vmax = pArgs
+   if colorscale == Log # Logarithmic plot
       datapositive = data[data .> 0.0]
       if isempty(datapositive)
          throw(DomainError(data, "Nonpositive data detected: use linear scale instead!"))
       end
-      vmin = isinf(pArgs.vmin) ? minimum(datapositive) : pArgs.vmin
-      vmax = isinf(pArgs.vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : pArgs.vmax
+      v1 = isinf(vmin) ? minimum(datapositive) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
 
-      cnorm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+      cnorm = matplotlib.colors.LogNorm(vmin=v1, vmax=v2)
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
-   elseif pArgs.colorscale == Linear
-      vmin = isinf(pArgs.vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : pArgs.vmin
-      vmax = isinf(pArgs.vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : pArgs.vmax
+   elseif colorscale == Linear
+      v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
       nticks = 7
-      levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
+      levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(v1, v2)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
-      ticks = range(vmin, vmax, length=nticks)
+      ticks = range(v1, v2, length=nticks)
    end
 
    cnorm, ticks
@@ -476,9 +473,7 @@ end
 
 "Configure customized plot."
 function set_plot(c, ax, pArgs, cticks, addcolorbar)
-
-   str_title, strx, stry, cb_title_use = pArgs.str_title, pArgs.strx, pArgs.stry,
-      pArgs.cb_title_use
+   @unpack str_title, strx, stry, cb_title_use = pArgs
 
    if addcolorbar
       cb = colorbar(c; ax, ticks=cticks, fraction=0.046, pad=0.04)
@@ -525,15 +520,14 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI, slicetype="xy",
    vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
-   xsize, ysize, zsize = meta.xcells, meta.ycells, meta.zcells
-
+   @unpack ycells, zcells = meta
    vmesh = meta.meshes[pop]
    vxsize = vmesh.vxblocks * vmesh.vxblock_size
    vysize = vmesh.vyblocks * vmesh.vyblock_size
-   vzsize = vmesh.vzblocks * vmesh.vzblock_size
+   #vzsize = vmesh.vzblocks * vmesh.vzblock_size
    vxmin, vxmax = vmesh.vxmin, vmesh.vxmax
    vymin, vymax = vmesh.vymin, vmesh.vymax
-   vzmin, vzmax = vmesh.vzmin, vmesh.vzmax
+   #vzmin, vzmax = vmesh.vzmin, vmesh.vzmax
    cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
    unit == RE && (location ./= Vlasiator.Re)
@@ -580,8 +574,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    end
 
    for f in ("fsaved", "vg_f_saved")
-      if hasvariable(meta, f) &&
-         readvariable(meta, f, cidNearest) != 1.0
+      if hasvariable(meta, f) && readvariable(meta, f, cidNearest) != 1.0
          @error "VDF not found in the given cell!"
       end
    end
@@ -628,16 +621,16 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    end
 
    # Set normal direction
-   if ysize == 1 && zsize == 1 # 1D, select xz
+   if ycells == 1 && zcells == 1 # 1D, select xz
       slicetype = "xz"
       sliceNormal = [0., 1., 0.]
       strx = "vx [km/s]"
       stry = "vz [km/s]"
-   elseif ysize == 1 && slicetype == "xz" # polar
+   elseif ycells == 1 && slicetype == "xz" # polar
       sliceNormal = [0., 1., 0.]
       strx = "vx [km/s]"
       stry = "vz [km/s]"
-   elseif zsize == 1 && slicetype == "xy" # ecliptic
+   elseif zcells == 1 && slicetype == "xy" # ecliptic
       sliceNormal = [0., 0., 1.]
       strx = "vx [km/s]"
       stry = "vy [km/s]"
@@ -678,7 +671,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
       v2 = V[3,:]
       vnormal = V[2,:]
    elseif slicetype ∈ ("Bperp", "Bpar", "Bpar1")
-      #hyzhou: NOT working yet!
+      #TODO: NOT working yet!
       if slicetype == "Bperp"
          v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
          v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
