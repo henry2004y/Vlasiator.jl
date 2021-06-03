@@ -679,14 +679,14 @@ write_vtk(filename; kwargs...) = write_vtk(readmeta(filename); kwargs...)
 
 Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 # Arguments
-`file::String`: output file name.
-`vars::Vector{String}`: variable names to be saved.
-`data::Vector{Vector}`: data for all the variables on each refinement level.
-`vtkGhostType::Array{UInt8}`: array for visibility control.
-`level::Int`: refinement level (0-based).
-`xcells, ycells, zcells`: original mesh sizes.
-`ascii=false`: save output in ASCII or binary format.
-`append=true`: determines whether to append data at the end of file or do in-block writing.
+- `file::String`: output file name.
+- `vars::Vector{String}`: variable names to be saved.
+- `data::Vector{Vector}`: data for all the variables on each refinement level.
+- `vtkGhostType::Array{UInt8}`: array for visibility control.
+- `level::Int`: refinement level (0-based).
+- `xcells, ycells, zcells`: original mesh sizes.
+- `ascii=false`: save output in ASCII or binary format.
+- `append=true`: determines whether to append data at the end of file or do in-block writing.
 """
 function save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
    xcells, ycells, zcells, ascii=false, append=true)
