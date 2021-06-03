@@ -146,7 +146,7 @@ function getchildren(meta::MetaData, cellid::Integer)
    iy *= 2
    iz *= 2
 
-   dim = showdimension(meta)
+   dim = ndims(meta)
    cid = Vector{Int}(undef, 2^dim)
    # get the first cell ID on the finer level
    cid1st += ncells*8^mylvl
@@ -191,7 +191,7 @@ function getsiblings(meta::MetaData, cellid::Integer)
    iy, iy1 = minmax(iy, iy1)
    iz, iz1 = minmax(iz, iz1)
 
-   dim = showdimension(meta)
+   dim = ndims(meta)
    cid = Vector{Int}(undef, 2^dim)
    ix_, iy_ = [ix, ix1], [iy, iy1]
    iz_ = zcells != 1 ? [iz, iz1] : [iz]
@@ -435,14 +435,11 @@ function refineslice(meta::MetaData, idlist, data, normal)
 
       # Get the correct coordinate values and the widths for the plot
       if normal == :x
-         a = iy
-         b = iz
+         a, b = iy, iz
       elseif normal == :y
-         a = ix
-         b = iz
+         a, b = ix, iz
       elseif normal == :z
-         a = ix
-         b = iy
+         a, b = ix, iy
       end
 
       # Insert the data values into dpoints
@@ -637,9 +634,9 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
          xcells, ycells, zcells, append)
    else
       # Generate image file on each refinement level
-      for i in eachindex(vtkGhostType)
-         ghost = vtkGhostType[i]
-         save_image(meta, filedata[i], vars, data, ghost, i-1, xcells, ycells, zcells, append)
+      for i in eachindex(vtkGhostType, filedata)
+         fdata, ghost = filedata[i], vtkGhostType[i]
+         save_image(meta, fdata, vars, data, ghost, i-1, xcells, ycells, zcells, append)
       end
 
       # Generate vthb file
@@ -677,7 +674,8 @@ end
 write_vtk(filename; kwargs...) = write_vtk(readmeta(filename); kwargs...)
 
 """
-    save_image(meta::MetaData, file, vars, data, vtkGhostType, level, xcells, ycells, zcells)
+    save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
+       xcells, ycells, zcells, ascii=false, append=true)
 
 Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 # Arguments
@@ -690,8 +688,9 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 `ascii=false`: save output in ASCII or binary format.
 `append=true`: determines whether to append data at the end of file or do in-block writing.
 """
-function save_image(meta::MetaData, file, vars, data, vtkGhostType, level, xcells, ycells, zcells,
-   ascii=false, append=true)
+function save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
+   xcells, ycells, zcells, ascii=false, append=true)
+
    origin = (meta.xmin, meta.ymin, meta.zmin)
    ratio = 2^level
    spacing = (meta.dx / ratio, meta.dy / ratio, meta.dz / ratio)

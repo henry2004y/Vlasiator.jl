@@ -7,7 +7,9 @@ using LightXML, FLoops
 export MetaData, VarInfo
 export hasvariable, hasparameter, hasname, hasvdf
 export readmeta, readvariable, readparameter, readvariablemeta, readvcells
-export showdimension, getvcellcoordinates
+export ndims, getvcellcoordinates
+
+import Base.ndims
 
 "Mesh size information."
 struct MeshInfo
@@ -73,8 +75,7 @@ end
 
 function Base.show(io::IO, meta::MetaData)
    println(io, "filename = ", meta.name)
-   dim = showdimension(meta)
-   println(io, "dimension: $dim")
+   println(io, "dimension: $(ndims(meta))")
    println(io, "maximum AMR level: $(meta.maxamr)")
    println(io, "contains VDF: $(hasvdf(meta))")
    print(io, "variables: ")
@@ -90,29 +91,20 @@ end
 
 "Return the xml footer of vlsv."
 function getfooter(fid)
-
    # First 8 bytes indicate big-endian or else
-   endianness_offset = 8
-   seek(fid, endianness_offset)
+   endian_offset = 8
+   seek(fid, endian_offset)
    # Obtain the offset of the XML file
    offset = read(fid, UInt64)
    seek(fid, offset)
-   xmldata = read(fid, String)
-   xmldoc  = parse_string(xmldata)
-   footer = root(xmldoc)
-
+   footer = read(fid, String) |> parse_string |> root
 end
 
 
 "Return size and type information for the object."
 function getObjInfo(fid, footer, name, tag, attr)
 
-   arraysize = 0
-   datasize = 0
-   datatype = ""
-   vectorsize = 0
-   variable_offset = 0
-
+   arraysize, datasize, datatype, vectorsize, variable_offset = 0, 0, "", 0, 0
    isFound = false
    
    for varinfo in footer[tag]
@@ -302,20 +294,15 @@ Return VarInfo about `var` in the vlsv file linked to `meta`.
 """
 function readvariablemeta(meta, var)
 
-   unit = ""
-   unitLaTeX = ""
-   variableLaTeX = ""
-   unitConversion = ""
+   unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
 
-   # Force lowercase
    var = lowercase(var)
 
    # Get population and variable names from data array name 
    if occursin("/", var)
       popname, varname = split(var, "/")
    else
-      popname = "pop"
-      varname = var
+      popname, varname = "pop", var
    end
 
    if hasvariable(meta, var)
@@ -343,9 +330,7 @@ end
 
 "Return mesh related variable."
 function readmesh(fid, footer, typeMesh, varMesh)
-
-   T, variable_offset, arraysize, datasize, vectorsize = 
-      getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
+   T, _, arraysize, _, _ = getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
 
    w = Vector{T}(undef, arraysize)
    read!(fid, w)
@@ -360,16 +345,16 @@ Return variable value from the vlsv file. By default `sorted=true`, which means 
 DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
-
+   @unpack fid, footer, cellIndex = meta
    if var in keys(variables_predefined)
       data = variables_predefined[var](meta)
       return data
    end
 
-   data = readvector(meta.fid, meta.footer, var, "VARIABLE")
+   data = readvector(fid, footer, var, "VARIABLE")
 
    if startswith(var, "fg_") # fsgrid
-      bbox = readmesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX")
+      bbox = readmesh(fid, footer, "fsgrid", "MESH_BBOX")
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")
 
@@ -416,9 +401,9 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
       data = dropdims(orderedData, dims=(findall(size(orderedData) .== 1)...,))
    elseif sorted # dccrg grid
       if ndims(data) == 1
-         data = data[meta.cellIndex]
+         data = data[cellIndex]
       elseif ndims(data) == 2
-         data = data[:, meta.cellIndex]
+         data = data[:, cellIndex]
       end
    end
    return data
@@ -430,16 +415,15 @@ end
 Read a variable `var` in a collection of cells `ids`.
 """
 function readvariable(meta::MetaData, var::AbstractString, ids)
-
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
+   @unpack fid, footer = meta
 
    if isempty(ids)
       w = readvariable(meta, var, false)
       return [w]
    end
 
-   T, variable_offset, arraysize, datasize, vectorsize = 
-      getObjInfo(meta.fid, meta.footer, var, "VARIABLE", "name")
+   T, offset, _, datasize, vectorsize = getObjInfo(fid, footer, var, "VARIABLE", "name")
 
    cellids = readvariable(meta, "CellID", false)
    rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in ids]
@@ -447,12 +431,8 @@ function readvariable(meta::MetaData, var::AbstractString, ids)
    v = Array{T}(undef, vectorsize, length(ids))
 
    for (i, r) in enumerate(rOffsets)
-      loc = variable_offset + r
-      seek(meta.fid, loc)
-   
-      w = Vector{T}(undef, vectorsize)
-      read!(meta.fid, w)
-      v[:,i] = w
+      seek(fid, offset + r)
+      read!(fid, @view v[:,i])
    end
 
    return v
@@ -550,11 +530,11 @@ function hasname(elem, tag, name)
 end
 
 """
-    showdimension(meta) -> Int
+    ndims(meta) -> Int
 
-Return the dimension of data.
+Return the dimension of VLSV data.
 """
-showdimension(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
+ndims(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
 
 """
     hasvdf(meta) -> Bool
@@ -577,12 +557,9 @@ Read velocity cells from a spatial cell of ID `cellid`, and return a map of velo
 ids and corresponding value.
 """
 function readvcells(meta, cellid; pop="proton")
-
-   fid, footer, vmesh = meta.fid, meta.footer, meta.meshes[pop]
-   nblockx = vmesh.vxblock_size
-   nblocky = vmesh.vyblock_size
-   nblockz = vmesh.vzblock_size
-   bsize = nblockx * nblocky * nblockz
+   @unpack fid, footer = meta
+   @unpack vxblock_size, vyblock_size, vzblock_size = meta.meshes[pop]
+   bsize = vxblock_size * vyblock_size * vzblock_size
 
    cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS")
    nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
@@ -628,11 +605,10 @@ function readvcells(meta, cellid; pop="proton")
    arraysize = parse(Int, attribute(varinfo, "arraysize"))
    datasize = parse(Int, attribute(varinfo, "datasize"))
    datatype = attribute(varinfo, "datatype")
-   vectorsize = parse(Int, attribute(varinfo, "vectorsize"))
    variable_offset = parse(Int, content(varinfo))
 
    # Navigate to the correct position
-   offset_f = offset * vectorsize * datasize + variable_offset
+   offset_f = offset * datasize + variable_offset
 
    seek(fid, offset_f)
 
@@ -642,22 +618,20 @@ function readvcells(meta, cellid; pop="proton")
       T = UInt64
    end
 
-   blockIDs = Vector{T}(undef, nblocks*vectorsize)
+   blockIDs = Vector{T}(undef, nblocks)
    read!(fid, blockIDs)
 
    # Velocity cell IDs and corresponding avg distributions
    vcellids = zeros(Int, bsize*nblocks)
    vcellf = zeros(Tavg, bsize*nblocks)
 
-   vcellid_local = [i + nblockx*j + nblockx*nblocky*k
-      for i in 0:nblockx-1, j in 0:nblocky-1, k in 0:nblockz-1]
+   vcellid_local = [i + vxblock_size*j + vxblock_size*vyblock_size*k
+      for i in 0:vxblock_size-1, j in 0:vyblock_size-1, k in 0:vzblock_size-1]
 
-   @inbounds @floop ThreadedEx() for i in 1:nblocks
-      vblockid = blockIDs[i]
-      for j = 1:bsize
-         vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*vblockid
+   @inbounds @floop for i in eachindex(blockIDs), j = 1:bsize
+         vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*blockIDs[i]
          vcellf[(i-1)*bsize+j] = data[j,i]
-      end
+
    end
    vcellids, vcellf
 end
@@ -669,28 +643,29 @@ end
 Return velocity cells' coordinates of population `pop` and id `vcellids`.
 """
 function getvcellcoordinates(meta, vcellids; pop="proton")
+   @unpack vxblocks, vyblocks, vxblock_size, vyblock_size, vzblock_size,
+      dvx, dvy, dvz, vxmin, vymin, vzmin = meta.meshes[pop]
 
-   vmesh = meta.meshes[pop]
-   bsize = vmesh.vxblock_size * vmesh.vyblock_size * vmesh.vzblock_size
+   bsize = vxblock_size * vyblock_size * vzblock_size
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
-   blockIndX = @. blockid % (vmesh.vxblocks)
-   blockIndY = @. blockid ÷ vmesh.vxblocks % vmesh.vyblocks
-   blockIndZ = @. blockid ÷ (vmesh.vxblocks * vmesh.vyblocks)
-   blockCoordX = @. blockIndX * vmesh.dvx * vmesh.vxblock_size + vmesh.vxmin
-   blockCoordY = @. blockIndY * vmesh.dvy * vmesh.vyblock_size + vmesh.vymin
-   blockCoordZ = @. blockIndZ * vmesh.dvz * vmesh.vzblock_size + vmesh.vzmin
+   blockIndX = @. blockid % vxblocks
+   blockIndY = @. blockid ÷ vxblocks % vyblocks
+   blockIndZ = @. blockid ÷ (vxblocks * vyblocks)
+   blockCoordX = @. blockIndX * dvx * vxblock_size + vxmin
+   blockCoordY = @. blockIndY * dvy * vyblock_size + vymin
+   blockCoordZ = @. blockIndZ * dvz * vzblock_size + vzmin
    # Get cell indices
    cellids = @. vcellids % bsize
-   cellidx = @. cellids % vmesh.vxblock_size
-   cellidy = @. cellids ÷ vmesh.vxblock_size % vmesh.vyblock_size
-   cellidz = @. cellids ÷ (vmesh.vxblock_size * vmesh.vyblock_size)
+   cellidx = @. cellids % vxblock_size
+   cellidy = @. cellids ÷ vxblock_size % vyblock_size
+   cellidz = @. cellids ÷ (vxblock_size * vyblock_size)
    # Get cell coordinates
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
-   @inbounds @floop ThreadedEx() for i in eachindex(cellids)
-      cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * vmesh.dvx
-      cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * vmesh.dvy
-      cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * vmesh.dvz
+   @inbounds @floop for i in eachindex(cellids)
+      cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * dvx
+      cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * dvy
+      cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * dvz
    end
    cellCoords
 end

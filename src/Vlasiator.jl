@@ -1,7 +1,5 @@
 module Vlasiator
 
-# Hongyang Zhou, hyzhou@umich.edu
-
 using Requires, UnPack
 
 include("utility/rotation.jl")

@@ -200,7 +200,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 function pcolormesh(meta::MetaData, var, ax=nothing;
    op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
 
-   if showdimension(meta) == 3 || meta.maxamr > 0
+   if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
       normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
       origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0

@@ -21,7 +21,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
    if group in (:read, :all)
       @testset "Reading files" begin
          meta = readmeta(filenames[1])
-         @test showdimension(meta) == 1
+         @test ndims(meta) == 1
          @test startswith(repr(meta), "filename = bulk.1d.vlsv")
          # Variable strings reading
          @test meta.variable[end] == "vg_rhom"
