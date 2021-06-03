@@ -9,8 +9,6 @@ export hasvariable, hasparameter, hasname, hasvdf
 export readmeta, readvariable, readparameter, readvariablemeta, readvcells
 export ndims, getvcellcoordinates
 
-import Base.ndims
-
 "Mesh size information."
 struct MeshInfo
    vxblocks::Int64
@@ -534,7 +532,7 @@ end
 
 Return the dimension of VLSV data.
 """
-ndims(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
+Base.ndims(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
 
 """
     hasvdf(meta) -> Bool
