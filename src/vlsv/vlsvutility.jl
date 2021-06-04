@@ -529,7 +529,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 function fillmesh(meta::MetaData, vars; verbose=false)
    @unpack cellid, maxamr, fid, footer, xcells, ycells, zcells = meta
 
-   nvarvg = findall(x->!startswith(x, "fg_"), vars)
+   nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
    vsize = Vector{Int}(undef, nv)
@@ -537,8 +537,8 @@ function fillmesh(meta::MetaData, vars; verbose=false)
       T[i], _, _, _, vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
-   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
-      for iv in 1:nv]
+   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i)
+      for i = 0:maxamr] for iv in 1:nv]
 
    vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
 
@@ -624,7 +624,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
 
    if isempty(vars[1])
       vars = meta.variable
-      deleteat!(vars, findfirst(x->x=="CellID", vars))
+      deleteat!(vars, findfirst(==("CellID"), vars))
    end
 
    data, vtkGhostType = fillmesh(meta, vars; verbose)
@@ -723,7 +723,7 @@ function compare(f1, f2, tol::AbstractFloat=1e-4)
    meta2 = readmeta(f2)
    varnames = meta1.variable
    strskip = r"CellID|rank|blocks"
-   deleteat!(varnames, findall(x->endswith(x, strskip), varnames))
+   deleteat!(varnames, findall(endswith(strskip), varnames))
 
    isIdentical = true
    for vname in varnames

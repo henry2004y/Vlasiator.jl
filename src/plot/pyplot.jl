@@ -215,11 +215,11 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
    if var == "fg_b"
-      rho_ = findfirst(x->endswith(x, "rho"), meta.variable)
+      rho_ = findfirst(endswith("rho"), meta.variable)
       if !isnothing(rho_)
          rho = readvariable(meta, meta.variable[rho_])
          rho = reshape(rho, pArgs.sizes[1], pArgs.sizes[2])
-         mask = findall(x->x==0.0, rho')
+         mask = findall(==(0.0), rho')
 
          if ndims(data) == 2
             @inbounds data[mask] .= NaN
