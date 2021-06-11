@@ -14,4 +14,6 @@ function __init__()
    end
 end
 
+precompile(readmeta, (String,))
+
 end

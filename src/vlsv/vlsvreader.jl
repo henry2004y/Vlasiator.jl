@@ -28,9 +28,7 @@ struct MeshInfo
    dvz::Float64
 end
 
-"""
-Variable metadata from the vlsv footer.
-"""
+"Variable metadata from the vlsv footer."
 struct VarInfo
    "unit of the variable as a string"
    unit::String
