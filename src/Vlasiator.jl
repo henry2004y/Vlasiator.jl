@@ -6,14 +6,16 @@ include("utility/rotation.jl")
 include("utility/plot.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
-include("plot/plots.jl")
+
+precompile(readmeta, (String,))
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
       include("plot/pyplot.jl")
    end
+   @require Plots="91a5bcdd-55d7-5caf-9e0b-520d859cae80" begin
+      include("plot/plots.jl")
+   end
 end
-
-precompile(readmeta, (String,))
 
 end

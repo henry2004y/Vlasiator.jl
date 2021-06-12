@@ -23,15 +23,10 @@ See more in the PkgBenchmark manual.
 Initial tests on reading variables from sample VLSV files: 
 
 * DCCRG grid
-| 2MB   | tmean [μs] |
-|:-------|:---------:|
-| Julia  | 200    |
-| Python | 1000   |
-
-| 50MB   | tmean [μs] |
-|:-------|:---------:|
-| Julia  | 400    |
-| Python | 1000   |
+| Julia | tmean [μs] | Python | tmean [μs] |
+|:------|:----------:|:-------|:----------:|
+| 2MB  | 200 | 2MB  | 1000   |
+| 50MB | 400 | 50MB | 1000   |
 
 * Field solver grid[^1]
 | 26GB   | tmean [s] |
@@ -41,8 +36,13 @@ Initial tests on reading variables from sample VLSV files:
 
 [^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time! This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
 
-I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
-Same operation for Julia 1.5 costs 1.0s (first time ~8s including everything).
+Timing from starting Julia/Python to the first plot[^2]:
+| 2.3GB  | tmean [s] |
+|:-------|:---------:|
+| Julia  | 11.6  |
+| Python | 9.3   |
+
+[^2]: This inefficieny is a famous problem in Julia known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
 
 Reading and plotting one 2d slice of proton density out of 3D AMR data:
 
@@ -53,9 +53,9 @@ Reading and plotting one 2d slice of proton density out of 3D AMR data:
 
 Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on Vorna:
 
-| 1 CPU   | tmean [m][^2] |
+| 1 CPU   | tmean [m][^3] |
 |:-------|:---------:|
 | Julia  | 11    |
 | Python | 125   |
 
-[^2]: The timings are for a single CPU. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.
+[^3]: The timings are for a single CPU. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.

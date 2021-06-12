@@ -119,21 +119,15 @@ function getObjInfo(fid, footer, name, tag, attr)
 
    seek(fid, variable_offset)
 
-   if datatype == "float" && datasize == 4
-      T = Float32
-   elseif datatype == "float" && datasize == 8
-      T = Float64
-   elseif datatype == "int" && datasize == 4
-      T = Int32
-   elseif datatype == "int" && datasize == 8
-      T = Int64
-   elseif datatype == "uint" && datasize == 4
-      T = UInt32
-   elseif datatype == "uint" && datasize == 8
-      T = UInt64
+   if datatype == "float"
+      T = datasize == 4 ? Float32 : Float64
+   elseif datatype == "int"
+      T = datasize == 4 ? Int32 : Int64
+   elseif datatype == "uint"
+      T = datasize == 4 ? UInt32 : UInt64
    end
 
-   T::DataType, variable_offset, arraysize, datasize, vectorsize
+   T, variable_offset, arraysize, datasize, vectorsize
 end
 
 "Return vector data from vlsv file."
@@ -159,7 +153,7 @@ end
 Return MetaData from a vlsv file.
 """
 function readmeta(filename::AbstractString; verbose=false)
-
+   isfile(filename) || throw(ArgumentError("Cannot open \'$filename\': not a file"))
    fid = open(filename, "r")
 
    footer = getfooter(fid)
@@ -255,9 +249,7 @@ function readmeta(filename::AbstractString; verbose=false)
 
       meshes[popname] = popMesh
 
-      if verbose
-         @info "Found population " * popname
-      end
+      verbose && @info "Found population $popname" 
    end
    
    # Obtain maximum refinement level
