@@ -6,14 +6,14 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 @testset "Vlasiator.jl" begin
    if Sys.iswindows()
       using ZipFile
-      r = ZipFile.Reader("data/bulk_vlsv.zip")
+      r = ZipFile.Reader("data/testdata.zip")
       for file in r.files
          open(file.name, "w") do io
             write(io, read(file, String))
          end
       end
    else
-      run(`unzip data/bulk_vlsv.zip`)
+      run(`unzip data/testdata.zip`)
    end
 
    filenames = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
@@ -173,6 +173,15 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          close(meta.fid)
          filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
          rm.(filesaved, force=true)
+      end
+   end
+
+   if group in (:log, :all)
+      @testset "Log" begin
+         file = "logfile.txt"
+         timestamps, speed = readlog(file)
+         @test length(speed) == 50 && speed[end] == 631.2511f0
+         rm.(file, force=true)
       end
    end
 

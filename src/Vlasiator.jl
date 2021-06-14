@@ -4,6 +4,7 @@ using Requires, UnPack
 
 include("utility/rotation.jl")
 include("utility/plot.jl")
+include("utility/log.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
 

@@ -222,6 +222,16 @@ To see the full list of options, please refer to the documentation in [internal]
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `vti`: when it is set to `true`, then only the image file at the highest refinement level is generated.
     This part is experimental and subject to change in the future.
 
+## Tracking log files
+
+We can monitor the runtime performance per iteration through log files:
+```
+file = "logfile.txt"
+timestamps, speed = readlog(file)
+```
+
+See a live example at [demo_log.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples/demo_log.jl).
+
 ## Calling from Python
 
 It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
