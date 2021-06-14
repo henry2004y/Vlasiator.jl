@@ -37,6 +37,7 @@ readvariable(meta, "proton/vg_rho", id)
 point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
+readvariable(meta, "proton/vg_rho", cellids)
 ```
 
 - Compare VLSV files
