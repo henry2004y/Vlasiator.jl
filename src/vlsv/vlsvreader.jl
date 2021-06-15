@@ -187,7 +187,7 @@ function readmeta(filename::AbstractString; verbose=false)
    for varinfo in footer["BLOCKIDS"]
 
       if has_attribute(varinfo, "name")
-         # New style vlsv file with bounding box
+         # VLSV 5.0 file with bounding box
          popname = attribute(varinfo, "name")
 
          bbox = readmesh(fid, footer, popname, "MESH_BBOX")
@@ -210,7 +210,7 @@ function readmeta(filename::AbstractString; verbose=false)
          popname = "avgs"
 
          if "vxblocks_ini" in attribute.(footer["PARAMETER"],"name") 
-            # Old vlsv files where the mesh is defined with parameters
+            # VLSV before 5.0 where the mesh is defined with parameters
             vxblocks = readparameter(fid, footer, "vxblocks_ini")
             vyblocks = readparameter(fid, footer, "vyblocks_ini")
             vzblocks = readparameter(fid, footer, "vzblocks_ini")
@@ -241,7 +241,7 @@ function readmeta(filename::AbstractString; verbose=false)
          push!(populations, popname)
       end
 
-      # Create a new MeshInfo object for this population
+      # Create a new object for this population
       popMesh = MeshInfo(vxblocks, vyblocks, vzblocks, 
          vxblock_size, vyblock_size, vzblock_size,
          vxmin, vymin, vzmin, vxmax, vymax, vzmax,
@@ -254,8 +254,7 @@ function readmeta(filename::AbstractString; verbose=false)
    
    # Obtain maximum refinement level
    ncells = xcells*ycells*zcells
-   maxamr = 0
-   cid = ncells
+   maxamr, cid = 0, ncells
    while cid < cellid[cellIndex[end]]
       maxamr += 1
       cid += ncells*8^maxamr
