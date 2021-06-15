@@ -12,4 +12,4 @@ timestamps, speed = readlog(file)
 scatter(timestamps, speed,
    markershape=:circle,
    #yaxis=:log10, 
-   xlabel="Time", ylabel="Time per step [s]")
+   xlabel="Time", ylabel="Time per simulated second [s]")
