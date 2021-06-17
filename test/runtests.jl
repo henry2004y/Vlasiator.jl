@@ -20,6 +20,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
    if group in (:read, :all)
       @testset "Reading files" begin
+         @test_throws ArgumentError readmeta("data")
          meta = readmeta(filenames[1])
          @test ndims(meta) == 1
          @test startswith(repr(meta), "filename = bulk.1d.vlsv")
@@ -54,6 +55,10 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          point2 = [2.0, 0.0, 0.0]
          cellids, _, _ = getcellinline(meta, point1, point2)
          @test cellids == collect(4:7)
+         point1 = [-5.1, 0.0, 0.0]
+         @test_throws DomainError getcellinline(meta, point1, point2)
+         point2 = [5.1, 0.0, 0.0]
+         @test_throws DomainError getcellinline(meta, point1, point2)
 
          @test hasvdf(meta) == true
          # Nearest ID with VDF stored
@@ -63,6 +68,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          vcellids, vcellf = readvcells(meta, 2; pop="proton")
          V = getvcellcoordinates(meta, vcellids; pop="proton")
          @test V[:,end] == Float32[2.45, 1.95, 1.95]
+         @test_throws ArgumentError readvcells(meta, 20)
 
          # AMR data reading, DCCRG grid
          metaAMR = readmeta(filenames[3])
@@ -73,6 +79,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          data = readvariable(metaAMR, "proton/vg_rho")
          data = refineslice(metaAMR, idlist, data[indexlist], :y)
          @test sum(data) ≈ 7.690352275026747e8
+         @test_throws ArgumentError getslicecell(metaAMR, sliceoffset)
 
          # AMR level
          @test metaAMR.maxamr == 2
@@ -83,6 +90,8 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test !isparent(metaAMR, 1080)
          @test getchildren(metaAMR, 1) == getsiblings(metaAMR, 129)
          @test getparent(metaAMR, 129) == 1
+         @test_throws ArgumentError getparent(metaAMR, 5)
+         @test_throws ArgumentError getsiblings(metaAMR, 1)
 
          # FS grid
          data = readvariable(metaAMR, "fg_e")
@@ -211,9 +220,12 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test size(points) == (10, 2)
          close(fig)
 
+         @test_throws ArgumentError pcolormesh(meta, "proton/vg_rho")
+
          loc = [2.0, 0.0, 0.0]
          p = plot_vdf(meta, loc)
          @test p.get_array()[786] ≈ 229.8948609959216
+         @test_throws ArgumentError plot_vdf(meta, loc, pop="helium")
          close(meta.fid)
 
          # 2D
@@ -222,6 +234,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
          p = pcolormesh(meta, "fg_b")
          @test p.get_array()[1] ≈ 3.0058909f-9
+         @test_throws DomainError pcolormesh(meta, "proton/vg_v", op=:x)
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
          p = quiver(meta, "proton/vg_v", axisunit=SI)
@@ -232,6 +245,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          meta = readmeta(filenames[3])
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
+         @test_throws ArgumentError pcolormesh(meta, "fg_b")
          close(meta.fid)
       end
    end

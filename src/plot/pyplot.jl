@@ -281,7 +281,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
    end
 
    if startswith(var, "fg_") # field quantities, fsgrid
-      @error "plotting fs grid variable in cut currently not supported!"
+      throw(ArgumentError("FS grid variable $var plotting in cut currently not supported!"))
    else # moments, dccrg grid
       # vlasov grid, AMR
       if ndims(data) == 1
@@ -415,7 +415,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
          PLANE = "XY"
          axislabels = ['X', 'Y']
       else # 1D
-         @error "1D data detected. Please use 1D plot functions."
+         throw(ArgumentError("1D data detected. Please use 1D plot functions."))
       end
    end
 
@@ -449,10 +449,10 @@ end
 function set_colorbar(pArgs, data=[1.0])
    @unpack colorscale, vmin, vmax = pArgs
    if colorscale == Log # Logarithmic plot
-      datapositive = data[data .> 0.0]
-      if isempty(datapositive)
+      if any(<(0), data)
          throw(DomainError(data, "Nonpositive data detected: use linear scale instead!"))
       end
+      datapositive = data[data .> 0.0]
       v1 = isinf(vmin) ? minimum(datapositive) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
 
@@ -521,7 +521,11 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
    @unpack ycells, zcells = meta
-   vmesh = meta.meshes[pop]
+   if haskey(meta.meshes, pop)
+      vmesh = meta.meshes[pop]
+   else
+      throw(ArgumentError("Unable to detect population $pop"))
+   end
    vxsize = vmesh.vxblocks * vmesh.vxblock_size
    vysize = vmesh.vyblocks * vmesh.vyblock_size
    #vzsize = vmesh.vzblocks * vmesh.vzblock_size
@@ -531,18 +535,6 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
    unit == RE && (location ./= Vlasiator.Re)
-
-   if pop == "proton"
-      if !Vlasiator.hasname(meta.footer, "BLOCKIDS", "proton")
-         if Vlasiator.hasname(meta.footer, "BLOCKIDS", "avgs") # old versions
-            pop = "avgs"
-         else
-            @error "Unable to detect population "*pop
-         end
-      end
-   elseif !Vlasiator.hasname(meta.footer, "BLOCKIDS", pop)
-      @error "Unable to detect population "*pop
-   end
 
    # Calculate cell ID from given coordinates
    cidReq = getcell(meta, location)
@@ -571,12 +563,6 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
       # regular bulk file, currently analysator supports pre- and
       # post-multipop files with "V"
       Vbulk = readvariable(meta, "V", cidNearest)
-   end
-
-   for f in ("fsaved", "vg_f_saved")
-      if hasvariable(meta, f) && readvariable(meta, f, cidNearest) != 1.0
-         @error "VDF not found in the given cell!"
-      end
    end
       
    vcellids, vcellf = readvcells(meta, cidNearest; pop)

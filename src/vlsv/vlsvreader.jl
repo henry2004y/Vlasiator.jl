@@ -558,7 +558,7 @@ function readvcells(meta, cellid; pop="proton")
    if cellid ∈ cellsWithVDF
       cellWithVDFIndex = findfirst(x->x==cellid, cellsWithVDF)
    else
-      @error "The input cell does not have velocity distribution!"
+      throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
    end
 
    # Navigate to the correct position

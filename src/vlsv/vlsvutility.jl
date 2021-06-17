@@ -19,14 +19,14 @@ export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
 """
     getcell(meta, location) -> Int
 
-Return cell ID containing the given spatial `location`.
+Return cell ID containing the given spatial `location`, excluding domain boundaries.
 """
 function getcell(meta::MetaData, loc)
    @unpack xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, xcells, ycells, zcells = meta
 
-   @assert xmin < loc[1] ≤ xmax "x coordinate out of bound!"
-   @assert ymin < loc[2] ≤ ymax "y coordinate out of bound!"
-   @assert zmin < loc[3] ≤ zmax "z coordinate out of bound!"
+   @assert xmin < loc[1] < xmax "x coordinate out of bound!"
+   @assert ymin < loc[2] < ymax "y coordinate out of bound!"
+   @assert zmin < loc[3] < zmax "z coordinate out of bound!"
 
    # Get cell indices
    indices = floor.(Int, [(loc[1] - xmin)/dx, (loc[2] - ymin)/dy, (loc[3] - zmin)/dz])
@@ -53,10 +53,6 @@ function getcell(meta::MetaData, loc)
             2^(ilevel)*xcells*indices[2] +
             4^(ilevel)*xcells*ycells*indices[3] + 1
       end
-   end
-   
-   if ilevel == maxamr + 1
-      throw(DomainError(cellid, "CellID does not exist in aycells AMR level!"))
    end
 
    cellid
@@ -91,7 +87,7 @@ function getparent(meta::MetaData, cellid::Integer)
    parentlvl = mylvl - 1
 
    if parentlvl < 0
-      throw(ArgumentError("$cellid has no parent cell!"))
+      throw(ArgumentError("Cell ID $cellid has no parent cell!"))
    else
       # get the first cellid on my level
       cid1st = get1stcell(mylvl, ncells) + 1
@@ -169,7 +165,7 @@ function getsiblings(meta::MetaData, cellid::Integer)
 
    mylvl = getlevel(meta, cellid)
 
-   mylvl == 0 && @error "$cellid is not a child cell!"
+   mylvl == 0 && throw(ArgumentError("CellID $cellid is not a child cell!"))
 
    xcells = xcells * 2^mylvl
    ycells = ycells * 2^mylvl
@@ -270,9 +266,9 @@ function getcellinline(meta::MetaData, point1, point2)
    @unpack xmin, ymin, zmin, xmax, ymax, zmax, xcells, ycells, zcells = meta
 
    if !isInsideDomain(meta, point1)
-      throw(DomainError(point1, "point location out of bounds!"))
+      throw(DomainError(point1, "point location outside simulation domain!"))
    elseif !isInsideDomain(meta, point2)
-      throw(DomainError(point1, "point location out of bounds!"))
+      throw(DomainError(point2, "point location outside simulation domain!"))
    end
 
    cell_lengths = [(xmax-xmin)/xcells, (ymax-ymin)/ycells, (zmax-zmin)/zcells]
@@ -293,8 +289,7 @@ function getcellinline(meta::MetaData, point1, point2)
       amrlvl = getlevel(meta, cellid)
 
       # Get the max and min cell boundaries
-      min_bounds = getcellcoordinates(meta, cellid) -
-         0.5 * cell_lengths * 0.5^amrlvl
+      min_bounds = getcellcoordinates(meta, cellid) - 0.5*cell_lengths*0.5^amrlvl
       max_bounds = min_bounds + cell_lengths
 
       # Check which face we hit first
@@ -354,7 +349,7 @@ function getslicecell(meta::MetaData, slicelocation;
    elseif !isinf(zmin) && !isinf(zmax)
       minCoord = zmin; maxCoord = zmax; nsize = zcells; idim = 3
    else
-      @error "Unspecified slice direction!"
+      throw(ArgumentError("Unspecified slice direction!"))
    end
 
    # Find the cut plane index for each refinement level (0-based)
@@ -496,7 +491,7 @@ Find the nearest spatial cell with VDF saved of a given cell `id` in the file `m
 """
 function getnearestcellwithvdf(meta::MetaData, id)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
-   isempty(cells) && @error "No distribution saved in $(meta.name)"
+   isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords = Matrix{Float32}(undef, 3, length(cells))
    @inbounds for i in eachindex(cells) 
       coords[:,i] = getcellcoordinates(meta, cells[i])
