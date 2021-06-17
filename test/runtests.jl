@@ -35,6 +35,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          # Parameter reading
          t = readparameter(meta, "time")
          @test t == 8.0
+         @test_throws ArgumentError readvariable(meta, "nonsense")
          # unsorted ID
          cellIDs = readvariable(meta, "CellID", false)
          IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]

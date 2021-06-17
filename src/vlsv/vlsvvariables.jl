@@ -232,6 +232,14 @@ const variables_predefined = Dict(
       end
       T = @. P / (n*kB)
    end,
+   "Ppar" => function (meta) # P component ∥ B
+      P = readvariable(meta, "Protated")
+      @views P[3,3,:]
+   end,
+   "Pperp" => function (meta) # P componnent ⟂ B
+      P = readvariable(meta, "Protated")
+      Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
+   end,
    "Tpar" => function (meta) # T component ∥ B
       P = readvariable(meta, "Protated")
       n = readvariable(meta, "proton/vg_rho")
@@ -246,7 +254,7 @@ const variables_predefined = Dict(
       for i = 1:length(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = Inf)
       end
-      Pperp = [sqrt(P[1,1,i]^2 + P[2,2,i]^2) for i in 1:size(P,3)]
+      Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
    end,
    "Egradpe" => function (meta)

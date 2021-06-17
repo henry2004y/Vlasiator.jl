@@ -115,7 +115,7 @@ function getObjInfo(fid, footer, name, tag, attr)
       end
    end
 
-   if !isFound @error "unknown variable $(name)!" end
+   !isFound && throw(ArgumentError("unknown variable $name"))
 
    seek(fid, variable_offset)
 
