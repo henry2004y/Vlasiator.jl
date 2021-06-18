@@ -10,7 +10,7 @@ meta = readmeta(filename)
 
 - Read variable meta data
 ```
-showvariablemeta(meta, "proton/vg_rho")
+readvariablemeta(meta, "proton/vg_rho")
 ```
 
 A list of utility functions has been implemented for checking variable status. See [here](https://henry2004y.github.io/Vlasiator.jl/dev/internal/#Vlasiator.hasname-Tuple{Any,%20Any,%20Any}) for the full list. 

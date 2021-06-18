@@ -1,5 +1,6 @@
 using LaTeXStrings
 using LinearAlgebra: ×, norm
+using Statistics: mean
 
 # Define units for intrinsic values
 const units_predefined = Dict(
@@ -164,9 +165,9 @@ const latexunits_predefined = Dict(
 
 # Define derived parameters
 const variables_predefined = Dict(
-   "Bmag" => meta -> dropdims(sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)), dims=1),
-   "Emag" => meta -> dropdims(sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)), dims=1),
-   "Vmag" => meta -> dropdims(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1)), dims=1),
+   "Bmag" => meta -> vec(sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1))),
+   "Emag" => meta -> vec(sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1))),
+   "Vmag" => meta -> vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1))),
    "Rhom" => function (meta)
       if hasvariable(meta, "vg_rhom")
          ρm = readvariable(meta, "vg_rhom")
@@ -180,7 +181,7 @@ const variables_predefined = Dict(
          P = readvariable(meta, "vg_pressure")
       else
          Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
-         P = dropdims(sum(Pdiag, dims=1) ./ 3, dims=1)
+         P = vec(mean(Pdiag, dims=1))
       end
       P
    end,
@@ -221,7 +222,7 @@ const variables_predefined = Dict(
       B = readvariable(meta, "vg_b_vol")
       BmagInv = inv.(readvariable(meta, "Bmag"))
       vpar = [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
-      vmag2 = dropdims(sum(v.^2, dims=1), dims=1)
+      vmag2 = vec(sum(v.^2, dims=1))
       vperp = @. √(vmag2 - vpar^2) # This may be errorneous due to Float32!
    end,
    "T" => function (meta) # scalar temperature
