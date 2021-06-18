@@ -64,8 +64,8 @@ struct MetaData
    dx::Float64
    dy::Float64
    dz::Float64
-   meshes::Dict{String, MeshInfo}
    populations::Vector{String}
+   meshes::Dict{String, MeshInfo}
 end
 
 
@@ -270,7 +270,7 @@ function readmeta(filename::AbstractString; verbose=false)
 
    meta = MetaData(filename, fid, footer, vars, cellid[cellIndex], cellIndex, maxamr,
       xcells, ycells, zcells, xblock_size, yblock_size, zblock_size,
-      xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, meshes, populations)
+      xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, populations, meshes)
 end
 
 
