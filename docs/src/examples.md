@@ -8,6 +8,8 @@ filename = "bulk.0000004.vlsv"
 meta = readmeta(filename)
 ```
 
+This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and populations, which can then be passed into all kinds of methods that process the data. 
+
 - Read variable meta data
 ```
 readvariablemeta(meta, "proton/vg_rho")
@@ -20,12 +22,9 @@ A list of utility functions has been implemented for checking variable status. S
 data = readvariable(meta, "proton/vg_rho")
 ```
 
-The same interface works for both DCCRG grid and FS grid variables.
-By default the returned DCCRG grid variable array is sorted by cell IDs.
-If in any case you want the original unsorted version as being stored in the file,
-simply say `readvariable(meta, var, false)`.
+The variable reading is designed for cells, which takes cell ID(s) as inputs, although the same interface works for both DCCRG grid and FS grid variables. By default the returned DCCRG grid variable array is sorted by cell IDs. If in any case you want the original unsorted version as being stored in the file, use `readvariable(meta, var, false)`.
 
-- Get variable at a given location (This can be simplified even further later!)
+- Get variable at a given location
 ```
 loc = [2.0, 0.0, 0.0]
 id = getcell(meta, loc)
@@ -46,8 +45,7 @@ One may want to check if two vlsv files are identical. This is tricky because
 1. the structure of VLSV format does not guarantee parallel writing order;
 2. numerical error accumulates with floating point representation.
 
-The key is that we should not check quantities that are related to MPI writing sequence.
-Note that even file sizes may vary depending on the number of MPI processes!
+The key is that we should not check quantities that are related to MPI writing sequence: for some reasons, even file sizes may vary depending on the number of MPI processes!
 
 ```
 compare(filename1, filename2)
