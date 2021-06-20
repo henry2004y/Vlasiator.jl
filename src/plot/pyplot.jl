@@ -214,7 +214,7 @@ function pcolormesh(meta::MetaData, var, ax=nothing;
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
-   if var == "fg_b"
+   if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       rho_ = findfirst(endswith("rho"), meta.variable)
       if !isnothing(rho_)
          rho = readvariable(meta, meta.variable[rho_])
@@ -422,9 +422,9 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    # Scale the sizes to the highest refinement level
    sizes *= 2^meta.maxamr # data needs to be refined later
 
-   unitstr = axisunit == RE ? "R_E" : "m"
-   strx = latexstring(axislabels[1]*"["*unitstr*"]")
-   stry = latexstring(axislabels[2]*"["*unitstr*"]")
+   unitstr = axisunit == RE ? L"$R_E$" : L"$m$"
+   strx = axislabels[1]*"["*unitstr*"]"
+   stry = axislabels[2]*"["*unitstr*"]"
 
    if hasparameter(meta, "t")
       timesim = readparameter(meta, "t")
@@ -439,7 +439,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    datainfo = readvariablemeta(meta, var)
 
    cb_title_use = datainfo.variableLaTeX
-   cb_title_use *= ",["*datainfo.unitLaTeX*"]"
+   cb_title_use *= " ["*datainfo.unitLaTeX*"]"
 
    PlotArgs(sizes, plotrange, idlist, indexlist, colorscale,
       vmin, vmax, str_title, strx, stry, cb_title_use)
@@ -482,8 +482,8 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
    end
 
    ax.set_title(str_title, fontsize=14, fontweight="bold")
-   ax.set_xlabel(strx, fontsize=14, weight="black")
-   ax.set_ylabel(stry, fontsize=14, weight="black")
+   ax.set_xlabel(strx, fontsize=14)
+   ax.set_ylabel(stry, fontsize=14)
    ax.set_aspect("equal")
 
    # Set border line widths

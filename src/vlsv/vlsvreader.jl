@@ -292,24 +292,19 @@ function readvariablemeta(meta, var)
       popname, varname = "pop", var
    end
 
-   if hasvariable(meta, var)
-      if varname[1:3] == "vg_" || varname[1:3] == "fg_"
-         # For Vlasiator 5 vlsv files, metadata is included
-
-         for varinfo in meta.footer["VARIABLE"]
-            if attribute(varinfo, "name") == var
-               unit = attribute(varinfo, "unit")
-               unitLaTeX = attribute(varinfo, "unitLaTeX")
-               variableLaTeX = attribute(varinfo, "variableLaTeX")
-               unitConversion = attribute(varinfo, "unitConversion") 
-            end
+   if hasvariable(meta, var) # For Vlasiator 5 vlsv files, metadata is included
+      for varinfo in meta.footer["VARIABLE"]
+         if attribute(varinfo, "name") == var
+            unit = attribute(varinfo, "unit")
+            unitLaTeX = attribute(varinfo, "unitLaTeX")
+            variableLaTeX = attribute(varinfo, "variableLaTeX")
+            unitConversion = attribute(varinfo, "unitConversion") 
          end
-
-      elseif var in keys(units_predefined)
-         unit = units_predefined[var]
-         variableLaTeX = latex_predefined[var]
-         unitLaTeX = latexunits_predefined[var]
       end
+   elseif var in keys(units_predefined)
+      unit = units_predefined[var]
+      variableLaTeX = latex_predefined[var]
+      unitLaTeX = latexunits_predefined[var]
    end
 
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
