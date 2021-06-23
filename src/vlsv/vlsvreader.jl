@@ -31,13 +31,15 @@ struct VarInfo
    unitConversion::String
 end
 
-"Meta data declaration."
+"VLSV meta data."
 struct MetaData
    name::AbstractString
    fid::IOStream
    footer::XMLElement
    variable::Vector{String}
-   cellid::Vector{UInt64}  # sorted cell IDs
+   "sorted cell IDs"
+   cellid::Vector{UInt64}
+   "ordered sequence index of raw cell IDs"
    cellIndex::Vector{Int64}
    maxamr::Int64
    ncells::Vector{Int64}
