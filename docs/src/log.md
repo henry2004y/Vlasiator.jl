@@ -10,13 +10,17 @@ The VLSV loader inherits the basic structure from [Analysator](https://github.co
 For development, it is recommended to use [PkgBenchmark.jl](https://github.com/JuliaCI/PkgBenchmark.jl) to run the test suite:
 ```
 using PkgBenchmark, Vlasiator
-benchmarkpkg(Vlasiator)
+results = benchmarkpkg(Vlasiator)
 ```
 or if you want to compare the current status of the package against a different git version
 ```
 judge(Vlasiator, "97e3dca6b2474d7bdc5b62b5bf98ecf070516e5e")
 ```
-See more in the PkgBenchmark manual.
+To export results to markdown format,
+```
+export_markdown("testresult", results)
+```
+See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/dev/).
 
 ### Benchmarks
 

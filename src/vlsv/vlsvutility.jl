@@ -142,8 +142,7 @@ function getchildren(meta::MetaData, cellid::Integer)
    iy *= 2
    iz *= 2
 
-   dim = ndims(meta)
-   cid = Vector{Int}(undef, 2^dim)
+   cid = @MVector zeros(Int, 2^ndims(meta))
    # get the first cell ID on the finer level
    cid1st += ncells*8^mylvl
    ix_, iy_ = [ix, ix+1], [iy, iy+1]
@@ -187,8 +186,7 @@ function getsiblings(meta::MetaData, cellid::Integer)
    iy, iy1 = minmax(iy, iy1)
    iz, iz1 = minmax(iz, iz1)
 
-   dim = ndims(meta)
-   cid = Vector{Int}(undef, 2^dim)
+   cid = @MVector zeros(Int, 2^ndims(meta))
    ix_, iy_ = [ix, ix1], [iy, iy1]
    iz_ = zcells != 1 ? [iz, iz1] : [iz]
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
@@ -233,15 +231,15 @@ function getcellcoordinates(meta::MetaData, cellid::Integer)
       zcells *= 2
    end
 
-   indices = zeros(Int, 3)
-   indices[1] = cellid % xcells
-   indices[2] = cellid ÷ xcells % ycells
-   indices[3] = cellid ÷ (xcells*ycells)
+   indices = @SVector [
+      cellid % xcells,
+      cellid ÷ xcells % ycells,
+      cellid ÷ (xcells*ycells) ]
 
-   coords = zeros(3)
-   coords[1] = xmin + (indices[1] + 0.5) * (xmax - xmin)/xcells
-   coords[2] = ymin + (indices[2] + 0.5) * (ymax - ymin)/ycells
-   coords[3] = zmin + (indices[3] + 0.5) * (zmax - zmin)/zcells
+   coords = @SVector [
+      xmin + (indices[1] + 0.5) * (xmax - xmin)/xcells,
+      ymin + (indices[2] + 0.5) * (ymax - ymin)/ycells,
+      zmin + (indices[3] + 0.5) * (zmax - zmin)/zcells ]
 
    coords
 end
@@ -354,7 +352,7 @@ function getslicecell(meta::MetaData, slicelocation;
 
    # Find the cut plane index for each refinement level (0-based)
    sliceratio = slicelocation / (maxCoord - minCoord)
-   depths = zeros(Int, maxamr+1)
+   depths = @MVector zeros(Int, maxamr+1)
    for i = 0:maxamr
       sliceoffset = floor(Int, sliceratio*nsize*2^i)
       sliceoffset ≤ nsize*2^i || 
@@ -527,7 +525,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
-   vsize = Vector{Int}(undef, nv)
+   vsize = @MVector zeros(Int, nv)
    for i = 1:nv
       T[i], _, _, _, vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end

@@ -11,7 +11,7 @@ directory = "test/data"
 filenames = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
 
 using ZipFile
-r = ZipFile.Reader(joinpath(directory, "bulk_vlsv.zip"))
+r = ZipFile.Reader(joinpath(directory, "testdata.zip"))
 for file in r.files
    open(joinpath(directory, file.name), "w") do io
       write(io, read(file, String))
