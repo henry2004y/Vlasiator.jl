@@ -6,14 +6,14 @@ using RecipesBase
 @recipe function f(meta::MetaData, var::AbstractString; op=:mag, axisunit=RE)
 
    # Check if ecliptic or polar run
-   if meta.ycells == 1 && meta.zcells != 1
-      plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
-      sizes = [meta.xcells, meta.ycells]
+   if meta.ncells[2] == 1 && meta.ncells[3] != 1
+      plotrange = [meta.coordmin[1], meta.coordmax[1], meta.coordmin[3], meta.coordmax[3]]
+      sizes = [meta.ncells[1], meta.ncells[2]]
       PLANE = "XZ"
       axislabels = ['X', 'Z']
-   elseif meta.zcells == 1 && meta.ycells != 1
-      plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
-      sizes = [meta.xcells, meta.ycells]
+   elseif meta.ncells[3] == 1 && meta.ncells[2] != 1
+      plotrange = [meta.coordmin[1], meta.coordmax[1], meta.coordmin[2], meta.coordmax[2]]
+      sizes = [meta.ncells[1], meta.ncells[2]]
       PLANE = "XY"
       axislabels = ['X', 'Y']
    end
