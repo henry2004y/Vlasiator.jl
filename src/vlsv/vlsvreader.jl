@@ -9,23 +9,14 @@ export hasvariable, hasparameter, hasname, hasvdf
 export readmeta, readvariable, readparameter, readvariablemeta, readvcells
 export ndims, getvcellcoordinates
 
-"Mesh size information."
-struct MeshInfo
-   vxblocks::Int64
-   vyblocks::Int64
-   vzblocks::Int64
-   vxblock_size::Int64
-   vyblock_size::Int64
-   vzblock_size::Int64
-   vxmin::Float64
-   vymin::Float64
-   vzmin::Float64
-   vxmax::Float64
-   vymax::Float64
-   vzmax::Float64
-   dvx::Float64
-   dvy::Float64
-   dvz::Float64
+"Velocity mesh information."
+struct VMeshInfo
+   "number of velocity blocks"
+   vblocks::Vector{Int64}
+   vblock_size::Vector{Int64}
+   vmin::Vector{Float64}
+   vmax::Vector{Float64}
+   dv::Vector{Float64}
 end
 
 "Variable metadata from the vlsv footer."
@@ -49,23 +40,13 @@ struct MetaData
    cellid::Vector{UInt64}  # sorted cell IDs
    cellIndex::Vector{Int64}
    maxamr::Int64
-   xcells::Int64
-   ycells::Int64
-   zcells::Int64
-   xblock_size::Int64
-   yblock_size::Int64
-   zblock_size::Int64
-   xmin::Float64
-   ymin::Float64
-   zmin::Float64
-   xmax::Float64
-   ymax::Float64
-   zmax::Float64
-   dx::Float64
-   dy::Float64
-   dz::Float64
+   ncells::Vector{Int64}
+   block_size::Vector{Int64}
+   coordmin::Vector{Float64}
+   coordmax::Vector{Float64}
+   dcoord::Vector{Float64}
    populations::Vector{String}
-   meshes::Dict{String, MeshInfo}
+   meshes::Dict{String, VMeshInfo}
 end
 
 
@@ -170,16 +151,14 @@ function readmeta(filename::AbstractString; verbose=false)
    nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
    nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
   
-   xcells, ycells, zcells = bbox[1:3]
-   xblock_size, yblock_size, zblock_size = bbox[4:6]
-   xmin, ymin, zmin = nodeCoordsX[1], nodeCoordsY[1], nodeCoordsZ[1]
-   xmax, ymax, zmax = nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]
+   ncells = bbox[1:3]
+   block_size = bbox[4:6]
+   coordmin = [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
+   coordmax = [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
 
-   dx = (xmax - xmin) / xcells
-   dy = (ymax - ymin) / ycells
-   dz = (zmax - zmin) / zcells
+   dcoord = @. (coordmax - coordmin) / ncells
 
-   meshes = Dict{String,MeshInfo}()
+   meshes = Dict{String, VMeshInfo}()
 
    # Find all populations by the BLOCKIDS tag
    populations = String[]
@@ -195,44 +174,35 @@ function readmeta(filename::AbstractString; verbose=false)
          nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")   
          nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")   
          nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")   
-         vxblocks, vyblocks, vzblocks = bbox[1:3]
-         vxblock_size, vyblock_size, vzblock_size = bbox[4:6]
-         vxmin = nodeCoordsX[1]
-         vymin = nodeCoordsY[1]
-         vzmin = nodeCoordsZ[1]
-         vxmax = nodeCoordsX[end]
-         vymax = nodeCoordsY[end]
-         vzmax = nodeCoordsZ[end]
-         dvx = (vxmax - vxmin) / vxblocks / vxblock_size
-         dvy = (vymax - vymin) / vyblocks / vyblock_size
-         dvz = (vzmax - vzmin) / vzblocks / vzblock_size
+         vblocks = bbox[1:3]
+         vblock_size = bbox[4:6]
+         vmin = [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
+         vmax = [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
+         dv = @. (vmax - vmin) / vblocks / vblock_size
       else
          popname = "avgs"
 
          if "vxblocks_ini" in attribute.(footer["PARAMETER"],"name") 
-            # VLSV before 5.0 where the mesh is defined with parameters
-            vxblocks = readparameter(fid, footer, "vxblocks_ini")
-            vyblocks = readparameter(fid, footer, "vyblocks_ini")
-            vzblocks = readparameter(fid, footer, "vzblocks_ini")
-            vxblock_size = 4
-            vyblock_size = 4
-            vzblock_size = 4
-            vxmin = readparameter(fid, footer, "vxmin")
-            vymin = readparameter(fid, footer, "vymin")
-            vzmin = readparameter(fid, footer, "vzmin")
-            vxmax = readparameter(fid, footer, "vxmax")
-            vymax = readparameter(fid, footer, "vymax")
-            vzmax = readparameter(fid, footer, "vzmax")
-            dvx = (vxmax - vxmin) / vxblocks / vxblock_size
-            dvy = (vymax - vymin) / vyblocks / vyblock_size
-            dvz = (vzmax - vzmin) / vzblocks / vzblock_size
+            # In VLSV before 5.0 the mesh is defined with parameters.
+            vblocks = @MVector zeros(Int, 3)
+            vblocks[1] = readparameter(fid, footer, "vxblocks_ini")
+            vblocks[2] = readparameter(fid, footer, "vyblocks_ini")
+            vblocks[3] = readparameter(fid, footer, "vzblocks_ini")
+            vblock_size = [4, 4, 4]
+            vmin = [
+               readparameter(fid, footer, "vxmin"),
+               readparameter(fid, footer, "vymin"),
+               readparameter(fid, footer, "vzmin") ]
+            vmax = [
+               readparameter(fid, footer, "vxmax"),
+               readparameter(fid, footer, "vymax"),
+               readparameter(fid, footer, "vzmax") ]
+            dv = @. (vmax - vmin) / vblocks / vblock_size
          else
             # No velocity space info, e.g., file not written by Vlasiator 
-            vxblocks, vyblocks, vzblocks = 0, 0, 0
-            vxblock_size, vyblock_size, vzblock_size = 4, 4, 4
-            vxmin, vymin, vzmin = 0.0, 0.0, 0.0
-            vxmax, vymax, vzmax = 0.0, 0.0, 0.0
-            dvx, dvy, dvz = 1.0, 1.0, 1.0
+            vblocks = [0, 0, 0]
+            vblock_size = [4, 4, 4]
+            vmin, vmax, dv = zeros(3), zeros(3), ones(3)
          end
       end
 
@@ -242,22 +212,19 @@ function readmeta(filename::AbstractString; verbose=false)
       end
 
       # Create a new object for this population
-      popMesh = MeshInfo(vxblocks, vyblocks, vzblocks, 
-         vxblock_size, vyblock_size, vzblock_size,
-         vxmin, vymin, vzmin, vxmax, vymax, vzmax,
-         dvx, dvy, dvz)
+      popVMesh = VMeshInfo(vblocks, vblock_size, vmin, vmax, dv)
 
-      meshes[popname] = popMesh
+      meshes[popname] = popVMesh
 
       verbose && @info "Found population $popname" 
    end
    
    # Obtain maximum refinement level
-   ncells = xcells*ycells*zcells
-   maxamr, cid = 0, ncells
+   ncell = prod(ncells)
+   maxamr, cid = 0, ncell
    while cid < cellid[cellIndex[end]]
       maxamr += 1
-      cid += ncells*8^maxamr
+      cid += ncell*8^maxamr
    end
 
    nVar = length(footer["VARIABLE"])
@@ -269,8 +236,7 @@ function readmeta(filename::AbstractString; verbose=false)
    #close(fid) # Is it safe not to close it?
 
    meta = MetaData(filename, fid, footer, vars, cellid[cellIndex], cellIndex, maxamr,
-      xcells, ycells, zcells, xblock_size, yblock_size, zblock_size,
-      xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, populations, meshes)
+      ncells, block_size, coordmin, coordmax, dcoord, populations, meshes)
 end
 
 
@@ -423,8 +389,8 @@ end
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
 function getDomainDecomposition(globalsize, nprocs)
-   domainDecomp = [1, 1, 1]
-   procBox = [0.0, 0.0, 0.0]
+   domainDecomp = @MVector [1, 1, 1]
+   procBox = @MVector [0.0, 0.0, 0.0]
    minValue = Inf
 
    for i = 1:min(nprocs, globalsize[1])
@@ -444,11 +410,11 @@ function getDomainDecomposition(globalsize, nprocs)
             nzx = j > 1 ? procBox[1] * procBox[3] : 0
             nxy = k > 1 ? procBox[1] * procBox[2] : 0
 
-            v = 10*procBox[1]*procBox[2]*procBox[3] + nyz + nzx + nxy            
+            v = 10*prod(procBox) + nyz + nzx + nxy            
 
             if i * j * k == nprocs && v < minValue
                minValue = v
-               domainDecomp[1:3] = [i, j, k]
+               domainDecomp[:] = [i, j, k]
             end
          end
       end
@@ -516,7 +482,7 @@ end
 
 Return the dimension of VLSV data.
 """
-Base.ndims(meta::MetaData) = count(>(1), [meta.xcells, meta.ycells, meta.zcells])
+Base.ndims(meta::MetaData) = count(>(1), meta.ncells)
 
 """
     hasvdf(meta) -> Bool
@@ -540,8 +506,8 @@ ids and corresponding value.
 """
 function readvcells(meta, cellid; pop="proton")
    @unpack fid, footer = meta
-   @unpack vxblock_size, vyblock_size, vzblock_size = meta.meshes[pop]
-   bsize = vxblock_size * vyblock_size * vzblock_size
+   @unpack vblock_size = meta.meshes[pop]
+   bsize = prod(vblock_size)
 
    cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS")
    nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
@@ -607,13 +573,12 @@ function readvcells(meta, cellid; pop="proton")
    vcellids = zeros(Int, bsize*nblocks)
    vcellf = zeros(Tavg, bsize*nblocks)
 
-   vcellid_local = [i + vxblock_size*j + vxblock_size*vyblock_size*k
-      for i in 0:vxblock_size-1, j in 0:vyblock_size-1, k in 0:vzblock_size-1]
+   vcellid_local = [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
+      for i in 0:vblock_size[1]-1, j in 0:vblock_size[2]-1, k in 0:vblock_size[3]-1]
 
    @inbounds @floop for i in eachindex(blockIDs), j = 1:bsize
-         vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*blockIDs[i]
-         vcellf[(i-1)*bsize+j] = data[j,i]
-
+      vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*blockIDs[i]
+      vcellf[(i-1)*bsize+j] = data[j,i]
    end
    vcellids, vcellf
 end
@@ -625,29 +590,28 @@ end
 Return velocity cells' coordinates of population `pop` and id `vcellids`.
 """
 function getvcellcoordinates(meta, vcellids; pop="proton")
-   @unpack vxblocks, vyblocks, vxblock_size, vyblock_size, vzblock_size,
-      dvx, dvy, dvz, vxmin, vymin, vzmin = meta.meshes[pop]
+   @unpack vblocks, vblock_size, dv, vmin = meta.meshes[pop]
 
-   bsize = vxblock_size * vyblock_size * vzblock_size
+   bsize = prod(vblock_size)
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
-   blockIndX = @. blockid % vxblocks
-   blockIndY = @. blockid ÷ vxblocks % vyblocks
-   blockIndZ = @. blockid ÷ (vxblocks * vyblocks)
-   blockCoordX = @. blockIndX * dvx * vxblock_size + vxmin
-   blockCoordY = @. blockIndY * dvy * vyblock_size + vymin
-   blockCoordZ = @. blockIndZ * dvz * vzblock_size + vzmin
+   blockIndX = @. blockid % vblocks[1]
+   blockIndY = @. blockid ÷ vblocks[1] % vblocks[2]
+   blockIndZ = @. blockid ÷ (vblocks[1] * vblocks[2])
+   blockCoordX = @. blockIndX * dv[1] * vblock_size[1] + vmin[1]
+   blockCoordY = @. blockIndY * dv[2] * vblock_size[2] + vmin[2]
+   blockCoordZ = @. blockIndZ * dv[3] * vblock_size[3] + vmin[3]
    # Get cell indices
    cellids = @. vcellids % bsize
-   cellidx = @. cellids % vxblock_size
-   cellidy = @. cellids ÷ vxblock_size % vyblock_size
-   cellidz = @. cellids ÷ (vxblock_size * vyblock_size)
+   cellidx = @. cellids % vblock_size[1]
+   cellidy = @. cellids ÷ vblock_size[1] % vblock_size[2]
+   cellidz = @. cellids ÷ (vblock_size[1] * vblock_size[2])
    # Get cell coordinates
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
    @inbounds @floop for i in eachindex(cellids)
-      cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * dvx
-      cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * dvy
-      cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * dvz
+      cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * dv[1]
+      cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * dv[2]
+      cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * dv[3]
    end
    cellCoords
 end

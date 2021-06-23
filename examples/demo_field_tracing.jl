@@ -18,13 +18,13 @@ meta = readmeta(filename)
 pcolormesh(meta, nameρ)
 
 v = readvariable(meta, nameV)
-vx = reshape(v[1,:], meta.xcells, meta.ycells)
-vy = reshape(v[2,:], meta.xcells, meta.ycells)
+vx = reshape(v[1,:], meta.ncells[1], meta.ncells[2])
+vy = reshape(v[2,:], meta.ncells[1], meta.ncells[2])
 # tracing starting point
 xstart, ystart = 12Re, 0Re
 # regular Cartesian mesh
-x = range(meta.xmin, meta.xmax, length=meta.xcells) 
-y = range(meta.ymin, meta.ymax, length=meta.ycells)
+x = range(meta.coordmin[1], meta.coordmax[1], length=meta.ncells[1]) 
+y = range(meta.coordmin[2], meta.coordmax[2], length=meta.ncells[2])
 
 # RK4 scheme by default
 x1, y1 = trace2d(vx, vy, xstart, ystart, x, y;

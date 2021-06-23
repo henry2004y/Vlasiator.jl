@@ -48,7 +48,7 @@ function plot(meta::MetaData, var, ax=nothing; kwargs...)
       data = Vlasiator.variables_predefined[var](meta)
    end
 
-   x = LinRange(meta.xmin, meta.xmax, meta.xcells)
+   x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -64,50 +64,7 @@ The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
 function streamplot(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
 
-   if occursin("x", comp)
-      v1_ = 1
-      if occursin("y", comp)
-         v2_ = 2
-         sizes = [meta.xcells, meta.ycells]
-         plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
-      else
-         v2_ = 3
-         sizes = [meta.xcells, meta.zcells]
-         plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
-      end
-   else
-      v1_, v2_ = 2, 3
-      sizes = [meta.ycells, meta.zcells]
-      plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
-   end
-
-   if hasvariable(meta, var)
-      data = readvariable(meta, var)
-   else
-      data = Vlasiator.variables_predefined[var](meta)
-   end
-
-   if startswith(var, "fg_")
-      v1 = data[v1_,:,:]'
-      v2 = data[v2_,:,:]'
-   else # vlasov grid
-      @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required!"
-      data = reshape(data, 3, sizes...)
-      v1 = data[v1_,:,:]'
-      v2 = data[v2_,:,:]'
-   end
-
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
-
-   # Be careful about array ordering difference between Julia and Python!
-   X = [i for _ in y, i in x]
-   Y = [j for j in y, _ in x]
+   X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -124,21 +81,30 @@ The keyword arguments can be any valid Matplotlib arguments into quiver.
 """
 function quiver(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
 
+   X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
+
+   if isnothing(ax) ax = plt.gca() end
+
+   ax.quiver(X, Y, v1, v2; kwargs...)
+end
+
+function set_vector(meta::MetaData, var, comp, axisunit)
+   @unpack ncells, coordmin, coordmax = meta
    if occursin("x", comp)
       v1_ = 1
       if occursin("y", comp)
          v2_ = 2
-         sizes = [meta.xcells, meta.ycells]
-         plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
+         sizes = [ncells[1], ncells[2]]
+         plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
       else
          v2_ = 3
-         sizes = [meta.xcells, meta.zcells]
-         plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
+         sizes = [ncells[1], ncells[3]]
+         plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
       end
    else
       v1_, v2_ = 2, 3
-      sizes = [meta.ycells, meta.zcells]
-      plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
+      sizes = [ncells[2], ncells[3]]
+      plotrange = [coordmin[2], coordmax[2], coordmin[3], coordmax[3]]
    end
 
    if hasvariable(meta, var)
@@ -169,9 +135,7 @@ function quiver(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs.
    X = [i for _ in y, i in x]
    Y = [j for j in y, _ in x]
 
-   if isnothing(ax) ax = plt.gca() end
-
-   ax.quiver(X, Y, v1, v2; kwargs...)
+   X, Y, v1, v2
 end
 
 """
@@ -375,43 +339,40 @@ end
 "Set plot-related arguments."
 function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    normal::Symbol=:z, origin=0.0, vmin=-Inf, vmax=Inf)
+   @unpack ncells, coordmin, coordmax = meta
 
    if normal == :x
-      sizes = [meta.ycells, meta.zcells]
-      plotrange = [meta.ymin, meta.ymax, meta.zmin, meta.zmax]
-      sliceoffset = abs(meta.xmin) + origin
+      sizes = [ncells[2], ncells[3]]
+      plotrange = [coordmin[2], coordmax[2], coordmin[3], coordmax[3]]
+      sliceoffset = abs(coordmin[1]) + origin
       axislabels = ['Y', 'Z']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset;
-         xmin=meta.xmin, xmax=meta.xmax)
+      idlist, indexlist = getslicecell(meta, sliceoffset; xmin=coordmin[1],xmax=coordmax[1])
    elseif normal == :y
-      sizes = [meta.xcells, meta.zcells]
-      plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
-      sliceoffset = abs(meta.ymin) + origin
+      sizes = [ncells[1], ncells[3]]
+      plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
+      sliceoffset = abs(coordmin[2]) + origin
       axislabels = ['X', 'Z']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset;
-         ymin=meta.ymin, ymax=meta.ymax)
+      idlist, indexlist = getslicecell(meta, sliceoffset; ymin=coordmin[2],ymax=coordmax[2])
    elseif normal == :z
-      sizes = [meta.xcells, meta.ycells]
-      plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
-      sliceoffset = abs(meta.zmin) + origin
+      sizes = [ncells[1], ncells[2]]
+      plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
+      sliceoffset = abs(coordmin[3]) + origin
       axislabels = ['X', 'Y']
 
-      idlist, indexlist = getslicecell(meta, sliceoffset;
-         zmin=meta.zmin, zmax=meta.zmax)
+      idlist, indexlist = getslicecell(meta, sliceoffset; zmin=coordmin[3],zmax=coordmax[3])
    else
-      idlist = Int64[]
-      indexlist = Int64[]
+      idlist, indexlist = Int64[], Int64[]
 
-      if meta.ycells == 1 && meta.zcells != 1 # polar
-         plotrange = [meta.xmin, meta.xmax, meta.zmin, meta.zmax]
-         sizes = [meta.xcells, meta.zcells]
+      if ncells[2] == 1 && ncells[3] != 1 # polar
+         plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
+         sizes = [ncells[1], ncells[3]]
          PLANE = "XZ"
          axislabels = ['X', 'Z']
-      elseif meta.zcells == 1 && meta.ycells != 1 # ecliptic
-         plotrange = [meta.xmin, meta.xmax, meta.ymin, meta.ymax]
-         sizes = [meta.xcells, meta.ycells]
+      elseif ncells[3] == 1 && ncells[2] != 1 # ecliptic
+         plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
+         sizes = [ncells[1], ncells[2]]
          PLANE = "XY"
          axislabels = ['X', 'Y']
       else # 1D
@@ -520,18 +481,18 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI, slicetype="xy",
    vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
-   @unpack ycells, zcells = meta
+   @unpack ncells = meta
    if haskey(meta.meshes, pop)
       vmesh = meta.meshes[pop]
    else
       throw(ArgumentError("Unable to detect population $pop"))
    end
-   vxsize = vmesh.vxblocks * vmesh.vxblock_size
-   vysize = vmesh.vyblocks * vmesh.vyblock_size
-   #vzsize = vmesh.vzblocks * vmesh.vzblock_size
-   vxmin, vxmax = vmesh.vxmin, vmesh.vxmax
-   vymin, vymax = vmesh.vymin, vmesh.vymax
-   #vzmin, vzmax = vmesh.vzmin, vmesh.vzmax
+   vxsize = vmesh.vblocks[1] * vmesh.vblock_size[1]
+   vysize = vmesh.vblocks[2] * vmesh.vblock_size[2]
+
+   vxmin, vxmax = vmesh.vmin[1], vmesh.vmax[1]
+   vymin, vymax = vmesh.vmin[2], vmesh.vmax[2]
+
    cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
    unit == RE && (location ./= Vlasiator.Re)
@@ -607,16 +568,16 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    end
 
    # Set normal direction
-   if ycells == 1 && zcells == 1 # 1D, select xz
+   if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
       slicetype = "xz"
       sliceNormal = [0., 1., 0.]
       strx = "vx [km/s]"
       stry = "vz [km/s]"
-   elseif ycells == 1 && slicetype == "xz" # polar
+   elseif ncells[2] == 1 && slicetype == "xz" # polar
       sliceNormal = [0., 1., 0.]
       strx = "vx [km/s]"
       stry = "vz [km/s]"
-   elseif zcells == 1 && slicetype == "xy" # ecliptic
+   elseif ncells[3] == 1 && slicetype == "xy" # ecliptic
       sliceNormal = [0., 0., 1.]
       strx = "vx [km/s]"
       stry = "vy [km/s]"
@@ -696,7 +657,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    # Select cells which are within slice area
    if vslicethick > 0.0
       ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
-              (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+         (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
    else
       ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
    end
@@ -744,21 +705,21 @@ Plot mesh cell centers from axis view `projection`. `projection` should be eithe
 """
 function plotmesh(meta::MetaData, ax=nothing; projection="3d", origin=0.0, marker="+",
    kwargs...)
-
+   @unpack coordmin, coordmax, cellid = meta
    if projection == "x"
-      sliceoffset = abs(meta.xmin) + origin
+      sliceoffset = abs(coordmin[1]) + origin
 
-      ids, _ = getslicecell(meta, sliceoffset; xmin=meta.xmin, xmax=meta.xmax)
+      ids, _ = getslicecell(meta, sliceoffset; xmin=coordmin[1], xmax=coordmax[1])
    elseif projection == "y"
-      sliceoffset = abs(meta.ymin) + origin
+      sliceoffset = abs(coordmin[2]) + origin
 
-      ids, _ = getslicecell(meta, sliceoffset; ymin=meta.ymin, ymax=meta.ymax)
+      ids, _ = getslicecell(meta, sliceoffset; ymin=coordmin[2], ymax=coordmax[2])
    elseif projection == "z"
-      sliceoffset = abs(meta.zmin) + origin
+      sliceoffset = abs(coordmin[3]) + origin
 
-      ids, _ = getslicecell(meta, sliceoffset; zmin=meta.zmin, zmax=meta.zmax)
+      ids, _ = getslicecell(meta, sliceoffset; zmin=coordmin[3], zmax=coordmax[3])
    else
-      ids = meta.cellid
+      ids = cellid
    end
 
    centers = Matrix{Float32}(undef, 3, length(ids))

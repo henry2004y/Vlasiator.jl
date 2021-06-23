@@ -22,20 +22,26 @@ export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
 Return cell ID containing the given spatial `location`, excluding domain boundaries.
 """
 function getcell(meta::MetaData, loc)
-   @unpack xmin, ymin, zmin, xmax, ymax, zmax, dx, dy, dz, xcells, ycells, zcells = meta
+   @unpack coordmin, coordmax, dcoord, ncells = meta
 
-   @assert xmin < loc[1] < xmax "x coordinate out of bound!"
-   @assert ymin < loc[2] < ymax "y coordinate out of bound!"
-   @assert zmin < loc[3] < zmax "z coordinate out of bound!"
+   @assert coordmin[1] < loc[1] < coordmax[1] "x coordinate out of bound!"
+   @assert coordmin[2] < loc[2] < coordmax[2] "y coordinate out of bound!"
+   @assert coordmin[3] < loc[3] < coordmax[3] "z coordinate out of bound!"
+
+   dx, dy, dz = dcoord
 
    # Get cell indices
-   indices = floor.(Int, [(loc[1] - xmin)/dx, (loc[2] - ymin)/dy, (loc[3] - zmin)/dz])
+   indices = floor.(Int,
+      [(loc[1] - coordmin[1])/dx,
+       (loc[2] - coordmin[2])/dy,
+       (loc[3] - coordmin[3])/dz])
    # Get the cell id
-   cellid = indices[1] + indices[2] * xcells + indices[3] * xcells * ycells + 1
+   cellid = indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
    # Going through AMR levels as needed
    ilevel = 0
    ncells_lowerlevel = 0
+   ncell = prod(ncells)
 
    cellids, maxamr = meta.cellid, meta.maxamr
 
@@ -43,11 +49,14 @@ function getcell(meta::MetaData, loc)
       if cellid in cellids
          break
       else
-         ncells_lowerlevel += 2^(3*ilevel)*(xcells*ycells*zcells)           
+         ncells_lowerlevel += 2^(3*ilevel)*ncell
          ilevel += 1
          dx *= 0.5; dy *= 0.5; dz *= 0.5
 
-         indices = floor.(Int, [(loc[1] - xmin)/dx, (loc[2] - ymin)/dy, (loc[3] - zmin)/dz])
+         indices = floor.(Int,
+            [(loc[1] - coordmin[1])/dx,
+             (loc[2] - coordmin[2])/dy,
+             (loc[3] - coordmin[3])/dz ])
 
          cellid = ncells_lowerlevel + indices[1] +
             2^(ilevel)*xcells*indices[2] +
@@ -65,10 +74,10 @@ Return the AMR level of a given cell ID. Note that this function does not check 
 file of `meta` actually contains `cellid`: it may be shadowed by refined children.
 """
 function getlevel(meta::MetaData, cellid::Integer)
-   ncells = meta.xcells*meta.ycells*meta.zcells
+   ncell = prod(meta.ncells)
    ilevel = 0
    while cellid > 0
-      cellid -= 2^(3*ilevel)*ncells
+      cellid -= 2^(3*ilevel)*ncell
       ilevel += 1
    end
    ilevel - 1 
@@ -80,8 +89,8 @@ end
 Return the parent cell ID of given child `cellid`.
 """
 function getparent(meta::MetaData, cellid::Integer)
-   @unpack xcells, ycells, zcells = meta
-   ncells = xcells*ycells*zcells
+   xcell, ycell = meta.ncells[1], meta.ncells[2]
+   ncell = prod(meta.ncells)
 
    mylvl = getlevel(meta, cellid)
    parentlvl = mylvl - 1
@@ -90,24 +99,24 @@ function getparent(meta::MetaData, cellid::Integer)
       throw(ArgumentError("Cell ID $cellid has no parent cell!"))
    else
       # get the first cellid on my level
-      cid1st = get1stcell(mylvl, ncells) + 1
+      cid1st = get1stcell(mylvl, ncell) + 1
       # get my row and column sequence on my level (starting with 0)
-      xcells = xcells*2^mylvl
-      ycells = ycells*2^mylvl
+      xcell = xcell*2^mylvl
+      ycell = ycell*2^mylvl
 
       myseq = cellid - cid1st
-      ix = myseq % xcells
-      iz = myseq ÷ (xcells*ycells)
-      iy = (myseq - iz*xcells*ycells) ÷ xcells
+      ix = myseq % xcell
+      iz = myseq ÷ (xcell*ycell)
+      iy = (myseq - iz*xcell*ycell) ÷ xcell
       # indexes on the parent level
       ixparent = ix ÷ 2
       iyparent = iy ÷ 2
       izparent = iz ÷ 2
      
       # get the first cellid on parent level
-      cid1st -= ncells*8^parentlvl
+      cid1st -= ncell*8^parentlvl
       # get parent cellid (may not exist!!!)
-      parentid = cid1st + izparent*xcells*ycells÷4 + iyparent*xcells÷2 + ixparent
+      parentid = cid1st + izparent*xcell*ycell÷4 + iyparent*xcell÷2 + ixparent
    end
    parentid
 end
@@ -118,24 +127,24 @@ end
 Return direct children of `cellid`.
 """
 function getchildren(meta::MetaData, cellid::Integer)
-   @unpack xcells, ycells, zcells = meta
-   ncells = xcells*ycells*zcells
+   xcell, ycell, zcell = meta.ncells
+   ncell = prod(meta.ncells)
 
    mylvl = getlevel(meta, cellid)
 
    # get the first cell ID on the my level
    cid1st = 1
    for i = 0:mylvl-1
-      cid1st += ncells*8^i
+      cid1st += ncell*8^i
    end
    # get my row and column sequence on my level (starting with 0)
-   xcells = xcells*2^mylvl
-   ycells = ycells*2^mylvl
+   xcell = xcell*2^mylvl
+   ycell = ycell*2^mylvl
    
    myseq = cellid - cid1st
-   ix = myseq % xcells
-   iz = myseq ÷ (xcells*ycells)
-   iy = (myseq - iz*xcells*ycells) ÷ xcells
+   ix = myseq % xcell
+   iz = myseq ÷ (xcell*ycell)
+   iy = (myseq - iz*xcell*ycell) ÷ xcell
 
    # get the children sequences on the finer level
    ix *= 2
@@ -144,11 +153,11 @@ function getchildren(meta::MetaData, cellid::Integer)
 
    cid = @MVector zeros(Int, 2^ndims(meta))
    # get the first cell ID on the finer level
-   cid1st += ncells*8^mylvl
+   cid1st += ncell*8^mylvl
    ix_, iy_ = [ix, ix+1], [iy, iy+1]
-   iz_ = zcells != 1 ? [iz, iz+1] : [iz]
+   iz_ = zcell != 1 ? [iz, iz+1] : [iz]
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
-      @inbounds cid[n] = cid1st + i[3]*xcells*ycells*4 + i[2]*xcells*2 + i[1]
+      @inbounds cid[n] = cid1st + i[3]*xcell*ycell*4 + i[2]*xcell*2 + i[1]
    end
    cid
 end
@@ -159,24 +168,24 @@ end
 Return sibling cells of a given `cellid`, including itself.
 """
 function getsiblings(meta::MetaData, cellid::Integer)
-   @unpack xcells, ycells, zcells = meta
-   ncells = xcells*ycells*zcells
+   xcell, ycell, zcell = meta.ncells
+   ncell = prod(meta.ncells)
 
    mylvl = getlevel(meta, cellid)
 
    mylvl == 0 && throw(ArgumentError("CellID $cellid is not a child cell!"))
 
-   xcells = xcells * 2^mylvl
-   ycells = ycells * 2^mylvl
+   xcell = xcell * 2^mylvl
+   ycell = ycell * 2^mylvl
 
    # 1st cellid on my level
-   cid1st = get1stcell(mylvl, ncells) + 1
+   cid1st = get1stcell(mylvl, ncell) + 1
 
    # xyz sequences on my level (starting with 0)
    myseq = cellid - cid1st
-   ix = myseq % xcells
-   iz = myseq ÷ (xcells*ycells)
-   iy = (myseq - iz*xcells*ycells) ÷ xcells
+   ix = myseq % xcell
+   iz = myseq ÷ (xcell*ycell)
+   iy = (myseq - iz*xcell*ycell) ÷ xcell
    
    ix1 = iseven(ix) ? ix + 1 : ix - 1
    iy1 = iseven(iy) ? iy + 1 : iy - 1
@@ -188,9 +197,9 @@ function getsiblings(meta::MetaData, cellid::Integer)
 
    cid = @MVector zeros(Int, 2^ndims(meta))
    ix_, iy_ = [ix, ix1], [iy, iy1]
-   iz_ = zcells != 1 ? [iz, iz1] : [iz]
+   iz_ = zcell != 1 ? [iz, iz1] : [iz]
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
-      @inbounds cid[n] = cid1st + i[3]*xcells*ycells + i[2]*xcells + i[1]
+      @inbounds cid[n] = cid1st + i[3]*xcell*ycell + i[2]*xcell + i[1]
    end
    cid
 end
@@ -201,12 +210,9 @@ end
 Check if `cellid` is a parent cell.
 """
 function isparent(meta::MetaData, cellid::Integer)
-   @unpack xcells, ycells, zcells, maxamr = meta
-   ncells = xcells*ycells*zcells
+   ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
-   ncells_accum = get1stcell(maxamr, ncells)
-
-   cellid ∉ meta.cellid && 0 < cellid ≤ ncells_accum 
+   cellid ∉ meta.cellid && 0 < cellid ≤ ncell_accum 
 end
 
 """
@@ -215,39 +221,41 @@ end
 Return a given cell's coordinates.
 """    
 function getcellcoordinates(meta::MetaData, cellid::Integer)
-   @unpack xcells, ycells, zcells, xmin, ymin, zmin, xmax, ymax, zmax = meta
+   @unpack ncells, coordmin, coordmax = meta
    cellid -= 1 # for easy divisions
 
-   ncells = xcells*ycells*zcells
+   xcell, ycell, zcell = ncells
    reflevel = 0
-   subtraction = ncells * (2^reflevel)^3
-
+   subtraction = prod(ncells) * (2^reflevel)^3
+   # sizes on the finest level
    while cellid ≥ subtraction
       cellid -= subtraction
       reflevel += 1
       subtraction *= 8
-      xcells *= 2
-      ycells *= 2
-      zcells *= 2
+      xcell *= 2
+      ycell *= 2
+      zcell *= 2
    end
 
    indices = @SVector [
-      cellid % xcells,
-      cellid ÷ xcells % ycells,
-      cellid ÷ (xcells*ycells) ]
+      cellid % xcell,
+      cellid ÷ xcell % ycell,
+      cellid ÷ (xcell*ycell) ]
 
    coords = @SVector [
-      xmin + (indices[1] + 0.5) * (xmax - xmin)/xcells,
-      ymin + (indices[2] + 0.5) * (ymax - ymin)/ycells,
-      zmin + (indices[3] + 0.5) * (zmax - zmin)/zcells ]
+      coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1])/xcell,
+      coordmin[2] + (indices[2] + 0.5) * (coordmax[2] - coordmin[2])/ycell,
+      coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3])/zcell ]
 
    coords
 end
 
 function isInsideDomain(meta::MetaData, point)
-   @unpack xmin, ymin, zmin, xmax, ymax, zmax = meta
+   @unpack coordmin, coordmax = meta
 
-   if xmin < point[1] ≤ xmax && ymin < point[2] ≤ ymax && zmin < point[3] ≤ zmax
+   if coordmin[1] < point[1] ≤ coordmax[1] &&
+      coordmin[2] < point[2] ≤ coordmax[2] &&
+      coordmin[3] < point[3] ≤ coordmax[3]
       return true
    else
       return false
@@ -261,7 +269,7 @@ Returns cell IDs, distances and coordinates for every cell in a line between two
 points `point1` and `point2`. May be improved later with preallocation!
 """
 function getcellinline(meta::MetaData, point1, point2)
-   @unpack xmin, ymin, zmin, xmax, ymax, zmax, xcells, ycells, zcells = meta
+   @unpack coordmin, coordmax, ncells = meta
 
    if !isInsideDomain(meta, point1)
       throw(DomainError(point1, "point location outside simulation domain!"))
@@ -269,7 +277,10 @@ function getcellinline(meta::MetaData, point1, point2)
       throw(DomainError(point2, "point location outside simulation domain!"))
    end
 
-   cell_lengths = [(xmax-xmin)/xcells, (ymax-ymin)/ycells, (zmax-zmin)/zcells]
+   cell_lengths = [
+      (coordmax[1]-coordmin[1])/ncells[1],
+      (coordmax[2]-coordmin[2])/ncells[2],
+      (coordmax[3]-coordmin[3])/ncells[3]]
 
    distances = [0.0]
 
@@ -300,12 +311,8 @@ function getcellinline(meta::MetaData, point1, point2)
             coef_min[i] = Inf
             coef_max[i] = Inf
          end
-         if coef_min[i] ≤ 0
-            coef_min[i] = Inf
-         end
-         if coef_max[i] ≤ 0
-            coef_max[i] = Inf
-         end
+         if coef_min[i] ≤ 0  coef_min[i] = Inf end
+         if coef_max[i] ≤ 0  coef_max[i] = Inf end
       end
 
       # Find the minimum distance from a boundary times a factor
@@ -337,15 +344,15 @@ mapping from original order to the cut plane and can be used to select data onto
 """
 function getslicecell(meta::MetaData, slicelocation;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
-   # sorted cellid
-   @unpack xcells, ycells, zcells, maxamr, cellid = meta
+
+   @unpack ncells, maxamr, cellid = meta
 
    if !isinf(xmin) && !isinf(xmax)
-      minCoord = xmin; maxCoord = xmax; nsize = xcells; idim = 1
+      minCoord = xmin; maxCoord = xmax; nsize = ncells[1]; idim = 1
    elseif !isinf(ymin) && !isinf(ymax)
-      minCoord = ymin; maxCoord = ymax; nsize = ycells; idim = 2
+      minCoord = ymin; maxCoord = ymax; nsize = ncells[2]; idim = 2
    elseif !isinf(zmin) && !isinf(zmax)
-      minCoord = zmin; maxCoord = zmax; nsize = zcells; idim = 3
+      minCoord = zmin; maxCoord = zmax; nsize = ncells[3]; idim = 3
    else
       throw(ArgumentError("Unspecified slice direction!"))
    end
@@ -362,8 +369,8 @@ function getslicecell(meta::MetaData, slicelocation;
 
    # Find the ids
    nlen = 0
-   ncell = xcells*ycells*zcells
-   nStart = zeros(Int, maxamr+2) # number of cells up to each refinement level
+   ncell = prod(ncells)
+   nStart = @MVector zeros(Int, maxamr+2) # number of cells up to each refinement level
    nStart[2] = ncell
    for ilvl = 1:maxamr
       nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
@@ -375,7 +382,7 @@ function getslicecell(meta::MetaData, slicelocation;
    for ilvl = 0:maxamr
       nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
       ids = cellid[nLow .< cellid .≤ nHigh]
-      ix, iy, iz = getindexes(ilvl, xcells, ycells, nLow, ids)
+      ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 
       if idim == 1
          coords = ix
@@ -403,28 +410,27 @@ Generate scalar data on the finest refinement level given cellids `idlist` and v
 `data` on the slice perpendicular to `normal`.
 """
 function refineslice(meta::MetaData, idlist, data, normal)
-   @unpack xcells, ycells, zcells, maxamr = meta
+   @unpack ncells, maxamr = meta
 
    if normal == :x
-      dims = [ycells, zcells] .* 2^maxamr
+      dims = [ncells[2], ncells[3]] .* 2^maxamr
    elseif normal == :y
-      dims = [xcells, zcells] .* 2^maxamr
+      dims = [ncells[1], ncells[3]] .* 2^maxamr
    elseif normal == :z
-      dims = [xcells, ycells] .* 2^maxamr
+      dims = [ncells[1], ncells[2]] .* 2^maxamr
    end
 
    dpoints = zeros(dims...)
 
    # Create the plot grid
-   ncell = xcells*ycells*zcells
-   nHigh = ncell
-   nLow = 0
+   ncell = prod(ncells)
+   nHigh, nLow = ncell, 0
 
    for i = 0:maxamr
       ids = idlist[nLow .< idlist .≤ nHigh]
       d = data[nLow .< idlist .≤ nHigh]
 
-      ix, iy, iz = getindexes(i, xcells, ycells, nLow, ids)
+      ix, iy, iz = getindexes(i, ncells[1], ncells[2], nLow, ids)
 
       # Get the correct coordinate values and the widths for the plot
       if normal == :x
@@ -520,7 +526,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
 """
 function fillmesh(meta::MetaData, vars; verbose=false)
-   @unpack cellid, maxamr, fid, footer, xcells, ycells, zcells = meta
+   @unpack cellid, maxamr, fid, footer, ncells = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
@@ -530,10 +536,11 @@ function fillmesh(meta::MetaData, vars; verbose=false)
       T[i], _, _, _, vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
-   celldata = [[zeros(T[iv], vsize[iv], xcells*2^i, ycells*2^i, zcells*2^i)
+   celldata = [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
       for i = 0:maxamr] for iv in 1:nv]
 
-   vtkGhostType = [zeros(UInt8, xcells*2^i, ycells*2^i, zcells*2^i) for i = 0:maxamr]
+   vtkGhostType = 
+      [zeros(UInt8, ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i) for i = 0:maxamr]
 
    if maxamr == 0
       for iv = 1:nv
@@ -543,7 +550,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    end
 
    # Find the ids
-   ncell = xcells*ycells*zcells
+   ncell = prod(ncells)
    nLow, nHigh = 0, ncell
 
    for ilvl = 0:maxamr
@@ -554,7 +561,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
       idrefined = setdiff(nLow+1:nHigh, ids)
 
       for id in idrefined
-         ix, iy, iz = getindexes(ilvl, xcells, ycells, nLow, id) .+ 1
+         ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
          @inbounds vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
       
@@ -566,7 +573,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
                for (ic, id) in enumerate(ids)
-                  ixr, iyr, izr = getindexes(ilvl, xcells, ycells, nLow, id) .* r
+                  ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .* r
                   for k = 1:r, j = 1:r, i = 1:r
                      @inbounds celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,ic]
                   end
@@ -581,7 +588,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
             else
                data = readvariable(meta, var, ids)
                for (ic, id) in enumerate(ids)
-                  ix, iy, iz = getindexes(maxamr, xcells, ycells, nLow, id) .+ 1
+                  ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, id) .+ 1
                   @inbounds celldata[iv][end][:,ix,iy,iz] = data[:,ic]
                end
             end
@@ -606,7 +613,7 @@ Convert VLSV file to VTK format.
 - `verbose=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
-   xcells, ycells, zcells, maxamr = meta.xcells, meta.ycells, meta.zcells, meta.maxamr
+   @unpack ncells, maxamr, dcoord, coordmin = meta
 
    append = ascii ? false : true
 
@@ -624,12 +631,12 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
 
    if vti
       save_image(meta, meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end], maxamr,
-         xcells, ycells, zcells, append)
+         append)
    else
       # Generate image file on each refinement level
       for i in eachindex(vtkGhostType, filedata)
          fdata, ghost = filedata[i], vtkGhostType[i]
-         save_image(meta, fdata, vars, data, ghost, i-1, xcells, ycells, zcells, append)
+         save_image(meta, fdata, vars, data, ghost, i-1, append)
       end
 
       # Generate vthb file
@@ -641,18 +648,18 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
       set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
       set_attribute(xroot, "header_type", "UInt64")
       xamr = new_child(xroot, "vtkOverlappingAMR")
-      origin = @sprintf "%f %f %f" meta.xmin meta.ymin meta.zmin
+      origin = @sprintf "%f %f %f" coordmin...
       set_attribute(xamr, "origin", origin)
       set_attribute(xamr, "grid_description", "XYZ")
 
       for i = 0:maxamr
          xBlock = new_child(xamr, "Block")
          set_attribute(xBlock, "level", string(i))
-         spacing_str = @sprintf "%f %f %f" meta.dx/2^i meta.dy/2^i meta.dz/2^i
+         spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
          set_attribute(xBlock, "spacing", spacing_str)
          xDataSet = new_child(xBlock, "DataSet")
          set_attribute(xDataSet, "index", "0")
-         amr_box = [0, xcells*2^i-1, 0, ycells*2^i-1, 0, zcells*2^i-1]
+         amr_box = [0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1]
          box_str = @sprintf "%d %d %d %d %d %d" amr_box...
          set_attribute(xDataSet, "amr_box", box_str)
          set_attribute(xDataSet, "file", filedata[i+1])
@@ -668,7 +675,7 @@ write_vtk(filename; kwargs...) = write_vtk(readmeta(filename); kwargs...)
 
 """
     save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
-       xcells, ycells, zcells, ascii=false, append=true)
+       ascii=false, append=true)
 
 Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 # Arguments
@@ -677,18 +684,17 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `data::Vector{Vector}`: data for all the variables on each refinement level.
 - `vtkGhostType::Array{UInt8}`: array for visibility control.
 - `level::Int`: refinement level (0-based).
-- `xcells, ycells, zcells`: original mesh sizes.
 - `ascii=false`: save output in ASCII or binary format.
 - `append=true`: determines whether to append data at the end of file or do in-block writing.
 """
-function save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
-   xcells, ycells, zcells, ascii=false, append=true)
-
-   origin = (meta.xmin, meta.ymin, meta.zmin)
+function save_image(meta::MetaData, file, vars, data, vtkGhostType, level, ascii=false,
+   append=true)
+   @unpack coordmin, dcoord, ncells = meta
+   origin = (coordmin[1], coordmin[2], coordmin[3])
    ratio = 2^level
-   spacing = (meta.dx / ratio, meta.dy / ratio, meta.dz / ratio)
+   spacing = (dcoord[1] / ratio, dcoord[2] / ratio, dcoord[3] / ratio)
 
-   vtk = vtk_grid(file, xcells*ratio+1, ycells*ratio+1, zcells*ratio+1;
+   vtk = vtk_grid(file, ncells[1]*ratio+1, ncells[2]*ratio+1, ncells[3]*ratio+1;
       origin, spacing, append, ascii)
 
    for (iv, var) in enumerate(vars)
