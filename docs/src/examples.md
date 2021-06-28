@@ -103,8 +103,11 @@ which can also be found as keys of dictionary in [vlsvvariables.jl](https://gith
 [^1]: For species specific variables, you need to add the species name at the front, separated by a slash. For example, the proton bulk velocity is a string `proton/vg_v`.
 [^2]: If a required variable exists in the VLSV file, we try to use it directly instead of calculating from other variables. The interpolated FS grid variables onto DCCRG grid are preferred over original FS grid variables.
 
+!!! note
+    In Vlasiator, the cells inside the inner boundary (which is usually a sphere/circle) are filled with zero density values. This is then used to identify the inner boundary for all other quantities. Therefore, if you are manipulating directly on data, make sure that the nonsense values inside the inner boundary are excluded. One way to do this can be found in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl).
+
 !!! warning
-    This part has not been carefully tested so it might not work or just generate wrong results!
+    This part has not been carefully tested so it might not work or just generate wrong results. Contributions from users are warmly welcomed!
 
 ## Plotting
 

@@ -3,6 +3,18 @@ using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
+function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
+   result = convert(eltype(x), NaN)
+   for i in x
+      if !isnan(i)
+         if isnan(result) || i > result
+            result = i
+         end
+      end
+   end
+   result
+end
+
 @testset "Vlasiator.jl" begin
    if Sys.iswindows()
       using ZipFile
@@ -37,14 +49,11 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          @test t == 8.0
          @test_throws ArgumentError readvariable(meta, "nonsense")
          # unsorted ID
-         cellIDs = readvariable(meta, "CellID", false)
-         IDRef = UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
-         @test cellIDs == IDRef
+         @test readvariable(meta, "CellID", false) == UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
          indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
          @test meta.cellIndex == indexRef
          # sorted var by default
-         BC = readvariable(meta, "vg_boundarytype")
-         @test BC == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
+         @test readvariable(meta, "vg_boundarytype") == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
          # ID finding
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
@@ -99,7 +108,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          ncells, namr = metaAMR.ncells, metaAMR.maxamr
          @test size(data) == (3, ncells[1]*namr^2, ncells[2]*namr^2, ncells[3]*namr^2)
          @test data[:,16,8,8] == [-1.3758785f-7, 3.2213068f-4, -3.1518404f-4]
-            
+
 
          # Compare two VLSV files
          @test compare(filenames[1], filenames[1])
@@ -113,43 +122,32 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
    if group in (:derive, :all)
       @testset "Derived variables" begin
          meta = readmeta(filenames[1])
-         V = readvariable(meta, "Vmag")
-         @test sortperm(V) == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
+         @test readvariable(meta, "Vmag") |> sortperm == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
          close(meta.fid)
 
          meta = readmeta(filenames[2])
-         B = readvariable(meta, "Bmag")
-         @test B[4] ≈ 3.005215661015543e-9
+         @test readvariable(meta, "Bmag")[4] ≈ 3.005215661015543e-9
 
-         VS = readvariable(meta, "VS")
-         @test maximum(VS) == 1.3726345926284448e6
+         @test readvariable(meta, "VS") |> nanmaximum == 1.3726345926284448e6
 
-         VA = readvariable(meta, "VA")
-         @test maximum(VA) == 2.3202627284651753e8
+         @test readvariable(meta, "VA") |> nanmaximum == 2.3202627284651753e8
 
-         MA = readvariable(meta, "MA")
-         @test MA[end] == 0.09345330716812077
+         @test readvariable(meta, "MA")[end] == 10.700530888660992
 
-         Vpar = readvariable(meta, "Vpar")
-         @test Vpar[1] == 698735.3045881701
+         @test readvariable(meta, "Vpar")[1] == 698735.3045881701
 
-         Vperp = readvariable(meta, "Vperp")
-         @test Vperp[1] == 40982.48109657114
+         @test readvariable(meta, "Vperp")[1] == 40982.48109657114
 
-         T = readvariable(meta, "T")
-         @test T[1] == 347619.97307130496
+         @test readvariable(meta, "T")[1] == 347619.97307130496
 
-         Beta = readvariable(meta, "Beta")
-         @test Beta[1] == 1.3359065776791028
+         @test readvariable(meta, "Beta")[1] == 1.3359065776791028
 
          Poynting = readvariable(meta, "Poynting")
          @test Poynting[:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         di = readvariable(meta, "IonInertial")
-         @test di[1] == 8.584026161906034e7
+         @test readvariable(meta, "IonInertial")[1] == 8.584026161906034e7
 
-         rg = readvariable(meta, "Larmor")
-         @test rg[1] == 142415.61376655987
+         @test readvariable(meta, "Larmor")[1] == 142415.61376655987
 
          #Anisotropy = readvariable(meta, "Anisotropy")
 
@@ -201,10 +199,9 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          ENV["MPLBACKEND"]="agg" # no GUI
          # 1D
          meta = readmeta(filenames[1])
-         ρ = readvariable(meta, "proton/vg_rho")
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
-         @test line.get_ydata() == ρ
+         @test line.get_ydata() == readvariable(meta, "proton/vg_rho")
          centers = plotmesh(meta, projection="x")
          points = centers.get_offsets()
          @test size(points) == (1, 2)
@@ -250,7 +247,7 @@ group = get(ENV, "TEST_GROUP", :all) |> Symbol
          close(meta.fid)
       end
    end
-         
+
    for file in filenames
       rm(file, force=true)
    end
