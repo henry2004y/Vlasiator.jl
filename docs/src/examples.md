@@ -262,6 +262,6 @@ plt.show()
 ```
 
 !!! note
-    This approach is for you to have a taste of the package. For better integrated experience with its full power, I recommend using the package inside Julia.
+    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, I recommend using the package inside Julia.
 
 [^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
