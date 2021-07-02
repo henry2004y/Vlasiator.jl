@@ -9,7 +9,7 @@ const qᵢ = 1.60217662e-19   # proton mass, [C]
 const mᵢ = 1.673557546e-27  # proton mass, [kg]
 const c  = 3e8              # speed of light, [m/s]
 const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
-const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)] 
+const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)]
 const Re = 6.371e6          # Earth radius, [m]
 
 export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
@@ -80,7 +80,7 @@ function getlevel(meta::MetaData, cellid::Integer)
       cellid -= 2^(3*ilevel)*ncell
       ilevel += 1
    end
-   ilevel - 1 
+   ilevel - 1
 end
 
 """
@@ -112,7 +112,7 @@ function getparent(meta::MetaData, cellid::Integer)
       ixparent = ix ÷ 2
       iyparent = iy ÷ 2
       izparent = iz ÷ 2
-     
+
       # get the first cellid on parent level
       cid1st -= ncell*8^parentlvl
       # get parent cellid (may not exist!!!)
@@ -140,7 +140,7 @@ function getchildren(meta::MetaData, cellid::Integer)
    # get my row and column sequence on my level (starting with 0)
    xcell = xcell*2^mylvl
    ycell = ycell*2^mylvl
-   
+
    myseq = cellid - cid1st
    ix = myseq % xcell
    iz = myseq ÷ (xcell*ycell)
@@ -186,7 +186,7 @@ function getsiblings(meta::MetaData, cellid::Integer)
    ix = myseq % xcell
    iz = myseq ÷ (xcell*ycell)
    iy = (myseq - iz*xcell*ycell) ÷ xcell
-   
+
    ix1 = iseven(ix) ? ix + 1 : ix - 1
    iy1 = iseven(iy) ? iy + 1 : iy - 1
    iz1 = iseven(iz) ? iz + 1 : iz - 1
@@ -212,14 +212,14 @@ Check if `cellid` is a parent cell.
 function isparent(meta::MetaData, cellid::Integer)
    ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
-   cellid ∉ meta.cellid && 0 < cellid ≤ ncell_accum 
+   cellid ∉ meta.cellid && 0 < cellid ≤ ncell_accum
 end
 
 """
     getcellcoordinates(meta, cellid) -> Vector{Float}
 
 Return a given cell's coordinates.
-"""    
+"""
 function getcellcoordinates(meta::MetaData, cellid::Integer)
    @unpack ncells, coordmin, coordmax = meta
    cellid -= 1 # for easy divisions
@@ -362,7 +362,7 @@ function getslicecell(meta::MetaData, slicelocation;
    depths = @MVector zeros(Int, maxamr+1)
    for i = 0:maxamr
       sliceoffset = floor(Int, sliceratio*nsize*2^i)
-      sliceoffset ≤ nsize*2^i || 
+      sliceoffset ≤ nsize*2^i ||
          throw(DomainError(sliceoffset, "slice plane index out of bound!"))
       depths[i+1] = sliceoffset
    end
@@ -497,7 +497,7 @@ function getnearestcellwithvdf(meta::MetaData, id)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords = Matrix{Float32}(undef, 3, length(cells))
-   @inbounds for i in eachindex(cells) 
+   @inbounds for i in eachindex(cells)
       coords[:,i] = getcellcoordinates(meta, cells[i])
    end
    coords_orig = getcellcoordinates(meta, id)
@@ -523,7 +523,7 @@ fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
-- `vtkGhostType::Array{UInt8}`: cell status (to be completed!). 
+- `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
 function fillmesh(meta::MetaData, vars; verbose=false)
    @unpack cellid, maxamr, fid, footer, ncells = meta
@@ -541,7 +541,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    celldata = [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
       for i = 0:maxamr] for iv in 1:nv]
 
-   vtkGhostType = 
+   vtkGhostType =
       [zeros(UInt8, ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i) for i = 0:maxamr]
 
    if maxamr == 0
@@ -566,15 +566,16 @@ function fillmesh(meta::MetaData, vars; verbose=false)
          ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
-      
-      cellid_origin = readvector(fid, footer, "CellID", "VARIABLE")   
+
+      cellid_origin = readvector(fid, footer, "CellID", "VARIABLE")
       rOffsets_raw = [findfirst(==(i), cellid_origin)-1 for i in ids]
-   
+
       if ilvl != maxamr
          for iv in nvarvg
             verbose && @info "reading variable $(vars[iv])..."
 
             data = Array{T[iv]}(undef, vsize[iv], length(ids))
+
             for (i, r) in enumerate(rOffsets_raw)
                seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
                read!(fid, @view data[:,i])

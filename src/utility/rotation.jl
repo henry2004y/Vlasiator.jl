@@ -18,7 +18,7 @@ function rotateTensorToVectorZ!(T, v)
    R * T * R'
 end
 
-""" 
+"""
     get_rotation_matrix(vector, angle)
 
 Creates a rotation matrix that rotates around a unit `vector` by an `angle` in

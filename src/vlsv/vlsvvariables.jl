@@ -240,7 +240,7 @@ const variables_predefined = Dict(
          V[i] == 0.0 && (V[i] = NaN)
       end
       VA = readvariable(meta, "VA")
-      V ./ VA 
+      V ./ VA
    end,
    "Vpar" => function (meta) # velocity ∥ B
       v = readvariable(meta, "proton/vg_v")
@@ -278,7 +278,7 @@ const variables_predefined = Dict(
       for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
-      @. P[3,3,:] / (n*kB) 
+      @. P[3,3,:] / (n*kB)
    end,
    "Tperp" => function (meta) # scalar T component ⟂ B
       P = readvariable(meta, "Protated")
@@ -290,7 +290,7 @@ const variables_predefined = Dict(
       @. Pperp / (n*kB)
    end,
    "Egradpe" => function (meta)
-      
+
    end,
    "Protated" => function (meta)
       # Rotate the pressure tensor to align the 3rd direction with B

@@ -125,7 +125,7 @@ function set_vector(meta::MetaData, var, comp, axisunit)
 
    if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
    else
       x = LinRange(plotrange[1], plotrange[2], sizes[1])
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
@@ -151,7 +151,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 - `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
 - `colorscale::ColorScale`: whether to use linear scale for data.
-- `vmin::Float`: minimum data range. Set to maximum of data if not specified. 
+- `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
@@ -220,7 +220,7 @@ It would be easier to call [`pcolormesh`](@ref).
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
 - `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`)
-- `vmin::Real`: minimum data range. Set to maximum of data if not specified. 
+- `vmin::Real`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Real`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 
@@ -281,7 +281,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
 
    if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re      
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
    else
       x = LinRange(plotrange[1], plotrange[2], sizes[1])
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
@@ -472,7 +472,7 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 - `vslicethick`: setting the velocity space slice thickness in the normal direction. If set
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
-velocity is selected! 
+velocity is selected!
 - `weight::Symbol`: choosing distribution weights from phase space density or particle flux
 between `:particle` and `:flux`.
 - `kwargs...`: any valid keyword argument for hist2d.
@@ -525,7 +525,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
       # post-multipop files with "V"
       Vbulk = readvariable(meta, "V", cidNearest)
    end
-      
+
    vcellids, vcellf = readvcells(meta, cidNearest; pop)
 
    V = getvcellcoordinates(meta, vcellids; pop)

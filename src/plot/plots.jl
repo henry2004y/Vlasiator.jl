@@ -27,7 +27,7 @@ using RecipesBase
    if startswith(var, "fg_") # fsgrid
       data = dataRaw
    else # vlasov grid
-      if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)       
+      if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
          data = reshape(dataRaw, sizes[1], sizes[2])
       elseif ndims(dataRaw) == 2
          dataRaw = reshape(dataRaw, 3, sizes...)
@@ -45,7 +45,7 @@ using RecipesBase
 
    if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Re      
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Re
    else
       x = LinRange(plotrange[1], plotrange[2], sizes[1])
       y = LinRange(plotrange[3], plotrange[4], sizes[2])

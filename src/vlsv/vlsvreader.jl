@@ -85,7 +85,7 @@ function getObjInfo(fid, footer, name, tag, attr)
 
    arraysize, datasize, datatype, vectorsize, variable_offset = 0, 0, "", 0, 0
    isFound = false
-   
+
    for varinfo in footer[tag]
       if attribute(varinfo, attr) == name
          arraysize = parse(Int, attribute(varinfo, "arraysize"))
@@ -152,7 +152,7 @@ function readmeta(filename::AbstractString; verbose=false)
    nodeCoordsX = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_X")
    nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
    nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
-  
+
    ncells = bbox[1:3]
    block_size = bbox[4:6]
    coordmin = [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
@@ -173,9 +173,9 @@ function readmeta(filename::AbstractString; verbose=false)
 
          bbox = readmesh(fid, footer, popname, "MESH_BBOX")
 
-         nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")   
-         nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")   
-         nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")   
+         nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")
+         nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")
+         nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")
          vblocks = bbox[1:3]
          vblock_size = bbox[4:6]
          vmin = [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
@@ -184,7 +184,7 @@ function readmeta(filename::AbstractString; verbose=false)
       else
          popname = "avgs"
 
-         if "vxblocks_ini" in attribute.(footer["PARAMETER"],"name") 
+         if "vxblocks_ini" in attribute.(footer["PARAMETER"],"name")
             # In VLSV before 5.0 the mesh is defined with parameters.
             vblocks = @MVector zeros(Int, 3)
             vblocks[1] = readparameter(fid, footer, "vxblocks_ini")
@@ -201,7 +201,7 @@ function readmeta(filename::AbstractString; verbose=false)
                readparameter(fid, footer, "vzmax") ]
             dv = @. (vmax - vmin) / vblocks / vblock_size
          else
-            # No velocity space info, e.g., file not written by Vlasiator 
+            # No velocity space info, e.g., file not written by Vlasiator
             vblocks = [0, 0, 0]
             vblock_size = [4, 4, 4]
             vmin, vmax, dv = zeros(3), zeros(3), ones(3)
@@ -209,7 +209,7 @@ function readmeta(filename::AbstractString; verbose=false)
       end
 
       # Update list of active populations
-      if popname ∉ populations 
+      if popname ∉ populations
          push!(populations, popname)
       end
 
@@ -218,9 +218,9 @@ function readmeta(filename::AbstractString; verbose=false)
 
       meshes[popname] = popVMesh
 
-      verbose && @info "Found population $popname" 
+      verbose && @info "Found population $popname"
    end
-   
+
    # Obtain maximum refinement level
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
@@ -245,7 +245,7 @@ end
 """
     readvariablemeta(meta, var) -> VarInfo
 
-Return VarInfo about `var` in the vlsv file linked to `meta`.           
+Return VarInfo about `var` in the vlsv file linked to `meta`.
 """
 function readvariablemeta(meta, var)
 
@@ -253,7 +253,7 @@ function readvariablemeta(meta, var)
 
    var = lowercase(var)
 
-   # Get population and variable names from data array name 
+   # Get population and variable names from data array name
    if occursin("/", var)
       popname, varname = split(var, "/")
    else
@@ -266,7 +266,7 @@ function readvariablemeta(meta, var)
             unit = attribute(varinfo, "unit")
             unitLaTeX = attribute(varinfo, "unitLaTeX")
             variableLaTeX = attribute(varinfo, "variableLaTeX")
-            unitConversion = attribute(varinfo, "unitConversion") 
+            unitConversion = attribute(varinfo, "unitConversion")
          end
       end
    elseif var in keys(units_predefined)
@@ -407,12 +407,12 @@ function getDomainDecomposition(globalsize, nprocs)
             i * j * k > nprocs && continue
 
             procBox[3] = max(globalsize[3]/k, 1)
-         
+
             nyz = i > 1 ? procBox[2] * procBox[3] : 0
             nzx = j > 1 ? procBox[1] * procBox[3] : 0
             nxy = k > 1 ? procBox[1] * procBox[2] : 0
 
-            v = 10*prod(procBox) + nyz + nzx + nxy            
+            v = 10*prod(procBox) + nyz + nzx + nxy
 
             if i * j * k == nprocs && v < minValue
                minValue = v
@@ -428,7 +428,7 @@ end
 function calcLocalStart(globalCells, nprocs, lcells)
    ncells = globalCells ÷ nprocs
    remainder = globalCells % nprocs
-   lstart = lcells < remainder ? 
+   lstart = lcells < remainder ?
       lcells*(ncells+1) + 1 :
       lcells*ncells + remainder + 1
 end
@@ -454,7 +454,7 @@ Return the parameter value from vlsv file.
 readparameter(meta::MetaData, param) = readparameter(meta.fid, meta.footer, param)
 
 function readparameter(fid, footer, param)
-   
+
    T, _, _, _, _ = getObjInfo(fid, footer, param, "PARAMETER", "name")
 
    p = read(fid, T)
@@ -470,12 +470,12 @@ hasparameter(meta::MetaData, param) = hasname(meta.footer, "PARAMETER", param)
 "Check if the XMLElement `elem` contains a `tag` with `name`."
 function hasname(elem, tag, name)
    isFound = false
-   
+
    for varinfo in elem[tag]
       attribute(varinfo, "name") == name && (isFound = true)
       isFound && break
    end
-   
+
    isFound
 end
 
@@ -491,7 +491,7 @@ Base.ndims(meta::MetaData) = count(>(1), meta.ncells)
 
 Check if VLSV file contains VDF.
 """
-function hasvdf(meta::MetaData) 
+function hasvdf(meta::MetaData)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    if isempty(cells)
       return false
