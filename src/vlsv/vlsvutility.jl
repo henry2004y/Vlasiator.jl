@@ -531,9 +531,11 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
-   vsize = @MVector zeros(Int, nv)
+   offset = @MVector zeros(Int, nv)
+   dsize  = @MVector zeros(Int, nv)
+   vsize  = @MVector zeros(Int, nv)
    for i = 1:nv
-      T[i], _, _, _, vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
+      T[i], offset[i], _, dsize[i], vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
    celldata = [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
@@ -553,7 +555,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    ncell = prod(ncells)
    nLow, nHigh = 0, ncell
 
-   for ilvl = 0:maxamr
+   @inbounds for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
       ids = cellid[nLow .< cellid .≤ nHigh]
 
@@ -562,20 +564,28 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 
       for id in idrefined
          ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
-         @inbounds vtkGhostType[ilvl+1][ix,iy,iz] = 8
+         vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
       
+      cellid_origin = readvector(fid, footer, "CellID", "VARIABLE")   
+      rOffsets_raw = [findfirst(==(i), cellid_origin)-1 for i in ids]
+   
       if ilvl != maxamr
          for iv in nvarvg
             verbose && @info "reading variable $(vars[iv])..."
-            data = readvariable(meta, vars[iv], ids)
+
+            data = Array{T[iv]}(undef, vsize[iv], length(ids))
+            for (i, r) in enumerate(rOffsets_raw)
+               seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
+               read!(fid, @view data[:,i])
+            end
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
                for (ic, id) in enumerate(ids)
                   ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .* r
                   for k = 1:r, j = 1:r, i = 1:r
-                     @inbounds celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,ic]
+                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,ic]
                   end
                end
             end
@@ -586,10 +596,14 @@ function fillmesh(meta::MetaData, vars; verbose=false)
             if startswith(var, "fg_")
                celldata[iv][end][:,:,:,:] = readvariable(meta, var)
             else
-               data = readvariable(meta, var, ids)
+               data = Array{T[iv]}(undef, vsize[iv], length(ids))
+               for (i, r) in enumerate(rOffsets_raw)
+                  seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
+                  read!(fid, @view data[:,i])
+               end
                for (ic, id) in enumerate(ids)
                   ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, id) .+ 1
-                  @inbounds celldata[iv][end][:,ix,iy,iz] = data[:,ic]
+                  celldata[iv][end][:,ix,iy,iz] = data[:,ic]
                end
             end
          end

@@ -375,8 +375,8 @@ function readvariable(meta::MetaData, var::AbstractString, ids)
 
    T, offset, _, datasize, vectorsize = getObjInfo(fid, footer, var, "VARIABLE", "name")
 
-   cellids = readvariable(meta, "CellID", false)
-   rOffsets = [(findfirst(x->x==i, cellids)-1)*datasize*vectorsize for i in ids]
+   cellid = readvector(fid, footer, "CellID", "VARIABLE")
+   rOffsets = [(findfirst(==(i), cellid)-1)*datasize*vectorsize for i in ids]
 
    v = Array{T}(undef, vectorsize, length(ids))
 
@@ -519,7 +519,7 @@ function readvcells(meta, cellid; pop="proton")
 
    # Check if cells have vspace stored
    if cellid ∈ cellsWithVDF
-      cellWithVDFIndex = findfirst(x->x==cellid, cellsWithVDF)
+      cellWithVDFIndex = findfirst(==(cellid), cellsWithVDF)
    else
       throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
    end
