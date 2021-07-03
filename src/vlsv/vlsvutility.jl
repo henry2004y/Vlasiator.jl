@@ -100,7 +100,7 @@ function getparent(meta::MetaData, cellid::Integer)
    else
       # get the first cellid on my level
       cid1st = get1stcell(mylvl, ncell) + 1
-      # get my row and column sequence on my level (starting with 0)
+      # get row and column sequence on my level (starting with 0)
       xcell = xcell*2^mylvl
       ycell = ycell*2^mylvl
 
@@ -243,9 +243,9 @@ function getcellcoordinates(meta::MetaData, cellid::Integer)
       cellid ÷ (xcell*ycell) ]
 
    coords = @SVector [
-      coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1])/xcell,
-      coordmin[2] + (indices[2] + 0.5) * (coordmax[2] - coordmin[2])/ycell,
-      coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3])/zcell ]
+      coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1]) / xcell,
+      coordmin[2] + (indices[2] + 0.5) * (coordmax[2] - coordmin[2]) / ycell,
+      coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3]) / zcell ]
 
    coords
 end
@@ -426,7 +426,7 @@ function refineslice(meta::MetaData, idlist, data, normal)
    ncell = prod(ncells)
    nHigh, nLow = ncell, 0
 
-   for i = 0:maxamr
+   @inbounds for i = 0:maxamr
       ids = idlist[nLow .< idlist .≤ nHigh]
       d = data[nLow .< idlist .≤ nHigh]
 
@@ -442,17 +442,18 @@ function refineslice(meta::MetaData, idlist, data, normal)
       end
 
       # Insert the data values into dpoints
-      iRange = 0:2^(maxamr - i)-1
+      refineRatio = 2^(maxamr - i)
+      iRange = 0:refineRatio-1
       X = [x for x in iRange, _ in iRange]
       Y = [y for _ in iRange, y in iRange]
 
       coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
-      @inbounds for ic in eachindex(a, b), ir = 1:2^((maxamr-i)*2)
-         coords[1,ic,ir] = a[ic]*2^(maxamr - i) + 1 + X[ir]
-         coords[2,ic,ir] = b[ic]*2^(maxamr - i) + 1 + Y[ir]
+      for ic in eachindex(a, b), ir = 1:2^(2*(maxamr-i))
+         coords[1,ic,ir] = muladd(a[ic], refineRatio, 1+X[ir])
+         coords[2,ic,ir] = muladd(b[ic], refineRatio, 1+Y[ir])
       end
 
-      @inbounds for ic in eachindex(d)
+      for ic in eachindex(d)
          dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
       end
 
@@ -465,13 +466,12 @@ end
 
 "Compute every cell id's x, y and z indexes on the given refinement level (0-based)."
 @inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, ids)
-
    slicesize = xcells*ycells*4^ilevel
 
    iz = @. (ids - nCellUptoLowerLvl - 1) ÷ slicesize
 
    # number of ids up to the coordinate z in the refinement level ilevel
-   idUpToZ = @. iz*slicesize + nCellUptoLowerLvl
+   idUpToZ = muladd.(iz, slicesize, nCellUptoLowerLvl)
 
    iy = @. (ids - idUpToZ - 1) ÷ (xcells*2^ilevel)
    ix = @. ids - idUpToZ - iy*xcells*2^ilevel - 1
@@ -482,7 +482,7 @@ end
 @inline function getindexes(ilvl, xcells, ycells, nCellUptoLowerLvl, id::Int)
    slicesize = xcells*ycells*4^ilvl
    iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
-   idUpToZ = iz*slicesize + nCellUptoLowerLvl
+   idUpToZ = muladd(iz, slicesize, nCellUptoLowerLvl)
    iy = (id - idUpToZ - 1) ÷ (xcells*2^ilvl)
    ix = id - idUpToZ - iy*xcells*2^ilvl - 1
    ix, iy, iz
@@ -506,7 +506,7 @@ function getnearestcellwithvdf(meta::MetaData, id)
 end
 
 
-"Return the first cellid - 1 on my level."
+"Return the first cellid - 1 on `mylevel` given `ncells` on this level."
 function get1stcell(mylevel, ncells)
    cid1st = 0
    for i = 0:mylevel-1
@@ -518,7 +518,7 @@ end
 fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
 
 """
-    fillmesh(meta::MetaData, vars; verbose=false)
+    fillmesh(meta::MetaData, vars; verbose=false) -> celldata, vtkGhostType
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return arguments
@@ -535,7 +535,8 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    dsize  = @MVector zeros(Int, nv)
    vsize  = @MVector zeros(Int, nv)
    for i = 1:nv
-      T[i], offset[i], _, dsize[i], vsize[i] = getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
+      T[i], offset[i], _, dsize[i], vsize[i] =
+         getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
    celldata = [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
@@ -567,8 +568,8 @@ function fillmesh(meta::MetaData, vars; verbose=false)
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
 
-      cellid_origin = readvector(fid, footer, "CellID", "VARIABLE")
-      rOffsets_raw = [findfirst(==(i), cellid_origin)-1 for i in ids]
+      cellid_raw = readvector(fid, footer, "CellID", "VARIABLE")
+      rOffsets_raw = [findfirst(==(i), cellid_raw)-1 for i in ids]
 
       if ilvl != maxamr
          for iv in nvarvg
