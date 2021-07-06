@@ -14,12 +14,13 @@ const Re = 6.371e6          # Earth radius, [m]
 
 export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
-   getcellinline, getnearestcellwithvdf, write_vtk, compare
+   getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, compare
 
 """
     getcell(meta, location) -> Int
 
 Return cell ID containing the given spatial `location`, excluding domain boundaries.
+Only accept 3D location.
 """
 function getcell(meta::MetaData, loc)
    @unpack coordmin, coordmax, dcoord, ncells = meta
@@ -504,6 +505,14 @@ function getnearestcellwithvdf(meta::MetaData, id)
    d2 = sum((coords .- coords_orig).^2, dims=1)
    cells[argmin(d2)[2]]
 end
+
+"""
+    getcellwithvdf(meta) -> cellids
+
+Get all the cell IDs with VDF saved.
+"""
+getcellwithvdf(meta::MetaData) =
+   readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
 
 
 "Return the first cellid - 1 on `mylevel` given `ncells` on this level."
