@@ -495,7 +495,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
 
    cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
-   unit == RE && (location ./= Vlasiator.Re)
+   unit == RE && (location .*= Vlasiator.Re)
 
    # Calculate cell ID from given coordinates
    cidReq = getcell(meta, location)
