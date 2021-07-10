@@ -14,7 +14,7 @@ const Re = 6.371e6          # Earth radius, [m]
 
 export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
-   getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, compare
+   getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, vlsvdiff
 
 """
     getcell(meta, location) -> Int
@@ -733,11 +733,11 @@ end
 
 
 """
-    compare(filename1, filename2, tol=1e-4) -> Bool
+    vlsvdiff(filename1, filename2, tol=1e-4) -> Bool
 
 Check if two VLSV files are approximately identical.
 """
-function compare(f1, f2, tol::AbstractFloat=1e-4)
+function vlsvdiff(f1, f2, tol::AbstractFloat=1e-4)
    # 1st sanity check: minimal filesize difference
    if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
       return false
@@ -761,6 +761,7 @@ function compare(f1, f2, tol::AbstractFloat=1e-4)
          break
       end
    end
+   !isIdentical && println("$f1 and $f2 are identical under tolerance $tol.") 
    close(meta1.fid)
    close(meta2.fid)
    return isIdentical
