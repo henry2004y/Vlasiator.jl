@@ -740,6 +740,7 @@ Check if two VLSV files are approximately identical.
 function vlsvdiff(f1, f2, tol::AbstractFloat=1e-4)
    # 1st sanity check: minimal filesize difference
    if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
+      println("The sizes of files are already quite different!")
       return false
    end
 
