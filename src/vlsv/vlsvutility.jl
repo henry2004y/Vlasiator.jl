@@ -449,7 +449,7 @@ function refineslice(meta::MetaData, idlist, data, normal)
       Y = [y for _ in iRange, y in iRange]
 
       coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
-      for ic in eachindex(a, b), ir = 1:2^(2*(maxamr-i))
+      @fastmath for ic in eachindex(a, b), ir = 1:2^(2*(maxamr-i))
          coords[1,ic,ir] = muladd(a[ic], refineRatio, 1+X[ir])
          coords[2,ic,ir] = muladd(b[ic], refineRatio, 1+Y[ir])
       end
@@ -543,7 +543,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
    offset = @MVector zeros(Int, nv)
    dsize  = @MVector zeros(Int, nv)
    vsize  = @MVector zeros(Int, nv)
-   for i = 1:nv
+   @inbounds for i = 1:nv
       T[i], offset[i], _, dsize[i], vsize[i] =
          getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
@@ -555,7 +555,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
       [zeros(UInt8, ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i) for i = 0:maxamr]
 
    if maxamr == 0
-      for iv = 1:nv
+      @inbounds for iv = 1:nv
          celldata[iv][1][:] = readvariable(meta, vars[iv])
       end
       return celldata, vtkGhostType
@@ -643,7 +643,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
    append = ascii ? false : true
 
    filedata = Vector{String}(undef, maxamr+1)
-   for i in 1:maxamr+1
+   @inbounds for i in 1:maxamr+1
       filedata[i] = meta.name[1:end-5]*"_$i.vti"
    end
 
@@ -659,7 +659,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
          append)
    else
       # Generate image file on each refinement level
-      for i in eachindex(vtkGhostType, filedata)
+      @inbounds for i in eachindex(vtkGhostType, filedata)
          fdata, ghost = filedata[i], vtkGhostType[i]
          save_image(meta, fdata, vars, data, ghost, i-1, append)
       end
@@ -677,7 +677,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
       set_attribute(xamr, "origin", origin)
       set_attribute(xamr, "grid_description", "XYZ")
 
-      for i = 0:maxamr
+      @inbounds for i = 0:maxamr
          xBlock = new_child(xamr, "Block")
          set_attribute(xBlock, "level", string(i))
          spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
@@ -722,7 +722,7 @@ function save_image(meta::MetaData, file, vars, data, vtkGhostType, level, ascii
    vtk = vtk_grid(file, ncells[1]*ratio+1, ncells[2]*ratio+1, ncells[3]*ratio+1;
       origin, spacing, append, ascii)
 
-   for (iv, var) in enumerate(vars)
+   @inbounds for (iv, var) in enumerate(vars)
       vtk[var, VTKCellData()] = data[iv][level+1]
    end
 
@@ -737,10 +737,10 @@ end
 
 Check if two VLSV files are approximately identical.
 """
-function vlsvdiff(f1, f2, tol::AbstractFloat=1e-4)
+function vlsvdiff(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
    # 1st sanity check: minimal filesize difference
    if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
-      println("The sizes of files are already quite different!")
+      verbose && println("The sizes of files are already quite different!")
       return false
    end
 
@@ -758,11 +758,11 @@ function vlsvdiff(f1, f2, tol::AbstractFloat=1e-4)
       s1, s2 = sum(v1), sum(v2)
       if abs(s1 - s2) > tol * abs(s1) && abs(s1 - s2) > tol * abs(s2)
          isIdentical = false
-         println("$vname is quite different!")
+         verbose && println("$vname is quite different!")
          break
       end
    end
-   isIdentical && println("$f1 and $f2 are identical under tolerance $tol.") 
+   verbose && isIdentical && println("$f1 and $f2 are identical under tolerance $tol.") 
    close(meta1.fid)
    close(meta2.fid)
    return isIdentical
