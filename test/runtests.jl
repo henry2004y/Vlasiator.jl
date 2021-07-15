@@ -111,7 +111,7 @@ end
 
 
          # Compare two VLSV files
-         @test vlsvdiff(filenames[1], filenames[1])
+         @test issame(filenames[1], filenames[1])
 
          # Explicit IO closure required by Windows
          close(meta.fid)

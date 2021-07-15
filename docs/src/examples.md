@@ -48,10 +48,10 @@ One may want to check if two vlsv files are identical. This is tricky because
 The key is that we should not check quantities that are related to MPI writing sequence: for some reasons, even file sizes may vary depending on the number of MPI processes!
 
 ```
-vlsvdiff(filename1, filename2)
+issame(filename1, filename2)
 ```
 
-There is an optional third argument to `vlsvdiff` for setting the relative difference tolerance, with default being 1e-4.
+There is an optional third argument to `issame` for setting the relative difference tolerance, with default being 1e-4.
 In practice relative difference works better for "large" numbers, and absolute difference works better for "small" numbers.
 
 
