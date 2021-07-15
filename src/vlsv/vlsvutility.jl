@@ -2,6 +2,7 @@
 
 using LinearAlgebra: dot
 using WriteVTK, Printf
+using LazyGrids: ndgrid
 
 const qₑ = -1.60217662e-19  # electron charge, [C]
 const mₑ = 9.10938356e-31   # electron mass, [kg]
@@ -445,8 +446,7 @@ function refineslice(meta::MetaData, idlist, data, normal)
       # Insert the data values into dpoints
       refineRatio = 2^(maxamr - i)
       iRange = 0:refineRatio-1
-      X = [x for x in iRange, _ in iRange]
-      Y = [y for _ in iRange, y in iRange]
+      X, Y = ndgrid(iRange, iRange)
 
       coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
       @fastmath for ic in eachindex(a, b), ir = 1:2^(2*(maxamr-i))

@@ -131,7 +131,7 @@ function set_vector(meta::MetaData, var, comp, axisunit)
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
    end
 
-   # Be careful about array ordering difference between Julia and Python!
+   # meshgrid: note the array ordering difference between Julia and Python!
    X = [i for _ in y, i in x]
    Y = [j for j in y, _ in x]
 
