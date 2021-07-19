@@ -387,15 +387,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
    strx = axislabels[1]*"["*unitstr*"]"
    stry = axislabels[2]*"["*unitstr*"]"
 
-   if hasparameter(meta, "t")
-      timesim = readparameter(meta, "t")
-      str_title = @sprintf "t= %4.1fs" timesim
-   elseif hasparameter(meta, "time")
-      timesim = readparameter(meta, "time")
-      str_title = @sprintf "t= %4.1fs" timesim
-   else
-      str_title = ""
-   end
+   str_title = @sprintf "t= %4.1fs" meta.time
 
    datainfo = readvariablemeta(meta, var)
 
@@ -557,15 +549,7 @@ function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    f = vcellf[fselect_]
    V = V[:,fselect_]
 
-   if hasparameter(meta, "t")
-      timesim = readparameter(meta, "t")
-      str_title = @sprintf "t= %4.1fs" timesim
-   elseif hasparameter(meta, "time")
-      timesim = readparameter(meta, "time")
-      str_title = @sprintf "t= %4.1fs" timesim
-   else
-      str_title = ""
-   end
+   str_title = @sprintf "t= %4.1fs" meta.time
 
    # Set normal direction
    if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz

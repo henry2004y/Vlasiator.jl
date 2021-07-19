@@ -41,6 +41,7 @@ struct MetaData
    cellid::Vector{UInt64}
    "ordered sequence index of raw cell IDs"
    cellIndex::Vector{Int64}
+   time::Float64
    maxamr::Int64
    ncells::Vector{Int64}
    block_size::Vector{Int64}
@@ -54,6 +55,7 @@ end
 
 function Base.show(io::IO, meta::MetaData)
    println(io, "filename = ", meta.name)
+   println(io, "time = ", meta.time)
    println(io, "dimension: $(ndims(meta))")
    println(io, "maximum AMR level: $(meta.maxamr)")
    println(io, "contains VDF: $(hasvdf(meta))")
@@ -221,6 +223,14 @@ function readmeta(filename::AbstractString; verbose=false)
       verbose && @info "Found population $popname"
    end
 
+   if hasname(footer, "PARAMETER", "t")
+      timesim = readparameter(fid, footer, "t")
+   elseif hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
+      timesim = readparameter(fid, footer, "time")
+   else
+      timesim = Inf
+   end
+
    # Obtain maximum refinement level
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
@@ -235,10 +245,10 @@ function readmeta(filename::AbstractString; verbose=false)
       @inbounds vars[i] = attribute(footer["VARIABLE"][i], "name")
    end
 
-   #close(fid) # Is it safe not to close it?
+   # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaData(filename, fid, footer, vars, cellid[cellIndex], cellIndex, maxamr,
-      ncells, block_size, coordmin, coordmax, dcoord, populations, meshes)
+   meta = MetaData(filename, fid, footer, vars, cellid[cellIndex], cellIndex, timesim,
+      maxamr, ncells, block_size, coordmin, coordmax, dcoord, populations, meshes)
 end
 
 
