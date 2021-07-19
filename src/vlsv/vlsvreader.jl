@@ -55,7 +55,7 @@ end
 
 function Base.show(io::IO, meta::MetaData)
    println(io, "filename = ", meta.name)
-   println(io, "time = ", meta.time)
+   println(io, "time = ", round(meta.time, digits=2))
    println(io, "dimension: $(ndims(meta))")
    println(io, "maximum AMR level: $(meta.maxamr)")
    println(io, "contains VDF: $(hasvdf(meta))")
