@@ -175,6 +175,13 @@ pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 plot_vdf(meta, coordinates)
 ```
 
+- Extracted quantity line plot:
+```
+rho_extracted = vec(rho_extracted)
+loc = range(x1, x2, length=length(rho_extracted))
+plot(loc, rho)
+```
+
 ### Plots Backend
 
 To trigger the Plots package plotting, `using Plots`.
