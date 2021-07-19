@@ -177,9 +177,9 @@ plot_vdf(meta, coordinates)
 
 - Extracted quantity line plot:
 ```
-rho_extracted = vec(rho_extracted)
-loc = range(x1, x2, length=length(rho_extracted))
-plot(loc, rho)
+rho_extract = vec(rho_extract)
+loc = range(x1, x2, length=length(rho_extract))
+plot(loc, rho_extract)
 ```
 
 ### Plots Backend
