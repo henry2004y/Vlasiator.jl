@@ -11,7 +11,7 @@ AxesGrid = axes_grid1.AxesGrid
 filename = "bulk1.0001000.vlsv"
 nameρ = "proton/vg_rho"
 
-meta = readmeta(filename)
+meta = load(filename)
 
 # normal cuts in the x,y,z directions
 fig = plt.figure(figsize=(12, 4))

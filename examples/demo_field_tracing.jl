@@ -13,7 +13,7 @@ filename = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
 
-meta = readmeta(filename)
+meta = load(filename)
 
 pcolormesh(meta, nameρ)
 

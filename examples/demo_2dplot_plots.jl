@@ -13,7 +13,7 @@ nameV = "rho_v"
 
 boxcoords = [0, 20, -15, 15]
 
-meta = readmeta(filename)
+meta = load(filename)
 
 heatmap(meta, nameρ, 
    xlim=(boxcoords[1], boxcoords[2]),

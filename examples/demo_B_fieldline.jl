@@ -9,7 +9,7 @@
 using Vlasiator, PyPlot, FieldTracer
 
 filename = "bulk.0000999.vlsv"
-meta = readmeta(filename)
+meta = load(filename)
 coordmin, coordmax, ncells = meta.coordmin, meta.coordmax, meta.ncells
 pcolormesh(meta, "proton/vg_rho", colorscale=Linear)
 

@@ -21,7 +21,7 @@ data_series = zeros(Float32, length(filenames))
 
 # Extract data from each frame
 Threads.@threads for i = 1:length(filenames)
-   meta = readmeta(filenames[i])
+   meta = load(filenames[i])
    id = getcell(meta, loc)
    data_series[i] = readvariable(meta, var, id)[1][1]
 end
@@ -36,7 +36,7 @@ point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 
 # Extract data along the line segment in one snapshot
-meta = readmeta(filenames[1])
+meta = load(filenames[1])
 cellIDs, distances, coords = getcellinline(meta, point1, point2)
 
 ## Visualization

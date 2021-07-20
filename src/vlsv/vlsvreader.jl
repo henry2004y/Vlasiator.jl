@@ -6,7 +6,7 @@ using LightXML, FLoops
 
 export MetaData, VarInfo
 export hasvariable, hasparameter, hasname, hasvdf
-export readmeta, readvariable, readparameter, readvariablemeta, readvcells
+export load, readvariable, readparameter, readvariablemeta, readvcells
 export ndims, getvcellcoordinates
 
 "Velocity mesh information."
@@ -133,11 +133,11 @@ end
 
 
 """
-    readmeta(filename; verbose=false) -> MetaData
+    load(filename; verbose=false) -> MetaData
 
 Return MetaData from a vlsv file.
 """
-function readmeta(filename::AbstractString; verbose=false)
+function load(filename::AbstractString; verbose=false)
    isfile(filename) || throw(ArgumentError("Cannot open \'$filename\': not a file"))
    fid = open(filename, "r")
 

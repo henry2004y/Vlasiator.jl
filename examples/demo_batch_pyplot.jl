@@ -11,7 +11,7 @@ using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
 filenames = glob("out/bulk*.vlsv")
 nfile = length(filenames)
 
-meta = readmeta(filenames[1])
+meta = load(filenames[1])
 vardict = Dict("v"=>"proton/vg_v", "rho"=>"proton/vg_rho", "b"=>"vg_b_vol", "b2"=>"fg_b")
 varname = "rho"
 
@@ -31,7 +31,7 @@ cnorm, cticks = set_colorbar(pArgs)
 
 for (i, filename) in enumerate(filenames)
    @info "$i out of $nfile"
-   local meta = readmeta(filename)
+   local meta = load(filename)
 
    var = readvariable(meta, vardict[varname])
    t = readparameter(meta, "time")

@@ -696,7 +696,7 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
    return
 end
 
-write_vtk(filename; kwargs...) = write_vtk(readmeta(filename); kwargs...)
+write_vtk(filename; kwargs...) = write_vtk(load(filename); kwargs...)
 
 """
     save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
@@ -744,8 +744,8 @@ function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
       return false
    end
 
-   meta1 = readmeta(f1)
-   meta2 = readmeta(f2)
+   meta1 = load(f1)
+   meta2 = load(f2)
    varnames = meta1.variable
    strskip = r"CellID|rank|blocks"
    deleteat!(varnames, findall(endswith(strskip), varnames))

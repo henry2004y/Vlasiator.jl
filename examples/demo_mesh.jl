@@ -7,7 +7,7 @@
 using Vlasiator, PyPlot
 
 filename = "test/data/bulk.amr.vlsv"
-meta = readmeta(filename)
+meta = load(filename)
 
 fig = plt.figure()
 

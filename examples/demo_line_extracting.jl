@@ -6,7 +6,7 @@ using Vlasiator, Glob, PyPlot, Printf
 
 filenames = glob("run4/bulk*.vlsv")
 
-meta = readmeta(filenames[1])
+meta = load(filenames[1])
 
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]
@@ -35,7 +35,7 @@ for (i, filename) in enumerate(filenames)
 
    fnameout = lpad(i, ndigits, '0')*".png"
 
-   local meta = readmeta(filename)
+   local meta = load(filename)
    local rho = readvariable(meta, "proton/vg_rho", cellids)
    local v = readvariable(meta, "proton/vg_v", cellids)
    local vx = Vector{Float64}(undef, size(v,1))

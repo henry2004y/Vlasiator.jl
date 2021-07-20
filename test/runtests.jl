@@ -32,8 +32,8 @@ end
 
    if group in (:read, :all)
       @testset "Reading files" begin
-         @test_throws ArgumentError readmeta("data")
-         meta = readmeta(filenames[1])
+         @test_throws ArgumentError load("data")
+         meta = load(filenames[1])
          @test ndims(meta) == 1
          @test startswith(repr(meta), "filename = bulk.1d.vlsv")
          # Variable strings reading
@@ -81,7 +81,7 @@ end
          @test_throws ArgumentError readvcells(meta, 20)
 
          # AMR data reading, DCCRG grid
-         metaAMR = readmeta(filenames[3])
+         metaAMR = load(filenames[3])
          sliceoffset = abs(metaAMR.coordmin[2])
          idlist, indexlist = getslicecell(metaAMR, sliceoffset;
             ymin=metaAMR.coordmin[2], ymax=metaAMR.coordmax[2])
@@ -121,11 +121,11 @@ end
 
    if group in (:derive, :all)
       @testset "Derived variables" begin
-         meta = readmeta(filenames[1])
+         meta = load(filenames[1])
          @test readvariable(meta, "Vmag") |> sortperm == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
          close(meta.fid)
 
-         meta = readmeta(filenames[2])
+         meta = load(filenames[2])
          @test readvariable(meta, "Bmag")[4] ≈ 3.005215661015543e-9
 
          @test readvariable(meta, "VS") |> nanmaximum == 1.3726345926284448e6
@@ -170,11 +170,11 @@ end
 
    if group in (:vtk, :all)
       @testset "VTK" begin
-         meta = readmeta(filenames[2]) # no amr
+         meta = load(filenames[2]) # no amr
          data, ghostType = Vlasiator.fillmesh(meta, "proton/vg_rho")
          @test size(data[1][1]) == (1, 63, 100, 1)
          close(meta.fid)
-         meta = readmeta(filenames[3]) # amr
+         meta = load(filenames[3]) # amr
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
          @test sha_str == "b127749f30b23d08c814cf169cfaf7fee954bdce"
@@ -198,7 +198,7 @@ end
          using PyPlot
          ENV["MPLBACKEND"]="agg" # no GUI
          # 1D
-         meta = readmeta(filenames[1])
+         meta = load(filenames[1])
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == readvariable(meta, "proton/vg_rho")
@@ -227,7 +227,7 @@ end
          close(meta.fid)
 
          # 2D
-         meta = readmeta(filenames[2])
+         meta = load(filenames[2])
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
          p = pcolormesh(meta, "fg_b")
@@ -240,7 +240,7 @@ end
          close(meta.fid)
 
          # 3D AMR
-         meta = readmeta(filenames[3])
+         meta = load(filenames[3])
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
          @test_throws ArgumentError pcolormesh(meta, "fg_b")

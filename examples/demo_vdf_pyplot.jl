@@ -7,7 +7,7 @@ using Vlasiator, PyPlot
 
 filename = "bulk.0000001.vlsv"
 
-meta = readmeta(filename)
+meta = load(filename)
 
 coordinates = [0.0, 0.0, 0.0]
 
