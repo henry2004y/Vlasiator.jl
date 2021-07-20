@@ -22,18 +22,18 @@ const SUITE = BenchmarkGroup()
 
 SUITE["read"] = BenchmarkGroup(["variable"])
 filename = joinpath(directory, filenames[2])
-meta = readmeta(filename)
-SUITE["read"]["meta"] = @benchmarkable readmeta($filename)
+meta = load(filename)
+SUITE["read"]["meta"] = @benchmarkable load($filename)
 SUITE["read"]["DCCRG"] = @benchmarkable readvariable($meta, "proton/vg_rho")
 ids = 3000:6300
 SUITE["read"]["DCCRG_select"] = @benchmarkable readvariable($meta, "proton/vg_rho", $ids)
 SUITE["read"]["FG"] = @benchmarkable readvariable($meta, "fg_b")
 filename = joinpath(directory, filenames[1])
-meta = readmeta(filename)
+meta = load(filename)
 SUITE["read"]["VDF"] = @benchmarkable readvcells($meta, 2; pop="proton")
 
 SUITE["VTK"] = BenchmarkGroup(["conversion"])
 filename = joinpath(directory, filenames[3])
-meta = readmeta(filename)
+meta = load(filename)
 SUITE["VTK"]["AMR"] = @benchmarkable Vlasiator.fillmesh($meta,
    $["proton/vg_rho", "proton/vg_v", "fg_b", "vg_boundarytype"])
