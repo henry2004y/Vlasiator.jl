@@ -1,7 +1,7 @@
 name = "Vlasiator"
 uuid = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
 authors = ["Hongyang Zhou <hongyang.zhou@helsinki.fi>"]
-version = "0.6.6"
+version = "0.6.7"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -10,6 +10,7 @@ LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LazyGrids = "7031d0ef-c40d-4431-b2f8-61a8d2f650db"
 LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Mmap = "a63ad114-7e13-5084-954f-fe012c677804"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"

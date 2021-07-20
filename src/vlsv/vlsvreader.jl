@@ -2,7 +2,7 @@
 
 include("vlsvvariables.jl")
 
-using LightXML, FLoops
+using Mmap, LightXML, FLoops
 
 export MetaData, VarInfo
 export hasvariable, hasparameter, hasname, hasvdf
@@ -117,20 +117,21 @@ end
 
 "Return vector data from vlsv file."
 function readvector(fid, footer, name, tag)
+   T, _, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
-   T, _, arraysize, _, vectorsize = getObjInfo(fid, footer, name, tag, "name")
-
-   if vectorsize == 1
-      w = Vector{T}(undef, arraysize)
+   if Sys.free_memory() > 10^9 + arraysize*vectorsize*datasize # > 1GB of available memory
+      w = vectorsize == 1 ?
+         Vector{T}(undef, arraysize) :
+         Array{T,2}(undef, vectorsize, arraysize)
+      read!(fid, w)
    else
-      w = Array{T,2}(undef, vectorsize, arraysize)
+      w = vectorsize == 1 ?
+         Mmap.mmap(fid, Vector{T}, arraysize) :
+         Mmap.mmap(fid, Array{T,2}, (vectorsize, arraysize))
    end
-
-   read!(fid, w)
 
    w
 end
-
 
 """
     load(filename; verbose=false) -> MetaData
