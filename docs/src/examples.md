@@ -5,7 +5,7 @@
 - Read meta data
 ```
 filename = "bulk.0000004.vlsv"
-meta = readmeta(filename)
+meta = load(filename)
 ```
 
 This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and populations, which can then be passed into all kinds of methods that process the data. 
@@ -254,7 +254,7 @@ jl = Julia(compiled_modules=False)
 
 from julia import Vlasiator
 filename = "bulk1.0001000.vlsv"
-meta = Vlasiator.readmeta(filename)
+meta = Vlasiator.load(filename)
 var = "proton/vg_rho"
 data = Vlasiator.readvariable(meta, var)
 ```
