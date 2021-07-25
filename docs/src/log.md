@@ -2,7 +2,7 @@
 
 ## Precision
 
-For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we consistently use Float32 in Vlasiator.jl.
+For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we consistently use `Float32` in Vlasiator.jl. (Not exactly, in fact in VDF plots we are still using double precision if `f` is saved in `Float64`.)
 
 ## Performance
 
