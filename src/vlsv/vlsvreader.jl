@@ -260,8 +260,6 @@ Return VarInfo about `var` in the vlsv file linked to `meta`.
 """
 function readvariablemeta(meta, var)
 
-   unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
-
    var = lowercase(var)
 
    # Get population and variable names from data array name
@@ -271,19 +269,30 @@ function readvariablemeta(meta, var)
       popname, varname = "pop", var
    end
 
+   unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
+   unitR, unitLaTeXR, variableLaTeXR, unitConversionR = "", "", "", ""
+
    if hasvariable(meta, var) # For Vlasiator 5 vlsv files, metadata is included
       for varinfo in meta.footer["VARIABLE"]
          if attribute(varinfo, "name") == var
-            unit = attribute(varinfo, "unit")
-            unitLaTeX = attribute(varinfo, "unitLaTeX")
-            variableLaTeX = attribute(varinfo, "variableLaTeX")
-            unitConversion = attribute(varinfo, "unitConversion")
+            unitR = attribute(varinfo, "unit")
+            unitLaTeXR = attribute(varinfo, "unitLaTeX")
+            variableLaTeXR = attribute(varinfo, "variableLaTeX")
+            unitConversionR = attribute(varinfo, "unitConversion")
          end
       end
-   elseif var in keys(units_predefined)
-      unit = units_predefined[var]
-      variableLaTeX = latex_predefined[var]
-      unitLaTeX = latexunits_predefined[var]
+   end
+   if isnothing(unitR)
+      if var in keys(units_predefined)
+         unit = units_predefined[var]
+         variableLaTeX = latex_predefined[var]
+         unitLaTeX = latexunits_predefined[var]
+      else
+         unit = unitR
+         unitLaTeX = unitLaTeXR
+         variableLaTeX = variableLaTeXR
+         unitConversion = unitConversionR
+      end
    end
 
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
@@ -312,25 +321,25 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
       return data
    end
 
-   data = readvector(fid, footer, var, "VARIABLE")
+   dataV = readvector(fid, footer, var, "VARIABLE")
 
    if startswith(var, "fg_") # fsgrid
       bbox = readmesh(fid, footer, "fsgrid", "MESH_BBOX")
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")
 
-      if ndims(data) > 1
-         orderedData = zeros(Float32, size(data,1), bbox[1:3]...)
+      if ndims(dataV) > 1
+         dataOrdered = zeros(Float32, size(dataV,1), bbox[1:3]...)
       else
-         orderedData = zeros(Float32, bbox[1:3]...)
+         dataOrdered = zeros(Float32, bbox[1:3]...)
       end
 
       fgDecomposition = getDomainDecomposition(bbox[1:3], nIORanks)
 
-      currentOffset = ones(Int, nIORanks+1)
+      currentOffset = ones(UInt32, nIORanks+1)
       lsize = ones(Int, 3, nIORanks)
       lstart = similar(lsize)
-      @inbounds @floop for i = 0:nIORanks-1
+      @inbounds @views @floop for i = 0:nIORanks-1
          x = i ÷ fgDecomposition[3] ÷ fgDecomposition[2]
          y = i ÷ fgDecomposition[3] % fgDecomposition[2]
          z = i % fgDecomposition[3]
@@ -343,29 +352,34 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
       end
 
       @inbounds @floop for i = 1:nIORanks
-         lend = lstart[:,i] + lsize[:,i] .- 1
+         lend = @views lstart[:,i] + lsize[:,i] .- 1
 
          # Reorder data
-         if ndims(data) > 1
-            ldata = data[:,currentOffset[i]:currentOffset[i+1]-1]
-            ldata = reshape(ldata, size(data,1), lsize[:,i]...)
+         if ndims(dataV) > 1
+            ldata = dataV[:,currentOffset[i]:currentOffset[i+1]-1]
+            ldata = reshape(ldata, size(dataV,1), lsize[:,i]...)
 
-            orderedData[:,lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] =
+            dataOrdered[:,lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] =
                ldata
          else
-            ldata = data[currentOffset[i]:currentOffset[i+1]-1]
+            ldata = dataV[currentOffset[i]:currentOffset[i+1]-1]
             ldata = reshape(ldata, lsize[:,i]...)
 
-            orderedData[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
+            dataOrdered[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
          end
       end
-      data = dropdims(orderedData, dims=(findall(size(orderedData) .== 1)...,))
+      data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      if ndims(data) == 1
-         data = data[cellIndex]
-      elseif ndims(data) == 2
-         data = data[:, cellIndex]
+      if ndims(dataV) == 1
+         data = dataV[cellIndex]
+      elseif ndims(dataV) == 2
+         data = dataV[:, cellIndex]
       end
+      if eltype(data) == Float64
+         data = Float32.(data)
+      end
+   else
+      data = dataV
    end
    return data
 end

@@ -128,26 +128,26 @@ end
          meta = load(filenames[2])
          @test readvariable(meta, "Bmag")[4] ≈ 3.005215661015543e-9
 
-         @test readvariable(meta, "VS") |> nanmaximum == 1.3726345926284448e6
+         @test readvariable(meta, "VS") |> nanmaximum == 1.3726346123826832e6
 
-         @test readvariable(meta, "VA") |> nanmaximum == 2.3202627284651753e8
+         @test readvariable(meta, "VA") |> nanmaximum == 2.3202628822256166e8
 
-         @test readvariable(meta, "MA")[end] == 10.700530888660992
+         @test readvariable(meta, "MA")[end] == 10.700530839822328
 
-         @test readvariable(meta, "Vpar")[1] == 698735.3045881701
+         @test readvariable(meta, "Vpar")[1] == 698735.3f0
 
-         @test readvariable(meta, "Vperp")[1] == 40982.48109657114
+         @test readvariable(meta, "Vperp")[1] == 40982.48f0
 
-         @test readvariable(meta, "T")[1] == 347619.97307130496
+         @test readvariable(meta, "T")[1] == 347619.9817319378
 
-         @test readvariable(meta, "Beta")[1] == 1.3359065776791028
+         @test readvariable(meta, "Beta")[1] == 1.3359065984817116
 
          Poynting = readvariable(meta, "Poynting")
          @test Poynting[:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         @test readvariable(meta, "IonInertial")[1] == 8.584026161906034e7
+         @test readvariable(meta, "IonInertial")[1] == 8.584026203089327e7
 
-         @test readvariable(meta, "Larmor")[1] == 142415.61376655987
+         @test readvariable(meta, "Larmor")[1] == 142415.61236345078
 
          #Anisotropy = readvariable(meta, "Anisotropy")
 
