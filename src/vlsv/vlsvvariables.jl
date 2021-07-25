@@ -177,8 +177,8 @@ const variables_predefined = Dict(
    "Bmag" => function (meta)
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_])
-      Bmag = vec(sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)))
-      for i = eachindex(ρ) # sparsity/inner boundary
+      Bmag = sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+      @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Bmag[i] == 0.0 && (Bmag[i] = NaN)
       end
       Bmag
@@ -187,7 +187,7 @@ const variables_predefined = Dict(
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_])
       Emag = vec(sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)))
-      for i = eachindex(ρ) # sparsity/inner boundary
+      @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Emag[i] == 0.0 && (Emag[i] = NaN)
       end
       Emag
@@ -196,7 +196,7 @@ const variables_predefined = Dict(
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_])
       Vmag = vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1)))
-      for i = eachindex(ρ) # sparsity/inner boundary
+      @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Vmag[i] == 0.0 && (Vmag[i] = NaN)
       end
       Vmag
@@ -221,45 +221,47 @@ const variables_predefined = Dict(
    "VS" => function (meta) # sound speed
       P = readvariable(meta, "P")
       ρm = readvariable(meta, "Rhom")
-      for i = eachindex(ρm) # sparsity/inner boundary
+      @inbounds for i = eachindex(ρm) # sparsity/inner boundary
          ρm[i] == 0.0 && (ρm[i] = NaN)
       end
       vs = @. √( (P*5.0/3.0) / ρm )
    end,
    "VA" => function (meta) # Alfvén speed
       ρm = readvariable(meta, "Rhom")
-      for i = eachindex(ρm) # sparsity/inner boundary
+      @inbounds for i = eachindex(ρm) # sparsity/inner boundary
          ρm[i] == 0.0 && (ρm[i] = NaN)
       end
       Bmag = readvariable(meta, "Bmag")
-      VA = @. Bmag / √(ρm*μ₀)
+      VA = @. $vec(Bmag) / √(ρm*μ₀)
    end,
    "MA" => function (meta) # Alfvén Mach number
       V = readvariable(meta, "Vmag")
-      for i = eachindex(V) # sparsity/inner boundary
+      @inbounds for i = eachindex(V) # sparsity/inner boundary
          V[i] == 0.0 && (V[i] = NaN)
       end
       VA = readvariable(meta, "VA")
       V ./ VA
    end,
    "Vpar" => function (meta) # velocity ∥ B
-      v = readvariable(meta, "proton/vg_v")
-      B = readvariable(meta, "vg_b_vol")
-      BmagInv = inv.(readvariable(meta, "Bmag"))
-      [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
+      V = readvariable(meta, "proton/vg_v")
+      b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+      [V[:,i] ⋅ b[:,i] for i in 1:size(V,2)]
    end,
    "Vperp" => function (meta) # velocity ⟂ B
-      v = readvariable(meta, "proton/vg_v")
-      B = readvariable(meta, "vg_b_vol")
-      BmagInv = inv.(readvariable(meta, "Bmag"))
-      vpar = [v[:,i] ⋅ (B[:,i] .* BmagInv[i]) for i in 1:size(v,2)]
-      vmag2 = vec(sum(v.^2, dims=1))
-      vperp = @. √(vmag2 - vpar^2) # This may be errorneous due to Float32!
+      V = readvariable(meta, "proton/vg_v")
+      b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+      Vperp = zeros(eltype(V), size(V, 2))
+      # Avoid sqrt of negative values, but does not guarantee orthogonality.
+      @inbounds for i in eachindex(Vperp)
+         Vpar = V[:,i] ⋅ b[:,i] .* b[:,i]
+         Vperp[i] = norm(V[:,i] - Vpar)
+      end
+      Vperp
    end,
    "T" => function (meta) # scalar temperature
       P = readvariable(meta, "P")
       n = readvariable(meta, "proton/vg_rho")
-      for i = eachindex(n) # sparsity/inner boundary
+      @inbounds for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
       T = @. P / (n*kB)
@@ -275,7 +277,7 @@ const variables_predefined = Dict(
    "Tpar" => function (meta) # T component ∥ B
       P = readvariable(meta, "Protated")
       n = readvariable(meta, "proton/vg_rho")
-      for i = eachindex(n) # sparsity/inner boundary
+      @inbounds for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
       @. P[3,3,:] / (n*kB)
@@ -283,7 +285,7 @@ const variables_predefined = Dict(
    "Tperp" => function (meta) # scalar T component ⟂ B
       P = readvariable(meta, "Protated")
       n = readvariable(meta, "proton/vg_rho")
-      for i = eachindex(n) # sparsity/inner boundary
+      @inbounds for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
@@ -367,7 +369,7 @@ const variables_predefined = Dict(
    "Beta" => function (meta)
       P = readvariable(meta, "P")
       B2 = vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
-      for i = eachindex(B2) # sparsity/inner boundary
+      @inbounds for i = eachindex(B2) # sparsity/inner boundary
          B2[i] == 0.0 && (B2[i] = NaN)
       end
       @. 2.0 * μ₀ * P / B2
