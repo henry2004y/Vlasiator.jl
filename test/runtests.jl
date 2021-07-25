@@ -16,7 +16,7 @@ function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
 end
 
 @testset "Vlasiator.jl" begin
-   if Sys.iswindows()
+   @static if Sys.iswindows()
       using ZipFile
       r = ZipFile.Reader("data/testdata.zip")
       for file in r.files
