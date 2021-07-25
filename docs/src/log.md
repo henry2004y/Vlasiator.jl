@@ -1,5 +1,9 @@
 # Log
 
+## Precision
+
+For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we consistently use Float32 in Vlasiator.jl.
+
 ## Performance
 
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.

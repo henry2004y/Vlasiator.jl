@@ -548,6 +548,10 @@ function fillmesh(meta::MetaData, vars; verbose=false)
          getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
+   for i in eachindex(T)
+      if T[i] == Float64 T[i] = Float32 end
+   end
+
    celldata = [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
       for i = 0:maxamr] for iv in 1:nv]
 
@@ -649,7 +653,8 @@ function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=fa
 
    if isempty(vars[1])
       vars = meta.variable
-      deleteat!(vars, findfirst(==("CellID"), vars))
+      index_cellID = findfirst(==("CellID"), vars)
+      if !isnothing(index_cellID) deleteat!(vars, index_cellID) end
    end
 
    data, vtkGhostType = fillmesh(meta, vars; verbose)

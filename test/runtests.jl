@@ -177,7 +177,7 @@ end
          meta = load(filenames[3]) # amr
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
-         @test sha_str == "b127749f30b23d08c814cf169cfaf7fee954bdce"
+         @test sha_str == "bafb52747908cd05c78218078054aa4268f453d9"
          close(meta.fid)
          filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
          rm.(filesaved, force=true)
