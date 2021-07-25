@@ -270,28 +270,20 @@ function readvariablemeta(meta, var)
    end
 
    unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
-   unitR, unitLaTeXR, variableLaTeXR, unitConversionR = "", "", "", ""
 
-   if hasvariable(meta, var) # For Vlasiator 5 vlsv files, metadata is included
+   if var in keys(units_predefined)
+      unit = units_predefined[var]
+      variableLaTeX = latex_predefined[var]
+      unitLaTeX = latexunits_predefined[var]
+   elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, metadata is included
       for varinfo in meta.footer["VARIABLE"]
          if attribute(varinfo, "name") == var
-            unitR = attribute(varinfo, "unit")
-            unitLaTeXR = attribute(varinfo, "unitLaTeX")
-            variableLaTeXR = attribute(varinfo, "variableLaTeX")
-            unitConversionR = attribute(varinfo, "unitConversion")
+            unit = attribute(varinfo, "unit")
+            unitLaTeX = attribute(varinfo, "unitLaTeX")
+            variableLaTeX = attribute(varinfo, "variableLaTeX")
+            unitConversion = attribute(varinfo, "unitConversion")
          end
-      end
-   end
-   if isnothing(unitR)
-      if var in keys(units_predefined)
-         unit = units_predefined[var]
-         variableLaTeX = latex_predefined[var]
-         unitLaTeX = latexunits_predefined[var]
-      else
-         unit = unitR
-         unitLaTeX = unitLaTeXR
-         variableLaTeX = variableLaTeXR
-         unitConversion = unitConversionR
+         # If var not predefined or unit not found, it will return nothing!
       end
    end
 
