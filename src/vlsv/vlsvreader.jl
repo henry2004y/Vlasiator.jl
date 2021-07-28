@@ -260,21 +260,12 @@ Return VarInfo about `var` in the vlsv file linked to `meta`.
 """
 function readvariablemeta(meta, var)
 
-   var = lowercase(var)
-
-   # Get population and variable names from data array name
-   if occursin("/", var)
-      popname, varname = split(var, "/")
-   else
-      popname, varname = "pop", var
-   end
+   varSym = var |> lowercase |> Symbol
 
    unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
 
-   if var in keys(units_predefined)
-      unit = units_predefined[var]
-      variableLaTeX = latex_predefined[var]
-      unitLaTeX = latexunits_predefined[var]
+   if varSym in keys(units_predefined)
+      unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
    elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, metadata is included
       for varinfo in meta.footer["VARIABLE"]
          if attribute(varinfo, "name") == var
@@ -308,8 +299,8 @@ DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
    @unpack fid, footer, cellIndex = meta
-   if var in keys(variables_predefined)
-      data = variables_predefined[var](meta)
+   if Symbol(var) in keys(variables_predefined)
+      data = variables_predefined[Symbol(var)](meta)
       return data
    end
 
