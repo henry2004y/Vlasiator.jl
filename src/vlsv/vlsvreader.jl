@@ -89,7 +89,7 @@ function getObjInfo(fid, footer, name, tag, attr)
    isFound = false
 
    for varinfo in footer[tag]
-      if attribute(varinfo, attr) == name
+      if attribute(varinfo, attr) == String(name)
          arraysize = parse(Int, attribute(varinfo, "arraysize"))
          datasize = parse(Int, attribute(varinfo, "datasize"))
          datatype = attribute(varinfo, "datatype")
@@ -292,12 +292,12 @@ function readmesh(fid, footer, typeMesh, varMesh)
 end
 
 """
-    readvariable(meta, var, sorted=true) -> Array
+    readvariable(meta::MetaData, var, sorted::Bool=true) -> Array
 
-Return variable value from the vlsv file. By default `sorted=true`, which means that for
-DCCRG grid the variables are sorted by cell ID.
+Return variable value of `var` from the vlsv file. By default `sorted=true`, which means
+that for DCCRG grid the variables are sorted by cell ID.
 """
-function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
+function readvariable(meta::MetaData, var, sorted::Bool=true)
    @unpack fid, footer, cellIndex = meta
    if Symbol(var) in keys(variables_predefined)
       data = variables_predefined[Symbol(var)](meta)
@@ -368,11 +368,11 @@ function readvariable(meta::MetaData, var::AbstractString, sorted::Bool=true)
 end
 
 """
-    readvariable(meta, var, ids) -> Array
+    readvariable(meta::MetaData, var, ids) -> Array
 
 Read a variable `var` in a collection of cells `ids`.
 """
-function readvariable(meta::MetaData, var::AbstractString, ids)
+function readvariable(meta::MetaData, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
    @unpack fid, footer = meta
 
