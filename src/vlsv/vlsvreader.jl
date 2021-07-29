@@ -84,7 +84,6 @@ end
 
 "Return size and type information for the object."
 function getObjInfo(fid, footer, name, tag, attr)
-
    arraysize, datasize, datatype, vectorsize, variable_offset = 0, 0, "", 0, 0
    isFound = false
 
