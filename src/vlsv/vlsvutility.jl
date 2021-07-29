@@ -285,15 +285,11 @@ function getcellinline(meta::MetaData, point1, point2)
       (coordmax[3]-coordmin[3])/ncells[3]]
 
    distances = [0.0]
-
    cellids = [getcell(meta, point1)]
-
    coords = point1
-
    ϵ = eps(Float32)
-
-   p = point1
    unit_vector = @. (point2 - point1) / $hypot(point2 - point1 + ϵ...)
+   p = point1
 
    while true
       cellid = getcell(meta, p)
@@ -320,7 +316,7 @@ function getcellinline(meta::MetaData, point1, point2)
       # Find the minimum distance from a boundary times a factor
       d = min(minimum(coef_min), minimum(coef_max)) * 1.00001
 
-      coordnew = p + d .* unit_vector
+      coordnew = @. p + d*unit_vector
 
       dot(point2 - coordnew, unit_vector) ≥ 0 || break
 
