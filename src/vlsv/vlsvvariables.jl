@@ -73,7 +73,7 @@ const variables_predefined = Dict(
    :Emag => function (meta)
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_])
-      Emag = vec(sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)))
+      Emag = sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1))
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Emag[i] == 0.0 && (Emag[i] = NaN)
       end
