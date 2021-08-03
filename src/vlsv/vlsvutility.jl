@@ -47,7 +47,7 @@ function getcell(meta::MetaData, loc)
 
    cellids, maxamr = meta.cellid, meta.maxamr
 
-   while ilevel < maxamr + 1
+   @inbounds while ilevel < maxamr + 1
       if cellid in cellids
          break
       else
@@ -303,7 +303,7 @@ function getcellinline(meta::MetaData, point1, point2)
       coef_min = (min_bounds - p) ./ unit_vector
       coef_max = (max_bounds - p) ./ unit_vector
 
-      # Negative coefficients indicates the opposite direction.
+      # Negative coefficients indicates the opposite direction
       @inbounds for i = 1:3
          if unit_vector[i] == 0.0
             coef_min[i] = Inf
@@ -377,7 +377,7 @@ function getslicecell(meta::MetaData, slicelocation;
    indexlist = Int[]
    idlist = Int[]
 
-   for ilvl = 0:maxamr
+   @inbounds for ilvl = 0:maxamr
       nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
       ids = cellid[nLow .< cellid .≤ nHigh]
       ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)

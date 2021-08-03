@@ -273,7 +273,7 @@ function readvariablemeta(meta, var)
             variableLaTeX = attribute(varinfo, "variableLaTeX")
             unitConversion = attribute(varinfo, "unitConversion")
          end
-         # If var not predefined or unit not found, it will return nothing!
+         # If var isn't predefined or unit isn't found, it will return nothing!
       end
    end
 
@@ -321,23 +321,22 @@ function readvariable(meta::MetaData, var, sorted::Bool=true)
       currentOffset = ones(UInt32, nIORanks+1)
       lsize = ones(Int, 3, nIORanks)
       lstart = similar(lsize)
-      @inbounds @views @floop for i = 0:nIORanks-1
-         x = i ÷ fgDecomposition[3] ÷ fgDecomposition[2]
-         y = i ÷ fgDecomposition[3] % fgDecomposition[2]
-         z = i % fgDecomposition[3]
+      @inbounds @views @floop for i = 1:nIORanks
+         xyz = SA[
+            (i - 1) ÷ fgDecomposition[3] ÷ fgDecomposition[2],
+            (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
+            (i - 1) % fgDecomposition[3] ]
 
-         lsize[:,i+1] = calcLocalSize.(bbox[1:3], fgDecomposition, [x,y,z])
-         lstart[:,i+1] = calcLocalStart.(bbox[1:3], fgDecomposition, [x,y,z])
+         lsize[:,i] = calcLocalSize.(bbox[1:3], fgDecomposition, xyz)
+         lstart[:,i] = calcLocalStart.(bbox[1:3], fgDecomposition, xyz)
 
-         totalSize = prod(lsize[:,i+1])
-         currentOffset[i+2] = currentOffset[i+1] + totalSize
-      end
-
-      @inbounds @floop for i = 1:nIORanks
-         lend = @views lstart[:,i] + lsize[:,i] .- 1
+         totalSize = prod(lsize[:,i])
+         currentOffset[i+1] = currentOffset[i] + totalSize
 
          # Reorder data
          if ndims(dataV) > 1
+            lend = lstart[:,i] + lsize[:,i] .- 1
+
             ldata = dataV[:,currentOffset[i]:currentOffset[i+1]-1]
             ldata = reshape(ldata, size(dataV,1), lsize[:,i]...)
 
@@ -350,6 +349,7 @@ function readvariable(meta::MetaData, var, sorted::Bool=true)
             dataOrdered[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
          end
       end
+
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
       if ndims(dataV) == 1
@@ -402,7 +402,7 @@ function getDomainDecomposition(globalsize, nprocs)
    procBox = @MVector [0.0, 0.0, 0.0]
    minValue = Inf
 
-   for i = 1:min(nprocs, globalsize[1])
+   @inbounds for i = 1:min(nprocs, globalsize[1])
       procBox[1] = max(globalsize[1]/i, 1)
 
       for j = 1:min(nprocs, globalsize[2])
@@ -415,9 +415,9 @@ function getDomainDecomposition(globalsize, nprocs)
 
             procBox[3] = max(globalsize[3]/k, 1)
 
-            nyz = i > 1 ? procBox[2] * procBox[3] : 0
-            nzx = j > 1 ? procBox[1] * procBox[3] : 0
-            nxy = k > 1 ? procBox[1] * procBox[2] : 0
+            nyz = ifelse(i > 1, procBox[2] * procBox[3], 0)
+            nzx = ifelse(j > 1, procBox[1] * procBox[3], 0)
+            nxy = ifelse(k > 1, procBox[1] * procBox[2], 0)
 
             v = 10*prod(procBox) + nyz + nzx + nxy
 
@@ -435,15 +435,13 @@ end
 function calcLocalStart(globalCells, nprocs, lcells)
    ncells = globalCells ÷ nprocs
    remainder = globalCells % nprocs
-   lstart = lcells < remainder ?
-      lcells*(ncells+1) + 1 :
-      lcells*ncells + remainder + 1
+   lstart = ifelse(lcells < remainder, lcells*(ncells+1) + 1, lcells*ncells + remainder + 1)
 end
 
 function calcLocalSize(globalCells, nprocs, lcells)
    ncells = globalCells ÷ nprocs
    remainder = globalCells % nprocs
-   lsize = lcells < remainder ? ncells + 1 : ncells
+   lsize = ifelse(lcells < remainder, ncells + 1, ncells)
 end
 
 """
@@ -470,7 +468,7 @@ end
 """
     hasparameter(meta, param) -> Bool
 
-Check if vlsv file contains a parameter.
+Check if the vlsv file contains a certain parameter.
 """
 hasparameter(meta::MetaData, param) = hasname(meta.footer, "PARAMETER", param)
 
@@ -496,7 +494,7 @@ Base.ndims(meta::MetaData) = count(>(1), meta.ncells)
 """
     hasvdf(meta) -> Bool
 
-Check if VLSV file contains VDF.
+Check if the VLSV file contains VDF.
 """
 function hasvdf(meta::MetaData)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")

@@ -708,7 +708,7 @@ function plotmesh(meta::MetaData, ax=nothing; projection="3d", origin=0.0, marke
 
    centers = Matrix{Float32}(undef, 3, length(ids))
    for (i, id) in enumerate(ids)
-      centers[:,i] = getcellcoordinates(meta, id)
+      @inbounds centers[:,i] = getcellcoordinates(meta, id)
    end
 
    if isnothing(ax) ax = plt.gca() end
