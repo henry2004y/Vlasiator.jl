@@ -19,6 +19,8 @@ A list of utility functions has been implemented for checking variable status. S
 
 - Read variable
 ```
+data = meta["proton/vg_rho"]
+# Or equivalently
 data = readvariable(meta, "proton/vg_rho")
 ```
 
@@ -68,7 +70,7 @@ To avoid confusion about variable names, the convention here is that
 
 To obtain a derived quantity, for example,
 ```
-beta = readvariable(meta, "Beta")
+beta = meta["Beta"]
 ```
 
 Here is a full list of available quantities[^1]:
