@@ -33,7 +33,7 @@ for (i, filename) in enumerate(filenames)
    @info "$i out of $nfile"
    local meta = load(filename)
 
-   var = readvariable(meta, vardict[varname])
+   var = meta[vardict[varname]]
    t = readparameter(meta, "time")
 
    if i == 1

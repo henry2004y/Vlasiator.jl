@@ -4,6 +4,8 @@ include("vlsvvariables.jl")
 
 using Mmap, LightXML, FLoops
 
+import Base: getindex
+
 export MetaData, VarInfo
 export hasvariable, hasparameter, hasname, hasvdf
 export load, readvariable, readparameter, readvariablemeta, readvcells
@@ -394,6 +396,8 @@ function readvariable(meta::MetaData, var, ids)
 
    return v
 end
+
+@inline getindex(meta::MetaData, key) = readvariable(meta, key)
 
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp

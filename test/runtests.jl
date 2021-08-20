@@ -47,13 +47,13 @@ end
          # Parameter reading
          t = readparameter(meta, "time")
          @test t == 8.0
-         @test_throws ArgumentError readvariable(meta, "nonsense")
+         @test_throws ArgumentError meta["nonsense"]
          # unsorted ID
          @test readvariable(meta, "CellID", false) == UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
          indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
          @test meta.cellIndex == indexRef
          # sorted var by default
-         @test readvariable(meta, "vg_boundarytype") == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
+         @test meta["vg_boundarytype"] == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
          # ID finding
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
@@ -122,36 +122,36 @@ end
    if group in (:derive, :all)
       @testset "Derived variables" begin
          meta = load(filenames[1])
-         @test readvariable(meta, "Vmag") |> sortperm == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
+         @test meta["Vmag"] |> sortperm == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
          close(meta.fid)
 
          meta = load(filenames[2])
-         @test readvariable(meta, "Bmag")[4] ≈ 3.005215661015543e-9
+         @test meta["Bmag"][4] ≈ 3.005215661015543e-9
 
-         @test readvariable(meta, "VS") |> nanmaximum == 1.3726346123826832e6
+         @test meta["VS"] |> nanmaximum == 1.3726346123826832e6
 
-         @test readvariable(meta, "VA") |> nanmaximum == 2.3202628822256166e8
+         @test meta["VA"] |> nanmaximum == 2.3202628822256166e8
 
-         @test readvariable(meta, "MA")[end] == 10.700530839822328
+         @test meta["MA"][end] == 10.700530839822328
 
-         @test readvariable(meta, "Vpar")[1] == 698735.3f0
+         @test meta["Vpar"][1] == 698735.3f0
 
-         @test readvariable(meta, "Vperp")[1] == 40982.48f0
+         @test meta["Vperp"][1] == 40982.48f0
 
-         @test readvariable(meta, "T")[1] == 347619.9817319378
+         @test meta["T"][1] == 347619.9817319378
 
-         @test readvariable(meta, "Beta")[1] == 1.3359065984817116
+         @test meta["Beta"][1] == 1.3359065984817116
 
-         Poynting = readvariable(meta, "Poynting")
+         Poynting = meta["Poynting"]
          @test Poynting[:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         @test readvariable(meta, "IonInertial")[1] == 8.584026203089327e7
+         @test meta["IonInertial"][1] == 8.584026203089327e7
 
-         @test readvariable(meta, "Larmor")[1] == 142415.61236345078
+         @test meta["Larmor"][1] == 142415.61236345078
 
-         #Anisotropy = readvariable(meta, "Anisotropy")
+         #Anisotropy = meta["Anisotropy"]
 
-         #Agyrotropy = readvariable(metam "Agyrotropy")
+         #Agyrotropy = meta["Agyrotropy"]
 
          close(meta.fid)
       end
@@ -201,7 +201,7 @@ end
          meta = load(filenames[1])
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
-         @test line.get_ydata() == readvariable(meta, "proton/vg_rho")
+         @test line.get_ydata() == meta["proton/vg_rho"]
          centers = plotmesh(meta, projection="x")
          points = centers.get_offsets()
          @test size(points) == (1, 2)

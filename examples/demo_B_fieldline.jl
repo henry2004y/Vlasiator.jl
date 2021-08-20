@@ -39,7 +39,7 @@ for i in 1:ns4
    seeds[2,ns1+2*ns2+ns4+i] = -30Re
 end
 
-b = readvariable(meta, "vg_b_vol")
+b = meta["vg_b_vol"]
 bx = reshape(b[1,:], ncells[1], ncells[3])
 bz = reshape(b[3,:], ncells[1], ncells[3])
 

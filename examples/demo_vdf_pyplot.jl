@@ -15,7 +15,7 @@ plot_vdf(meta, coordinates; verbose=true)
 
 # Show the spatial distribution of cells with saved VDF
 cellswithVDF = getcellwithvdf(meta)
-cellID = readvariable(meta, "CellID")
+cellID = meta["CellID"]
 cellID = reshape(cellID, meta.ncells[1], meta.ncells[2])
 f_saved_index_ = [findfirst(==(cid), cellID) for cid in cellswithVDF]
 
