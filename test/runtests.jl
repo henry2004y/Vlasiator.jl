@@ -35,7 +35,7 @@ end
          @test_throws ArgumentError load("data")
          meta = load(filenames[1])
          @test ndims(meta) == 1
-         @test startswith(repr(meta), "filename = bulk.1d.vlsv")
+         @test startswith(repr(meta), "filename         : bulk.1d.vlsv")
          # Variable strings reading
          @test meta.variable[end] == "vg_rhom"
          # Variable info reading
