@@ -148,7 +148,7 @@ If `ax` is provided, then it will plot on that axes.
 If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
-- `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
+- `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
 - `colorscale::ColorScale`: whether to use linear scale for data.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
@@ -215,7 +215,7 @@ If `ax` is provided, then it will plot on that axes.
 It would be easier to call [`pcolormesh`](@ref).
 
 # Optional arguments
-- `op::Symbol`: the component of a vector to plot, chosen from `:mag, :x, :y, :z`.
+- `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `origin::Float`: center of slice plane in the normal direction.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
@@ -258,12 +258,12 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
       if ndims(data) == 1
          data = refineslice(meta, idlist, data, normal)
       elseif ndims(data) == 2
-         if op in (:x, :y, :z)
-            if op == :x
+         if op in (:x, :y, :z, :1, :2, :3)
+            if op in (:x, :1)
                slice = @view data[1,:]
-            elseif op == :y
+            elseif op in (:y, :2)
                slice = @view data[2,:]
-            elseif op == :z
+            elseif op in (:z, :3)
                slice = @view data[3,:]
             end
             data = refineslice(meta, idlist, slice, normal)
@@ -314,11 +314,11 @@ function plot_prep2d(meta, var, pArgs, op, axisunit::AxisUnit)
       if ndims(dataRaw) == 2
          dataRaw = reshape(dataRaw, 3, sizes...)
       end
-      if op == :x
+      if op in (:x, :1)
          data = dataRaw[1,:,:]
-      elseif op == :y
+      elseif op in (:y, :2)
          data = dataRaw[2,:,:]
-      elseif op == :z
+      elseif op in (:z, :3)
          data = dataRaw[3,:,:]
       elseif op == :mag
          data = hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
