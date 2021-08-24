@@ -491,7 +491,7 @@ end
 Find the nearest spatial cell with VDF saved of a given cell `id` in the file `meta`.
 """
 function getnearestcellwithvdf(meta::MetaData, id)
-   cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
+   cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords = Matrix{Float32}(undef, 3, length(cells))
    @inbounds for i in eachindex(cells)
