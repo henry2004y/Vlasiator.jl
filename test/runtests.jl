@@ -149,6 +149,8 @@ end
 
          @test meta["Larmor"][1] == 142415.61236345078
 
+         @test meta["J"][1,1000] == 2.314360630106622e-14
+
          #Anisotropy = meta["Anisotropy"]
 
          #Agyrotropy = meta["Agyrotropy"]

@@ -178,6 +178,12 @@ const variables_predefined = Dict(
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
    end,
+   :J => function (meta)
+      B = readvariable(meta, "vg_b_vol")
+      B = reshape(B, 3, meta.ncells...)
+      J = curvature(meta.dcoord, B) ./ μ₀
+      J = reshape(J, 3, :) # To be consistent with shape assumptions
+   end,
    :Egradpe => function (meta)
 
    end,
