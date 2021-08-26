@@ -23,7 +23,7 @@ export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
 Return cell ID containing the given spatial `location`, excluding domain boundaries.
 Only accept 3D location.
 """
-function getcell(meta::MetaData, loc)
+function getcell(meta::MetaVLSV, loc)
    @unpack coordmin, coordmax, dcoord, ncells = meta
 
    @assert coordmin[1] < loc[1] < coordmax[1] "x coordinate out of bound!"
@@ -75,7 +75,7 @@ end
 Return the AMR level of a given cell ID. Note that this function does not check if the VLSV
 file of `meta` actually contains `cellid`: it may be shadowed by refined children.
 """
-function getlevel(meta::MetaData, cellid::Integer)
+function getlevel(meta::MetaVLSV, cellid::Integer)
    ncell = prod(meta.ncells)
    ilevel = 0
    while cellid > 0
@@ -90,7 +90,7 @@ end
 
 Return the parent cell ID of given child `cellid`.
 """
-function getparent(meta::MetaData, cellid::Integer)
+function getparent(meta::MetaVLSV, cellid::Integer)
    xcell, ycell = meta.ncells[1], meta.ncells[2]
    ncell = prod(meta.ncells)
 
@@ -128,7 +128,7 @@ end
 
 Return direct children of `cellid`.
 """
-function getchildren(meta::MetaData, cellid::Integer)
+function getchildren(meta::MetaVLSV, cellid::Integer)
    xcell, ycell, zcell = meta.ncells
    ncell = prod(meta.ncells)
 
@@ -169,7 +169,7 @@ end
 
 Return sibling cells of a given `cellid`, including itself.
 """
-function getsiblings(meta::MetaData, cellid::Integer)
+function getsiblings(meta::MetaVLSV, cellid::Integer)
    xcell, ycell, zcell = meta.ncells
    ncell = prod(meta.ncells)
 
@@ -211,7 +211,7 @@ end
 
 Check if `cellid` is a parent cell.
 """
-function isparent(meta::MetaData, cellid::Integer)
+function isparent(meta::MetaVLSV, cellid::Integer)
    ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
    cellid ∉ meta.cellid && 0 < cellid ≤ ncell_accum
@@ -222,7 +222,7 @@ end
 
 Return a given cell's coordinates.
 """
-function getcellcoordinates(meta::MetaData, cellid::Integer)
+function getcellcoordinates(meta::MetaVLSV, cellid::Integer)
    @unpack ncells, coordmin, coordmax = meta
    cellid -= 1 # for easy divisions
 
@@ -252,7 +252,7 @@ function getcellcoordinates(meta::MetaData, cellid::Integer)
    coords
 end
 
-function isInsideDomain(meta::MetaData, point)
+function isInsideDomain(meta::MetaVLSV, point)
    @unpack coordmin, coordmax = meta
 
    if coordmin[1] < point[1] ≤ coordmax[1] &&
@@ -270,7 +270,7 @@ end
 Returns cell IDs, distances and coordinates for every cell in a line between two given
 points `point1` and `point2`. May be improved later with preallocation!
 """
-function getcellinline(meta::MetaData, point1, point2)
+function getcellinline(meta::MetaVLSV, point1, point2)
    @unpack coordmin, coordmax, ncells = meta
 
    if !isInsideDomain(meta, point1)
@@ -340,7 +340,7 @@ Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mes
 direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
 mapping from original order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaData, slicelocation;
+function getslicecell(meta::MetaVLSV, slicelocation;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
    @unpack ncells, maxamr, cellid = meta
@@ -407,7 +407,7 @@ end
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
-function refineslice(meta::MetaData, idlist, data, normal)
+function refineslice(meta::MetaVLSV, idlist, data, normal)
    @unpack ncells, maxamr = meta
 
    if normal == :x
@@ -490,7 +490,7 @@ end
 
 Find the nearest spatial cell with VDF saved of a given cell `id` in the file `meta`.
 """
-function getnearestcellwithvdf(meta::MetaData, id)
+function getnearestcellwithvdf(meta::MetaVLSV, id)
    cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords = Matrix{Float32}(undef, 3, length(cells))
@@ -507,7 +507,7 @@ end
 
 Get all the cell IDs with VDF saved.
 """
-getcellwithvdf(meta::MetaData) =
+getcellwithvdf(meta::MetaVLSV) =
    readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
 
 
@@ -520,17 +520,17 @@ function get1stcell(mylevel, ncells)
    cid1st
 end
 
-fillmesh(meta::MetaData, vars::AbstractString) = fillmesh(meta, [vars])
+fillmesh(meta::MetaVLSV, vars::AbstractString) = fillmesh(meta, [vars])
 
 """
-    fillmesh(meta::MetaData, vars; verbose=false) -> celldata, vtkGhostType
+    fillmesh(meta::MetaVLSV, vars; verbose=false) -> celldata, vtkGhostType
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
-function fillmesh(meta::MetaData, vars; verbose=false)
+function fillmesh(meta::MetaVLSV, vars; verbose=false)
    @unpack cellid, maxamr, fid, footer, ncells = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
@@ -627,7 +627,7 @@ function fillmesh(meta::MetaData, vars; verbose=false)
 end
 
 """
-    write_vtk(meta::MetaData; kwargs...)
+    write_vtk(meta::MetaVLSV; kwargs...)
     write_vtk(filename; kwargs...)
 
 Convert VLSV file to VTK format.
@@ -637,7 +637,7 @@ Convert VLSV file to VTK format.
 - `vti=false`: generate image files on the highest refinement level only.
 - `verbose=false`: display logs during conversion.
 """
-function write_vtk(meta::MetaData; vars=[""], ascii=false, vti=false, verbose=false)
+function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, vti=false, verbose=false)
    @unpack ncells, maxamr, dcoord, coordmin = meta
 
    append = ascii ? false : true
@@ -700,7 +700,7 @@ end
 write_vtk(filename; kwargs...) = write_vtk(load(filename); kwargs...)
 
 """
-    save_image(meta::MetaData, file, vars, data, vtkGhostType, level,
+    save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level,
        ascii=false, append=true)
 
 Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
@@ -713,7 +713,7 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `ascii=false`: save output in ASCII or binary format.
 - `append=true`: determines whether to append data at the end of file or do in-block writing.
 """
-function save_image(meta::MetaData, file, vars, data, vtkGhostType, level, ascii=false,
+function save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level, ascii=false,
    append=true)
    @unpack coordmin, dcoord, ncells = meta
    origin = (coordmin[1], coordmin[2], coordmin[3])

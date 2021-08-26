@@ -3,7 +3,7 @@
 using RecipesBase
 
 # Build a recipe which acts on a custom type.
-@recipe function f(meta::MetaData, var::AbstractString; op=:mag, axisunit=RE)
+@recipe function f(meta::MetaVLSV, var::AbstractString; op=:mag, axisunit=RE)
 
    # Check if ecliptic or polar run
    if meta.ncells[2] == 1 && meta.ncells[3] != 1

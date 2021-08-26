@@ -3,7 +3,6 @@
 using PyPlot, Printf, LaTeXStrings
 using LinearAlgebra: norm, ×
 
-import PyPlot: plot, quiver, streamplot, pcolormesh
 export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
 
 if matplotlib.__version__ >= "3.3"
@@ -41,11 +40,11 @@ end
 
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
 """
-function plot(meta::MetaData, var, ax=nothing; kwargs...)
+function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; kwargs...)
    if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
-      data = Vlasiator.variables_predefined[var](meta)
+      data = Vlasiator.variables_predefined[Symbol(var)](meta)
    end
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
@@ -62,7 +61,8 @@ Wrapper over Matplotlib's streamplot function. The `comp` option can take a subs
 in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 """
-function streamplot(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
+function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
+   comp="xy", axisunit=RE, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -79,7 +79,8 @@ axes. The `comp` option can take a subset of "xyz" in any order. `axisunit` can 
 from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into quiver.
 """
-function quiver(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
+function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
+   comp="xy", axisunit=RE, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -88,7 +89,7 @@ function quiver(meta::MetaData, var, ax=nothing; comp="xy", axisunit=RE, kwargs.
    ax.quiver(X, Y, v1, v2; kwargs...)
 end
 
-function set_vector(meta::MetaData, var, comp, axisunit)
+function set_vector(meta::MetaVLSV, var, comp, axisunit)
    @unpack ncells, coordmin, coordmax = meta
    if occursin("x", comp)
       v1_ = 1
@@ -110,7 +111,7 @@ function set_vector(meta::MetaData, var, comp, axisunit)
    if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
-      data = Vlasiator.variables_predefined[var](meta)
+      data = Vlasiator.variables_predefined[Symbol(var)](meta)
    end
 
    if startswith(var, "fg_")
@@ -139,7 +140,7 @@ function set_vector(meta::MetaData, var, comp, axisunit)
 end
 
 """
-    pcolormesh(meta::MetaData, var, ax=nothing;
+    pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
        op=:mag, axisunit=RE, colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true,
        kwargs...)
 
@@ -161,7 +162,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 `pcolormesh(data, func, colorscale=Linear)`
 """
-function pcolormesh(meta::MetaData, var, ax=nothing;
+function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
    op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
@@ -212,7 +213,7 @@ end
 
 Plot pseudocolor var on a 2D slice of 3D vlsv data.
 If `ax` is provided, then it will plot on that axes.
-It would be easier to call [`pcolormesh`](@ref).
+It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension.
 
 # Optional arguments
 - `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
@@ -230,9 +231,9 @@ It would be easier to call [`pcolormesh`](@ref).
 
 `pcolormeshslice(data, func, colorscale=Log)`
 """
-function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origin=0.0,
-   normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Log, addcolorbar=true,
-   vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
+function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing;
+   op::Symbol=:mag, origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE,
+   colorscale::ColorScale=Log, addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin, vmax)
 
@@ -241,7 +242,7 @@ function pcolormeshslice(meta::MetaData, var, ax=nothing; op::Symbol=:mag, origi
    if hasvariable(meta, var)
       data = readvariable(meta, var)
    else
-      data = Vlasiator.variables_predefined[var](meta)
+      data = Vlasiator.variables_predefined[Symbol(var)](meta)
    end
 
    if startswith(var, "fg_") # field quantities, fsgrid
@@ -305,7 +306,7 @@ function plot_prep2d(meta, var, pArgs, op, axisunit::AxisUnit)
    if hasvariable(meta, var)
       dataRaw = readvariable(meta, var)
    else
-      dataRaw = Vlasiator.variables_predefined[var](meta)
+      dataRaw = Vlasiator.variables_predefined[Symbol(var)](meta)
    end
 
    if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
@@ -401,23 +402,21 @@ end
 "Set colorbar norm and ticks."
 function set_colorbar(pArgs, data=[1.0])
    @unpack colorscale, vmin, vmax = pArgs
-   if colorscale == Log # Logarithmic plot
-      if any(<(0), data)
-         throw(DomainError(data, "Nonpositive data detected: use linear scale instead!"))
-      end
-      datapositive = data[data .> 0.0]
-      v1 = isinf(vmin) ? minimum(datapositive) : vmin
-      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-
-      cnorm = matplotlib.colors.LogNorm(vmin=v1, vmax=v2)
-      ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
-   elseif colorscale == Linear
+   if colorscale == Linear || any(<(0), data)
+      colorscale == Log && @warn "Nonpositive data detected: use linear scale instead!"
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
       nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(v1, v2)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
       ticks = range(v1, v2, length=nticks)
+   else # logarithmic
+      datapositive = data[data .> 0.0]
+      v1 = isinf(vmin) ? minimum(datapositive) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
+
+      cnorm = matplotlib.colors.LogNorm(vmin=v1, vmax=v2)
+      ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
    end
 
    cnorm, ticks
@@ -469,7 +468,7 @@ velocity is selected!
 between `:particle` and `:flux`.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
-function plot_vdf(meta, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
+function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
    verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI, slicetype="xy",
    vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
@@ -687,7 +686,7 @@ end
 Plot mesh cell centers from axis view `projection`. `projection` should be either "3d", "x",
 "y" or "z". `origin` is center of projection plane in the normal direction.
 """
-function plotmesh(meta::MetaData, ax=nothing; projection="3d", origin=0.0, marker="+",
+function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marker="+",
    kwargs...)
    @unpack coordmin, coordmax, cellid = meta
    if projection == "x"

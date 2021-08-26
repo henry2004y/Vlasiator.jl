@@ -165,7 +165,7 @@ function Makie.plot!(vlplot::VlContourf)
 end
 
 
-function vl_contourf(meta::MetaData, var; kwargs...)
+function vl_contourf(meta::MetaVLSV, var; kwargs...)
    f = Figure()
    c = vlcontourf(f[1,1], meta, var; kwargs...)
    

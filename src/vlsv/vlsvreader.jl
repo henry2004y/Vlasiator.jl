@@ -4,10 +4,9 @@ include("vlsvvariables.jl")
 
 using Mmap, LightXML, FLoops
 
-export MetaData, VarInfo
-export hasvariable, hasparameter, hasname, hasvdf
-export load, readvariable, readparameter, readvariablemeta, readvcells
-export ndims, getvcellcoordinates
+export MetaVLSV, VarInfo
+export load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
+       hasvariable, hasparameter, hasname, hasvdf
 
 "Velocity mesh information."
 struct VMeshInfo
@@ -19,7 +18,7 @@ struct VMeshInfo
    dv::Vector{Float64}
 end
 
-"Variable metadata from the vlsv footer."
+"Variable MetaVLSV from the vlsv footer."
 struct VarInfo
    "unit of the variable as a string"
    unit::String
@@ -32,7 +31,7 @@ struct VarInfo
 end
 
 "VLSV meta data."
-struct MetaData
+struct MetaVLSV
    name::AbstractString
    fid::IOStream
    footer::XMLElement
@@ -53,7 +52,7 @@ struct MetaData
 end
 
 
-function Base.show(io::IO, meta::MetaData)
+function Base.show(io::IO, meta::MetaVLSV)
    println(io, "filename         : ", meta.name)
    println(io, "time             : ", round(meta.time, digits=2))
    println(io, "dimension        : $(ndims(meta))")
@@ -133,9 +132,9 @@ function readvector(fid, footer, name, tag)
 end
 
 """
-    load(filename; verbose=false) -> MetaData
+    load(filename; verbose=false) -> MetaVLSV
 
-Return MetaData from a vlsv file.
+Return MetaVLSV from a vlsv file.
 """
 function load(filename::AbstractString; verbose=false)
    isfile(filename) || throw(ArgumentError("Cannot open \'$filename\': not a file"))
@@ -247,7 +246,7 @@ function load(filename::AbstractString; verbose=false)
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaData(filename, fid, footer, vars, cellid[cellIndex], cellIndex, timesim,
+   meta = MetaVLSV(filename, fid, footer, vars, cellid[cellIndex], cellIndex, timesim,
       maxamr, ncells, block_size, coordmin, coordmax, dcoord, populations, meshes)
 end
 
@@ -257,15 +256,15 @@ end
 
 Return VarInfo about `var` in the vlsv file linked to `meta`.
 """
-function readvariablemeta(meta, var)
+function readvariablemeta(meta::MetaVLSV, var)
 
-   varSym = var |> lowercase |> Symbol
+   varSym = isa(var, AbstractString) ? Symbol(var) : var
 
    unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
 
    if varSym in keys(units_predefined)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
-   elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, metadata is included
+   elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, MetaVLSV is included
       for varinfo in meta.footer["VARIABLE"]
          if attribute(varinfo, "name") == var
             unit = attribute(varinfo, "unit")
@@ -291,12 +290,12 @@ function readmesh(fid, footer, typeMesh, varMesh)
 end
 
 """
-    readvariable(meta::MetaData, var, sorted::Bool=true) -> Array
+    readvariable(meta::MetaVLSV, var, sorted::Bool=true) -> Array
 
 Return variable value of `var` from the vlsv file. By default `sorted=true`, which means
 that for DCCRG grid the variables are sorted by cell ID.
 """
-function readvariable(meta::MetaData, var, sorted::Bool=true)
+function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    @unpack fid, footer, cellIndex = meta
    if Symbol(var) in keys(variables_predefined)
       data = variables_predefined[Symbol(var)](meta)
@@ -367,11 +366,11 @@ function readvariable(meta::MetaData, var, sorted::Bool=true)
 end
 
 """
-    readvariable(meta::MetaData, var, ids) -> Array
+    readvariable(meta::MetaVLSV, var, ids) -> Array
 
 Read a variable `var` in a collection of cells `ids`.
 """
-function readvariable(meta::MetaData, var, ids)
+function readvariable(meta::MetaVLSV, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
    @unpack fid, footer = meta
 
@@ -395,7 +394,7 @@ function readvariable(meta::MetaData, var, ids)
    return v
 end
 
-@inline Base.getindex(meta::MetaData, key) = readvariable(meta, key)
+@inline Base.getindex(meta::MetaVLSV, key) = readvariable(meta, key)
 
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
@@ -451,14 +450,14 @@ end
 
 Check if the VLSV file contains a variable.
 """
-hasvariable(meta::MetaData, var) = hasname(meta.footer, "VARIABLE", var)
+hasvariable(meta::MetaVLSV, var) = hasname(meta.footer, "VARIABLE", var)
 
 """
     readparameter(meta, param)
 
 Return the parameter value from vlsv file.
 """
-readparameter(meta::MetaData, param) = readparameter(meta.fid, meta.footer, param)
+readparameter(meta::MetaVLSV, param) = readparameter(meta.fid, meta.footer, param)
 
 function readparameter(fid, footer, param)
 
@@ -472,7 +471,7 @@ end
 
 Check if the vlsv file contains a certain parameter.
 """
-hasparameter(meta::MetaData, param) = hasname(meta.footer, "PARAMETER", param)
+hasparameter(meta::MetaVLSV, param) = hasname(meta.footer, "PARAMETER", param)
 
 "Check if the XMLElement `elem` contains a `tag` with `name`."
 function hasname(elem, tag, name)
@@ -491,14 +490,14 @@ end
 
 Return the dimension of VLSV data.
 """
-Base.ndims(meta::MetaData) = count(>(1), meta.ncells)
+Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 
 """
     hasvdf(meta) -> Bool
 
 Check if the VLSV file contains VDF.
 """
-function hasvdf(meta::MetaData)
+function hasvdf(meta::MetaVLSV)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
    if isempty(cells)
       return false
@@ -513,7 +512,7 @@ end
 Read velocity cells from a spatial cell of ID `cellid`, and return a map of velocity cell
 ids and corresponding value.
 """
-function readvcells(meta, cellid; pop="proton")
+function readvcells(meta::MetaVLSV, cellid; pop="proton")
    @unpack fid, footer = meta
    @unpack vblock_size = meta.meshes[pop]
    bsize = prod(vblock_size)
@@ -598,7 +597,7 @@ end
 
 Return velocity cells' coordinates of population `pop` and id `vcellids`.
 """
-function getvcellcoordinates(meta, vcellids; pop="proton")
+function getvcellcoordinates(meta::MetaVLSV, vcellids; pop="proton")
    @unpack vblocks, vblock_size, dv, vmin = meta.meshes[pop]
 
    bsize = prod(vblock_size)
