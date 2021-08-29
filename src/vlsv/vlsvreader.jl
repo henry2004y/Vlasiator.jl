@@ -394,7 +394,7 @@ function readvariable(meta::MetaVLSV, var, ids)
    return v
 end
 
-@inline Base.getindex(meta::MetaVLSV, key) = readvariable(meta, key)
+@inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
