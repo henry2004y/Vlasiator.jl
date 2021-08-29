@@ -593,10 +593,10 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
-               for (ic, id) in enumerate(ids)
-                  ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .* r
+               for i in eachindex(ids)
+                  ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[i]) .* r
                   for k = 1:r, j = 1:r, i = 1:r
-                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,ic]
+                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,i]
                   end
                end
             end
@@ -612,9 +612,9 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                   seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
                   read!(fid, @view data[:,i])
                end
-               for (ic, id) in enumerate(ids)
-                  ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, id) .+ 1
-                  celldata[iv][end][:,ix,iy,iz] = data[:,ic]
+               for i in eachindex(ids)
+                  ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
+                  celldata[iv][end][:,ix,iy,iz] = data[:,i]
                end
             end
          end
