@@ -5,7 +5,7 @@ using LinearAlgebra: norm, ×
 
 export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
 
-if matplotlib.__version__ >= "3.3"
+@static if matplotlib.__version__ >= "3.3"
    matplotlib.rc("image", cmap="turbo") # set default colormap
 end
 
