@@ -115,17 +115,19 @@ end
 
 "Return vector data from vlsv file."
 function readvector(fid, footer, name, tag)
-   T, _, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
+   T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
-   if Sys.free_memory() > 10^9 + arraysize*vectorsize*datasize # > 1GB of available memory
+   if Sys.free_memory() > Int(10e9) + arraysize*vectorsize*datasize # > 1GB of free memory
       w = vectorsize == 1 ?
          Vector{T}(undef, arraysize) :
          Array{T,2}(undef, vectorsize, arraysize)
       read!(fid, w)
    else
+      @warn "Less than 1GB free memory detected. Using memory-mapped I/O!"
+      a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
       w = vectorsize == 1 ?
-         Mmap.mmap(fid, Vector{T}, arraysize) :
-         Mmap.mmap(fid, Array{T,2}, (vectorsize, arraysize))
+         reinterpret(T, a) :
+         reshape(reinterpret(T, a), vectorsize, arraysize)
    end
 
    w
