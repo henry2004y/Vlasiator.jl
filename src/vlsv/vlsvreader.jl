@@ -117,7 +117,7 @@ end
 function readvector(fid, footer, name, tag)
    T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
-   if Sys.free_memory() > Int(10e9) + arraysize*vectorsize*datasize # > 1GB of free memory
+   if Sys.free_memory() > Int(1e9) + arraysize*vectorsize*datasize # > 1GB of free memory
       w = vectorsize == 1 ?
          Vector{T}(undef, arraysize) :
          Array{T,2}(undef, vectorsize, arraysize)
