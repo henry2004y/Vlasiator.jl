@@ -36,6 +36,7 @@ end
          meta = load(filenames[1])
          @test ndims(meta) == 1
          @test startswith(repr(meta), "filename         : bulk.1d.vlsv")
+         @test size(meta) == 5168730
          # Variable strings reading
          @test meta.variable[end] == "vg_rhom"
          # Variable info reading

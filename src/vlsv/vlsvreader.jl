@@ -398,6 +398,9 @@ end
 
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
+"File size in bytes."
+@inline Base.size(meta::MetaVLSV) = filesize(meta.name)
+
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
 function getDomainDecomposition(globalsize, nprocs)
