@@ -65,3 +65,13 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 | Python | 125   |
 
 [^3]: The timings are for a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon CPUs. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.
+
+## Memory
+
+Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through `mmap` in Julia. With this mechanism you never need to worry about unable to process data with small free memory.
+
+## VTK
+
+VLSV is just an uncompressed binary format. If we convert VLSV to VTK through `write_vtk`, the generated VTK files, even the highest resolution one with every coarse cell mapping to the finest level, can be several times smaller than the original VLSV file.
+
+One drawback of this conversion is that it cannot deal with phase space outputs, i.e. VDFs.
