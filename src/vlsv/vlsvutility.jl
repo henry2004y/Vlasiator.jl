@@ -451,7 +451,7 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       end
 
       for ic in eachindex(d)
-         dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
+         @views dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
       end
 
       nLow = nHigh
@@ -596,7 +596,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                for i in eachindex(ids)
                   ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[i]) .* r
                   for k = 1:r, j = 1:r, i = 1:r
-                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] = data[:,i]
+                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] .= data[:,i]
                   end
                end
             end
@@ -614,7 +614,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                end
                for i in eachindex(ids)
                   ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
-                  celldata[iv][end][:,ix,iy,iz] = data[:,i]
+                  celldata[iv][end][:,ix,iy,iz] .= data[:,i]
                end
             end
          end
