@@ -451,7 +451,7 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       end
 
       for ic in eachindex(d)
-         @views dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
+         dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
       end
 
       nLow = nHigh
@@ -565,7 +565,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    ncell = prod(ncells)
    nLow, nHigh = 0, ncell
 
-   @inbounds @views for ilvl = 0:maxamr
+   @inbounds for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
       ids = cellid[nLow .< cellid .≤ nHigh]
 
@@ -588,7 +588,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
             for (i, r) in enumerate(rOffsets_raw)
                seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
-               read!(fid, data[:,i])
+               read!(fid, @view data[:,i])
             end
 
             for ilvlup = ilvl:maxamr
@@ -610,7 +610,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                data = Array{T[iv]}(undef, vsize[iv], length(ids))
                for (i, r) in enumerate(rOffsets_raw)
                   seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
-                  read!(fid, data[:,i])
+                  read!(fid, @view data[:,i])
                end
                for i in eachindex(ids)
                   ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
