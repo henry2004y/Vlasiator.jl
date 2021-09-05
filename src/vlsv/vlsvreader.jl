@@ -11,11 +11,11 @@ export load, readvariable, readparameter, readvariablemeta, readvcells, getvcell
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
-   vblocks::Vector{Int64}
-   vblock_size::Vector{Int64}
-   vmin::Vector{Float64}
-   vmax::Vector{Float64}
-   dv::Vector{Float64}
+   vblocks::SVector{3, Int64}
+   vblock_size::SVector{3, Int64}
+   vmin::SVector{3, Float64}
+   vmax::SVector{3, Float64}
+   dv::SVector{3, Float64}
 end
 
 "Variable MetaVLSV from the vlsv footer."
@@ -42,11 +42,11 @@ struct MetaVLSV
    cellIndex::Vector{Int64}
    time::Float64
    maxamr::Int64
-   ncells::Vector{Int64}
-   block_size::Vector{Int64}
-   coordmin::Vector{Float64}
-   coordmax::Vector{Float64}
-   dcoord::Vector{Float64}
+   ncells::SVector{3, Int64}
+   block_size::SVector{3, Int64}
+   coordmin::SVector{3, Float64}
+   coordmax::SVector{3, Float64}
+   dcoord::SVector{3, Float64}
    populations::Vector{String}
    meshes::Dict{String, VMeshInfo}
 end
@@ -156,12 +156,13 @@ function load(filename::AbstractString; verbose=false)
    nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
    nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
 
-   ncells = bbox[1:3]
-   block_size = bbox[4:6]
-   coordmin = [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
-   coordmax = [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
+   #ncells = SVector(bbox[1:3]...)
+   ncells = SVector(bbox[1], bbox[2], bbox[3])
+   block_size = SVector(bbox[4], bbox[5], bbox[6])
+   coordmin = @SVector [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
+   coordmax = @SVector [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
 
-   dcoord = @. (coordmax - coordmin) / ncells
+   dcoord = SVector(@. (coordmax - coordmin) / ncells...)
 
    meshes = Dict{String, VMeshInfo}()
 
@@ -179,35 +180,37 @@ function load(filename::AbstractString; verbose=false)
          nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")
          nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")
          nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")
-         vblocks = bbox[1:3]
-         vblock_size = bbox[4:6]
-         vmin = [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
-         vmax = [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
-         dv = @. (vmax - vmin) / vblocks / vblock_size
+         vblocks = SVector(bbox[1], bbox[2], bbox[3])
+         vblock_size = SVector(bbox[4], bbox[5], bbox[6])
+         vmin = @SVector [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
+         vmax = @SVector [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
+         dv = SVector(@. (vmax - vmin) / vblocks / vblock_size...)
       else
          popname = "avgs"
 
-         if "vxblocks_ini" in attribute.(footer["PARAMETER"],"name")
+         if "vxblocks_ini" in attribute.(footer["PARAMETER"], "name")
             # In VLSV before 5.0 the mesh is defined with parameters.
             vblocks = @MVector zeros(Int, 3)
             vblocks[1] = readparameter(fid, footer, "vxblocks_ini")
             vblocks[2] = readparameter(fid, footer, "vyblocks_ini")
             vblocks[3] = readparameter(fid, footer, "vzblocks_ini")
-            vblock_size = [4, 4, 4]
-            vmin = [
+            vblock_size = @SVector [4, 4, 4]
+            vmin = @SVector [
                readparameter(fid, footer, "vxmin"),
                readparameter(fid, footer, "vymin"),
                readparameter(fid, footer, "vzmin") ]
-            vmax = [
+            vmax = @SVector [
                readparameter(fid, footer, "vxmax"),
                readparameter(fid, footer, "vymax"),
                readparameter(fid, footer, "vzmax") ]
-            dv = @. (vmax - vmin) / vblocks / vblock_size
+            dv = SVector(@. (vmax - vmin) / vblocks / vblock_size...)
          else
             # No velocity space info, e.g., file not written by Vlasiator
-            vblocks = [0, 0, 0]
-            vblock_size = [4, 4, 4]
-            vmin, vmax, dv = zeros(3), zeros(3), ones(3)
+            vblocks = @SVector [0, 0, 0]
+            vblock_size = @SVector [4, 4, 4]
+            vmin = @SVector [0, 0, 0]
+            vmax = @SVector [0, 0, 0]
+            dv = @SVector [1, 1, 1]
          end
       end
 
@@ -224,10 +227,10 @@ function load(filename::AbstractString; verbose=false)
       verbose && @info "Found population $popname"
    end
 
-   if hasname(footer, "PARAMETER", "t")
-      timesim = readparameter(fid, footer, "t")
-   elseif hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
+   if hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
       timesim = readparameter(fid, footer, "time")
+   elseif hasname(footer, "PARAMETER", "t")
+      timesim = readparameter(fid, footer, "t")
    else
       timesim = Inf
    end
@@ -312,12 +315,12 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
       nIORanks = readparameter(meta, "numWritingRanks")
 
       if ndims(dataV) > 1
-         dataOrdered = zeros(Float32, size(dataV,1), bbox[1:3]...)
+         dataOrdered = zeros(Float32, size(dataV,1), bbox[1], bbox[2], bbox[3])
       else
-         dataOrdered = zeros(Float32, bbox[1:3]...)
+         dataOrdered = zeros(Float32, bbox[1], bbox[2], bbox[3])
       end
 
-      fgDecomposition = getDomainDecomposition(bbox[1:3], nIORanks)
+      fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
 
       currentOffset = ones(UInt32, nIORanks+1)
       lsize = ones(Int, 3, nIORanks)
@@ -526,7 +529,7 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
 
    nblock_C_offsets = zeros(Int, length(cellsWithVDF))
-   nblock_C_offsets[2:end] = cumsum(nblock_C[1:end-1])
+   nblock_C_offsets[2:end] = @views cumsum(nblock_C[1:end-1])
 
    # Check if cells have vspace stored
    if cellid ∈ cellsWithVDF
