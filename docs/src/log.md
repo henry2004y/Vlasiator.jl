@@ -28,6 +28,8 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 
 ### Benchmarks
 
+The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.1.
+
 * Reading DCCRG grid variables
 | Julia | tmean [μs] | Python | tmean [μs] |
 |:------|:----------:|:-------|:----------:|
@@ -48,7 +50,7 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 | Julia  | 11.6  |
 | Python | 9.3   |
 
-[^2]: This inefficieny is a famous problem in Julia known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
+[^2]: This inefficieny is a famous problem in the Julia community known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
 
 * Reading and plotting one 2d slice of proton density out of 3D AMR data
 
