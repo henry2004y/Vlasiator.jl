@@ -87,7 +87,7 @@ for (i, fname) in enumerate(filenames)
    axs[3].legend(;loc="upper left",  fontsize)
    axs[4].legend(;loc="upper right", fontsize)
 
-   savefig("out/"*lpad(i, 4, '0')*".png", bbox_inches="tight")
+   savefig("out/"*meta.name[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axs
       for line in ax.get_lines()

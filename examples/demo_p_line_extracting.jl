@@ -44,7 +44,7 @@ for (i, fname) in enumerate(filenames)
    str_title = @sprintf "t= %4.1fs" meta.time
    title(str_title, fontsize=14)
    legend(loc="upper left", fontsize=14)
-   savefig("out/"*lpad(i, 4, '0')*".png", bbox_inches="tight")
+   savefig("out/"*meta.name[end-8:end-5]*".png", bbox_inches="tight")
    ax.cla()
 end
 
