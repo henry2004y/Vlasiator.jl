@@ -156,7 +156,6 @@ function load(filename::AbstractString; verbose=false)
    nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
    nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
 
-   #ncells = SVector(bbox[1:3]...)
    ncells = SVector(bbox[1], bbox[2], bbox[3])
    block_size = SVector(bbox[4], bbox[5], bbox[6])
    coordmin = @SVector [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
@@ -302,8 +301,8 @@ that for DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    @unpack fid, footer, cellIndex = meta
-   if Symbol(var) in keys(variables_predefined)
-      data = variables_predefined[Symbol(var)](meta)
+   if (local symvar = Symbol(var)) in keys(variables_predefined)
+      data = variables_predefined[symvar](meta)
       return data
    end
 
@@ -356,11 +355,7 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
 
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      if ndims(dataV) == 1
-         data = dataV[cellIndex]
-      elseif ndims(dataV) == 2
-         data = dataV[:, cellIndex]
-      end
+      data = ndims(dataV) == 1 ? dataV[cellIndex] : dataV[:,cellIndex]
       if eltype(data) == Float64
          data = Float32.(data)
       end
@@ -507,11 +502,7 @@ Check if the VLSV file contains VDF.
 """
 function hasvdf(meta::MetaVLSV)
    cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
-   if isempty(cells)
-      return false
-   else
-      return true
-   end
+   return !isempty(cells)
 end
 
 """
@@ -550,16 +541,14 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    vectorsize = parse(Int, attribute(varinfo, "vectorsize"))
    variable_offset = parse(Int, content(varinfo))
 
+   @assert datatype == "float" "VDFs must be floating numbers!"
+
    # Navigate to the correct position
    offset_data = offset * vectorsize * datasize + variable_offset
 
    seek(fid, offset_data)
 
-   if datatype == "float" && datasize == 4
-      Tavg = Float32
-   elseif datatype == "float" && datasize == 8
-      Tavg = Float64
-   end
+   Tavg = datasize == 4 ? Float32 : Float64
 
    data = Array{Tavg,2}(undef, vectorsize, nblocks)
    read!(fid, data)
@@ -571,16 +560,14 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    datatype = attribute(varinfo, "datatype")
    variable_offset = parse(Int, content(varinfo))
 
+   @assert datatype == "uint" "Block ID must be unsigned integer!"
+
    # Navigate to the correct position
    offset_f = offset * datasize + variable_offset
 
    seek(fid, offset_f)
 
-   if datatype == "uint" && datasize == 4
-      T = UInt32
-   elseif datatype == "uint" && datasize == 8
-      T = UInt64
-   end
+   T = datasize == 4 ? UInt32 : UInt64
 
    blockIDs = Vector{T}(undef, nblocks)
    read!(fid, blockIDs)
