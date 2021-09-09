@@ -49,6 +49,8 @@ axs[4].set_ylabel("Magnetic field [nT]"; fontsize)
 
 # Loop over snapshots
 for (i, fname) in enumerate(filenames)
+   isfile("out/"*fname[end-8:end-5]*".png") && continue
+
    println("i = $i/$nfile, filename = $fname")
    local meta = load(fname)
 
@@ -87,18 +89,16 @@ for (i, fname) in enumerate(filenames)
    axs[3].legend(;loc="upper left",  fontsize)
    axs[4].legend(;loc="upper right", fontsize)
 
-   savefig("out/"*meta.name[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("out/"*fname[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axs
       for line in ax.get_lines()
          line.remove()
       end
    end
-   vl1.remove()
-   vl2.remove()
-   vl3.remove()
-   vl4.remove()
-   hl4.remove()
+   for line in (vl1, vl2, vl3, vl4, hl4)
+      line.remove()
+   end
 end
 
 close(fig)

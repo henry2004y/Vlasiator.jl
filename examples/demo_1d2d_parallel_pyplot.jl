@@ -64,6 +64,8 @@ using Distributed
 end
 
 @everywhere function process(subfigs, axsL, axsR, fname, cellids, isinit)
+   isfile("out/"*fname[end-8:end-5]*".png") && return true
+
    println("filename = $fname")
    meta = load(fname)
 
@@ -116,23 +118,19 @@ end
       cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
       cb2.ax.set_ylabel("[km/s]"; fontsize)
       cb2.outline.set_linewidth(1.0)
-
-      isinit = false
    end
 
-   savefig("out/"*meta.name[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("out/"*fname[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axsL
       for line in ax.get_lines()
          line.remove()
       end
    end
-   vl1.remove()
-   vl2.remove()
-   vl3.remove()
-   vl4.remove()
-   hl4.remove()
-   return isinit
+   for line in (vl1, vl2, vl3, vl4, hl4)
+      line.remove()
+   end
+   return false
 end
 
 function make_jobs(filenames)
@@ -224,7 +222,7 @@ println("Running with $(nworkers()) workers...")
 end
 
 n = nfile
-@elapsed while n > 0 # print out results
+@elapsed while n > 0 # Wait for all jobs to complete
    take!(results)
    global n = n - 1
 end
