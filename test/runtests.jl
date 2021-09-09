@@ -197,7 +197,7 @@ end
    end
 
    if group in (:plot, :all)
-      @testset "Plotting" begin
+      @testset "PyPlot" begin
          using PyPlot
          ENV["MPLBACKEND"]="agg" # no GUI
          # 1D
@@ -248,6 +248,24 @@ end
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
          @test_throws ArgumentError pcolormesh(meta, "fg_b")
+         close(meta.fid)
+      end
+
+      @testset "Plots" begin
+         include("../src/plot/plots.jl")
+         RecipesBase.is_key_supported(k::Symbol) = true
+         # 1D
+         meta = load(filenames[1])
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
+         @test getfield(rec[1], 1)[:seriestype] == :line &&
+            rec[1].args[1] isa LinRange
+         close(meta.fid)
+
+         # 2D
+         meta = load(filenames[2])
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
+         @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
+            rec[1].args[1] isa LinRange
          close(meta.fid)
       end
    end
