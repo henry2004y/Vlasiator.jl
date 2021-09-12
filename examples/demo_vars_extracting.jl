@@ -5,7 +5,7 @@
 using Vlasiator, PyPlot, Glob, Printf
 
 filenames = glob("bulk*.vlsv", ".")
-nfile = length(filenames)
+nfiles = length(filenames)
 
 meta = load(filenames[1])
 
@@ -51,7 +51,7 @@ axs[4].set_ylabel("Magnetic field [nT]"; fontsize)
 for (i, fname) in enumerate(filenames)
    isfile("out/"*fname[end-8:end-5]*".png") && continue
 
-   println("i = $i/$nfile, filename = $fname")
+   println("i = $i/$nfiles, filename = $fname")
    local meta = load(fname)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
