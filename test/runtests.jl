@@ -239,7 +239,7 @@ end
             pcolormesh(meta, "proton/vg_v", op=:x)
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
-         p = quiver(meta, "proton/vg_v", axisunit=SI)
+         p = quiver(meta, "proton/vg_v", axisunit=SI, stride=1)
          @test size(p.get_offsets()) == (6300, 2)
          close(meta.fid)
 

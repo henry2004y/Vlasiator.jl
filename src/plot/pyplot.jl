@@ -60,6 +60,10 @@ end
 Wrapper over Matplotlib's streamplot function. The `comp` option can take a subset of "xyz"
 in any order. `axisunit` can be chosen from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
+
+# Optional arguments
+- `comp`: a subset of "xyz" in any order.
+- `axisunit`: chosen from RE and SI.
 """
 function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
    comp="xy", axisunit=RE, kwargs...)
@@ -72,21 +76,31 @@ function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
 end
 
 """
-    quiver(meta, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
+    quiver(meta, var, ax=nothing; comp="xy", axisunit=RE, stride=10, kwargs...)
 
 Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current active
 axes. The `comp` option can take a subset of "xyz" in any order. `axisunit` can be chosen
 from `RE, SI`.
 The keyword arguments can be any valid Matplotlib arguments into quiver.
+
+# Optional arguments
+- `comp`: a subset of "xyz" in any order.
+- `axisunit`: chosen from RE and SI.
+- `stride::Integer`: arrow strides in number of cells.
 """
 function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit=RE, kwargs...)
+   comp="xy", axisunit=RE, stride::Integer=10, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
    if isnothing(ax) ax = plt.gca() end
 
-   ax.quiver(X, Y, v1, v2; kwargs...)
+   Xq  = @view X[1:stride:end, 1:stride:end] 
+   Yq  = @view Y[1:stride:end, 1:stride:end]
+   v1q = @view v1[1:stride:end, 1:stride:end]
+   v2q = @view v2[1:stride:end, 1:stride:end]
+
+   ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
 end
 
 function set_vector(meta::MetaVLSV, var, comp, axisunit)
