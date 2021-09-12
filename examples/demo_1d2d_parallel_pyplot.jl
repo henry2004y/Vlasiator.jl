@@ -9,7 +9,7 @@ using Distributed
 @everywhere using Vlasiator, PyPlot, Glob, Printf, LaTeXStrings
 @everywhere using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
 
-@assert matplotlib.__version__ >= "3.4" "Matplotlib version too old: subfigure is not supported!"
+@assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
 @everywhere function init_figure()
    fig = plt.figure(myid(), constrained_layout=true, figsize=(12, 12))
@@ -66,7 +66,7 @@ end
 @everywhere function process(subfigs, axsL, axsR, fname, cellids, isinit)
    isfile("out/"*fname[end-8:end-5]*".png") && return true
 
-   println("filename = $fname")
+   println("filename = $(basename(fname))")
    meta = load(fname)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
@@ -104,17 +104,19 @@ end
    axsL[3].legend(;loc="lower right", fontsize)
    axsL[4].legend(;loc="upper right", fontsize)
 
-   x, y, data = plot_prep2d(meta, "MA", pArgs1, :z, axisunit) 
+   x, y, data = plot_prep2d(meta, "VA", pArgs1, :z, axisunit) 
    c1 = axsR[1].pcolormesh(x, y, data, norm=cnorm1, cmap=cmap, shading="auto")
 
-   x, y, data = plot_prep2d(meta, "MS", pArgs2, :z, axisunit) 
+   x, y, data = plot_prep2d(meta, "VS", pArgs2, :z, axisunit) 
    c2 = axsR[2].pcolormesh(x, y, data, norm=cnorm2, cmap=cmap, shading="auto")
 
    if isinit
       cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
+      cb1.ax.set_ylabel("[km/s]"; fontsize)
       cb1.outline.set_linewidth(1.0)
 
       cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
+      cb2.ax.set_ylabel("[km/s]"; fontsize)
       cb2.outline.set_linewidth(1.0)
    end
 
@@ -168,14 +170,14 @@ const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
 const vmin, vmax = -640.0, 0.0   # [km/s]
 const pmin, pmax = 0.0, 1.82     # [nPa]
 const bmin, bmax = -25.0, 60.0   # [nT]
-const mamin, mamax = 0.0, 4.0    #
-const msmin, msmax = 0.0, 4.0    #
+const vamin, vamax = 0.0, 250.0  #
+const vsmin, vsmax = 30.0, 350.0 #
 
-const pArgs1 = set_args(meta, "MA", axisunit, colorscale;
+const pArgs1 = set_args(meta, "VA", axisunit, colorscale;
    normal=:none, vmin=vamin, vmax=vamax)
 const cnorm1, cticks1 = set_colorbar(pArgs1)
 
-const pArgs2 = set_args(meta, "MS", axisunit, colorscale;
+const pArgs2 = set_args(meta, "VS", axisunit, colorscale;
    normal=:none, vmin=vsmin, vmax=vsmax)
 const cnorm2, cticks2 = set_colorbar(pArgs2)
 
