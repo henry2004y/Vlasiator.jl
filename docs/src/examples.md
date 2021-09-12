@@ -84,6 +84,7 @@ Here is a full list of available quantities[^1]:
 | VS                    | sound speed                      | vg\_ptensor\_diagonal; vg\_rho |
 | VA                    | Alfvén speed                     | vg\_rho; Bmag         |
 | MA                    | Alfvén Mach number               | Vmag; VA              |
+| MS                    | Sonic Mach number                | Vmag; VS              |
 | Vpar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol   |
 | Vperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol     |
 | P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |

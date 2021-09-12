@@ -135,6 +135,8 @@ end
 
          @test meta["MA"][end] == 10.700530839822328
 
+         @test meta["MS"][end] == 16.937588671999585
+
          @test meta["Vpar"][1] == 698735.3f0
 
          @test meta["Vperp"][1] == 40982.48f0

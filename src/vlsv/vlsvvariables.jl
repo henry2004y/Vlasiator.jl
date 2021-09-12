@@ -129,6 +129,14 @@ const variables_predefined = Dict(
       VA = readvariable(meta, "VA")
       V ./ VA
    end,
+   :MS => function (meta) # Sonic Mach number
+      V = readvariable(meta, "Vmag")
+      @inbounds for i = eachindex(V) # sparsity/inner boundary
+         V[i] == 0.0 && (V[i] = NaN)
+      end
+      VS = readvariable(meta, "VS")
+      V ./ VS
+   end,
    :Vpar => function (meta) # velocity ∥ B
       V = readvariable(meta, "proton/vg_v")
       b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
