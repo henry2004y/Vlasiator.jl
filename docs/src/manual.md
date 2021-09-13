@@ -1,4 +1,4 @@
-# Examples
+# Manual
 
 ## Loading VLSV data
 
@@ -57,8 +57,6 @@ issame(filename1, filename2)
 There is an optional third argument to `issame` for setting the relative difference tolerance, with default being 1e-4.
 In practice relative difference works better for "large" numbers, and absolute difference works better for "small" numbers.
 
-
-More examples can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples).
 
 ## Computing derived quantities
 
@@ -258,3 +256,16 @@ plt.show()
     This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, I recommend using the package inside Julia.
 
 [^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
+
+## Examples
+
+There is a list of complete [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) about:
+* Plotting with PyPlot
+* Plotting with Plots
+* Variable extraction along a line
+* Field line tracing
+* Simulation log file tracking
+* Converting VLSV to VTK format
+* Parallel post-processing
+
+Feel free to check those out and try on your data!

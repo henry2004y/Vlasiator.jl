@@ -1,9 +1,5 @@
 # Log
 
-## Precision
-
-For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we consistently use `Float32` in Vlasiator.jl. (Not exactly, in fact in VDF plots we are still using double precision if `f` is saved in `Float64`.)
-
 ## Performance
 
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
@@ -68,9 +64,17 @@ The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl 
 
 [^3]: The timings are for a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon CPUs. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.
 
+## Precision
+
+For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we consistently use `Float32` in Vlasiator.jl. (Not exactly, in fact in VDF plots we are still using double precision if `f` is saved in `Float64`.)
+
 ## Memory
 
 Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through `mmap` in Julia. With this mechanism you never need to worry about unable to process data with small free memory.
+
+## Parallelism
+
+The current design choice is to achieve optimal serial performance per file, and apply parallel processing across individual files. In most common cases, the time it takes for post-processing one snapshot is reasonably short, but the number of snapshots are large. Julia's built-in support for all kinds of parallelism paradigm (multithreads, multiprocess, channel) and external support from packages (MPI.jl, Polyester.jl) can be relatively easily incorported to make the whole workflow parallel.
 
 ## VTK
 
