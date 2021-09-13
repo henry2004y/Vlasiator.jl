@@ -202,26 +202,6 @@ heatmap(meta, "rho", aspect_ratio=:equal, c=:turbo)
 contourf(meta, "rho)
 ```
 
-### Gallery
-
-* Proton density in advection flow with points denoting cell centers
-![](figures/mesh.png)
-
-* Proton density of Earth's magnetosphere in the meridional plane from 3D simulation
-![](figures/magnetosphere_earth_proton_density_ycut.png)
-
-* Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and foreshock region, with streamlines and density contour at 1e7
-![](figures/magnetosphere_earth_proton_density_2D.png)
-
-* Proton density of Earth's magnetosphere in the meridional cut from 2D simulation, with fieldlines through fixed seeding points
-![](figures/magnetosphere_earth_proton_density_2D_bx_bz.png)
-
-* Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
-![](figures/magnetosphere_earth_proton_density_3cuts.png)
-
-* Proton phase space distribution
-![](figures/phase_space_distribution.png)
-
 ## Converting to VTK
 
 We can convert VLSV files into VTK files! Since DCCRG is Cartesian based with uniform spacing, each level of refinement corresponds to a VTK image file, and the cell refinement relationships are defined by `vtkGhostType` as well as the `vthb` file.

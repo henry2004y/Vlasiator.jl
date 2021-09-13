@@ -10,13 +10,11 @@ It becomes even more powerful when using together with other fantastic packages:
 
 Vlasiator.jl contains the following features:
 * Reading [VLSV](https://github.com/fmihpc/vlsv) format data.
+* Calculating derived quantities from VLSV outputs.
 * Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
 * Extracting quantities from the simulation at a given point/line/cut.
 * Plotting 1D curves/2D cuts of Vlasiator outputs.
 * Plotting phase space distributions.
-
-!!! note
-    This package is still young, so be careful for any future breaking changes!
 
 !!! warning
     This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standard for outputs, and is not guaranteed to work. [This analysator wiki page](https://github.com/fmihpc/analysator/wiki/Supported-variables-and-data-reducers) describes the old and new naming standards in detail.
