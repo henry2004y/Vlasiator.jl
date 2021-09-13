@@ -156,10 +156,10 @@ function load(filename::AbstractString; verbose=false)
    nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
    nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
 
-   ncells = SVector(bbox[1], bbox[2], bbox[3])
-   block_size = SVector(bbox[4], bbox[5], bbox[6])
-   coordmin = @SVector [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
-   coordmax = @SVector [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
+   @inbounds ncells = SVector(bbox[1], bbox[2], bbox[3])
+   @inbounds block_size = SVector(bbox[4], bbox[5], bbox[6])
+   @inbounds coordmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
+   @inbounds coordmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
 
    dcoord = SVector(@. (coordmax - coordmin) / ncells...)
 
@@ -237,7 +237,7 @@ function load(filename::AbstractString; verbose=false)
    # Obtain maximum refinement level
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
-   while cid < cellid[cellIndex[end]]
+   while @inbounds cid < cellid[cellIndex[end]]
       maxamr += 1
       cid += ncell*8^maxamr
    end
@@ -314,12 +314,12 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
       nIORanks = readparameter(meta, "numWritingRanks")
 
       if ndims(dataV) > 1
-         dataOrdered = zeros(Float32, size(dataV,1), bbox[1], bbox[2], bbox[3])
+         @inbounds dataOrdered = zeros(Float32, size(dataV,1), bbox[1], bbox[2], bbox[3])
       else
-         dataOrdered = zeros(Float32, bbox[1], bbox[2], bbox[3])
+         @inbounds dataOrdered = zeros(Float32, bbox[1], bbox[2], bbox[3])
       end
 
-      fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
+      @inbounds fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
 
       currentOffset = ones(UInt32, nIORanks+1)
       lsize = ones(Int, 3, nIORanks)
@@ -355,7 +355,7 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
 
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      data = ndims(dataV) == 1 ? dataV[cellIndex] : dataV[:,cellIndex]
+      @inbounds data = ndims(dataV) == 1 ? dataV[cellIndex] : dataV[:,cellIndex]
       if eltype(data) == Float64
          data = Float32.(data)
       end
@@ -388,7 +388,7 @@ function readvariable(meta::MetaVLSV, var, ids)
 
    for (i, r) in enumerate(rOffsets)
       seek(fid, offset + r)
-      read!(fid, @view v[:,i])
+      @inbounds read!(fid, @view v[:,i])
    end
 
    return v
@@ -530,8 +530,8 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    end
 
    # Navigate to the correct position
-   offset = nblock_C_offsets[cellWithVDFIndex]
-   nblocks = nblock_C[cellWithVDFIndex]
+   @inbounds offset = nblock_C_offsets[cellWithVDFIndex]
+   @inbounds nblocks = nblock_C[cellWithVDFIndex]
 
    # Read in avgs
    varinfo = footer["BLOCKVARIABLE"][1]
@@ -576,7 +576,7 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    vcellids = zeros(Int, bsize*nblocks)
    vcellf = zeros(Tavg, bsize*nblocks)
 
-   vcellid_local = [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
+   vcellid_local = @inbounds [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
       for i in 0:vblock_size[1]-1, j in 0:vblock_size[2]-1, k in 0:vblock_size[3]-1]
 
    @inbounds @floop for i in eachindex(blockIDs), j = 1:bsize
@@ -598,17 +598,17 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; pop="proton")
    bsize = prod(vblock_size)
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
-   blockIndX = @. blockid % vblocks[1]
-   blockIndY = @. blockid ÷ vblocks[1] % vblocks[2]
-   blockIndZ = @. blockid ÷ (vblocks[1] * vblocks[2])
-   blockCoordX = @. blockIndX * dv[1] * vblock_size[1] + vmin[1]
-   blockCoordY = @. blockIndY * dv[2] * vblock_size[2] + vmin[2]
-   blockCoordZ = @. blockIndZ * dv[3] * vblock_size[3] + vmin[3]
+   @inbounds blockIndX = @. blockid % vblocks[1]
+   @inbounds blockIndY = @. blockid ÷ vblocks[1] % vblocks[2]
+   @inbounds blockIndZ = @. blockid ÷ (vblocks[1] * vblocks[2])
+   @inbounds blockCoordX = @. blockIndX * dv[1] * vblock_size[1] + vmin[1]
+   @inbounds blockCoordY = @. blockIndY * dv[2] * vblock_size[2] + vmin[2]
+   @inbounds blockCoordZ = @. blockIndZ * dv[3] * vblock_size[3] + vmin[3]
    # Get cell indices
    cellids = @. vcellids % bsize
-   cellidx = @. cellids % vblock_size[1]
-   cellidy = @. cellids ÷ vblock_size[1] % vblock_size[2]
-   cellidz = @. cellids ÷ (vblock_size[1] * vblock_size[2])
+   @inbounds cellidx = @. cellids % vblock_size[1]
+   @inbounds cellidy = @. cellids ÷ vblock_size[1] % vblock_size[2]
+   @inbounds cellidz = @. cellids ÷ (vblock_size[1] * vblock_size[2])
    # Get cell coordinates
    cellCoords = Matrix{Float32}(undef, 3, length(cellids))
    @inbounds @floop for i in eachindex(cellids)

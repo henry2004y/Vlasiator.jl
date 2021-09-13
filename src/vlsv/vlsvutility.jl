@@ -33,12 +33,12 @@ function getcell(meta::MetaVLSV, loc)
    dx, dy, dz = dcoord
 
    # Get cell indices
-   indices = floor.(Int,
+   indices = @inbounds floor.(Int,
       [(loc[1] - coordmin[1])/dx,
        (loc[2] - coordmin[2])/dy,
        (loc[3] - coordmin[3])/dz])
    # Get the cell id
-   cellid = indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
+   cellid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
    # Going through AMR levels as needed
    ilevel = 0
@@ -91,7 +91,7 @@ end
 Return the parent cell ID of given child `cellid`.
 """
 function getparent(meta::MetaVLSV, cellid::Integer)
-   xcell, ycell = meta.ncells[1], meta.ncells[2]
+   @inbounds xcell, ycell = meta.ncells[1], meta.ncells[2]
    ncell = prod(meta.ncells)
 
    mylvl = getlevel(meta, cellid)
@@ -244,7 +244,7 @@ function getcellcoordinates(meta::MetaVLSV, cellid::Integer)
       cellid ÷ xcell % ycell,
       cellid ÷ (xcell*ycell) ]
 
-   coords = @SVector [
+   coords = @inbounds @SVector [
       coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1]) / xcell,
       coordmin[2] + (indices[2] + 0.5) * (coordmax[2] - coordmin[2]) / ycell,
       coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3]) / zcell ]
@@ -279,7 +279,7 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       throw(DomainError(point2, "point location outside simulation domain!"))
    end
 
-   cell_lengths = [
+   cell_lengths = @inbounds [
       (coordmax[1]-coordmin[1])/ncells[1],
       (coordmax[2]-coordmin[2])/ncells[2],
       (coordmax[3]-coordmin[3])/ncells[3]]
@@ -371,7 +371,7 @@ function getslicecell(meta::MetaVLSV, slicelocation;
    nStart = @MVector zeros(Int, maxamr+2) # number of cells up to each refinement level
    nStart[2] = ncell
    for ilvl = 1:maxamr
-      nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
+      @inbounds nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
    end
 
    indexlist = Int[]
@@ -548,10 +548,11 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
       if T[i] == Float64 T[i] = Float32 end
    end
 
-   celldata = [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
+   @inbounds celldata =
+      [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
       for i = 0:maxamr] for iv in 1:nv]
 
-   vtkGhostType =
+   @inbounds vtkGhostType =
       [zeros(UInt8, ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i) for i = 0:maxamr]
 
    if maxamr == 0
