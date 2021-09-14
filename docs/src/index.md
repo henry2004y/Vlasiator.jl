@@ -5,7 +5,7 @@ CurrentModule = Vlasiator
 # Vlasiator.jl
 
 Data processing and analyzing tool for the numerical model for collisionless ion-kinetic plasma physics [Vlasiator](https://github.com/fmihpc/vlasiator).
-This lightweight package is built upon its sister in Python [Analysator](https://github.com/fmihpc/analysator), and is carefully designed for performance and ease of use.
+This lightweight package is built upon its sister in Python [Analysator](https://github.com/fmihpc/analysator) and carefully designed for performance and ease of use.
 It becomes even more powerful when using together with other fantastic packages: combined with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl), it is possible to do all kinds of in-depth analysis.
 
 Vlasiator.jl contains the following features:
