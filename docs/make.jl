@@ -17,6 +17,7 @@ makedocs(;
         "User Guide" => "manual.md",
         "Gallery" => "gallery.md",
         "API Reference" => "internal.md",
+        "Contributing" => "contributing.md",
         "Log" => "log.md",
     ],
 )
