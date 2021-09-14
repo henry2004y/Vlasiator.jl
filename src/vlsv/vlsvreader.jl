@@ -83,7 +83,7 @@ end
 
 "Return size and type information for the object."
 function getObjInfo(fid, footer, name, tag, attr)
-   arraysize, datasize, datatype, vectorsize, variable_offset = 0, 0, "", 0, 0
+   local arraysize, datasize, datatype, vectorsize, variable_offset
    isFound = false
 
    for var in findall("//$tag", footer)
@@ -113,7 +113,7 @@ function getObjInfo(fid, footer, name, tag, attr)
    T, variable_offset, arraysize, datasize, vectorsize
 end
 
-"Return vector data from vlsv file."
+"Return variable from vlsv file."
 function readvector(fid, footer, name, tag)
    T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
@@ -245,7 +245,7 @@ function load(filename::AbstractString; verbose=false)
    varinfo = findall("//VARIABLE", footer)
    nVar = length(varinfo)
    vars = Vector{String}(undef, nVar)
-   for i in 1:nVar
+   for i in eachindex(vars, varinfo)
       @inbounds vars[i] = varinfo[i]["name"]
    end
 
@@ -517,37 +517,32 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    @unpack vblock_size = meta.meshes[pop]
    bsize = prod(vblock_size)
 
-   cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS")
-   nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
+   local offset, nblocks
+   let cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS"),
+       nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
+      # Check if cells have vspace stored
+      if cellid ∈ cellsWithVDF
+         cellWithVDFIndex = findfirst(==(cellid), cellsWithVDF)
+      else
+         throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
+      end
+      # Navigate to the correct position
+      offset = sum(@view nblock_C[1:cellWithVDFIndex-1])
+      @inbounds nblocks = nblock_C[cellWithVDFIndex]
+   end
 
-   nblock_C_offsets = zeros(Int, length(cellsWithVDF))
-   nblock_C_offsets[2:end] = @views cumsum(nblock_C[1:end-1])
-
-   # Check if cells have vspace stored
-   if cellid ∈ cellsWithVDF
-      cellWithVDFIndex = findfirst(==(cellid), cellsWithVDF)
-   else
-      throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
+   local datasize, datatype, vectorsize, variable_offset
+   # Read in avgs
+   let varinfo = findfirst("//BLOCKVARIABLE", footer)
+      datasize = parse(Int, varinfo["datasize"])
+      datatype = varinfo["datatype"]
+      @assert datatype == "float" "VDFs must be floating numbers!"
+      vectorsize = parse(Int, varinfo["vectorsize"])
+      variable_offset = parse(Int, nodecontent(varinfo))
    end
 
    # Navigate to the correct position
-   @inbounds offset = nblock_C_offsets[cellWithVDFIndex]
-   @inbounds nblocks = nblock_C[cellWithVDFIndex]
-
-   # Read in avgs
-   varinfo = findfirst("//BLOCKVARIABLE", footer)
-   arraysize = parse(Int, varinfo["arraysize"])
-   datasize = parse(Int, varinfo["datasize"])
-   datatype = varinfo["datatype"]
-   vectorsize = parse(Int, varinfo["vectorsize"])
-   variable_offset = parse(Int, nodecontent(varinfo))
-
-   @assert datatype == "float" "VDFs must be floating numbers!"
-
-   # Navigate to the correct position
-   offset_data = offset * vectorsize * datasize + variable_offset
-
-   seek(fid, offset_data)
+   seek(fid, offset * vectorsize * datasize + variable_offset)
 
    Tavg = datasize == 4 ? Float32 : Float64
 
@@ -555,18 +550,15 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    read!(fid, data)
 
    # Read in block IDs
-   varinfo = findfirst("//BLOCKIDS", footer)
-   arraysize = parse(Int, varinfo["arraysize"])
-   datasize = parse(Int, varinfo["datasize"])
-   datatype = varinfo["datatype"]
-   variable_offset = parse(Int, nodecontent(varinfo))
-
-   @assert datatype == "uint" "Block ID must be unsigned integer!"
+   let varinfo = findfirst("//BLOCKIDS", footer)
+      datasize = parse(Int, varinfo["datasize"])
+      datatype = varinfo["datatype"]
+      @assert datatype == "uint" "Block ID must be unsigned integer!"
+      variable_offset = parse(Int, nodecontent(varinfo))
+   end
 
    # Navigate to the correct position
-   offset_f = offset * datasize + variable_offset
-
-   seek(fid, offset_f)
+   seek(fid, offset * datasize + variable_offset)
 
    T = datasize == 4 ? UInt32 : UInt64
 
