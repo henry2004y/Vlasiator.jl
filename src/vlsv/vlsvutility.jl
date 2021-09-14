@@ -668,31 +668,34 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, vti=false, verbose=fa
 
       # Generate vthb file
       filemeta = meta.name[1:end-4]*"vthb"
-      xvthb = XMLDocument()
-      xroot = create_root(xvthb, "VTKFile")
-      set_attribute(xroot, "type", "vtkOverlappingAMR")
-      set_attribute(xroot, "version", "1.1")
-      set_attribute(xroot, "byte_order", "LittleEndian") # always the case on x86
-      set_attribute(xroot, "header_type", "UInt64")
-      xamr = new_child(xroot, "vtkOverlappingAMR")
+      doc = XMLDocument()
+      elm = ElementNode("VTKFile")
+      setroot!(doc, elm)
+      link!(elm, AttributeNode("type", "vtkOverlappingAMR"))
+      link!(elm, AttributeNode("version", "1.1"))
+      link!(elm, AttributeNode("byte_order", "LittleEndian")) # x86
+      link!(elm, AttributeNode("header_type", "UInt64"))
+
+      xamr = addelement!(elm, "vtkOverlappingAMR")
+
       origin = @sprintf "%f %f %f" coordmin...
-      set_attribute(xamr, "origin", origin)
-      set_attribute(xamr, "grid_description", "XYZ")
+      link!(xamr, AttributeNode("origin", origin))
+      link!(xamr, AttributeNode("grid_description", "XYZ"))
 
       @inbounds for i = 0:maxamr
-         xBlock = new_child(xamr, "Block")
-         set_attribute(xBlock, "level", string(i))
+         xBlock = addelement!(xamr, "Block")
+         link!(xBlock, AttributeNode("level", string(i)))
          spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
-         set_attribute(xBlock, "spacing", spacing_str)
-         xDataSet = new_child(xBlock, "DataSet")
-         set_attribute(xDataSet, "index", "0")
+         link!(xBlock, AttributeNode("spacing", spacing_str))
+         xDataSet = addelement!(xBlock, "DataSet")
+         link!(xDataSet, AttributeNode("index", "0"))
          amr_box = [0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1]
          box_str = @sprintf "%d %d %d %d %d %d" amr_box...
-         set_attribute(xDataSet, "amr_box", box_str)
-         set_attribute(xDataSet, "file", filedata[i+1])
+         link!(xDataSet, AttributeNode("amr_box", box_str))
+         link!(xDataSet, AttributeNode("file", filedata[i+1]))
       end
 
-      save_file(xvthb, filemeta)
+      write(filemeta, doc)
    end
 
    return
@@ -764,7 +767,7 @@ function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
          break
       end
    end
-   verbose && isIdentical && println("$f1 and $f2 are identical under tolerance $tol.") 
+   verbose && isIdentical && println("$f1 and $f2 are identical under tolerance $tol.")
    close(meta1.fid)
    close(meta2.fid)
    return isIdentical

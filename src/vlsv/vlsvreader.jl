@@ -2,7 +2,7 @@
 
 include("vlsvvariables.jl")
 
-using Mmap, LightXML, FLoops
+using Mmap, EzXML, FLoops
 
 export MetaVLSV, VarInfo
 export load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
@@ -34,7 +34,7 @@ end
 struct MetaVLSV
    name::AbstractString
    fid::IOStream
-   footer::XMLElement
+   footer::EzXML.Node
    variable::Vector{String}
    "sorted cell IDs"
    cellid::Vector{UInt64}
@@ -77,22 +77,22 @@ function getfooter(fid)
    # Obtain the offset of the XML file
    offset = read(fid, UInt64)
    seek(fid, offset)
-   footer = read(fid, String) |> parse_string |> root
+   footer = read(fid, String) |> parsexml |> root
 end
 
 
 "Return size and type information for the object."
 function getObjInfo(fid, footer, name, tag, attr)
-   arraysize, datasize, datatype, vectorsize, variable_offset = 0, 0, "", 0, 0
+   local arraysize, datasize, datatype, vectorsize, variable_offset
    isFound = false
 
-   for varinfo in footer[tag]
-      if attribute(varinfo, attr) == String(name)
-         arraysize = parse(Int, attribute(varinfo, "arraysize"))
-         datasize = parse(Int, attribute(varinfo, "datasize"))
-         datatype = attribute(varinfo, "datatype")
-         vectorsize = parse(Int, attribute(varinfo, "vectorsize"))
-         variable_offset = parse(Int, content(varinfo))
+   for var in findall("//$tag", footer)
+      if var[attr] == String(name)
+         arraysize = parse(Int, var["arraysize"])
+         datasize = parse(Int, var["datasize"])
+         datatype = var["datatype"]
+         vectorsize = parse(Int, var["vectorsize"])
+         variable_offset = parse(Int, nodecontent(var))
          isFound = true
          break
       end
@@ -113,7 +113,7 @@ function getObjInfo(fid, footer, name, tag, attr)
    T, variable_offset, arraysize, datasize, vectorsize
 end
 
-"Return vector data from vlsv file."
+"Return variable from vlsv file."
 function readvector(fid, footer, name, tag)
    T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
@@ -168,11 +168,11 @@ function load(filename::AbstractString; verbose=false)
    # Find all populations by the BLOCKIDS tag
    populations = String[]
 
-   for varinfo in footer["BLOCKIDS"]
+   for varinfo in findall("//BLOCKIDS", footer)
 
-      if has_attribute(varinfo, "name")
+      if haskey(varinfo, "name")
          # VLSV 5.0 file with bounding box
-         popname = attribute(varinfo, "name")
+         popname = varinfo["name"]
 
          bbox = readmesh(fid, footer, popname, "MESH_BBOX")
 
@@ -187,7 +187,7 @@ function load(filename::AbstractString; verbose=false)
       else
          popname = "avgs"
 
-         if "vxblocks_ini" in attribute.(footer["PARAMETER"], "name")
+         if "vxblocks_ini" in getindex.(findall("//PARAMETER", footer), "name")
             # In VLSV before 5.0 the mesh is defined with parameters.
             vblocks = @MVector zeros(Int, 3)
             vblocks[1] = readparameter(fid, footer, "vxblocks_ini")
@@ -242,10 +242,11 @@ function load(filename::AbstractString; verbose=false)
       cid += ncell*8^maxamr
    end
 
-   nVar = length(footer["VARIABLE"])
+   varinfo = findall("//VARIABLE", footer)
+   nVar = length(varinfo)
    vars = Vector{String}(undef, nVar)
-   for i in 1:nVar
-      @inbounds vars[i] = attribute(footer["VARIABLE"][i], "name")
+   for i in eachindex(vars, varinfo)
+      @inbounds vars[i] = varinfo[i]["name"]
    end
 
    # File IOstream is not closed for sake of data processing later.
@@ -269,12 +270,12 @@ function readvariablemeta(meta::MetaVLSV, var)
    if varSym in keys(units_predefined)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
    elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, MetaVLSV is included
-      for varinfo in meta.footer["VARIABLE"]
-         if attribute(varinfo, "name") == var
-            unit = attribute(varinfo, "unit")
-            unitLaTeX = attribute(varinfo, "unitLaTeX")
-            variableLaTeX = attribute(varinfo, "variableLaTeX")
-            unitConversion = attribute(varinfo, "unitConversion")
+      for varinfo in findall("//VARIABLE", meta.footer)
+         if varinfo["name"] == var
+            unit = varinfo["unit"]
+            unitLaTeX = varinfo["unitLaTeX"]
+            variableLaTeX = varinfo["variableLaTeX"]
+            unitConversion = varinfo["unitConversion"]
          end
          # If var isn't predefined or unit isn't found, it will return nothing!
       end
@@ -476,12 +477,12 @@ Check if the vlsv file contains a certain parameter.
 """
 hasparameter(meta::MetaVLSV, param) = hasname(meta.footer, "PARAMETER", param)
 
-"Check if the XMLElement `elem` contains a `tag` with `name`."
-function hasname(elem, tag, name)
+"Check if the XML `element` contains a `tag` with `name`."
+function hasname(element, tag, name)
    isFound = false
 
-   for varinfo in elem[tag]
-      attribute(varinfo, "name") == name && (isFound = true)
+   for var in findall("//$tag", element)
+      var["name"] == name && (isFound = true)
       isFound && break
    end
 
@@ -516,37 +517,32 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    @unpack vblock_size = meta.meshes[pop]
    bsize = prod(vblock_size)
 
-   cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS")
-   nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
+   local offset, nblocks
+   let cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS"),
+       nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
+      # Check if cells have vspace stored
+      if cellid ∈ cellsWithVDF
+         cellWithVDFIndex = findfirst(==(cellid), cellsWithVDF)
+      else
+         throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
+      end
+      # Navigate to the correct position
+      offset = sum(@view nblock_C[1:cellWithVDFIndex-1])
+      @inbounds nblocks = nblock_C[cellWithVDFIndex]
+   end
 
-   nblock_C_offsets = zeros(Int, length(cellsWithVDF))
-   nblock_C_offsets[2:end] = @views cumsum(nblock_C[1:end-1])
-
-   # Check if cells have vspace stored
-   if cellid ∈ cellsWithVDF
-      cellWithVDFIndex = findfirst(==(cellid), cellsWithVDF)
-   else
-      throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
+   local datasize, datatype, vectorsize, variable_offset
+   # Read in avgs
+   let varinfo = findfirst("//BLOCKVARIABLE", footer)
+      datasize = parse(Int, varinfo["datasize"])
+      datatype = varinfo["datatype"]
+      @assert datatype == "float" "VDFs must be floating numbers!"
+      vectorsize = parse(Int, varinfo["vectorsize"])
+      variable_offset = parse(Int, nodecontent(varinfo))
    end
 
    # Navigate to the correct position
-   @inbounds offset = nblock_C_offsets[cellWithVDFIndex]
-   @inbounds nblocks = nblock_C[cellWithVDFIndex]
-
-   # Read in avgs
-   varinfo = footer["BLOCKVARIABLE"][1]
-   arraysize = parse(Int, attribute(varinfo, "arraysize"))
-   datasize = parse(Int, attribute(varinfo, "datasize"))
-   datatype = attribute(varinfo, "datatype")
-   vectorsize = parse(Int, attribute(varinfo, "vectorsize"))
-   variable_offset = parse(Int, content(varinfo))
-
-   @assert datatype == "float" "VDFs must be floating numbers!"
-
-   # Navigate to the correct position
-   offset_data = offset * vectorsize * datasize + variable_offset
-
-   seek(fid, offset_data)
+   seek(fid, offset * vectorsize * datasize + variable_offset)
 
    Tavg = datasize == 4 ? Float32 : Float64
 
@@ -554,18 +550,15 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    read!(fid, data)
 
    # Read in block IDs
-   varinfo = footer["BLOCKIDS"][1]
-   arraysize = parse(Int, attribute(varinfo, "arraysize"))
-   datasize = parse(Int, attribute(varinfo, "datasize"))
-   datatype = attribute(varinfo, "datatype")
-   variable_offset = parse(Int, content(varinfo))
-
-   @assert datatype == "uint" "Block ID must be unsigned integer!"
+   let varinfo = findfirst("//BLOCKIDS", footer)
+      datasize = parse(Int, varinfo["datasize"])
+      datatype = varinfo["datatype"]
+      @assert datatype == "uint" "Block ID must be unsigned integer!"
+      variable_offset = parse(Int, nodecontent(varinfo))
+   end
 
    # Navigate to the correct position
-   offset_f = offset * datasize + variable_offset
-
-   seek(fid, offset_f)
+   seek(fid, offset * datasize + variable_offset)
 
    T = datasize == 4 ? UInt32 : UInt64
 
