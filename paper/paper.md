@@ -30,7 +30,7 @@ the global magnetosphere.
 Due to the multi-dimensional approach at ion scales, Vlasiator's computational
 challenges are immense. The storage required to resolve the phase space
 distributions can easily go beyond tegabytes with each reduced snapshot goes
-beyond 10 GB, which requires efficient numerical tools for processing the data.
+beyond 10 GB, which needs efficient numerical tools for processing the data.
 
 # Statement of need
 
@@ -48,7 +48,8 @@ and `TestParticle.jl` [@testparticle] for test particle simulations.
 and `FSGRID` [@fsgrid], at any size.
 - Calculating derived quantities from VLSV outputs.
 - Extracting quantities at a given point/line/plane.
-- Plotting 1D curves/2D cuts of saved variables, and phase space distributions.
+- Plotting 1D curves/2D cuts of saved/derived variables, and phase space
+distributions.
 - Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
 
 `Vlasiator.jl` is targeted at space physics researchers who want to visualize
