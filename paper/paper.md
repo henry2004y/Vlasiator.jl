@@ -44,6 +44,7 @@ like `FieldTracer.jl` [@fieldtracer] for tracing along the field lines and
 `TestParticle.jl` [@testparticle] for test particle simulations.
 
 `Vlasiator.jl` contains the following main features:
+
 - Reading `VLSV` format data [@vlsv], including `DCCRG` [@honkonen2013parallel]
 and `FSGRID` [@fsgrid]
 - Calculating derived quantities from VLSV outputs.
@@ -63,7 +64,7 @@ students and experts alike.
 
 # Acknowledgements
 
-We acknowledge support from Lucile Turc during the genesis of this project, and
-... for the grant.
+We acknowledge support from Lucile Turc during the genesis of this project.
+Funding for this work is provided by Finnish Institute of Science.
 
 # References
