@@ -29,34 +29,34 @@ the global magnetosphere.
 
 Due to the multi-dimensional approach at ion scales, Vlasiator's computational
 challenges are immense. The storage required to resolve the phase space
-distributions can easily go beyond tegabytes, which requires efficient numerical
-tools for processing the data.
+distributions can easily go beyond tegabytes with each reduced snapshot goes
+beyond 10 GB, which requires efficient numerical tools for processing the data.
 
 # Statement of need
 
 `Vlasiator.jl` is a Julia package for processing and analyzing simulation data
 from Vlasiator.
-
 This lightweight package is built upon its sister package in Python `Analysator`
-[@analysator] and is carefully designed for performance and ease of use.
-It can be easily integrated with other open source packages in the community
-like `FieldTracer.jl` [@fieldtracer] for tracing along the field lines and
-`TestParticle.jl` [@testparticle] for test particle simulations.
+[@analysator] and is carefully designed for performance, capability and ease of
+use. It can be easily integrated with other open source packages in the
+community like `FieldTracer.jl` [@fieldtracer] for tracing along the field lines
+and `TestParticle.jl` [@testparticle] for test particle simulations.
 
 `Vlasiator.jl` contains the following main features:
 
 - Reading `VLSV` format data [@vlsv], including `DCCRG` [@honkonen2013parallel]
-and `FSGRID` [@fsgrid]
+and `FSGRID` [@fsgrid], at any size.
 - Calculating derived quantities from VLSV outputs.
+- Extracting quantities at a given point/line/plane.
+- Plotting 1D curves/2D cuts of saved variables, and phase space distributions.
 - Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
-- Extracting quantities from the simulation at a given point/line/cut.
-- Plotting 1D curves/2D cuts of Vlasiator outputs.
-- Plotting phase space distributions.
 
-`Vlasiator.jl` was designed to be used by space physics researchers who want to
-visualize and analyze Vlasiator simulation outputs in an efficient manner.
-It has preliminarily been used in ultra-low frequency wave studies under
-time-varying solar wind conditions [@ressac].
+`Vlasiator.jl` is targeted at space physics researchers who want to visualize
+and analyze Vlasiator simulation outputs in an efficient manner.
+It achieves optimal serial performance for single file processing and can be
+directly applied to parallel batch jobs using both multithreads and
+multiprocesses. It has preliminarily been used in ultra-low frequency wave
+studies under time-varying solar wind conditions [@ressac].
 
 The combination of speed and design in `Vlasiator.jl` will enable exciting
 scientific explorations of forthcoming data from the large scale simulation by
