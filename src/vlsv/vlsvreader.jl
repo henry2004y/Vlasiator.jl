@@ -168,7 +168,7 @@ function load(filename::AbstractString; verbose=false)
    # Find all populations by the BLOCKIDS tag
    populations = String[]
 
-   for varinfo in findall("//BLOCKVARIABLE", footer)
+   for varinfo in findall("//BLOCKIDS", footer)
 
       if haskey(varinfo, "name")
          # VLSV 5.0 file with bounding box
