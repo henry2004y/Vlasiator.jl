@@ -18,20 +18,19 @@ bibliography: paper.bib
 
 # Summary
 
-Vast majority of space in the solar system is filled with charged particles,
-i.e. plasma. Plasma can carry electromagnetic field and interacts with
-astronomical object's magnetic field to create a magnetosphere near the object.
-
-In near-Earth region, space weather is used to describe the environmental
-effects caused by the solar wind, a stream of charged particles carrying the
-solar electromagnetic field. `Vlasiator` [@palmroth2018vlasov] is a numerical
-model for collisionless ion-kinetic plasma physics, aiming at studying space
-weather in the global magnetosphere.
+Space weather is used to describe the environmental effects in the solar system
+caused by the solar wind, a stream of charged particles carrying the solar
+electromagnetic field. Vast majority of space in the solar system is filled with
+charged particles, i.e. plasma.  Plasma can carry electromagnetic field and
+interacts with astronomical object's magnetic field to create a magnetosphere
+near the object. `Vlasiator` [@palmroth2018vlasov] is a numerical model for
+collisionless ion-kinetic plasma physics, aiming at studying space weather in
+the global magnetosphere.
 
 Due to the multi-dimensional approach at ion scales, Vlasiator's computational
-challenges are immense. The storage required to resolve the phase space can
-easily go beyond tegabytes, which requires efficient numerical tools for
-processing the data.
+challenges are immense. The storage required to resolve the phase space
+distributions can easily go beyond tegabytes, which requires efficient numerical
+tools for processing the data.
 
 # Statement of need
 
@@ -42,16 +41,16 @@ This lightweight package is built upon its sister package in Python `Analysator`
 [@analysator] and is carefully designed for performance and ease of use.
 It can be easily integrated with other open source packages in the community
 like `FieldTracer.jl` [@fieldtracer] for tracing along the field lines and
-`TestParticle.jl` [$testparticle] for test particle simulations.
+`TestParticle.jl` [@testparticle] for test particle simulations.
 
 `Vlasiator.jl` contains the following main features:
-* Reading `VLSV` format data [@vlsv], including `DCCRG` [@dccrg] and `FSGRID`
-[@fsgrid]
-* Calculating derived quantities from VLSV outputs.
-* Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
-* Extracting quantities from the simulation at a given point/line/cut.
-* Plotting 1D curves/2D cuts of Vlasiator outputs.
-* Plotting phase space distributions.
+- Reading `VLSV` format data [@vlsv], including `DCCRG` [@honkonen2013parallel]
+and `FSGRID` [@fsgrid]
+- Calculating derived quantities from VLSV outputs.
+- Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
+- Extracting quantities from the simulation at a given point/line/cut.
+- Plotting 1D curves/2D cuts of Vlasiator outputs.
+- Plotting phase space distributions.
 
 `Vlasiator.jl` was designed to be used by space physics researchers who want to
 visualize and analyze Vlasiator simulation outputs in an efficient manner.
@@ -64,6 +63,7 @@ students and experts alike.
 
 # Acknowledgements
 
-We acknowledge support from Lucile Turc during the genesis of this project.
+We acknowledge support from Lucile Turc during the genesis of this project, and
+... for the grant.
 
 # References
