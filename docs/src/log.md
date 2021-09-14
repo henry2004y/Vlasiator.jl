@@ -24,29 +24,33 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 
 ### Benchmarks
 
-The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.1.
+!!! note
+    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.
 
 * Reading DCCRG grid variables
-| Julia | tmean [μs] | Python | tmean [μs] |
+| Variable[^1] | 80KB Float32 | 900KB Float64 | 32MB Float64 |
 |:------|:----------:|:-------|:----------:|
-| 2MB  | 200 | 2MB  | 1000   |
-| 50MB | 400 | 50MB | 1000   |
+| Julia  [ms] | 0.2 | 6.4 | 334[^2] |
+| Python [ms] | 2.2 | 10 | 295 |
 
-* Reading field solver grid[^1] variables
-| 26GB   | tmean [s] |
+[^1]: The size here represents the actual size of the variable, not the total file size. The larger the data sizes, the less meaningful in these comparisons since the time is dominant by low level I/O, where in Python it's written in C.
+[^2]: Julia is slower for this test because there is a conversion from Float64 to Float32. See [Precision](#precision).
+
+* Reading field solver grid variables[^3]
+| 13GB   | tmean [s] |
 |:-------|:---------:|
-| Julia  | 13   |
-| Python | 45   |
+| Julia  | 9   |
+| Python | 61  |
 
-[^1]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once; it will go out of memory for the second time! This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
+[^3]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once. It will go out of memory for the second time in Analysator, but not in Vlasiator.jl --- see [Memory](#memory). This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
 
-* From starting Julia/Python to the first plot[^2]
+* From starting Julia/Python to the first plot[^4]
 | 2.3GB  | tmean [s] |
 |:-------|:---------:|
 | Julia  | 11.6  |
 | Python | 9.3   |
 
-[^2]: This inefficieny is a famous problem in the Julia community known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
+[^4]: This inefficieny is a famous problem in the Julia community known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
 
 * Reading and plotting one 2d slice of proton density out of 3D AMR data
 
@@ -57,12 +61,12 @@ The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl 
 
 * Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on a cluster
 
-| 1 CPU   | tmean [m][^3] |
+| 1 CPU   | tmean [m][^5] |
 |:-------|:---------:|
 | Julia  | 11    |
 | Python | 125   |
 
-[^3]: The timings are for a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon CPUs. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.
+[^5]: The timings are for a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon CPUs. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.
 
 ## Precision
 
