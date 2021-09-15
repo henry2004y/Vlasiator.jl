@@ -100,8 +100,6 @@ function getObjInfo(fid, footer, name, tag, attr)
 
    !isFound && throw(ArgumentError("unknown variable $name"))
 
-   seek(fid, variable_offset)
-
    if datatype == "float"
       T = datasize == 4 ? Float32 : Float64
    elseif datatype == "int"
@@ -121,6 +119,7 @@ function readvector(fid, footer, name, tag)
       w = vectorsize == 1 ?
          Vector{T}(undef, arraysize) :
          Array{T,2}(undef, vectorsize, arraysize)
+      seek(fid, offset)
       read!(fid, w)
    else
       @warn "Less than 1GB free memory detected. Using memory-mapped I/O!"
@@ -146,7 +145,13 @@ function load(filename::AbstractString; verbose=false)
 
    meshName = "SpatialGrid"
 
-   cellid = readvector(fid, footer, "CellID", "VARIABLE")
+   local cellid
+   let
+      T, offset, arraysize, _, vectorsize = 
+         getObjInfo(fid, footer, "CellID", "VARIABLE", "name")
+      a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+      cellid = reinterpret(T, a)
+   end
 
    cellIndex = sortperm(cellid)
 
@@ -286,9 +291,10 @@ end
 
 "Return mesh related variable."
 function readmesh(fid, footer, typeMesh, varMesh)
-   T, _, arraysize, _, _ = getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
+   T, offset, arraysize, _, _ = getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
 
    w = Vector{T}(undef, arraysize)
+   seek(fid, offset)
    read!(fid, w)
 
    w
@@ -380,18 +386,23 @@ function readvariable(meta::MetaVLSV, var, ids)
       return [w]
    end
 
-   T, offset, _, datasize, vectorsize = getObjInfo(fid, footer, var, "VARIABLE", "name")
-
-   cellid = readvector(fid, footer, "CellID", "VARIABLE")
-   rOffsets = [(findfirst(==(i), cellid)-1)*datasize*vectorsize for i in ids]
+   T, offset, arraysize, _, vectorsize = 
+      getObjInfo(meta.fid, meta.footer, var, "VARIABLE", "name")
 
    v = Array{T}(undef, vectorsize, length(ids))
 
-   for (i, r) in enumerate(rOffsets)
-      seek(fid, offset + r)
-      @inbounds read!(fid, @view v[:,i])
-   end
+   a = Mmap.mmap(meta.fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+   w = reshape(reinterpret(T, a), vectorsize, arraysize)
 
+   cellid = readvector(fid, footer, "CellID", "VARIABLE")
+   id_ = [findfirst(==(i), cellid) for i in ids]
+
+   for i in eachindex(id_), iv = 1:vectorsize
+      @inbounds v[iv,i] = w[iv,id_[i]]
+   end
+   if T == Float64
+      v = Float32.(v)
+   end
    return v
 end
 
@@ -464,9 +475,8 @@ Return the parameter value from vlsv file.
 readparameter(meta::MetaVLSV, param) = readparameter(meta.fid, meta.footer, param)
 
 function readparameter(fid, footer, param)
-
-   T, _, _, _, _ = getObjInfo(fid, footer, param, "PARAMETER", "name")
-
+   T, offset, _, _, _ = getObjInfo(fid, footer, param, "PARAMETER", "name")
+   seek(fid, offset)
    p = read(fid, T)
 end
 
@@ -541,12 +551,10 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
       variable_offset = parse(Int, nodecontent(varinfo))
    end
 
-   # Navigate to the correct position
-   seek(fid, offset * vectorsize * datasize + variable_offset)
-
    Tavg = datasize == 4 ? Float32 : Float64
 
    data = Array{Tavg,2}(undef, vectorsize, nblocks)
+   seek(fid, offset * vectorsize * datasize + variable_offset)
    read!(fid, data)
 
    # Read in block IDs
@@ -557,12 +565,10 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
       variable_offset = parse(Int, nodecontent(varinfo))
    end
 
-   # Navigate to the correct position
-   seek(fid, offset * datasize + variable_offset)
-
    T = datasize == 4 ? UInt32 : UInt64
 
    blockIDs = Vector{T}(undef, nblocks)
+   seek(fid, offset * datasize + variable_offset)
    read!(fid, blockIDs)
 
    # Velocity cell IDs and corresponding avg distributions
