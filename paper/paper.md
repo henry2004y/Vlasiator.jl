@@ -36,7 +36,7 @@ size.
 - Extracting quantities at a given point/line/plane.
 - Plotting 1D curves/2D cuts of saved/derived variables and phase space
 distributions from mutiple backends such as `Matplotlib` [@matplotlib],
-`Plots.jl` [@plots], and `Makie.jl` [@Makie].
+`Plots.jl` [@plots], and `Makie.jl` [@makie].
 - Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
 
 `Vlasiator.jl` is targeted at space physics researchers who want to visualize
