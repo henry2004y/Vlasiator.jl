@@ -127,15 +127,17 @@ end
          close(meta.fid)
 
          meta = load(filenames[2])
-         @test meta["Bmag"][4] ≈ 3.005215661015543e-9
+         @test meta["Bmag"][4] == 3.0052159f-9
 
-         @test meta["VS"] |> nanmaximum == 1.3726346123826832e6
+         @test meta["Emag"][1,10,99] == 2.6120072f-6
+
+         @test meta["VS"] |> nanmaximum == 1.3726345956957596e6
 
          @test meta["VA"] |> nanmaximum == 2.3202628822256166e8
 
          @test meta["MA"][end] == 10.700530839822328
 
-         @test meta["MS"][end] == 16.937588671999585
+         @test meta["MS"][end] == 16.9375888861409
 
          @test meta["Vpar"][1] == 698735.3f0
 
@@ -145,14 +147,13 @@ end
 
          @test meta["Beta"][1] == 1.3359065984817116
 
-         Poynting = meta["Poynting"]
-         @test Poynting[:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
+         @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
          @test meta["IonInertial"][1] == 8.584026203089327e7
 
          @test meta["Larmor"][1] == 142415.61236345078
 
-         @test meta["J"][1,1000] == 2.314360630106622e-14
+         @test meta["J"][1,1000] == 2.314360722590665e-14
 
          #Anisotropy = meta["Anisotropy"]
 
@@ -162,7 +163,7 @@ end
       end
    end
 
-   if group in (:rotation, :all)
+   if group in (:utility, :all)
       @testset "Rotation" begin
          using LinearAlgebra
          T = Diagonal([1.0, 2.0, 3.0])
@@ -170,6 +171,22 @@ end
          Vlasiator.rotateWithB!(T, B)
          @test T == Diagonal([1.0, 3.0, 2.0])
          @test Vlasiator.rotateWithB(T, B) == Diagonal([1.0, 2.0, 3.0])
+
+         v = fill(1/√3, 3)
+         θ = π / 4
+         R = Vlasiator.getRotationMatrix(v, θ)
+         @test inv(R) ≈ R'
+
+         Rᵀ = Vlasiator.rotateTensorToVectorZ(R, v)
+         @test Rᵀ ≈ [1/√2 -1/√2 0.0; 1/√2 1/√2 0.0; 0.0 0.0 1.0]
+      end
+      @testset "Curvature" begin
+         let dx = ones(Float32, 3)
+            A = ones(Float32, 3,3,3,3)
+            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            A = ones(Float32, 3,3,1,3)
+            @test sum(Vlasiator.curl(dx, A)) == 0.0
+         end
       end
    end
 

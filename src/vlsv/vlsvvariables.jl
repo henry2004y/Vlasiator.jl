@@ -64,7 +64,11 @@ const variables_predefined = Dict(
    :Bmag => function (meta)
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_])
-      Bmag = sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+      if hasvariable(meta, "vg_b_vol")
+         Bmag = sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+      else
+         Bmag = sqrt.(sum(readvariable(meta, "fg_b").^2, dims=1))
+      end
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Bmag[i] == 0.0 && (Bmag[i] = NaN)
       end
@@ -73,7 +77,11 @@ const variables_predefined = Dict(
    :Emag => function (meta)
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_])
-      Emag = sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1))
+      if hasvariable(meta, "vg_e_vol")
+         Emag = sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1))
+      else
+         Emag = sqrt.(sum(readvariable(meta, "fg_e").^2, dims=1))
+      end
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Emag[i] == 0.0 && (Emag[i] = NaN)
       end
@@ -111,7 +119,7 @@ const variables_predefined = Dict(
       @inbounds for i = eachindex(ρm) # sparsity/inner boundary
          ρm[i] == 0.0 && (ρm[i] = NaN)
       end
-      vs = @. √( (P*5.0/3.0) / ρm )
+      vs = @. √( (P*5.0f0/3.0f0) / ρm )
    end,
    :VA => function (meta) # Alfvén speed
       ρm = readvariable(meta, "Rhom")
@@ -167,7 +175,7 @@ const variables_predefined = Dict(
    end,
    :Pperp => function (meta) # P componnent ⟂ B
       P = readvariable(meta, "Protated")
-      Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
+      Pperp = [0.5f0(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
    end,
    :Tpar => function (meta) # T component ∥ B
       P = readvariable(meta, "Protated")
@@ -189,7 +197,7 @@ const variables_predefined = Dict(
    :J => function (meta)
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
-      J = curvature(meta.dcoord, B) ./ μ₀
+      J = curl(meta.dcoord, B) ./ μ₀
       J = reshape(J, 3, :) # To be consistent with shape assumptions
    end,
    :Egradpe => function (meta)
@@ -214,7 +222,7 @@ const variables_predefined = Dict(
    end,
    :Anisotropy => function (meta) # P⟂ / P∥
       PR = readvariable(meta, "Protated")
-      @. 0.5*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
+      @. 0.5f0*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
    end,
    :Pdynamic => function (meta)
       V = readvariable(meta, "Vmag")
@@ -273,7 +281,7 @@ const variables_predefined = Dict(
       @inbounds for i = eachindex(B2) # sparsity/inner boundary
          B2[i] == 0.0 && (B2[i] = NaN)
       end
-      @. 2.0 * μ₀ * P / B2
+      @. 2.0f0 * μ₀ * P / B2
    end,
    :IonInertial => function (meta)
       n = readvariable(meta, "proton/vg_rho")

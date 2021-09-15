@@ -4,29 +4,28 @@ import LinearAlgebra: ⋅, ×
 using StaticArrays
 
 """
-    rotateTensorToVector(tensor, vector)
+    rotateTensorToVectorZ(tensor, vector)
 
 Rotates `tensor` with a rotation matrix that aligns z-axis with `vector`.
 """
-function rotateTensorToVectorZ!(T, v)
+function rotateTensorToVectorZ(T, v)
    unitz = @SVector [0.0, 0.0, 1.0]
    vz = v × unitz
    vz ./= hypot(vz...)
    angle = acos(v ⋅ unitz / hypot(v...))
-   R = rotation_matrix(vz, angle)
+   R = getRotationMatrix(vz, angle)
    # Rotate Tensor
    R * T * R'
 end
 
 """
-    get_rotation_matrix(vector, angle)
+    getRotationMatrix(vector, angle)
 
-Creates a rotation matrix that rotates around a unit `vector` by an `angle` in
-radians.
+Creates a rotation matrix that rotates around a unit `vector` by an `angle` in radians.
 References: https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula
 https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
 """
-function get_rotation_matrix(v, θ)
+function getRotationMatrix(v, θ)
    cosθ, sinθ = cos(θ), sin(θ)
    tmp = 1 - cosθ
    m =  @SMatrix [
