@@ -25,13 +25,13 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 ### Benchmarks
 
 !!! note
-    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.
+    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.1.
 
 * Reading DCCRG grid variables
 | Variable[^1] | 80KB Float32 | 900KB Float64 | 32MB Float64 |
 |:------|:----------:|:-------|:----------:|
-| Julia  [ms] | 0.2 | 6.4 | 334[^2] |
-| Python [ms] | 2.2 | 10 | 295 |
+| Julia  [ms] | 0.2 | 5.9 | 313[^2] |
+| Python [ms] | 2.2 | 10  | 295 |
 
 [^1]: The size here represents the actual size of the variable, not the total file size. The larger the data sizes, the less meaningful in these comparisons since the time is dominant by low level I/O, where in Python it's written in C.
 [^2]: Julia is slower for this test because there is a conversion from Float64 to Float32. See [Precision](#precision).
