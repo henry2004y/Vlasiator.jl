@@ -29,11 +29,14 @@ end
    end
 
    filenames = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
+   meta1 = load(filenames[1])
+   meta2 = load(filenames[2])
+   meta3 = load(filenames[3])
 
    if group in (:read, :all)
       @testset "Reading files" begin
          @test_throws ArgumentError load("data")
-         meta = load(filenames[1])
+         meta = meta1
          @test ndims(meta) == 1
          @test startswith(repr(meta), "filename         : bulk.1d.vlsv")
          @test size(meta) == 5168730
@@ -82,7 +85,7 @@ end
          @test_throws ArgumentError readvcells(meta, 20)
 
          # AMR data reading, DCCRG grid
-         metaAMR = load(filenames[3])
+         metaAMR = meta3
          sliceoffset = abs(metaAMR.coordmin[2])
          idlist, indexlist = getslicecell(metaAMR, sliceoffset;
             ymin=metaAMR.coordmin[2], ymax=metaAMR.coordmax[2])
@@ -115,18 +118,17 @@ end
          @test issame(filenames[1], filenames[1])
 
          # Explicit IO closure required by Windows
-         close(meta.fid)
-         close(metaAMR.fid)
+         #close(meta.fid)
+         #close(metaAMR.fid)
       end
    end
 
    if group in (:derive, :all)
       @testset "Derived variables" begin
-         meta = load(filenames[1])
+         meta = meta1
          @test meta["Vmag"] |> sortperm == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
-         close(meta.fid)
 
-         meta = load(filenames[2])
+         meta = meta2
          @test meta["Bmag"][4] == 3.0052159f-9
 
          @test meta["Emag"][1,10,99] == 2.6120072f-6
@@ -159,7 +161,7 @@ end
 
          #Agyrotropy = meta["Agyrotropy"]
 
-         close(meta.fid)
+         #close(meta.fid)
       end
    end
 
@@ -192,15 +194,15 @@ end
 
    if group in (:vtk, :all)
       @testset "VTK" begin
-         meta = load(filenames[2]) # no amr
+         meta = meta2 # no amr
          data, ghostType = Vlasiator.fillmesh(meta, "proton/vg_rho")
          @test size(data[1][1]) == (1, 63, 100, 1)
-         close(meta.fid)
-         meta = load(filenames[3]) # amr
+
+         meta = meta3 # amr
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
          @test sha_str == "bafb52747908cd05c78218078054aa4268f453d9"
-         close(meta.fid)
+         #close(meta.fid)
          filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
          rm.(filesaved, force=true)
       end
@@ -220,7 +222,7 @@ end
          using PyPlot
          ENV["MPLBACKEND"]="agg" # no GUI
          # 1D
-         meta = load(filenames[1])
+         meta = meta1
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == meta["proton/vg_rho"]
@@ -246,10 +248,9 @@ end
          p = plot_vdf(meta, loc)
          @test p.get_array()[786] ≈ 229.8948609959216
          @test_throws ArgumentError plot_vdf(meta, loc, pop="helium")
-         close(meta.fid)
 
          # 2D
-         meta = load(filenames[2])
+         meta = meta2
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[end-2] ≈ 999535.7814279408 && length(p.get_array()) == 6300
          p = pcolormesh(meta, "fg_b")
@@ -260,35 +261,33 @@ end
          @test typeof(p) == PyPlot.PyObject
          p = quiver(meta, "proton/vg_v", axisunit=SI, stride=1)
          @test size(p.get_offsets()) == (6300, 2)
-         close(meta.fid)
 
          # 3D AMR
-         meta = load(filenames[3])
+         meta = meta3
          p = pcolormesh(meta, "proton/vg_rho")
          @test p.get_array()[255] ≈ 1.04838862e6 && length(p.get_array()) == 512
          @test_throws ArgumentError pcolormesh(meta, "fg_b")
-         close(meta.fid)
       end
 
       @testset "Plots" begin
          include("../src/plot/plots.jl")
          RecipesBase.is_key_supported(k::Symbol) = true
          # 1D
-         meta = load(filenames[1])
+         meta = meta1
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :line &&
             rec[1].args[1] isa LinRange
-         close(meta.fid)
 
          # 2D
-         meta = load(filenames[2])
+         meta = meta2
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
             rec[1].args[1] isa LinRange
-         close(meta.fid)
       end
    end
-
+   for meta in (meta1, meta2, meta3)
+      close(meta.fid) # required for Windows?
+   end
    for file in filenames
       rm(file, force=true)
    end
