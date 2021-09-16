@@ -155,7 +155,7 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       op=:mag, axisunit=RE, colorscale=Log, vmin=-Inf, vmax=Inf, addcolorbar=true,
+       op=:mag, axisunit=RE, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
        kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
@@ -165,7 +165,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 # Optional arguments
 - `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
-- `colorscale::ColorScale`: whether to use linear scale for data.
+- `colorscale::ColorScale`: Linear, Log, or SymLog.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
@@ -174,10 +174,10 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 `pcolormesh(meta, var, axisunit=SI)`
 
-`pcolormesh(data, func, colorscale=Linear)`
+`pcolormesh(data, func, colorscale=Log)`
 """
-function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   op=:mag, axisunit=RE, colorscale=Log, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
+function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:mag,
+   axisunit=RE, colorscale=Linear, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
@@ -215,7 +215,12 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data; norm=cnorm, shading="auto", kwargs...)
+   if colorscale != SymLog
+      c = ax.pcolormesh(x, y, data; norm=cnorm, shading="auto", kwargs...)
+   else
+      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu, shading="auto",
+         kwargs...)
+   end
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
@@ -234,7 +239,7 @@ It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension
 - `origin::Float`: center of slice plane in the normal direction.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
-- `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`)
+- `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`, `SymLog`)
 - `vmin::Real`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Real`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
@@ -245,9 +250,9 @@ It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension
 
 `pcolormeshslice(data, func, colorscale=Log)`
 """
-function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   op::Symbol=:mag, origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE,
-   colorscale::ColorScale=Log, addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
+function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Symbol=:mag,
+   origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Linear,
+   addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
 
    pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin, vmax)
 
@@ -406,8 +411,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
 
    datainfo = readvariablemeta(meta, var)
 
-   cb_title_use = datainfo.variableLaTeX
-   cb_title_use *= " ["*datainfo.unitLaTeX*"]"
+   cb_title_use = datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]"
 
    PlotArgs(sizes, plotrange, idlist, indexlist, colorscale,
       vmin, vmax, str_title, strx, stry, cb_title_use)
@@ -416,21 +420,35 @@ end
 "Set colorbar norm and ticks."
 function set_colorbar(pArgs, data=[1.0])
    @unpack colorscale, vmin, vmax = pArgs
-   if colorscale == Linear || any(<(0), data)
-      colorscale == Log && @warn "Nonpositive data detected: use linear scale instead!"
+   if colorscale == Linear
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
       nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(v1, v2)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
       ticks = range(v1, v2, length=nticks)
-   else # logarithmic
+   elseif colorscale == Log # logarithmic
       datapositive = data[data .> 0.0]
       v1 = isinf(vmin) ? minimum(datapositive) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
 
       cnorm = matplotlib.colors.LogNorm(vmin=v1, vmax=v2)
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
+   else # symmetric log
+      linthresh = 1.0
+      logstep = 2
+
+      v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
+
+      logthresh = floor(Int, log10(linthresh))
+      minlog = ceil(Int, log10(-v1))
+      maxlog = ceil(Int, log10(v2))
+
+      cnorm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin=v1, vmax=v2,
+         base=10)
+      ticks = [ [-(10.0^x) for x in minlog:-logstep:logthresh]..., 0.0, 
+         [10.0^x for x in logthresh+1:logstep:maxlog]..., ]
    end
 
    cnorm, ticks
