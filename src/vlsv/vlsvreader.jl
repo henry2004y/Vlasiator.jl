@@ -122,7 +122,7 @@ function readvector(fid, footer, name, tag)
       seek(fid, offset)
       read!(fid, w)
    else
-      @warn "Less than 1GB free memory detected. Using memory-mapped I/O!"
+      @warn "Less than 1GB free memory detected. Using memory-mapped I/O!" maxlog=1
       a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
       w = vectorsize == 1 ?
          reinterpret(T, a) :
