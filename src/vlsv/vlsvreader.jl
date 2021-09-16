@@ -143,8 +143,6 @@ function load(filename::AbstractString; verbose=false)
 
    footer = getfooter(fid)
 
-   meshName = "SpatialGrid"
-
    local cellid
    let
       T, offset, arraysize, _, vectorsize = 
@@ -155,11 +153,11 @@ function load(filename::AbstractString; verbose=false)
 
    cellIndex = sortperm(cellid)
 
-   bbox = readmesh(fid, footer, meshName, "MESH_BBOX")
+   bbox = readmesh(fid, footer, "SpatialGrid", "MESH_BBOX")
 
-   nodeCoordsX = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_X")
-   nodeCoordsY = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Y")
-   nodeCoordsZ = readmesh(fid, footer, meshName, "MESH_NODE_CRDS_Z")
+   nodeCoordsX = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_X")
+   nodeCoordsY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")
+   nodeCoordsZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")
 
    @inbounds ncells = SVector(bbox[1], bbox[2], bbox[3])
    @inbounds block_size = SVector(bbox[4], bbox[5], bbox[6])
@@ -380,11 +378,6 @@ Read a variable `var` in a collection of cells `ids`.
 function readvariable(meta::MetaVLSV, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
    @unpack fid, footer = meta
-
-   if isempty(ids)
-      w = readvariable(meta, var, false)
-      return [w]
-   end
 
    T, offset, arraysize, _, vectorsize = 
       getObjInfo(meta.fid, meta.footer, var, "VARIABLE", "name")
