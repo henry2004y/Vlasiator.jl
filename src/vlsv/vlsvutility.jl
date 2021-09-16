@@ -418,7 +418,7 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       dims = [ncells[1], ncells[2]] .* 2^maxamr
    end
 
-   dpoints = zeros(dims...)
+   dpoints = zeros(eltype(data), dims...)
 
    # Create the plot grid
    ncell = prod(ncells)
