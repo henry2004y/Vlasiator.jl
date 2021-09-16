@@ -1,4 +1,4 @@
-using Vlasiator
+using Vlasiator, PyPlot
 using Documenter
 
 makedocs(;
