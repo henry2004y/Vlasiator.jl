@@ -36,7 +36,7 @@ end
 @recipe(VlContourf, meta, var) do scene
    Attributes(;
       # generic attributes
-      colormap      = Makie.theme(scene, :colormap),
+      colormap      = :turbo,
       markersize    = Makie.theme(scene, :markersize),
       colorrange    = Makie.automatic,
       levels        = 5,
@@ -45,11 +45,10 @@ end
 
       # Vlasiator.jl attributes
       axisunit      = RE,
-      colorscale    = Log,
+      colorscale    = Linear,
       normal        = :none,
       vmin          = -Inf,
       vmax          = Inf,
-      addcolorbar   = true,
       op            = :mag,
    )
 end
@@ -151,7 +150,7 @@ function Makie.plot!(vlplot::VlContourf)
       datapositive = data[data .> 0.0]
       v1 = isinf(vlplot.vmin[]) ? minimum(datapositive) : vmin
       v2 = isinf(vlplot.vmax[]) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-   elseif vlplot.colorscale == Linear
+   elseif vlplot.colorscale[] == Linear
       v1 = isinf(vlplot.vmin[]) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vlplot.vmax[]) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
       nticks = 7
@@ -159,16 +158,15 @@ function Makie.plot!(vlplot::VlContourf)
    end
    vlplot.colorrange = [v1, v2]
 
-   contourf!(vlplot, x, y, data)
+   contourf!(vlplot, x, y, data, colormap=vlplot.colormap)
 
    vlplot
 end
 
 
-function vl_contourf(meta::MetaVLSV, var; kwargs...)
+function vl_contourf(meta::MetaVLSV, var; addcolorbar::Bool=true, kwargs...)
    f = Figure()
    c = vlcontourf(f[1,1], meta, var; kwargs...)
-   
 
    if c.plot.attributes.normal[] == :x
       axislabels = ['Y', 'Z']
@@ -186,23 +184,22 @@ function vl_contourf(meta::MetaVLSV, var; kwargs...)
       end
    end
 
-   unitstr = c.plot.attributes.axisunit[] == RE ? L"$R_E$" : L"$m$"
+   unitstr = c.plot.attributes.axisunit[] == RE ? "R_E" : "m"
 
-   str_title = @sprintf "t= %4.1fs" meta.time
-
-   c.axis.title = str_title
+   c.axis.title = @sprintf "t= %4.1fs" meta.time
    # TODO: current limitation in Makie 0.15 that no conversion from initial String type
-   c.axis.xlabel = L"%$(axislabels[1]) [%$unitstr]"
-   c.axis.ylabel = L"%$(axislabels[2]) [%$unitstr]"
+   c.axis.xlabel = L"\textrm{%$(axislabels[1])}[%$unitstr]"
+   c.axis.ylabel = L"\textrm{%$(axislabels[2])}[%$unitstr]"
    c.axis.autolimitaspect = 1
-
 
    datainfo = readvariablemeta(meta, var)
    # TODO: wait for \mathrm to be added in LaTeX engine
    #cb_title = L"%$(datainfo.variableLaTeX) [%$(datainfo.unitLaTeX)]"
    cb_title = "$(datainfo.variableLaTeX) [$(datainfo.unitLaTeX)]"
 
-   Colorbar(f[1, end+1], c.plot, label=cb_title)
+   if addcolorbar
+      Colorbar(f[1, end+1], c.plot, label=cb_title)
+   end
 
    c
 end
