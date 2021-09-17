@@ -436,7 +436,7 @@ function set_colorbar(pArgs, data=[1.0])
       ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
    else # symmetric log
       linthresh = 1.0
-      logstep = 2
+      logstep = 1
 
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
