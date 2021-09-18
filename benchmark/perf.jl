@@ -10,14 +10,14 @@ filename = "bulk1.0001000.vlsv"       # 32 MB rho
 
 @time meta = load(filename);
 
-@btime meta = load($filename);
+@benchmark meta = load($filename)
 
 meta = load(filename);
 
 var = "proton/vg_rho";
 
-@btime rho = meta[$var];
+@benchmark rho = meta[$var]
 
-@btime rho_unsorted = readvariable($meta, $var, false);
+@benchmark rho_unsorted = readvariable($meta, $var, false)
 
 println("")
