@@ -722,16 +722,13 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
    kwargs...)
    @unpack coordmin, coordmax, cellid = meta
    if projection == "x"
-      sliceoffset = abs(coordmin[1]) + origin
-
+      sliceoffset = origin - coordmin[1]
       ids, _ = getslicecell(meta, sliceoffset; xmin=coordmin[1], xmax=coordmax[1])
    elseif projection == "y"
-      sliceoffset = abs(coordmin[2]) + origin
-
+      sliceoffset = origin - coordmin[2]
       ids, _ = getslicecell(meta, sliceoffset; ymin=coordmin[2], ymax=coordmax[2])
    elseif projection == "z"
-      sliceoffset = abs(coordmin[3]) + origin
-
+      sliceoffset = origin - coordmin[3]
       ids, _ = getslicecell(meta, sliceoffset; zmin=coordmin[3], zmax=coordmax[3])
    else
       ids = cellid
