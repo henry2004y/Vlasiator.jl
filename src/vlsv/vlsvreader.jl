@@ -192,10 +192,10 @@ function load(filename::AbstractString; verbose=false)
 
          if "vxblocks_ini" in getindex.(findall("//PARAMETER", footer), "name")
             # In VLSV before 5.0 the mesh is defined with parameters.
-            vblocks = @MVector zeros(Int, 3)
-            vblocks[1] = readparameter(fid, footer, "vxblocks_ini")
-            vblocks[2] = readparameter(fid, footer, "vyblocks_ini")
-            vblocks[3] = readparameter(fid, footer, "vzblocks_ini")
+            vblocks = SVector(
+               readparameter(fid, footer, "vxblocks_ini"),
+               readparameter(fid, footer, "vyblocks_ini"),
+               readparameter(fid, footer, "vzblocks_ini"))
             vblock_size = @SVector [4, 4, 4]
             vmin = @SVector [
                readparameter(fid, footer, "vxmin"),
@@ -314,7 +314,7 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    dataV = readvector(fid, footer, var, "VARIABLE")
 
    if startswith(var, "fg_") # fsgrid
-      bbox = readmesh(fid, footer, "fsgrid", "MESH_BBOX")
+      bbox = SVector{6}(Vlasiator.readmesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX"))
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")
 
@@ -407,32 +407,31 @@ end
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
 function getDomainDecomposition(globalsize, nprocs)
-   domainDecomp = @MVector [1, 1, 1]
-   procBox = @MVector [0.0, 0.0, 0.0]
+   domainDecomp = @SVector [1, 1, 1]
    minValue = Inf
 
    @inbounds for i = 1:min(nprocs, globalsize[1])
-      procBox[1] = max(globalsize[1]/i, 1)
+      iBox = max(globalsize[1]/i, 1)
 
       for j = 1:min(nprocs, globalsize[2])
          i * j > nprocs && break
 
-         procBox[2] = max(globalsize[2]/j, 1)
+         jBox = max(globalsize[2]/j, 1)
 
          for k = 1:min(nprocs, globalsize[2])
             i * j * k > nprocs && continue
 
-            procBox[3] = max(globalsize[3]/k, 1)
+            kBox = max(globalsize[3]/k, 1)
 
-            nyz = ifelse(i > 1, procBox[2] * procBox[3], 0)
-            nzx = ifelse(j > 1, procBox[1] * procBox[3], 0)
-            nxy = ifelse(k > 1, procBox[1] * procBox[2], 0)
+            nyz = ifelse(i > 1, jBox * kBox, 0)
+            nzx = ifelse(j > 1, kBox * iBox, 0)
+            nxy = ifelse(k > 1, iBox * jBox, 0)
 
-            v = 10*prod(procBox) + nyz + nzx + nxy
+            v = 10*iBox*jBox*kBox + nyz + nzx + nxy
 
             if i * j * k == nprocs && v < minValue
                minValue = v
-               domainDecomp[:] = [i, j, k]
+               domainDecomp = @SVector [i, j, k]
             end
          end
       end

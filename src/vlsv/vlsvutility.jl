@@ -153,7 +153,8 @@ function getchildren(meta::MetaVLSV, cellid::Integer)
    iy *= 2
    iz *= 2
 
-   cid = @MVector zeros(Int, 2^ndims(meta))
+   nchildren = 2^ndims(meta)
+   cid = @MVector zeros(Int, nchildren)
    # get the first cell ID on the finer level
    cid1st += ncell*8^mylvl
    ix_, iy_ = [ix, ix+1], [iy, iy+1]
@@ -161,7 +162,7 @@ function getchildren(meta::MetaVLSV, cellid::Integer)
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell*4 + i[2]*xcell*2 + i[1]
    end
-   cid
+   SVector{nchildren}(cid)
 end
 
 """
@@ -197,13 +198,14 @@ function getsiblings(meta::MetaVLSV, cellid::Integer)
    iy, iy1 = minmax(iy, iy1)
    iz, iz1 = minmax(iz, iz1)
 
-   cid = @MVector zeros(Int, 2^ndims(meta))
+   nsiblings = 2^ndims(meta)
+   cid = @MVector zeros(Int, nsiblings)
    ix_, iy_ = [ix, ix1], [iy, iy1]
    iz_ = zcell != 1 ? [iz, iz1] : [iz]
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell + i[2]*xcell + i[1]
    end
-   cid
+   SVector{nsiblings}(cid)
 end
 
 """
@@ -333,14 +335,15 @@ function getcellinline(meta::MetaVLSV, point1, point2)
 end
 
 """
-    getslicecell(meta, slicelocation;
+    getslicecell(meta, sliceoffset;
        xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf) -> idlist, indexlist
 
 Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
-direction with non infinity range at `slicelocation`, and the `indexlist`, which is a
-mapping from original order to the cut plane and can be used to select data onto the plane.
+direction given by non-Inf values for optional arguments at `sliceoffset`, which is always
+within the range, and the `indexlist`, which is a mapping from original order to the cut
+plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaVLSV, slicelocation;
+function getslicecell(meta::MetaVLSV, sliceoffset;
    xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
 
    @unpack ncells, maxamr, cellid = meta
@@ -355,24 +358,14 @@ function getslicecell(meta::MetaVLSV, slicelocation;
       throw(ArgumentError("Unspecified slice direction!"))
    end
 
-   # Find the cut plane index for each refinement level (0-based)
-   sliceratio = slicelocation / (maxCoord - minCoord)
-   depths = @MVector zeros(Int, maxamr+1)
-   for i = 0:maxamr
-      sliceoffset = floor(Int, sliceratio*nsize*2^i)
-      sliceoffset ≤ nsize*2^i ||
-         throw(DomainError(sliceoffset, "slice plane index out of bound!"))
-      depths[i+1] = sliceoffset
-   end
+   sliceratio = sliceoffset / (maxCoord - minCoord)
+   @assert 0.0 ≤ sliceratio ≤ 1.0 "slice plane index out of bound!"
 
    # Find the ids
    nlen = 0
    ncell = prod(ncells)
-   nStart = @MVector zeros(Int, maxamr+2) # number of cells up to each refinement level
-   nStart[2] = ncell
-   for ilvl = 1:maxamr
-      @inbounds nStart[ilvl+2] = nStart[ilvl+1] + ncell * 8^ilvl
-   end
+   # number of cells up to each refinement level
+   nStart = SVector{maxamr+2}(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))...)
 
    indexlist = Int[]
    idlist = Int[]
@@ -390,8 +383,10 @@ function getslicecell(meta::MetaVLSV, slicelocation;
          coords = iz
       end
 
-      # Find the needed elements to create the cut and save the results
-      elements = coords .== depths[ilvl+1]
+      # Find the cut plane index for each refinement level (0-based)
+      depth = floor(Int, sliceratio*nsize*2^ilvl)
+      # Find the needed elements to create the cut and save the results 
+      elements = coords .== depth
       append!(indexlist, (nlen+1:nlen+length(ids))[elements])
       append!(idlist, ids[elements])
 
