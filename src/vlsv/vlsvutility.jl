@@ -552,7 +552,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
    if maxamr == 0
       @inbounds for iv = 1:nv
-         celldata[iv][1][:] = readvariable(meta, vars[iv])
+         celldata[iv][1] = readvariable(meta, vars[iv])
       end
       return celldata, vtkGhostType
    end
@@ -560,6 +560,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    # Find the ids
    ncell = prod(ncells)
    nLow, nHigh = 0, ncell
+   cellidRaw = readvector(fid, footer, "CellID", "VARIABLE")
 
    @inbounds for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
@@ -573,8 +574,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
 
-      cellid_raw = readvector(fid, footer, "CellID", "VARIABLE")
-      rOffsets_raw = [findfirst(==(i), cellid_raw)-1 for i in ids]
+      rOffsetsRaw = [findfirst(==(i), cellidRaw)-1 for i in ids]
 
       if ilvl != maxamr
          for iv in nvarvg
@@ -582,17 +582,17 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
             data = Array{T[iv]}(undef, vsize[iv], length(ids))
 
-            for (i, r) in enumerate(rOffsets_raw)
+            for (i, r) in enumerate(rOffsetsRaw)
                seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
                read!(fid, @view data[:,i])
             end
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
-               for i in eachindex(ids)
-                  ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[i]) .* r
+               for c in eachindex(ids)
+                  ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[c]) .* r
                   for k = 1:r, j = 1:r, i = 1:r
-                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] .= data[:,i]
+                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] .= data[:,c]
                   end
                end
             end
@@ -601,10 +601,10 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
          for (iv, var) = enumerate(vars)
             verbose && @info "reading variable $var..."
             if startswith(var, "fg_")
-               celldata[iv][end][:,:,:,:] = readvariable(meta, var)
+               celldata[iv][end] = readvariable(meta, var)
             else
                data = Array{T[iv]}(undef, vsize[iv], length(ids))
-               for (i, r) in enumerate(rOffsets_raw)
+               for (i, r) in enumerate(rOffsetsRaw)
                   seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
                   read!(fid, @view data[:,i])
                end
