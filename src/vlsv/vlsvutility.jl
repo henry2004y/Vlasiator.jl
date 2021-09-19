@@ -552,7 +552,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
    if maxamr == 0
       @inbounds for iv = 1:nv
-         celldata[iv][1] = readvariable(meta, vars[iv])
+         celldata[iv][1][:] = readvariable(meta, vars[iv])
       end
       return celldata, vtkGhostType
    end
@@ -601,7 +601,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
          for (iv, var) = enumerate(vars)
             verbose && @info "reading variable $var..."
             if startswith(var, "fg_")
-               celldata[iv][end] = readvariable(meta, var)
+               celldata[iv][end][:] = readvariable(meta, var)
             else
                data = Array{T[iv]}(undef, vsize[iv], length(ids))
                for (i, r) in enumerate(rOffsetsRaw)
