@@ -584,7 +584,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
             a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv],
                offset[iv])
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
-            data = dataRaw[:,rOffsetsRaw]
+            data = @view dataRaw[:,rOffsetsRaw]
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
@@ -605,7 +605,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv],
                   offset[iv])
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
-               data = dataRaw[:,rOffsetsRaw]
+               data = @view dataRaw[:,rOffsetsRaw]
 
                for i in eachindex(ids)
                   ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
