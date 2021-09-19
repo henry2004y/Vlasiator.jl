@@ -385,7 +385,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset;
 
       # Find the cut plane index for each refinement level (0-based)
       depth = floor(Int, sliceratio*nsize*2^ilvl)
-      # Find the needed elements to create the cut and save the results 
+      # Find the needed elements to create the cut and save the results
       elements = coords .== depth
       append!(indexlist, (nlen+1:nlen+length(ids))[elements])
       append!(idlist, ids[elements])
@@ -532,19 +532,21 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
    offset = @MVector zeros(Int, nv)
+   arraysize = @MVector zeros(Int, nv)
    dsize  = @MVector zeros(Int, nv)
    vsize  = @MVector zeros(Int, nv)
    @inbounds for i = 1:nv
-      T[i], offset[i], _, dsize[i], vsize[i] =
+      T[i], offset[i], arraysize[i], dsize[i], vsize[i] =
          getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
    end
 
+   Tout = copy(T)
    for i in eachindex(T)
-      if T[i] == Float64 T[i] = Float32 end
+      if T[i] == Float64 Tout[i] = Float32 end
    end
 
    @inbounds celldata =
-      [[zeros(T[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
+      [[zeros(Tout[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
       for i = 0:maxamr] for iv in 1:nv]
 
    @inbounds vtkGhostType =
@@ -574,18 +576,16 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
 
-      rOffsetsRaw = [findfirst(==(i), cellidRaw)-1 for i in ids]
+      rOffsetsRaw = [findfirst(==(i), cellidRaw) for i in ids]
 
       if ilvl != maxamr
          for iv in nvarvg
             verbose && @info "reading variable $(vars[iv])..."
 
-            data = Array{T[iv]}(undef, vsize[iv], length(ids))
-
-            for (i, r) in enumerate(rOffsetsRaw)
-               seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
-               read!(fid, @view data[:,i])
-            end
+            dataRaw = Array{T[iv],2}(undef, vsize[iv], arraysize[iv])
+            seek(fid, offset[iv])
+            read!(fid, dataRaw)
+            data = dataRaw[:,rOffsetsRaw]
 
             for ilvlup = ilvl:maxamr
                r = 2^(ilvlup-ilvl) # ratio on refined level
@@ -603,11 +603,11 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
             if startswith(var, "fg_")
                celldata[iv][end][:] = readvariable(meta, var)
             else
-               data = Array{T[iv]}(undef, vsize[iv], length(ids))
-               for (i, r) in enumerate(rOffsetsRaw)
-                  seek(fid, offset[iv] + r*dsize[iv]*vsize[iv])
-                  read!(fid, @view data[:,i])
-               end
+               dataRaw = Array{T[iv],2}(undef, vsize[iv], arraysize[iv])
+               seek(fid, offset[iv])
+               read!(fid, dataRaw)
+               data = dataRaw[:,rOffsetsRaw]
+
                for i in eachindex(ids)
                   ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
                   celldata[iv][end][:,ix,iy,iz] .= data[:,i]
