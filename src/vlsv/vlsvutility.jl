@@ -574,7 +574,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
 
-      rOffsetsRaw = [findfirst(==(i), cellidRaw) for i in ids]
+      rOffsetsRaw = indexin(ids, cellidRaw)
 
       if ilvl != maxamr
          for iv in nvarvg

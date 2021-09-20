@@ -377,7 +377,7 @@ Read a variable `var` in a collection of cells `ids`.
 """
 function readvariable(meta::MetaVLSV, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
-   @unpack fid, footer, cellid, cellIndex = meta
+   @unpack fid, footer = meta
 
    T, offset, arraysize, _, vectorsize = 
       getObjInfo(fid, footer, var, "VARIABLE", "name")
@@ -387,8 +387,10 @@ function readvariable(meta::MetaVLSV, var, ids)
    a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
    w = reshape(reinterpret(T, a), vectorsize, arraysize)
 
-   cellid = readvector(fid, footer, "CellID", "VARIABLE")
-   id_ = [findfirst(==(id), cellid) for id in ids]
+   cellidRaw = readvector(fid, footer, "CellID", "VARIABLE")
+   id_ = length(meta.cellIndex) < 1000 ?
+      [findfirst(==(id), cellidRaw) for id in ids] :
+      indexin(ids, cellidRaw)
 
    for i in eachindex(id_), iv = 1:vectorsize
       @inbounds v[iv,i] = w[iv,id_[i]]
