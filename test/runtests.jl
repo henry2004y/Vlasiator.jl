@@ -116,10 +116,6 @@ end
 
          # Compare two VLSV files
          @test issame(filenames[1], filenames[1])
-
-         # Explicit IO closure required by Windows
-         #close(meta.fid)
-         #close(metaAMR.fid)
       end
    end
 
@@ -161,7 +157,6 @@ end
 
          #Agyrotropy = meta["Agyrotropy"]
 
-         #close(meta.fid)
       end
    end
 
@@ -202,7 +197,7 @@ end
          write_vtk(meta)
          sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
          @test sha_str == "bafb52747908cd05c78218078054aa4268f453d9"
-         #close(meta.fid)
+
          filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
          rm.(filesaved, force=true)
       end
