@@ -586,15 +586,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
             data = @view dataRaw[:,rOffsetsRaw]
 
-            for ilvlup = ilvl:maxamr
-               r = 2^(ilvlup-ilvl) # ratio on refined level
-               for c in eachindex(ids)
-                  ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[c]) .* r
-                  for k = 1:r, j = 1:r, i = 1:r
-                     celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] .= data[:,c]
-                  end
-               end
-            end
+            fillcell!(iv, ilvl, ids, ncells, maxamr, nLow, celldata, data)
          end
       else # max amr level
          for (iv, var) = enumerate(vars)
@@ -607,10 +599,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
                data = @view dataRaw[:,rOffsetsRaw]
 
-               for i in eachindex(ids)
-                  ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
-                  celldata[iv][end][:,ix,iy,iz] .= data[:,i]
-               end
+               fillcell!(iv, ids, ncells, maxamr, nLow, celldata, data)
             end
          end
       end
@@ -620,6 +609,26 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
    celldata, vtkGhostType
 end
+
+function fillcell!(iv, ilvl, ids, ncells, maxamr, nLow, celldata, data)
+   @inbounds for ilvlup = ilvl:maxamr
+      r = 2^(ilvlup-ilvl) # ratio on refined level
+      for c in eachindex(ids)
+         ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[c]) .* r
+         for k = 1:r, j = 1:r, i = 1:r
+            celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] .= data[:,c]
+         end
+      end
+   end
+end
+
+function fillcell!(iv, ids, ncells, maxamr, nLow, celldata, data)
+   @inbounds for i in eachindex(ids)
+      ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
+      celldata[iv][end][:,ix,iy,iz] .= data[:,i]
+   end
+end
+
 
 """
     write_vtk(meta::MetaVLSV; kwargs...)
