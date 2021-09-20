@@ -377,18 +377,18 @@ Read a variable `var` in a collection of cells `ids`.
 """
 function readvariable(meta::MetaVLSV, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
-   @unpack fid, footer = meta
+   @unpack fid, footer, cellid, cellIndex = meta
 
    T, offset, arraysize, _, vectorsize = 
-      getObjInfo(meta.fid, meta.footer, var, "VARIABLE", "name")
+      getObjInfo(fid, footer, var, "VARIABLE", "name")
 
    v = Array{T}(undef, vectorsize, length(ids))
 
-   a = Mmap.mmap(meta.fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+   a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
    w = reshape(reinterpret(T, a), vectorsize, arraysize)
 
    cellid = readvector(fid, footer, "CellID", "VARIABLE")
-   id_ = [findfirst(==(i), cellid) for i in ids]
+   id_ = [findfirst(==(id), cellid) for id in ids]
 
    for i in eachindex(id_), iv = 1:vectorsize
       @inbounds v[iv,i] = w[iv,id_[i]]
@@ -509,12 +509,12 @@ function hasvdf(meta::MetaVLSV)
 end
 
 """
-    readvcells(meta, cellid; pop="proton")
+    readvcells(meta, cid; pop="proton")
 
-Read velocity cells from a spatial cell of ID `cellid`, and return a map of velocity cell
+Read velocity cells from a spatial cell of ID `cid`, and return a map of velocity cell
 ids and corresponding value.
 """
-function readvcells(meta::MetaVLSV, cellid; pop="proton")
+function readvcells(meta::MetaVLSV, cid; pop="proton")
    @unpack fid, footer = meta
    @unpack vblock_size = meta.meshes[pop]
    bsize = prod(vblock_size)
@@ -523,10 +523,10 @@ function readvcells(meta::MetaVLSV, cellid; pop="proton")
    let cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS"),
        nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
       # Check if cells have vspace stored
-      if cellid ∈ cellsWithVDF
-         cellWithVDFIndex = findfirst(==(cellid), cellsWithVDF)
+      if cid ∈ cellsWithVDF
+         cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
       else
-         throw(ArgumentError("Cell ID $cellid does not store velocity distribution!"))
+         throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
       end
       # Navigate to the correct position
       offset = sum(@view nblock_C[1:cellWithVDFIndex-1])

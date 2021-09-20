@@ -24,7 +24,7 @@ Return cell ID containing the given spatial `location`, excluding domain boundar
 Only accept 3D location.
 """
 function getcell(meta::MetaVLSV, loc)
-   @unpack coordmin, coordmax, dcoord, ncells = meta
+   @unpack coordmin, coordmax, dcoord, ncells, cellid, maxamr = meta
 
    @assert coordmin[1] < loc[1] < coordmax[1] "x coordinate out of bound!"
    @assert coordmin[2] < loc[2] < coordmax[2] "y coordinate out of bound!"
@@ -38,17 +38,15 @@ function getcell(meta::MetaVLSV, loc)
        (loc[2] - coordmin[2])/dy,
        (loc[3] - coordmin[3])/dz])
    # Get the cell id
-   cellid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
+   cid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
    # Going through AMR levels as needed
    ilevel = 0
    ncells_lowerlevel = 0
    ncell = prod(ncells)
 
-   cellids, maxamr = meta.cellid, meta.maxamr
-
    @inbounds while ilevel < maxamr + 1
-      if cellid in cellids
+      if cid in cellid
          break
       else
          ncells_lowerlevel += 2^(3*ilevel)*ncell
@@ -60,45 +58,45 @@ function getcell(meta::MetaVLSV, loc)
              (loc[2] - coordmin[2])/dy,
              (loc[3] - coordmin[3])/dz ])
 
-         cellid = ncells_lowerlevel + indices[1] +
+         cid = ncells_lowerlevel + indices[1] +
             2^(ilevel)*xcells*indices[2] +
             4^(ilevel)*xcells*ycells*indices[3] + 1
       end
    end
 
-   cellid
+   cid
 end
 
 """
-    getlevel(meta, cellid) -> Int
+    getlevel(meta, cid) -> Int
 
 Return the AMR level of a given cell ID. Note that this function does not check if the VLSV
-file of `meta` actually contains `cellid`: it may be shadowed by refined children.
+file of `meta` actually contains `cid`: it may be shadowed by refined children.
 """
-function getlevel(meta::MetaVLSV, cellid::Integer)
+function getlevel(meta::MetaVLSV, cid::Integer)
    ncell = prod(meta.ncells)
    ilevel = 0
-   while cellid > 0
-      cellid -= 2^(3*ilevel)*ncell
+   while cid > 0
+      cid -= 2^(3*ilevel)*ncell
       ilevel += 1
    end
    ilevel - 1
 end
 
 """
-    getparent(meta, cellid) -> Int
+    getparent(meta, cid) -> Int
 
-Return the parent cell ID of given child `cellid`.
+Return the parent cell ID of given child `cid`.
 """
-function getparent(meta::MetaVLSV, cellid::Integer)
+function getparent(meta::MetaVLSV, cid::Integer)
    @inbounds xcell, ycell = meta.ncells[1], meta.ncells[2]
    ncell = prod(meta.ncells)
 
-   mylvl = getlevel(meta, cellid)
+   mylvl = getlevel(meta, cid)
    parentlvl = mylvl - 1
 
    if parentlvl < 0
-      throw(ArgumentError("Cell ID $cellid has no parent cell!"))
+      throw(ArgumentError("Cell ID $cid has no parent cell!"))
    else
       # get the first cellid on my level
       cid1st = get1stcell(mylvl, ncell) + 1
@@ -106,7 +104,7 @@ function getparent(meta::MetaVLSV, cellid::Integer)
       xcell = xcell*2^mylvl
       ycell = ycell*2^mylvl
 
-      myseq = cellid - cid1st
+      myseq = cid - cid1st
       ix = myseq % xcell
       iz = myseq ÷ (xcell*ycell)
       iy = (myseq - iz*xcell*ycell) ÷ xcell
@@ -124,15 +122,15 @@ function getparent(meta::MetaVLSV, cellid::Integer)
 end
 
 """
-    getchildren(meta, cellid) -> Vector{Int}
+    getchildren(meta, cid) -> Vector{Int}
 
-Return direct children of `cellid`.
+Return direct children of `cid`.
 """
-function getchildren(meta::MetaVLSV, cellid::Integer)
+function getchildren(meta::MetaVLSV, cid::Integer)
    xcell, ycell, zcell = meta.ncells
    ncell = prod(meta.ncells)
 
-   mylvl = getlevel(meta, cellid)
+   mylvl = getlevel(meta, cid)
 
    # get the first cell ID on the my level
    cid1st = 1
@@ -143,7 +141,7 @@ function getchildren(meta::MetaVLSV, cellid::Integer)
    xcell = xcell*2^mylvl
    ycell = ycell*2^mylvl
 
-   myseq = cellid - cid1st
+   myseq = cid - cid1st
    ix = myseq % xcell
    iz = myseq ÷ (xcell*ycell)
    iy = (myseq - iz*xcell*ycell) ÷ xcell
@@ -166,17 +164,17 @@ function getchildren(meta::MetaVLSV, cellid::Integer)
 end
 
 """
-    getsiblings(meta, cellid) -> Vector{Int}
+    getsiblings(meta, cid) -> Vector{Int}
 
-Return sibling cells of a given `cellid`, including itself.
+Return sibling cells of a given `cid`, including itself.
 """
-function getsiblings(meta::MetaVLSV, cellid::Integer)
+function getsiblings(meta::MetaVLSV, cid::Integer)
    xcell, ycell, zcell = meta.ncells
    ncell = prod(meta.ncells)
 
-   mylvl = getlevel(meta, cellid)
+   mylvl = getlevel(meta, cid)
 
-   mylvl == 0 && throw(ArgumentError("CellID $cellid is not a child cell!"))
+   mylvl == 0 && throw(ArgumentError("CellID $cid is not a child cell!"))
 
    xcell = xcell * 2^mylvl
    ycell = ycell * 2^mylvl
@@ -185,7 +183,7 @@ function getsiblings(meta::MetaVLSV, cellid::Integer)
    cid1st = get1stcell(mylvl, ncell) + 1
 
    # xyz sequences on my level (starting with 0)
-   myseq = cellid - cid1st
+   myseq = cid - cid1st
    ix = myseq % xcell
    iz = myseq ÷ (xcell*ycell)
    iy = (myseq - iz*xcell*ycell) ÷ xcell
@@ -209,31 +207,31 @@ function getsiblings(meta::MetaVLSV, cellid::Integer)
 end
 
 """
-    isparent(meta, cellid) -> Bool
+    isparent(meta, cid) -> Bool
 
-Check if `cellid` is a parent cell.
+Check if `cid` is a parent cell.
 """
-function isparent(meta::MetaVLSV, cellid::Integer)
+function isparent(meta::MetaVLSV, cid::Integer)
    ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
-   cellid ∉ meta.cellid && 0 < cellid ≤ ncell_accum
+   cid ∉ meta.cellid && 0 < cid ≤ ncell_accum
 end
 
 """
-    getcellcoordinates(meta, cellid) -> Vector{Float}
+    getcellcoordinates(meta, cid) -> Vector{Float}
 
 Return a given cell's coordinates.
 """
-function getcellcoordinates(meta::MetaVLSV, cellid::Integer)
+function getcellcoordinates(meta::MetaVLSV, cid::Integer)
    @unpack ncells, coordmin, coordmax = meta
-   cellid -= 1 # for easy divisions
+   cid -= 1 # for easy divisions
 
    xcell, ycell, zcell = ncells
    reflevel = 0
    subtraction = prod(ncells) * (2^reflevel)^3
    # sizes on the finest level
-   while cellid ≥ subtraction
-      cellid -= subtraction
+   while cid ≥ subtraction
+      cid -= subtraction
       reflevel += 1
       subtraction *= 8
       xcell *= 2
@@ -242,9 +240,9 @@ function getcellcoordinates(meta::MetaVLSV, cellid::Integer)
    end
 
    indices = @SVector [
-      cellid % xcell,
-      cellid ÷ xcell % ycell,
-      cellid ÷ (xcell*ycell) ]
+      cid % xcell,
+      cid ÷ xcell % ycell,
+      cid ÷ (xcell*ycell) ]
 
    coords = @inbounds @SVector [
       coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1]) / xcell,
@@ -294,11 +292,11 @@ function getcellinline(meta::MetaVLSV, point1, point2)
    p = point1
 
    while true
-      cellid = getcell(meta, p)
-      amrlvl = getlevel(meta, cellid)
+      cid = getcell(meta, p)
+      amrlvl = getlevel(meta, cid)
 
       # Get the max and min cell boundaries
-      min_bounds = getcellcoordinates(meta, cellid) - 0.5*cell_lengths*0.5^amrlvl
+      min_bounds = getcellcoordinates(meta, cid) - 0.5*cell_lengths*0.5^amrlvl
       max_bounds = min_bounds + cell_lengths
 
       # Check which face we hit first
