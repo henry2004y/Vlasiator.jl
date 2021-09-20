@@ -532,7 +532,7 @@ function readvcells(meta::MetaVLSV, cid; pop="proton")
       end
       # Navigate to the correct position
       offset = sum(@view nblock_C[1:cellWithVDFIndex-1])
-      @inbounds nblocks = nblock_C[cellWithVDFIndex]
+      @inbounds nblocks = Int(nblock_C[cellWithVDFIndex])
    end
 
    local datasize, datatype, vectorsize, variable_offset
@@ -545,11 +545,12 @@ function readvcells(meta::MetaVLSV, cid; pop="proton")
       variable_offset = parse(Int, nodecontent(varinfo))
    end
 
-   Tavg = datasize == 4 ? Float32 : Float64
-
-   data = Array{Tavg,2}(undef, vectorsize, nblocks)
-   seek(fid, offset * vectorsize * datasize + variable_offset)
-   read!(fid, data)
+   data = let
+      Tavg = datasize == 4 ? Float32 : Float64
+      a = Mmap.mmap(fid, Vector{UInt8}, sizeof(Tavg)*vectorsize*nblocks,
+         offset*vectorsize*datasize + variable_offset)
+      reshape(reinterpret(Tavg, a), vectorsize, nblocks)
+   end
 
    # Read in block IDs
    let varinfo = findfirst("//BLOCKIDS", footer)
@@ -559,15 +560,15 @@ function readvcells(meta::MetaVLSV, cid; pop="proton")
       variable_offset = parse(Int, nodecontent(varinfo))
    end
 
-   T = datasize == 4 ? UInt32 : UInt64
-
-   blockIDs = Vector{T}(undef, nblocks)
+   blockIDs = let T = datasize == 4 ? UInt32 : UInt64
+      Vector{T}(undef, nblocks)
+   end
    seek(fid, offset * datasize + variable_offset)
    read!(fid, blockIDs)
 
-   # Velocity cell IDs and corresponding avg distributions
-   vcellids = zeros(Int, bsize*nblocks)
-   vcellf = zeros(Tavg, bsize*nblocks)
+   # Velocity cell IDs and corresponding distributions
+   vcellids = zeros(UInt32, bsize*nblocks)
+   vcellf = zeros(Float32, bsize*nblocks)
 
    vcellid_local = @inbounds [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
       for i in 0:vblock_size[1]-1, j in 0:vblock_size[2]-1, k in 0:vblock_size[3]-1]

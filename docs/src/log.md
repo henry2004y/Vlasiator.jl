@@ -71,7 +71,6 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 ## Precision
 
 For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we mostly use `Float32` in Vlasiator.jl. Several exceptions are:
-* in VDF plots we are still using double precision if `f` is saved in `Float64`;
 * physical constants are defined in `Float64`, since single precision only resolve up to ±3.4E+38, and it may go out of bound in the middle of calculation (e.g. plasma frequency).
 
 ## Memory

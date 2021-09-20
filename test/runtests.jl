@@ -241,7 +241,7 @@ end
 
          loc = [2.0, 0.0, 0.0]
          p = plot_vdf(meta, loc)
-         @test p.get_array()[786] ≈ 229.8948609959216
+         @test p.get_array()[786] == 229.89486651619364
          @test_throws ArgumentError plot_vdf(meta, loc, pop="helium")
 
          # 2D
