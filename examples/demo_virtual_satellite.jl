@@ -1,49 +1,90 @@
 # Sample postprocessing script for virtual satellite tracking.
 #
+# Usage:
+#   julia -t nthreads demo_virtual_satellite.jl
+#
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Glob, DelimitedFiles, Vlasiator
+using Glob, DelimitedFiles, Vlasiator, DataFrames
+
+function extract_vars(filenames, loc)
+   # variables to be extracted
+   t   = zeros(Float32, nfiles)
+   rho = zeros(Float32, nfiles)
+   vx  = zeros(Float32, nfiles)
+   vy  = zeros(Float32, nfiles)
+   p   = zeros(Float32, nfiles)
+   bz  = zeros(Float32, nfiles)
+   ex  = zeros(Float32, nfiles)
+   ey  = zeros(Float32, nfiles)
+
+   println("Total number of files: $(length(filenames))")
+   println("Extracting location: $loc")
+   println("Running with $(Threads.nthreads()) threads...")
+
+   # Extract data from each frame
+   Threads.@threads for i = eachindex(filenames)
+      meta = load(filenames[i])
+      id = getcell(meta, loc)
+      t[i] = meta.time
+      rho[i] = readvariable(meta, "proton/vg_rho", id)[1]
+      vx[i], vy[i] = readvariable(meta, "proton/vg_v", id)[1:2]
+      p[i] = readvariable(meta, "vg_pressure", id)[1]
+      bz[i] = readvariable(meta, "vg_b_vol", id)[3]
+      ex[i], ey[i] = readvariable(meta, "vg_e_vol", id)[1:2]
+   end
+
+   df = DataFrame(t = t, rho = rho, vx = vx, vy = vy, p = p, bz = bz, ex = ex, ey = ey)
+   # Save into text file
+   writedlm("satellite.csv", Iterators.flatten(([names(df)], eachrow(df))), ',')
+
+   println("Virtual satellite extraction done!")
+end
+
+#####
 
 Re = Vlasiator.Re # Earth radius
 
 # data directory
 dir = "./"
 
-filenames = glob("bulk1*.vlsv", dir)
+filenames = glob("bulk*.vlsv", dir)
+nfiles = length(filenames)
 
-# variable to be extracted
-var = "proton/vg_rho"
 # virtual satellite location
 loc = [12Re, 0, 0]
 
-# Allocate vector for data
-data_series = zeros(Float32, length(filenames))
-
-# Extract data from each frame
-Threads.@threads for i = 1:length(filenames)
-   meta = load(filenames[i])
-   id = getcell(meta, loc)
-   data_series[i] = readvariable(meta, var, id)[1][1]
-end
-
-# Save into text file
-open("satellite.txt", "w") do io
-   writedlm(io, data_series)
-end
-
-# Specify starting and end point for line tracking
-point1 = [12Re, 0, 0]
-point2 = [15Re, 0, 0]
-
-# Extract data along the line segment in one snapshot
-meta = load(filenames[1])
-cellIDs, distances, coords = getcellinline(meta, point1, point2)
+@time extract_vars(filenames, loc)
 
 ## Visualization
 #=
 using PyPlot, DelimitedFiles
 
-data = readdlm("virtual_satellite.txt")
+data = readdlm("satellite.csv", ','; header=true)
 
-plot(data)
+fig, ax = subplots(figsize=(8,10), 5,1, sharex=true, constrained_layout=true)
+
+ax[1].plot(data[1][:,1], data[1][:,2] ./ 1e6, label="density")
+ax[2].plot(data[1][:,1], data[1][:,3] ./ 1e3, label="vx")
+ax[2].plot(data[1][:,1], data[1][:,4] ./ 1e3, label="vy")
+ax[3].plot(data[1][:,1], data[1][:,5] .* 1e9, label="p")
+ax[4].plot(data[1][:,1], data[1][:,6] .* 1e9, label="bz")
+ax[5].plot(data[1][:,1], data[1][:,7] .* 1e3, label="ex")
+ax[5].plot(data[1][:,1], data[1][:,8] .* 1e3, label="ey")
+
+for a in ax
+   a.grid(true)
+   a.legend()
+end
+
+ax[1].set_ylabel("density [amu/cc]", fontsize=14)
+ax[2].set_ylabel("velocity [km/s]", fontsize=14)
+ax[3].set_ylabel("pressure [nPa]", fontsize=14)
+ax[4].set_ylabel("magnetic field [nT]", fontsize=14)
+ax[5].set_ylabel("electric field [mV/m]", fontsize=14)
+ax[5].set_xlabel("time [s]", fontsize=14)
+
+fig.suptitle("Density Pulse Run, location = [12, 0, 0]", fontsize="xx-large")
+
+savefig("virtual_satellite.png", bbox_inches="tight")
 =#
