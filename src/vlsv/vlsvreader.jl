@@ -2,7 +2,8 @@
 
 include("vlsvvariables.jl")
 
-using Mmap, EzXML, FLoops
+using EzXML, FLoops
+using Mmap: mmap
 
 export MetaVLSV, VarInfo
 export load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
@@ -123,7 +124,7 @@ function readvector(fid, footer, name, tag)
       read!(fid, w)
    else
       @warn "Less than 1GB free memory detected. Using memory-mapped I/O!" maxlog=1
-      a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+      a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
       w = vectorsize == 1 ?
          reinterpret(T, a) :
          reshape(reinterpret(T, a), vectorsize, arraysize)
@@ -147,7 +148,7 @@ function load(filename::AbstractString; verbose=false)
    let
       T, offset, arraysize, _, vectorsize = 
          getObjInfo(fid, footer, "CellID", "VARIABLE", "name")
-      a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+      a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
       cellid = reinterpret(T, a)
    end
 
@@ -384,7 +385,7 @@ function readvariable(meta::MetaVLSV, var, ids)
 
    v = Array{T}(undef, vectorsize, length(ids))
 
-   a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+   a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
    w = reshape(reinterpret(T, a), vectorsize, arraysize)
 
    cellidRaw = readvector(fid, footer, "CellID", "VARIABLE")
@@ -547,7 +548,7 @@ function readvcells(meta::MetaVLSV, cid; pop="proton")
 
    data = let
       Tavg = datasize == 4 ? Float32 : Float64
-      a = Mmap.mmap(fid, Vector{UInt8}, sizeof(Tavg)*vectorsize*nblocks,
+      a = mmap(fid, Vector{UInt8}, sizeof(Tavg)*vectorsize*nblocks,
          offset*vectorsize*datasize + variable_offset)
       reshape(reinterpret(Tavg, a), vectorsize, nblocks)
    end

@@ -579,8 +579,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
       if ilvl != maxamr
          for iv in nvarvg
             verbose && @info "reading variable $(vars[iv])..."
-            a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv],
-               offset[iv])
+            a = mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv], offset[iv])
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
             data = @view dataRaw[:,rOffsetsRaw]
 
@@ -592,7 +591,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
             if startswith(var, "fg_")
                celldata[iv][end][:] = readvariable(meta, var)
             else
-               a = Mmap.mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv],
+               a = mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv],
                   offset[iv])
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
                data = @view dataRaw[:,rOffsetsRaw]
