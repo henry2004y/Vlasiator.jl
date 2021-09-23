@@ -411,7 +411,8 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
 
    datainfo = readvariablemeta(meta, var)
 
-   cb_title_use = datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]"
+   cb_title_use = !isempty(datainfo.variableLaTeX) ?
+      datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
 
    PlotArgs(sizes, plotrange, idlist, indexlist, colorscale,
       vmin, vmax, str_title, strx, stry, cb_title_use)
@@ -461,7 +462,7 @@ function set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    if addcolorbar
       cb = colorbar(c; ax, ticks=cticks, fraction=0.046, pad=0.04)
-      cb_title = cb.ax.set_ylabel(cb_title_use, fontsize=14)
+      !isempty(cb_title_use) && cb.ax.set_ylabel(cb_title_use, fontsize=14)
       cb.outline.set_linewidth(1.0)
    end
 
