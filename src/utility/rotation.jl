@@ -1,6 +1,6 @@
 # Utility functions for common algebraic operations.
 
-import LinearAlgebra: ⋅, ×
+import LinearAlgebra: ⋅, ×, I
 using StaticArrays
 
 """
@@ -45,11 +45,12 @@ function getRotationB(B)
    # reference vector
    v0 = @SVector [0.0, 0.0, 1.0]
    b = hypot(B...)
-   if B[3] / b ≈ 1.0 # B aligned with reference vector
+   if B[3] / b ≈ -1.0 # B aligned with reference vector
       R = @SMatrix [0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
+   elseif B[3] / b ≈ 1.0 # B aligned with reference vector
+      R = I
    else
-      # vector along B
-      v3 = @SVector [B[1]/b, B[2]/b, B[3]/b]
+      v3 = @SVector [B[1]/b, B[2]/b, B[3]/b] # unit vector along B
       v1 = v0 × v3
       v2 = v3 × v1
 
