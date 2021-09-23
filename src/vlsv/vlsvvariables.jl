@@ -281,7 +281,7 @@ const variables_predefined = Dict(
       @inbounds for i = eachindex(B2) # sparsity/inner boundary
          B2[i] == 0.0 && (B2[i] = NaN)
       end
-      @. 2.0f0 * μ₀ * P / B2
+      @. 2 * μ₀ * P / B2
    end,
    :IonInertial => function (meta)
       n = readvariable(meta, "proton/vg_rho")
