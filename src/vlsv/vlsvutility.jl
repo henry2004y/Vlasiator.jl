@@ -635,10 +635,10 @@ Convert VLSV file to VTK format.
 # Keyword arguments
 - `vars=[""]`: select which variables to convert.
 - `ascii=false`: output stored in ASCII or compressed binary format.
-- `vti=false`: generate image files on the highest refinement level only.
+- `maxamronly=false`: generate image files on the highest refinement level only.
 - `verbose=false`: display logs during conversion.
 """
-function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, vti=false, verbose=false)
+function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, verbose=false)
    @unpack ncells, maxamr, dcoord, coordmin = meta
 
    append = ascii ? false : true
@@ -656,7 +656,7 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, vti=false, verbose=fa
 
    data, vtkGhostType = fillmesh(meta, vars; verbose)
 
-   if vti
+   if maxamronly
       save_image(meta, meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end], maxamr,
          append)
    else
