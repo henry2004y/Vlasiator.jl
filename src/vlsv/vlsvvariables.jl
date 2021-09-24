@@ -173,7 +173,7 @@ const variables_predefined = Dict(
       P = readvariable(meta, "Protated")
       @views P[3,3,:]
    end,
-   :Pperp => function (meta) # P componnent ⟂ B
+   :Pperp => function (meta) # P component ⟂ B
       P = readvariable(meta, "Protated")
       Pperp = [0.5f0(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
    end,
