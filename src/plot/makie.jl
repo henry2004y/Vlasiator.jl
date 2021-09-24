@@ -206,10 +206,10 @@ end
 
 
 #=
-filename = "test/data/bulk.2d.vlsv"
+file = "test/data/bulk.2d.vlsv"
 var = "proton/vg_rho"
 
-meta = load(filename)
+meta = load(file)
 
 vl_contourf(meta, var)
 

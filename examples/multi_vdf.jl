@@ -19,9 +19,9 @@ for a in axs[:  ,1] a.set_ylabel("vy [km/s]") end
 
 using JLD2
 
-filename = "test/data/bulk.1d.vlsv"
+file = "test/data/bulk.1d.vlsv"
 
-meta = load(filename)
+meta = load(file)
 
 cells = getcellwithvdf(meta)
 

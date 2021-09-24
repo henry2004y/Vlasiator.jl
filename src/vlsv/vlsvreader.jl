@@ -54,20 +54,20 @@ end
 
 
 function Base.show(io::IO, meta::MetaVLSV)
-   println(io, "filename         : ", meta.name)
-   println(io, "time             : ", round(meta.time, digits=2))
-   println(io, "dimension        : $(ndims(meta))")
-   println(io, "maximum AMR level: $(meta.maxamr)")
-   println(io, "contains VDF     : $(hasvdf(meta))")
+   println(io, "File: ", meta.name)
+   println(io, "Time: ", round(meta.time, digits=2))
+   println(io, "Dimension: $(ndims(meta))")
+   println(io, "Maximum AMR level: $(meta.maxamr)")
+   println(io, "Contains VDF: $(hasvdf(meta))")
    print(io, "variables: ")
    println(io, meta.variable)
 end
 
 function Base.show(io::IO, s::VarInfo)
-   println(io, "var in LaTeX   : ", s.variableLaTeX)
-   println(io, "unit           : ", s.unit)
-   println(io, "unit in LaTeX  : ", s.unitLaTeX)
-   println(io, "unit conversion: ", s.unitConversion)
+   println(io, "Variable in LaTeX: ", s.variableLaTeX)
+   println(io, "Unit: ", s.unit)
+   println(io, "Unit in LaTeX: ", s.unitLaTeX)
+   println(io, "Unit conversion: ", s.unitConversion)
 end
 
 "Return the xml footer of vlsv."
@@ -112,7 +112,7 @@ function getObjInfo(fid, footer, name, tag, attr)
    T, variable_offset, arraysize, datasize, vectorsize
 end
 
-"Return variable from vlsv file."
+"Return vectors of `name` from the vlsv file with `footer` opened by `fid`."
 function readvector(fid, footer, name, tag)
    T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
@@ -134,13 +134,13 @@ function readvector(fid, footer, name, tag)
 end
 
 """
-    load(filename; verbose=false) -> MetaVLSV
+    load(file) -> MetaVLSV
 
-Return MetaVLSV from a vlsv file.
+Return MetaVLSV from a vlsv `file`.
 """
-function load(filename::AbstractString; verbose=false)
-   isfile(filename) || throw(ArgumentError("Cannot open \'$filename\': not a file"))
-   fid = open(filename, "r")
+function load(file::AbstractString)
+   isfile(file) || throw(ArgumentError("Cannot open \'$file\': not a file"))
+   fid = open(file, "r")
 
    footer = getfooter(fid)
 
@@ -226,8 +226,6 @@ function load(filename::AbstractString; verbose=false)
       popVMesh = VMeshInfo(vblocks, vblock_size, vmin, vmax, dv)
 
       meshes[popname] = popVMesh
-
-      verbose && @info "Found population $popname"
    end
 
    if hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
@@ -255,7 +253,7 @@ function load(filename::AbstractString; verbose=false)
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(filename, fid, footer, vars, cellid[cellIndex], cellIndex, timesim,
+   meta = MetaVLSV(file, fid, footer, vars, cellid[cellIndex], cellIndex, timesim,
       maxamr, ncells, block_size, coordmin, coordmax, dcoord, populations, meshes)
 end
 

@@ -5,7 +5,7 @@ import pytools as pt
 import numpy as np
 import matplotlib.pyplot as plt
 
-filename = 'bulk1.0001000.vlsv'
+file = 'bulk1.0001000.vlsv'
 var = 'proton/vg_rho'
 """
 
@@ -14,13 +14,13 @@ import pytools as pt
 import numpy as np
 import matplotlib.pyplot as plt
 
-filename = 'bulk1.0001000.vlsv'
+file = 'bulk1.0001000.vlsv'
 var = 'proton/vg_rho'
-f = pt.vlsvfile.VlsvReader(filename)
+f = pt.vlsvfile.VlsvReader(file)
 """
 
 s1 = """
-f = pt.vlsvfile.VlsvReader(filename)
+f = pt.vlsvfile.VlsvReader(file)
 """
 
 s2 = """

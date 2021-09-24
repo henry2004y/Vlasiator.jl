@@ -629,7 +629,7 @@ end
 
 """
     write_vtk(meta::MetaVLSV; kwargs...)
-    write_vtk(filename; kwargs...)
+    write_vtk(file; kwargs...)
 
 Convert VLSV file to VTK format.
 # Keyword arguments
@@ -701,7 +701,7 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, vti=false, verbose=fa
    return
 end
 
-write_vtk(filename; kwargs...) = write_vtk(load(filename); kwargs...)
+write_vtk(file; kwargs...) = write_vtk(load(file); kwargs...)
 
 """
     save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level,
@@ -738,7 +738,7 @@ end
 
 
 """
-    issame(filename1, filename2, tol=1e-4) -> Bool
+    issame(file1, file2, tol=1e-4) -> Bool
 
 Check if two VLSV files are approximately identical.
 """

@@ -7,10 +7,10 @@ using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
 
 @assert matplotlib.__version__ >= "3.4" "Matplotlib version too old: subfigure is not supported!"
 
-const filenames = glob("bulk*.vlsv", ".")
-const nfile = length(filenames)
+const files = glob("bulk*.vlsv", ".")
+const nfile = length(files)
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 Re = Vlasiator.Re # Earth radii
 const x1, x2 = 8.0, 29.0
@@ -97,9 +97,9 @@ end
 
 
 "Update frame."
-function process(i, fname)
-   println("i = $i/$nfile, filename = $fname")
-   local meta = load(fname)
+function process(i, file)
+   println("i = $i/$nfile, file = $file")
+   local meta = load(file)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
@@ -167,8 +167,8 @@ function process(i, fname)
 end
 
 # Loop over snapshots
-for (i, fname) in enumerate(filenames)
-   process(i, fname)
+for (i, file) in enumerate(files)
+   process(i, file)
 end
 
 close(fig)

@@ -8,10 +8,10 @@
 using Vlasiator, Glob, PyPlot, Printf
 using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
 
-filenames = glob("out/bulk*.vlsv")
-nfile = length(filenames)
+files = glob("out/bulk*.vlsv")
+nfile = length(files)
 
-meta = load(filenames[1])
+meta = load(files[1])
 vardict = Dict("v"=>"proton/vg_v", "rho"=>"proton/vg_rho", "b"=>"vg_b_vol", "b2"=>"fg_b")
 varname = "rho"
 
@@ -29,9 +29,9 @@ pArgs = set_args(meta, vardict[varname], axisunit, colorscale; normal=:none, vmi
 
 cnorm, cticks = set_colorbar(pArgs)
 
-for (i, filename) in enumerate(filenames)
+for (i, file) in enumerate(files)
    @info "$i out of $nfile"
-   local meta = load(filename)
+   local meta = load(file)
 
    var = meta[vardict[varname]]
    t = readparameter(meta, "time")

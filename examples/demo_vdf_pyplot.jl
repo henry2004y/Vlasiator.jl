@@ -5,9 +5,9 @@
 
 using Vlasiator, PyPlot
 
-filename = "bulk.0000001.vlsv"
+file = "bulk.0000001.vlsv"
 
-meta = load(filename)
+meta = load(file)
 
 coordinates = [0.0, 0.0, 0.0]
 

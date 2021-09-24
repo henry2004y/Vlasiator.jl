@@ -32,11 +32,11 @@ using Distributed
    return fig, axs
 end
 
-@everywhere function process(axs, fname, cellids)
-   isfile("out/"*fname[end-8:end-5]*".png") && return
+@everywhere function process(axs, file, cellids)
+   isfile("out/"*file[end-8:end-5]*".png") && return
 
-   println("filename = $fname")
-   meta = load(fname)
+   println("file = $file")
+   meta = load(file)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
@@ -73,7 +73,7 @@ end
    axs[3].legend(;loc="upper left",  fontsize)
    axs[4].legend(;loc="upper right", fontsize)
 
-   savefig("out/"*fname[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axs
       for line in ax.get_lines()
@@ -85,8 +85,8 @@ end
    end
 end
 
-function make_jobs(filenames)
-   for f in filenames
+function make_jobs(files)
+   for f in files
        put!(jobs, f)
    end
 end
@@ -94,19 +94,19 @@ end
 @everywhere function do_work(jobs, results)
    fig, axs = init_figure()
    while true
-      fname = take!(jobs)
-      process(axs, fname, cellids)
+      file = take!(jobs)
+      process(axs, file, cellids)
       put!(results, true)
    end
    close(fig)
 end
 
 ############################################################################################
-filenames = glob("bulk*.vlsv", ".")
+files = glob("bulk*.vlsv", ".")
 
-const nfile = length(filenames)
+const nfile = length(files)
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 Re = Vlasiator.Re # Earth radii
 const x1, x2 = 8.0, 29.0
@@ -146,7 +146,7 @@ const results = RemoteChannel(()->Channel{Bool}(nfile))
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
 
-@async make_jobs(filenames) # Feed the jobs channel with all filenames to process.
+@async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
    @async remote_do(do_work, p, jobs, results)

@@ -7,13 +7,13 @@
 
 using Vlasiator, Plots
 
-filename = "bulk.0000501.vlsv"
+file = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
 
 boxcoords = [0, 20, -15, 15]
 
-meta = load(filename)
+meta = load(file)
 
 heatmap(meta, nameρ, 
    xlim=(boxcoords[1], boxcoords[2]),

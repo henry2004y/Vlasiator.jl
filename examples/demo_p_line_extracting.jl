@@ -4,10 +4,10 @@
 
 using Vlasiator, PyPlot, Glob, Printf
 
-filenames = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
-nfile = length(filenames)
+files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
+nfile = length(files)
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
@@ -20,9 +20,9 @@ close(meta.fid)
 
 fig, ax = plt.subplots(figsize=(8, 4.8))
 
-for (i, fname) in enumerate(filenames)
-   println("i = $i/$nfile, filename = $fname")
-   local meta = load(fname)
+for (i, file) in enumerate(files)
+   println("i = $i/$nfile, file = $file")
+   local meta = load(file)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec

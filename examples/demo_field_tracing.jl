@@ -9,11 +9,11 @@ using PyPlot, FieldTracer, Vlasiator
 
 Re = Vlasiator.Re
 
-filename = "bulk.0000501.vlsv"
+file = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
 
-meta = load(filename)
+meta = load(file)
 
 pcolormesh(meta, nameρ)
 

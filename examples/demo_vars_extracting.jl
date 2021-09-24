@@ -4,10 +4,10 @@
 
 using Vlasiator, PyPlot, Glob, Printf
 
-filenames = glob("bulk*.vlsv", ".")
-nfiles = length(filenames)
+files = glob("bulk*.vlsv", ".")
+nfiles = length(files)
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
@@ -48,11 +48,11 @@ axs[3].set_ylabel("Pressure [nPa]"; fontsize)
 axs[4].set_ylabel("Magnetic field [nT]"; fontsize)
 
 # Loop over snapshots
-for (i, fname) in enumerate(filenames)
-   isfile("out/"*fname[end-8:end-5]*".png") && continue
+for (i, file) in enumerate(files)
+   isfile("out/"*file[end-8:end-5]*".png") && continue
 
-   println("i = $i/$nfiles, filename = $fname")
-   local meta = load(fname)
+   println("i = $i/$nfiles, file = $file")
+   local meta = load(file)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
@@ -89,7 +89,7 @@ for (i, fname) in enumerate(filenames)
    axs[3].legend(;loc="upper left",  fontsize)
    axs[4].legend(;loc="upper right", fontsize)
 
-   savefig("out/"*fname[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axs
       for line in ax.get_lines()

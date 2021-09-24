@@ -7,11 +7,11 @@
 
 using Vlasiator, PyPlot
 
-filename = "bulk.0000501.vlsv"
+file = "bulk.0000501.vlsv"
 nameρ = "rho"
 nameV = "rho_v"
 
-meta = load(filename)
+meta = load(file)
 
 pcolormesh(meta, nameρ)
 streamplot(meta, nameV, comp="xy", color="w", density=2.0)

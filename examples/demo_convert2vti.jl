@@ -6,10 +6,10 @@
 
 using Vlasiator, Glob
 
-filenames = glob("*.vlsv")
+files = glob("*.vlsv")
 
-Threads.@threads for i in 1:length(filenames)
-   fname = filenames[i]
-   @info fname, Threads.threadid()
-   write_vtk(fname; vti=true)
+Threads.@threads for i in 1:length(files)
+   file = files[i]
+   @info file, Threads.threadid()
+   write_vtk(file; vti=true)
 end

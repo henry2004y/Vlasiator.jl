@@ -28,23 +28,23 @@ end
       run(`unzip data/testdata.zip`)
    end
 
-   filenames = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
-   meta1 = load(filenames[1])
-   meta2 = load(filenames[2])
-   meta3 = load(filenames[3])
+   files = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
+   meta1 = load(files[1])
+   meta2 = load(files[2])
+   meta3 = load(files[3])
 
    if group in (:read, :all)
       @testset "Reading files" begin
          @test_throws ArgumentError load("data")
          meta = meta1
          @test ndims(meta) == 1
-         @test startswith(repr(meta), "filename         : bulk.1d.vlsv")
+         @test startswith(repr(meta), "File: bulk.1d.vlsv")
          @test size(meta) == 5168730
          # Variable strings reading
          @test meta.variable[end] == "vg_rhom"
          # Variable info reading
          varinfo = readvariablemeta(meta, "proton/vg_rho")
-         @test startswith(repr(varinfo), "var in LaTeX")
+         @test startswith(repr(varinfo), "Variable in LaTeX")
          @test varinfo.unit == "1/m^3"
          # Parameter checking
          @test hasparameter(meta, "dt") == true
@@ -115,7 +115,7 @@ end
 
 
          # Compare two VLSV files
-         @test issame(filenames[1], filenames[1])
+         @test issame(files[1], files[1])
       end
    end
 
@@ -287,7 +287,7 @@ end
    for meta in (meta1, meta2, meta3)
       close(meta.fid) # required for Windows?
    end
-   for file in filenames
+   for file in files
       rm(file, force=true)
    end
 end

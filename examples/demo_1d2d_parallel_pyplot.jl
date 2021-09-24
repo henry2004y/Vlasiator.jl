@@ -63,11 +63,11 @@ using Distributed
    return fig, subfigs, axsL, axsR
 end
 
-@everywhere function process(subfigs, axsL, axsR, fname, cellids, isinit)
-   isfile("out/"*fname[end-8:end-5]*".png") && return true
+@everywhere function process(subfigs, axsL, axsR, file, cellids, isinit)
+   isfile("out/"*file[end-8:end-5]*".png") && return true
 
-   println("filename = $(basename(fname))")
-   meta = load(fname)
+   println("file = $(basename(file))")
+   meta = load(file)
 
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
@@ -120,7 +120,7 @@ end
       cb2.outline.set_linewidth(1.0)
    end
 
-   savefig("out/"*fname[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axsL
       for line in ax.get_lines()
@@ -133,8 +133,8 @@ end
    return false
 end
 
-function make_jobs(filenames)
-   for f in filenames
+function make_jobs(files)
+   for f in files
        put!(jobs, f)
    end
 end
@@ -143,22 +143,22 @@ end
    fig, subfigs, axsL, axsR = init_figure()
    isinit = true
    while true
-      fname = take!(jobs)
-      isinit = process(subfigs, axsL, axsR, fname, cellids, isinit)
+      file = take!(jobs)
+      isinit = process(subfigs, axsL, axsR, file, cellids, isinit)
       put!(results, true)
    end
    close(fig)
 end
 
 ############################################################################################
-filenames = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
 
-const nfile = length(filenames)
+const nfile = length(files)
 
 const jobs    = RemoteChannel(()->Channel{String}(nfile))
 const results = RemoteChannel(()->Channel{Bool}(nfile))
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 # Set contour plots' axes and colorbars
 const cmap = matplotlib.cm.turbo
@@ -215,7 +215,7 @@ end
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
 
-@async make_jobs(filenames) # Feed the jobs channel with all filenames to process.
+@async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
    @async remote_do(do_work, p, jobs, results)

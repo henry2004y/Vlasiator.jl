@@ -43,11 +43,11 @@ using Distributed
    return fig, axs
 end
 
-@everywhere function process(fig, axs, fname, isinit)
-   isfile("out/"*fname[end-8:end-5]*".png") && return true
+@everywhere function process(fig, axs, file, isinit)
+   isfile("out/"*file[end-8:end-5]*".png") && return true
 
-   println("filename = $fname")
-   meta = load(fname)
+   println("file = $file")
+   meta = load(file)
 
    x, y, data = plot_prep2d(meta, "proton/vg_rho", pArgs1, :mag, axisunit) 
    c1 = axs[1,1].pcolormesh(x, y, data ./ 1e6;
@@ -102,13 +102,13 @@ end
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
    fig.suptitle(str_title, fontsize="x-large")
 
-   savefig("out/"*fname[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
 
    return false
 end
 
-function make_jobs(filenames)
-   for f in filenames
+function make_jobs(files)
+   for f in files
        put!(jobs, f)
    end
 end
@@ -117,22 +117,22 @@ end
    fig, axs = init_figure()
    isinit = true
    while true
-      fname = take!(jobs)
-      isinit = process(fig, axs, fname, isinit)
+      file = take!(jobs)
+      isinit = process(fig, axs, file, isinit)
       put!(results, true)
    end
    close(fig)
 end
 
 ############################################################################################
-filenames = glob("bulk*.vlsv", ".")
+files = glob("bulk*.vlsv", ".")
 
-const nfile = length(filenames)
+const nfile = length(files)
 
 const jobs    = RemoteChannel(()->Channel{String}(nfile))
 const results = RemoteChannel(()->Channel{Bool}(nfile))
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 # Set contour plots' axes and colorbars
 const cmap = matplotlib.cm.turbo
@@ -192,7 +192,7 @@ end
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
 
-@async make_jobs(filenames) # Feed the jobs channel with all filenames to process.
+@async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
    @async remote_do(do_work, p, jobs, results)

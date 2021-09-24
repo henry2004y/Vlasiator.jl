@@ -4,9 +4,9 @@
 
 using Vlasiator, Glob, PyPlot, Printf
 
-filenames = glob("run4/bulk*.vlsv")
+files = glob("run4/bulk*.vlsv")
 
-meta = load(filenames[1])
+meta = load(files[1])
 
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]
@@ -23,7 +23,7 @@ inputs = [
 499.0 1.0e6 1.0e5 -8.0e5;
 500.0 2.0e6 1.0e5 -5.0e5]
 
-nfiles = length(filenames)
+nfiles = length(files)
 ndigits = 4
 
 lim_rho = [0.0, 4.0e6]
@@ -31,11 +31,11 @@ lim_v   = [-2e5, 10e5]
 
 fig, ax = plt.subplots(2,1, figsize=(12,5))
 
-for (i, filename) in enumerate(filenames)
+for (i, file) in enumerate(files)
 
-   fnameout = lpad(i, ndigits, '0')*".png"
+   fileout = lpad(i, ndigits, '0')*".png"
 
-   local meta = load(filename)
+   local meta = load(file)
    local rho = readvariable(meta, "proton/vg_rho", cellids)
    local v = readvariable(meta, "proton/vg_v", cellids)
    local vx = Vector{Float64}(undef, size(v,1))
@@ -64,7 +64,7 @@ for (i, filename) in enumerate(filenames)
       @sprintf "t=%4.1fs, rho=%4.1f/cc, vx=%4.1fkm/s" t inputs[j,2]/1e6 inputs[j,4]/1e3
    fig.suptitle(str_title, fontsize=14)
 
-   savefig(fnameout, bbox_inches="tight")
+   savefig(fileout, bbox_inches="tight")
 
    ax[1].cla()
    ax[2].cla()

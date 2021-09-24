@@ -13,12 +13,12 @@ using JLD2: jldsave
 # Upstream solar wind temperature
 const Tsw = 0.5e6 #[K]
 
-function extract_bowshock_position(filenames; verbose=true)
-   nfiles = length(filenames)
+function extract_bowshock_position(files; verbose=true)
+   nfiles = length(files)
 
    verbose && println("Number of files: $nfiles")
 
-   meta = load(filenames[1])
+   meta = load(files[1])
 
    x = LinRange{Float32}(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
    y = LinRange{Float32}(meta.coordmin[2], meta.coordmax[2], meta.ncells[2])
@@ -34,8 +34,8 @@ function extract_bowshock_position(filenames; verbose=true)
    y_crossing = y[ymin_:ymax_]
 
    Threads.@threads for ifile = 1:nfiles
-      verbose && println("$(filenames[ifile]) on thread $(Threads.threadid())")
-      f = load(filenames[ifile])
+      verbose && println("$(files[ifile]) on thread $(Threads.threadid())")
+      f = load(files[ifile])
       # Obtain thermal temperature
       T = f["T"]
       close(f.fid)
@@ -52,8 +52,8 @@ function extract_bowshock_position(filenames; verbose=true)
 end
 
 #####
-filenames = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
 
-@time x_crossing, y_crossing = extract_bowshock_position(filenames)
+@time x_crossing, y_crossing = extract_bowshock_position(files)
 
 jldsave("example.jld2"; x_crossing, y_crossing)

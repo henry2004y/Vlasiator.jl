@@ -3,16 +3,16 @@ Pkg.activate(".")
 using Vlasiator
 using BenchmarkTools
 
-#filename = "bulk.singleprecision.vlsv" # 80 KB rho
-#filename = "bulk.0000003.vlsv"        # 900 KB rho
-filename = "bulk1.0001000.vlsv"       # 32 MB rho
-#filename = "test/data/bulk.2d.vlsv"
+#file = "bulk.singleprecision.vlsv" # 80 KB rho
+#file = "bulk.0000003.vlsv"        # 900 KB rho
+file = "bulk1.0001000.vlsv"       # 32 MB rho
+#file = "test/data/bulk.2d.vlsv"
 
-@time meta = load(filename);
+@time meta = load(file);
 
-@benchmark meta = load($filename)
+@benchmark meta = load($file)
 
-meta = load(filename);
+meta = load(file);
 
 var = "proton/vg_rho";
 

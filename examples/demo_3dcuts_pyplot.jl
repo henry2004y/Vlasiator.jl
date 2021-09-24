@@ -8,10 +8,10 @@ using Vlasiator, PyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
 AxesGrid = axes_grid1.AxesGrid
 
-filename = "bulk1.0001000.vlsv"
+file = "bulk1.0001000.vlsv"
 nameρ = "proton/vg_rho"
 
-meta = load(filename)
+meta = load(file)
 
 # normal cuts in the x,y,z directions
 fig = plt.figure(figsize=(12, 4))

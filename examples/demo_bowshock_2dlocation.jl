@@ -8,8 +8,8 @@ using Vlasiator, PyPlot
 # Upstream solar wind temperature
 Tsw = 0.5e6 #[K]
 
-filename = "bulk.0001347.vlsv"
-meta = load(filename)
+file = "bulk.0001347.vlsv"
+meta = load(file)
 
 x = LinRange{Float32}(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 y = LinRange{Float32}(meta.coordmin[2], meta.coordmax[2], meta.ncells[2])

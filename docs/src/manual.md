@@ -4,8 +4,8 @@
 
 - Read meta data
 ```
-filename = "bulk.0000004.vlsv"
-meta = load(filename)
+file = "bulk.0000004.vlsv"
+meta = load(file)
 ```
 
 This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and populations, which can then be passed into all kinds of methods that process the data. 
@@ -51,7 +51,7 @@ One may want to check if two vlsv files are identical. This is tricky because
 The key is that we should not check quantities that are related to MPI writing sequence: for some reasons, even file sizes may vary depending on the number of MPI processes!
 
 ```
-issame(filename1, filename2)
+issame(file1, file2)
 ```
 
 There is an optional third argument to `issame` for setting the relative difference tolerance, with default being 1e-4.
@@ -207,7 +207,7 @@ We can convert VLSV files into VTK files! Since DCCRG is Cartesian based with un
 
 To convert a VLSV file into VTK,
 ```
-write_vtk(filename)
+write_vtk(file)
 ```
 This function accepts both file names and file meta.
 
@@ -237,8 +237,8 @@ from julia.api import Julia
 jl = Julia(compiled_modules=False)
 
 from julia import Vlasiator
-filename = "bulk1.0001000.vlsv"
-meta = Vlasiator.load(filename)
+file = "bulk1.0001000.vlsv"
+meta = Vlasiator.load(file)
 var = "proton/vg_rho"
 data = Vlasiator.readvariable(meta, var)
 ```
