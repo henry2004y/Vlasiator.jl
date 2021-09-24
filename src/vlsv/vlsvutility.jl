@@ -1,6 +1,6 @@
 # Utility functions for processing VLSV data.
 
-using LinearAlgebra: dot
+using LinearAlgebra: dot, norm
 using WriteVTK, Printf
 using LazyGrids: ndgrid
 
@@ -288,7 +288,7 @@ function getcellinline(meta::MetaVLSV, point1, point2)
    cellids = [getcell(meta, point1)]
    coords = point1
    ϵ = eps(Float32)
-   unit_vector = @. (point2 - point1) / $hypot(point2 - point1 + ϵ...)
+   unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = point1
 
    while true
@@ -324,7 +324,7 @@ function getcellinline(meta::MetaVLSV, point1, point2)
 
       push!(cellids, cellidnew)
       coords = hcat(coords, coordnew)
-      push!(distances, hypot(coordnew - point1...))
+      push!(distances, norm(coordnew .- point1))
 
       p = coordnew
    end
@@ -363,7 +363,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset;
    nlen = 0
    ncell = prod(ncells)
    # number of cells up to each refinement level
-   nStart = SVector{maxamr+2}(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))...)
+   nStart = SVector{maxamr+2}(vcat(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))))
 
    indexlist = Int[]
    idlist = Int[]
@@ -404,14 +404,14 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
    @unpack ncells, maxamr = meta
 
    if normal == :x
-      dims = [ncells[2], ncells[3]] .* 2^maxamr
+      dims = SVector{2}([ncells[2], ncells[3]] .* 2^maxamr)
    elseif normal == :y
-      dims = [ncells[1], ncells[3]] .* 2^maxamr
+      dims = SVector{2}([ncells[1], ncells[3]] .* 2^maxamr)
    elseif normal == :z
-      dims = [ncells[1], ncells[2]] .* 2^maxamr
+      dims = SVector{2}([ncells[1], ncells[2]] .* 2^maxamr)
    end
 
-   dpoints = zeros(eltype(data), dims...)
+   dpoints = zeros(eltype(data), dims[1], dims[2])
 
    # Create the plot grid
    ncell = prod(ncells)
@@ -678,7 +678,7 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, ver
 
       xamr = addelement!(elm, "vtkOverlappingAMR")
 
-      origin = @sprintf "%f %f %f" coordmin...
+      origin = @sprintf "%f %f %f" coordmin[1] coordmin[2] coordmin[3]
       link!(xamr, AttributeNode("origin", origin))
       link!(xamr, AttributeNode("grid_description", "XYZ"))
 
@@ -690,7 +690,8 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, ver
          xDataSet = addelement!(xBlock, "DataSet")
          link!(xDataSet, AttributeNode("index", "0"))
          amr_box = [0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1]
-         box_str = @sprintf "%d %d %d %d %d %d" amr_box...
+         box_str = @sprintf("%d %d %d %d %d %d", amr_box[1], amr_box[2], amr_box[3],
+            amr_box[4], amr_box[5], amr_box[6])
          link!(xDataSet, AttributeNode("amr_box", box_str))
          link!(xDataSet, AttributeNode("file", filedata[i+1]))
       end

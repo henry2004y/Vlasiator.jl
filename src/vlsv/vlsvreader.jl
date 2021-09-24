@@ -165,7 +165,7 @@ function load(file::AbstractString)
    @inbounds coordmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
    @inbounds coordmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
 
-   dcoord = SVector(@. (coordmax - coordmin) / ncells...)
+   dcoord = SVector{3}(@. (coordmax - coordmin) / ncells)
 
    meshes = Dict{String, VMeshInfo}()
 
@@ -187,7 +187,7 @@ function load(file::AbstractString)
          vblock_size = SVector(bbox[4], bbox[5], bbox[6])
          vmin = @SVector [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
          vmax = @SVector [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
-         dv = SVector(@. (vmax - vmin) / vblocks / vblock_size...)
+         dv = SVector{3}(@. (vmax - vmin) / vblocks / vblock_size)
       else
          popname = "avgs"
 
@@ -206,7 +206,7 @@ function load(file::AbstractString)
                readparameter(fid, footer, "vxmax"),
                readparameter(fid, footer, "vymax"),
                readparameter(fid, footer, "vzmax") ]
-            dv = SVector(@. (vmax - vmin) / vblocks / vblock_size...)
+            dv = SVector{3}(@. (vmax - vmin) / vblocks / vblock_size)
          else
             # No velocity space info, e.g., file not written by Vlasiator
             vblocks = @SVector [0, 0, 0]
@@ -345,13 +345,13 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
             lend = lstart[:,i] + lsize[:,i] .- 1
 
             ldata = dataV[:,currentOffset[i]:currentOffset[i+1]-1]
-            ldata = reshape(ldata, size(dataV,1), lsize[:,i]...)
+            ldata = reshape(ldata, size(dataV,1), lsize[1,i], lsize[2,i], lsize[3,i])
 
             dataOrdered[:,lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] =
                ldata
          else
             ldata = dataV[currentOffset[i]:currentOffset[i+1]-1]
-            ldata = reshape(ldata, lsize[:,i]...)
+            ldata = reshape(ldata, lsize[1,i], lsize[2,i], lsize[3,i])
 
             dataOrdered[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
          end
