@@ -229,6 +229,14 @@ const variables_predefined = Dict(
       ρm = readvariable(meta, "Rhom")
       @. ρm * V * V
    end,
+   :Pb => function (meta)
+      B² = vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+      @inbounds for i = eachindex(B²) # sparsity/inner boundary
+         B²[i] == 0.0 && (B²[i] = NaN)
+      end
+      mu2inv = 0.5/μ₀
+      @. B² * mu2inv
+   end,
    :Poynting => function (meta)
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
          E = readvariable(meta, "vg_e_vol")
@@ -277,11 +285,11 @@ const variables_predefined = Dict(
    end,
    :Beta => function (meta)
       P = readvariable(meta, "P")
-      B2 = vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
-      @inbounds for i = eachindex(B2) # sparsity/inner boundary
-         B2[i] == 0.0 && (B2[i] = NaN)
+      B² = vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+      @inbounds for i = eachindex(B²) # sparsity/inner boundary
+         B²[i] == 0.0 && (B²[i] = NaN)
       end
-      @. 2 * μ₀ * P / B2
+      @. 2 * μ₀ * P / B²
    end,
    :IonInertial => function (meta)
       n = readvariable(meta, "proton/vg_rho")

@@ -95,6 +95,7 @@ Here is a full list of available quantities[^1]:
 | Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
 | Anisotropy            | $P_\perp / P_\parallel$          | ptensor; B            |
 | Pdynamic              | dynamic pressure                 | vg\_rho; Vmag         |
+| Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
 | IonInertial           | ion inertial length              | vg\_rho               | 
