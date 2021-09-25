@@ -1,5 +1,17 @@
 # Log
 
+## Test Data
+
+If you don't have VLSV data at hand, Vlasiator.jl provides some test data for you to begin with.
+```
+using LazyArtifacts
+
+rootpath = artifact"testdata"
+files = joinpath.(rootpath, ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv"))
+```
+
+These are also used in the standard test. These will be automatically downloaded from [vlsv_data](https://github.com/henry2004y/vlsv_data) if you run the package test locally.
+
 ## Performance
 
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
