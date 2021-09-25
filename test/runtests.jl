@@ -1,4 +1,4 @@
-using Vlasiator, SHA
+using Vlasiator, SHA, LazyArtifacts
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -16,19 +16,9 @@ function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
 end
 
 @testset "Vlasiator.jl" begin
-   @static if Sys.iswindows()
-      using ZipFile
-      r = ZipFile.Reader("data/testdata.zip")
-      for file in r.files
-         open(file.name, "w") do io
-            write(io, read(file, String))
-         end
-      end
-   else
-      run(`unzip data/testdata.zip`)
-   end
+   rootpath = artifact"testdata"
 
-   files = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
+   files = joinpath.(rootpath, ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv"))
    meta1 = load(files[1])
    meta2 = load(files[2])
    meta3 = load(files[3])
@@ -209,10 +199,9 @@ end
 
    if group in (:log, :all)
       @testset "Log" begin
-         file = "logfile.txt"
+         file = joinpath(rootpath, "logfile.txt")
          timestamps, speed = readlog(file)
          @test length(speed) == 50 && speed[end] == 631.2511f0
-         rm.(file, force=true)
       end
    end
 
@@ -286,8 +275,5 @@ end
    end
    for meta in (meta1, meta2, meta3)
       close(meta.fid) # required for Windows?
-   end
-   for file in files
-      rm(file, force=true)
    end
 end

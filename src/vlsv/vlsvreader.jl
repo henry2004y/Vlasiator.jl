@@ -33,7 +33,8 @@ end
 
 "VLSV meta data."
 struct MetaVLSV
-   name::AbstractString
+   name::String
+   dir::String
    fid::IOStream
    footer::EzXML.Node
    variable::Vector{String}
@@ -253,8 +254,9 @@ function load(file::AbstractString)
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(file, fid, footer, vars, cellid[cellIndex], cellIndex, timesim,
-      maxamr, ncells, block_size, coordmin, coordmax, dcoord, populations, meshes)
+   meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid[cellIndex],
+      cellIndex, timesim, maxamr, ncells, block_size, coordmin, coordmax, dcoord,
+      populations, meshes)
 end
 
 
@@ -403,7 +405,7 @@ end
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
 "File size in bytes."
-@inline Base.size(meta::MetaVLSV) = filesize(meta.name)
+@inline Base.size(meta::MetaVLSV) = filesize(joinpath(meta.dir, meta.name))
 
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
