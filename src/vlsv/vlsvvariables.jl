@@ -61,12 +61,17 @@ const units_predefined = Dict(
 
 # Define derived parameters
 const variables_predefined = Dict(
-   :Bmag => function (meta)
+   :Bmag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
-      ρ = readvariable(meta, meta.variable[rho_])
+      ρ = isempty(ids) ?
+         readvariable(meta, meta.variable[rho_]) :
+         readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_b_vol")
-         Bmag = sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+         Bmag = isempty(ids) ?
+            sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
+            sqrt.(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
       else
+         @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Bmag = sqrt.(sum(readvariable(meta, "fg_b").^2, dims=1))
       end
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
@@ -74,12 +79,17 @@ const variables_predefined = Dict(
       end
       Bmag
    end,
-   :Emag => function (meta)
+   :Emag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
-      ρ = readvariable(meta, meta.variable[rho_])
+      ρ = isempty(ids) ?
+         readvariable(meta, meta.variable[rho_]) :
+         readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_e_vol")
-         Emag = sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1))
+         Emag = isempty(ids) ?
+            sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)) :
+            sqrt.(sum(readvariable(meta, "vg_e_vol", ids).^2, dims=1))
       else
+         @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Emag = sqrt.(sum(readvariable(meta, "fg_e").^2, dims=1))
       end
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
@@ -87,72 +97,96 @@ const variables_predefined = Dict(
       end
       Emag
    end,
-   :Vmag => function (meta)
+   :Vmag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
-      ρ = readvariable(meta, meta.variable[rho_])
-      Vmag = vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1)))
+      ρ = isempty(ids) ?
+         readvariable(meta, meta.variable[rho_]) :
+         readvariable(meta, meta.variable[rho_], ids)
+      Vmag = isempty(ids) ?
+         vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1))) :
+         vec(sqrt.(sum(readvariable(meta, "proton/vg_v", ids).^2, dims=1)))
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
          Vmag[i] == 0.0 && (Vmag[i] = NaN)
       end
       Vmag
    end,
-   :Rhom => function (meta)
+   :Rhom => function (meta, ids=UInt64[])
       if hasvariable(meta, "vg_rhom")
-         ρm = readvariable(meta, "vg_rhom")
+         ρm = isempty(ids) ?
+            readvariable(meta, "vg_rhom") :
+            readvariable(meta, "vg_rhom", ids)
       elseif hasvariable(meta, "proton/vg_rho")
-         ρm = readvariable(meta, "proton/vg_rho") .* mᵢ
+         ρm = isempty(ids) ?
+            readvariable(meta, "proton/vg_rho") .* mᵢ :
+            readvariable(meta, "proton/vg_rho", ids) .* mᵢ
       end
       ρm
    end,
-   :P => function (meta) # scalar pressure
+   :P => function (meta, ids=UInt64[]) # scalar pressure
       if hasvariable(meta, "vg_pressure")
-         P = readvariable(meta, "vg_pressure")
+         P = isempty(ids) ?
+            readvariable(meta, "vg_pressure") :
+            readvariable(meta, "vg_pressure", ids)
       else
-         Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
+         Pdiag = isempty(ids) ?
+            readvariable(meta, "proton/vg_ptensor_diagonal") :
+            readvariable(meta, "proton/vg_ptensor_diagonal", ids)
          P = vec(mean(Pdiag, dims=1))
       end
       P
    end,
-   :VS => function (meta) # sound speed
-      P = readvariable(meta, "P")
-      ρm = readvariable(meta, "Rhom")
+   :VS => function (meta, ids=UInt64[]) # sound speed
+      P = readvariable(meta, "P", ids)
+      ρm = readvariable(meta, "Rhom", ids)
       @inbounds for i = eachindex(ρm) # sparsity/inner boundary
          ρm[i] == 0.0 && (ρm[i] = NaN)
       end
       vs = @. √( (P*5.0f0/3.0f0) / ρm )
    end,
-   :VA => function (meta) # Alfvén speed
-      ρm = readvariable(meta, "Rhom")
+   :VA => function (meta, ids=UInt64[]) # Alfvén speed
+      ρm = readvariable(meta, "Rhom", ids)
       @inbounds for i = eachindex(ρm) # sparsity/inner boundary
          ρm[i] == 0.0 && (ρm[i] = NaN)
       end
-      Bmag = readvariable(meta, "Bmag")
+      Bmag = readvariable(meta, "Bmag", ids)
       VA = @. $vec(Bmag) / √(ρm*μ₀)
    end,
-   :MA => function (meta) # Alfvén Mach number
-      V = readvariable(meta, "Vmag")
+   :MA => function (meta, ids=UInt64[]) # Alfvén Mach number
+      V = readvariable(meta, "Vmag", ids)
       @inbounds for i = eachindex(V) # sparsity/inner boundary
          V[i] == 0.0 && (V[i] = NaN)
       end
-      VA = readvariable(meta, "VA")
+      VA = readvariable(meta, "VA", ids)
       V ./ VA
    end,
-   :MS => function (meta) # Sonic Mach number
-      V = readvariable(meta, "Vmag")
+   :MS => function (meta, ids=UInt64[]) # Sonic Mach number
+      V = readvariable(meta, "Vmag", ids)
       @inbounds for i = eachindex(V) # sparsity/inner boundary
          V[i] == 0.0 && (V[i] = NaN)
       end
-      VS = readvariable(meta, "VS")
+      VS = readvariable(meta, "VS", ids)
       V ./ VS
    end,
-   :Vpar => function (meta) # velocity ∥ B
-      V = readvariable(meta, "proton/vg_v")
-      b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+   :Vpar => function (meta, ids=UInt64[]) # velocity ∥ B
+      V = isempty(ids) ?
+         readvariable(meta, "proton/vg_v") :
+         readvariable(meta, "proton/vg_v", ids)
+      if isempty(ids)
+         b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+      else
+         b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+      end
       [V[:,i] ⋅ b[:,i] for i in 1:size(V,2)]
    end,
-   :Vperp => function (meta) # velocity ⟂ B
-      V = readvariable(meta, "proton/vg_v")
-      b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+   :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
+      V = isempty(ids) ?
+         readvariable(meta, "proton/vg_v") :
+         readvariable(meta, "proton/vg_v", ids)
+      if isempty(ids)
+         b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+      else
+         b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+      end
       Vperp = zeros(eltype(V), size(V, 2))
       # Avoid sqrt of negative values, but does not guarantee orthogonality.
       @inbounds for i in eachindex(Vperp)
@@ -161,58 +195,68 @@ const variables_predefined = Dict(
       end
       Vperp
    end,
-   :T => function (meta) # scalar temperature
-      P = readvariable(meta, "P")
-      n = readvariable(meta, "proton/vg_rho")
+   :T => function (meta, ids=UInt64[]) # scalar temperature
+      P = readvariable(meta, "P", ids)
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids)
       @inbounds for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
       T = @. P / (n*kB)
    end,
-   :Ppar => function (meta) # P component ∥ B
-      P = readvariable(meta, "Protated")
+   :Ppar => function (meta, ids=UInt64[]) # P component ∥ B
+      P = readvariable(meta, "Protated", ids)
       @views P[3,3,:]
    end,
-   :Pperp => function (meta) # P component ⟂ B
-      P = readvariable(meta, "Protated")
+   :Pperp => function (meta, ids=UInt64[]) # P component ⟂ B
+      P = readvariable(meta, "Protated", ids)
       Pperp = [0.5f0(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
    end,
-   :Tpar => function (meta) # T component ∥ B
-      P = readvariable(meta, "Protated")
-      n = readvariable(meta, "proton/vg_rho")
+   :Tpar => function (meta, ids=UInt64[]) # T component ∥ B
+      P = readvariable(meta, "Protated", ids)
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids)
       @inbounds for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
       @. P[3,3,:] / (n*kB)
    end,
-   :Tperp => function (meta) # scalar T component ⟂ B
-      P = readvariable(meta, "Protated")
-      n = readvariable(meta, "proton/vg_rho")
+   :Tperp => function (meta, ids=UInt64[]) # scalar T component ⟂ B
+      P = readvariable(meta, "Protated", ids)
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids)
       @inbounds for i = eachindex(n) # sparsity/inner boundary
          n[i] == 0.0 && (n[i] = NaN)
       end
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
    end,
-   :Tanisotropy => function (meta) # T⟂ / T∥
-      Tperp = readvariable(meta, "Tperp")
-      Tpar = readvariable(meta, "Tpar")
+   :Tanisotropy => function (meta, ids=UInt64[]) # T⟂ / T∥
+      Tperp = readvariable(meta, "Tperp", ids)
+      Tpar = readvariable(meta, "Tpar", ids)
       @. Tperp / Tpar
    end,
-   :J => function (meta)
+   :J => function (meta, ids=UInt64[])
+      @assert isempty(ids) "Do not support current calculation for selected cells!"
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
       J = curl(meta.dcoord, B) ./ μ₀
       J = reshape(J, 3, :) # To be consistent with shape assumptions
    end,
-   :Egradpe => function (meta)
-
-   end,
-   :Protated => function (meta)
+   :Protated => function (meta, ids=UInt64[])
       # Rotate the pressure tensor to align the 3rd direction with B
-      B = readvariable(meta, "vg_b_vol")
-      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
-      Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal")
+      B = isempty(ids) ?
+         readvariable(meta, "vg_b_vol") :
+         readvariable(meta, "vg_b_vol", ids)
+      Pdiag = isempty(ids) ?
+         readvariable(meta, "proton/vg_ptensor_diagonal") :
+         readvariable(meta, "proton/vg_ptensor_diagonal", ids)
+      Podiag = isempty(ids) ?
+         readvariable(meta, "proton/vg_ptensor_offdiagonal") :
+         readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
       P = zeros(Float32, 3, 3, size(Pdiag, 2))
       @inbounds for i = 1:size(P, 3)
          P[1,1,i] = Pdiag[1,i]
@@ -225,33 +269,37 @@ const variables_predefined = Dict(
       end
       P
    end,
-   :Panisotropy => function (meta) # P⟂ / P∥
-      PR = readvariable(meta, "Protated")
+   :Panisotropy => function (meta, ids=UInt64[]) # P⟂ / P∥
+      PR = readvariable(meta, "Protated", ids)
       @. 0.5f0*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
    end,
-   :Pdynamic => function (meta)
-      V = readvariable(meta, "Vmag")
-      ρm = readvariable(meta, "Rhom")
+   :Pdynamic => function (meta, ids=UInt64[])
+      V = readvariable(meta, "Vmag", ids)
+      ρm = readvariable(meta, "Rhom", ids)
       @. ρm * V * V
    end,
-   :Pb => function (meta)
-      B² = vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+   :Pb => function (meta, ids=UInt64[])
+      B² = isempty(ids) ?
+         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
+         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
       @inbounds for i = eachindex(B²) # sparsity/inner boundary
          B²[i] == 0.0 && (B²[i] = NaN)
       end
       mu2inv = 0.5/μ₀
       @. B² * mu2inv
    end,
-   :Poynting => function (meta)
+   :Poynting => function (meta, ids=UInt64[])
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
-         E = readvariable(meta, "vg_e_vol")
-         B = readvariable(meta, "vg_b_vol")
+         E = isempty(ids) ?
+            readvariable(meta, "vg_e_vol") :
+            readvariable(meta, "vg_e_vol", ids)
+         B = isempty(ids) ?
+            readvariable(meta, "vg_b_vol") :
+            readvariable(meta, "vg_b_vol", ids)
       elseif hasvariable(meta, "fg_e") && hasvariable(meta, "fg_b")
+         @assert isempty(ids) "Do not support selecting cells in FSGrid!"
          E = readvariable(meta, "fg_e")
          B = readvariable(meta, "fg_b")
-      elseif hasvariable(meta, "B_vol") # before Vlasiator 5
-         E = readvariable(meta, "E_vol")
-         B = readvariable(meta, "B_vol")
       else
          E = readvariable(meta, "E")
          B = readvariable(meta, "B")
@@ -263,13 +311,18 @@ const variables_predefined = Dict(
       end
       F
    end,
-   :Agyrotropy => function (meta)
+   :Agyrotropy => function (meta, ids=UInt64[])
       # non-gyrotropy measure Q [Swisdak 2016]
       # Original derivation for electrons. Here we do protons first.
-      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
-      Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal")
-      B = readvariable(meta, "vg_b_vol")
-
+      if isempty(ids)
+         Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
+         Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal")
+         B = readvariable(meta, "vg_b_vol")
+      else
+         Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal", ids)
+         Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
+         B = readvariable(meta, "vg_b_vol", ids)
+      end
       Pxx = selectdim(Pdiag, 1, 1)
       Pyy = selectdim(Pdiag, 1, 2)
       Pzz = selectdim(Pdiag, 1, 3)
@@ -288,39 +341,52 @@ const variables_predefined = Dict(
 	      2*(Bx*By*Pxy + Bx*Bz*Pxz + By*Bz*Pyz))/B²
       Qsqr = @. √(1 - 4I₂/((I₁ - Ppar)*(I₁ + 3Ppar)))
    end,
-   :Beta => function (meta)
-      P = readvariable(meta, "P")
-      B² = vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1))
+   :Beta => function (meta, ids=UInt64[])
+      P = readvariable(meta, "P", ids)
+      B² = isempty(ids) ?
+         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
+         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
       @inbounds for i = eachindex(B²) # sparsity/inner boundary
          B²[i] == 0.0 && (B²[i] = NaN)
       end
       @. 2 * μ₀ * P / B²
    end,
-   :IonInertial => function (meta)
-      n = readvariable(meta, "proton/vg_rho")
+   :IonInertial => function (meta, ids=UInt64[])
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids)
       Z = 1
       ωi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
       di = @. c / ωi
    end,
-   :Larmor => function (meta)
-      Vperp = readvariable(meta, "Vperp")
-      B = readvariable(meta, "Bmag")
+   :Larmor => function (meta, ids=UInt64[])
+      if isempty(ids)
+         Vperp = readvariable(meta, "Vperp")
+         B = readvariable(meta, "Bmag")
+      else
+         Vperp = readvariable(meta, "Vperp", ids)
+         B = readvariable(meta, "Bmag", ids)
+      end
       rg = @. mᵢ * Vperp / (qᵢ * B)
    end,
-   :Gyroperiod => function (meta)
-      B = readvariable(meta, "Bmag")
-      T = @. 2π * mᵢ / (qᵢ * B)    
+   :Gyroperiod => function (meta, ids=UInt64[])
+      B = readvariable(meta, "Bmag", ids)
+      T = @. 2π * mᵢ / (qᵢ * B)
    end,
-   :Gyrofrequency => function (meta) # [1/s]
-      B = readvariable(meta, "Bmag")
-      f = @. qᵢ * B / (mᵢ * 2π)    
+   :Gyrofrequency => function (meta, ids=UInt64[]) # [1/s]
+      B = isempty(ids) ? readvariable(meta, "Bmag") : readvariable(meta, "Bmag", ids)
+      f = @. qᵢ * B / (mᵢ * 2π)
    end,
-   :Plasmaperiod => function (meta)
-      n = readvariable(meta, "proton/vg_rho")
+   :Plasmaperiod => function (meta, ids=UInt64[])
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids)
       T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
    end,
-   :Omegap => function (meta) # plasma frequency, [1/s]
-      n = readvariable(meta, "proton/vg_rho")
+   :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids)
       ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
 )

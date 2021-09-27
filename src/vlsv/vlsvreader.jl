@@ -380,6 +380,11 @@ function readvariable(meta::MetaVLSV, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
    @unpack fid, footer = meta
 
+   if (local symvar = Symbol(var)) in keys(variables_predefined)
+      data = variables_predefined[symvar](meta, ids)
+      return data
+   end
+
    T, offset, arraysize, _, vectorsize = 
       getObjInfo(fid, footer, var, "VARIABLE", "name")
 
