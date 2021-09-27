@@ -1,4 +1,4 @@
-using BenchmarkTools
+using BenchmarkTools, LazyArtifacts
 
 t = @elapsed using Vlasiator
 println("Julia version is $VERSION")
@@ -7,16 +7,8 @@ println()
 println("Benchmarking Vlasiator.jl...")
 println()
 
-directory = "test/data"
+directory = artifact"testdata"
 files = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
-
-using ZipFile
-r = ZipFile.Reader(joinpath(directory, "testdata.zip"))
-for file in r.files
-   open(joinpath(directory, file.name), "w") do io
-      write(io, read(file, String))
-   end
-end
 
 const SUITE = BenchmarkGroup()
 
