@@ -71,6 +71,7 @@ const variables_predefined = Dict(
             sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
             sqrt.(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
       else
+         @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Bmag = sqrt.(sum(readvariable(meta, "fg_b").^2, dims=1))
       end
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
@@ -88,6 +89,7 @@ const variables_predefined = Dict(
             sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)) :
             sqrt.(sum(readvariable(meta, "vg_e_vol", ids).^2, dims=1))
       else
+         @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Emag = sqrt.(sum(readvariable(meta, "fg_e").^2, dims=1))
       end
       @inbounds for i = eachindex(ρ) # sparsity/inner boundary
