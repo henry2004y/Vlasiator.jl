@@ -101,7 +101,9 @@ Here is a full list of available quantities[^1]:
 | IonInertial           | proton inertial length           | vg\_rho               | 
 | Larmor                | proton Larmor radius             | Vperp; Bmag           |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |
-| Plasmaperiod          | plasma oscillation period        |                       |
+| Plasmaperiod          | plasma oscillation period        | vg\_rho               |
+| Gyrofrequency         | proton gyro-frequency            | Bmag                  |
+| Omegap                | plasma frequency (proton)        | vg\_rho               |
 
 which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
 

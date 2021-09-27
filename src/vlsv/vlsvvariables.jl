@@ -306,7 +306,16 @@ const variables_predefined = Dict(
       B = readvariable(meta, "Bmag")
       T = @. 2π * mᵢ / (qᵢ * B)    
    end,
+   :Gyrofrequency => function (meta) # [1/s]
+      B = readvariable(meta, "Bmag")
+      f = @. qᵢ * B / (mᵢ * 2π)    
+   end,
    :Plasmaperiod => function (meta)
-
+      n = readvariable(meta, "proton/vg_rho")
+      T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
+   end,
+   :Omegap => function (meta) # plasma frequency, [1/s]
+      n = readvariable(meta, "proton/vg_rho")
+      ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
 )

@@ -141,13 +141,19 @@ end
 
          @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         @test meta["IonInertial"][1] == 8.584026203089327e7
+         @test meta["IonInertial"][1] == 8.578087716535188e7
 
          @test meta["Larmor"][1] == 142415.61236345078
 
          @test meta["Gyroperiod"][1] == 21.834297799454554
 
+         @test meta["Gyrofrequency"][1] == 0.04579950356933307
+
          @test meta["J"][1,1000] == 2.314360722590665e-14
+
+         @test meta["Omegap"][1] == 209.5467447842415
+
+         @test meta["Plasmaperiod"][1] == 0.0047722048893178645
 
          #Anisotropy = meta["Anisotropy"]
 
