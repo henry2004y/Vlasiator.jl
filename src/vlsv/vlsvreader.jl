@@ -72,7 +72,7 @@ function Base.show(io::IO, s::VarInfo)
 end
 
 "Return the xml footer of vlsv."
-function getfooter(fid)
+function getfooter(fid::IOStream)
    # First 8 bytes indicate big-endian or else
    endian_offset = 8
    seek(fid, endian_offset)
@@ -84,7 +84,7 @@ end
 
 
 "Return size and type information for the object."
-function getObjInfo(fid, footer, name, tag, attr)
+function getObjInfo(fid::IOStream, footer, name, tag, attr)
    local arraysize, datasize, datatype, vectorsize, variable_offset
    isFound = false
 
@@ -114,7 +114,7 @@ function getObjInfo(fid, footer, name, tag, attr)
 end
 
 "Return vectors of `name` from the vlsv file with `footer` opened by `fid`."
-function readvector(fid, footer, name, tag)
+function readvector(fid::IOStream, footer, name, tag)
    T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
    if Sys.free_memory() > Int(1e9) + arraysize*vectorsize*datasize # > 1GB of free memory
@@ -289,7 +289,7 @@ function readvariablemeta(meta::MetaVLSV, var)
 end
 
 "Return mesh related variable."
-function readmesh(fid, footer, typeMesh, varMesh)
+function readmesh(fid::IOStream, footer, typeMesh, varMesh)
    T, offset, arraysize, _, _ = getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
 
    w = Vector{T}(undef, arraysize)
@@ -469,7 +469,7 @@ Return the parameter value from vlsv file.
 """
 readparameter(meta::MetaVLSV, param) = readparameter(meta.fid, meta.footer, param)
 
-function readparameter(fid, footer, param)
+function readparameter(fid::IOStream, footer, param)
    T, offset, _, _, _ = getObjInfo(fid, footer, param, "PARAMETER", "name")
    seek(fid, offset)
    p = read(fid, T)
