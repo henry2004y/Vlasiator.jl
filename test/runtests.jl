@@ -145,6 +145,8 @@ end
 
          @test meta["Larmor"][1] == 142415.61236345078
 
+         @test meta["Gyroperiod"][1] == 21.834297799454554
+
          @test meta["J"][1,1000] == 2.314360722590665e-14
 
          #Anisotropy = meta["Anisotropy"]

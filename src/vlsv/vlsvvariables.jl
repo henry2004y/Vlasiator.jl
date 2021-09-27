@@ -302,8 +302,9 @@ const variables_predefined = Dict(
       B = readvariable(meta, "Bmag")
       rg = @. mᵢ * Vperp / (qᵢ * B)
    end,
-   :Gyrofrequency => function (meta)
-
+   :Gyroperiod => function (meta)
+      B = readvariable(meta, "Bmag")
+      T = @. 2π * mᵢ / (qᵢ * B)    
    end,
    :Plasmaperiod => function (meta)
 

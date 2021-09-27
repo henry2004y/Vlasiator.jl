@@ -98,9 +98,9 @@ Here is a full list of available quantities[^1]:
 | Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
-| IonInertial           | ion inertial length              | vg\_rho               | 
-| Larmor                | Larmor radius                    | Vperp; Bmag           |
-| Gyrofrequency         | ion gyroperiod                   |                       |
+| IonInertial           | proton inertial length           | vg\_rho               | 
+| Larmor                | proton Larmor radius             | Vperp; Bmag           |
+| Gyroperiod            | proton gyroperiod                | Bmag                  |
 | Plasmaperiod          | plasma oscillation period        |                       |
 
 which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
