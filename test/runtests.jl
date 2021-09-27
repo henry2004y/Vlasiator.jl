@@ -155,9 +155,11 @@ end
 
          @test meta["Plasmaperiod"][1] == 0.0047722048893178645
 
-         #Anisotropy = meta["Anisotropy"]
+         #@test meta["Panisotropy"]
 
-         #Agyrotropy = meta["Agyrotropy"]
+         #@test meta["Tanisotropy"]
+
+         #@test meta["Agyrotropy"]
 
       end
    end

@@ -194,6 +194,11 @@ const variables_predefined = Dict(
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
    end,
+   :Tanisotropy => function (meta) # T⟂ / T∥
+      Tperp = readvariable(meta, "Tperp")
+      Tpar = readvariable(meta, "Tpar")
+      @. Tperp / Tpar
+   end,
    :J => function (meta)
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
@@ -220,7 +225,7 @@ const variables_predefined = Dict(
       end
       P
    end,
-   :Anisotropy => function (meta) # P⟂ / P∥
+   :Panisotropy => function (meta) # P⟂ / P∥
       PR = readvariable(meta, "Protated")
       @. 0.5f0*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
    end,

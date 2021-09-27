@@ -91,9 +91,10 @@ Here is a full list of available quantities[^1]:
 | T                     | scalar temperature               | P; vg\_rho            |
 | Tpar                  | temperature $\parallel\mathbf{B}$| vg\_rho; vg\_ptensor\_diagonal; vg\_b\_vol |
 | Tperp                 | temperature $\perp \mathbf{B}$   | vg\_rho; vg\_ptensor\_offdiagonal; vg\_b\_vol |
+| Tanisotropy           | $T_\perp / T_\parallel$          | Tpar; Tperp           |
 | J                     | current density                  | vg\_b\_vol            |
 | Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
-| Anisotropy            | $P_\perp / P_\parallel$          | ptensor; B            |
+| Panisotropy           | $P_\perp / P_\parallel$          | ptensor; B            |
 | Pdynamic              | dynamic pressure                 | vg\_rho; Vmag         |
 | Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
