@@ -26,7 +26,7 @@ References: https://en.wikipedia.org/wiki/Rodrigues'_rotation_formula
 https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
 """
 function getRotationMatrix(v::AbstractVector, θ)
-   cosθ, sinθ = eltype(v)(cos(θ)), eltype(v)(sin(θ))
+   sinθ, cosθ = sincos(eltype(v)(θ))
    tmp = 1 - cosθ
    m =  @SMatrix [
         cosθ+v[1]^2*tmp         v[1]*v[2]*tmp-v[3]*sinθ v[1]*v[3]*tmp+v[2]*sinθ;
