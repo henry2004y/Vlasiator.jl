@@ -143,7 +143,7 @@ end
 
          @test meta["IonInertial"][1] == 8.578087716535188e7
 
-         @test meta["Larmor"][1] == 142415.61236345078
+         @test readvariable(meta, "Larmor", UInt64[1])[1] == 142415.61236345078
 
          @test meta["Gyroperiod"][1] == 21.834297799454554
 
