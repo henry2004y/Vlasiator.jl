@@ -105,10 +105,10 @@ end
    axsL[4].legend(;loc="upper right", fontsize)
 
    x, y, data = plot_prep2d(meta, "VA", pArgs1, :z, axisunit) 
-   c1 = axsR[1].pcolormesh(x, y, data, norm=cnorm1, cmap=cmap, shading="auto")
+   c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="auto")
 
    x, y, data = plot_prep2d(meta, "VS", pArgs2, :z, axisunit) 
-   c2 = axsR[2].pcolormesh(x, y, data, norm=cnorm2, cmap=cmap, shading="auto")
+   c2 = axsR[2].pcolormesh(x, y, data ./ 1e3, norm=cnorm2, cmap=cmap, shading="auto")
 
    if isinit
       cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
@@ -170,8 +170,8 @@ const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
 const vmin, vmax = -640.0, 0.0   # [km/s]
 const pmin, pmax = 0.0, 1.82     # [nPa]
 const bmin, bmax = -25.0, 60.0   # [nT]
-const vamin, vamax = 0.0, 250.0  #
-const vsmin, vsmax = 30.0, 350.0 #
+const vamin, vamax = 0.0, 250.0  # [km/s]
+const vsmin, vsmax = 30.0, 350.0 # [km/s]
 
 const pArgs1 = set_args(meta, "VA", axisunit, colorscale;
    normal=:none, vmin=vamin, vmax=vamax)
