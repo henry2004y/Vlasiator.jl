@@ -5,8 +5,8 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Distributed
-@everywhere using Vlasiator, PyPlot, Glob, Printf, LaTeXStrings
+using Distributed, ParallelDataTransfer, Glob
+@everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
 @everywhere using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
@@ -153,64 +153,50 @@ end
 ############################################################################################
 files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
 
-const nfile = length(files)
+meta = load(files[1])
+
+@passobj 1 workers() files
+@passobj 1 workers() meta
+
+@broadcast begin
+   const nfile = length(files)
+   # Set contour plots' axes and colorbars
+   const cmap = matplotlib.cm.turbo
+   const colorscale = Linear
+   const axisunit = RE
+   # Upper/lower limits for each variable
+   const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
+   const vmin, vmax = -640.0, 0.0   # [km/s]
+   const pmin, pmax = 0.0, 1.82     # [nPa]
+   const bmin, bmax = -25.0, 60.0   # [nT]
+   const vamin, vamax = 0.0, 250.0  # [km/s]
+   const vsmin, vsmax = 30.0, 350.0 # [km/s]
+
+   const pArgs1 = set_args(meta, "VA", axisunit, colorscale;
+      normal=:none, vmin=vamin, vmax=vamax)
+   const cnorm1, cticks1 = set_colorbar(pArgs1)
+
+   const pArgs2 = set_args(meta, "VS", axisunit, colorscale;
+      normal=:none, vmin=vsmin, vmax=vsmax)
+   const cnorm2, cticks2 = set_colorbar(pArgs2)
+
+   const x1, x2 = 8.0, 29.0
+   const fontsize = 14
+end
 
 const jobs    = RemoteChannel(()->Channel{String}(nfile))
 const results = RemoteChannel(()->Channel{Bool}(nfile))
 
-meta = load(files[1])
-
-# Set contour plots' axes and colorbars
-const cmap = matplotlib.cm.turbo
-const colorscale = Linear
-const axisunit = RE
-
-# Upper/lower limits for each variable
-const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
-const vmin, vmax = -640.0, 0.0   # [km/s]
-const pmin, pmax = 0.0, 1.82     # [nPa]
-const bmin, bmax = -25.0, 60.0   # [nT]
-const vamin, vamax = 0.0, 250.0  # [km/s]
-const vsmin, vsmax = 30.0, 350.0 # [km/s]
-
-const pArgs1 = set_args(meta, "VA", axisunit, colorscale;
-   normal=:none, vmin=vamin, vmax=vamax)
-const cnorm1, cticks1 = set_colorbar(pArgs1)
-
-const pArgs2 = set_args(meta, "VS", axisunit, colorscale;
-   normal=:none, vmin=vsmin, vmax=vsmax)
-const cnorm2, cticks2 = set_colorbar(pArgs2)
-
 Re = Vlasiator.Re # Earth radii
-const x1, x2 = 8.0, 29.0
+
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
-const cellids, _, _ = getcellinline(meta, point1, point2)
+cellids, _, _ = getcellinline(meta, point1, point2)
 
-const loc = range(x1, x2, length=length(cellids))
+@passobj 1 workers cellids
 
-const fontsize = 14
-
-@everywhere begin # broadcast parameters
-   cmap = $cmap
-   colorscale = $colorscale
-   axisunit = $axisunit
-   cnorm1 = $cnorm1; cticks1 = $cticks1
-   cnorm2 = $cnorm2; cticks2 = $cticks2
-   pArgs1 = $pArgs1; pArgs2 = $pArgs2
-
-   cellids = $cellids
-   x1 = $x1; x2 = $x2
-   ρmin = $ρmin; ρmax = $ρmax
-   vmin = $vmin; vmax = $vmax
-   pmin = $pmin; pmax = $pmax
-   bmin = $bmin; bmax = $bmax
-   vamin = $vamin; vamax = $vamax
-   vsmin = $vsmin; vsmax = $vsmax
-   fontsize = $fontsize
-   loc = $loc
-end
+@broadcast const loc = range(x1, x2, length=length(cellids))
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")

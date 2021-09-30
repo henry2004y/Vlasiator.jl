@@ -5,8 +5,8 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Distributed
-@everywhere using Vlasiator, PyPlot, Glob, Printf, LaTeXStrings
+using Distributed, ParallelDataTransfer, Glob
+@everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
 @everywhere using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
 
 @everywhere function init_figure()
@@ -127,66 +127,54 @@ end
 ############################################################################################
 files = glob("bulk*.vlsv", ".")
 
-const nfile = length(files)
+nfile = length(files)
 
 const jobs    = RemoteChannel(()->Channel{String}(nfile))
 const results = RemoteChannel(()->Channel{Bool}(nfile))
 
-meta = load(files[1])
+@passobj 1 workers() files
 
-# Set contour plots' axes and colorbars
-const cmap = matplotlib.cm.turbo
-const colorscale = Linear
-const axisunit = RE
+@broadcast begin # on all workers
+   # Set contour plots' axes and colorbars
+   const cmap = matplotlib.cm.turbo
+   const colorscale = Linear
+   const axisunit = RE
 
-# Upper/lower limits for each variable
-const ρmin, ρmax   = 0.0, 9.0      # [amu/cc]
-const vxmin, vxmax = -640.0, 100.0 # [km/s]
-const vymin, vymax = -300.0, 300.0 # [km/s]
-const pmin, pmax   = 0.0, 0.7      # [nPa]
-const bmin, bmax   = -5.0, 2e2     # [nT]
-const emin, emax   = 5.0, 3e4      # [muV/m]
+   # Upper/lower limits for each variable
+   const ρmin, ρmax   = 0.0, 9.0      # [amu/cc]
+   const vxmin, vxmax = -640.0, 100.0 # [km/s]
+   const vymin, vymax = -300.0, 300.0 # [km/s]
+   const pmin, pmax   = 0.0, 0.7      # [nPa]
+   const bmin, bmax   = -5.0, 2e2     # [nT]
+   const emin, emax   = 5.0, 3e4      # [muV/m]
 
-const pArgs1 = set_args(meta, "proton/vg_rho", axisunit, colorscale;
-   normal=:none, vmin=ρmin, vmax=ρmax)
-const cnorm1, cticks1 = set_colorbar(pArgs1)
+   meta = load(files[1])
 
-const pArgs2 = set_args(meta, "proton/vg_v", axisunit, colorscale;
-   normal=:none, vmin=vxmin, vmax=vxmax)
-const cnorm2, cticks2 = set_colorbar(pArgs2)
+   const pArgs1 = set_args(meta, "proton/vg_rho", axisunit, colorscale;
+      normal=:none, vmin=ρmin, vmax=ρmax)
+   const cnorm1, cticks1 = set_colorbar(pArgs1)
 
-const pArgs3 = set_args(meta, "proton/vg_v", axisunit, colorscale;
-   normal=:none, vmin=vymin, vmax=vymax)
-const cnorm3, cticks3 = set_colorbar(pArgs3)
+   const pArgs2 = set_args(meta, "proton/vg_v", axisunit, colorscale;
+      normal=:none, vmin=vxmin, vmax=vxmax)
+   const cnorm2, cticks2 = set_colorbar(pArgs2)
 
-const pArgs4 = set_args(meta, "vg_pressure", axisunit, colorscale;
-   normal=:none, vmin=pmin, vmax=pmax)
-const cnorm4, cticks4 = set_colorbar(pArgs4)
+   const pArgs3 = set_args(meta, "proton/vg_v", axisunit, colorscale;
+      normal=:none, vmin=vymin, vmax=vymax)
+   const cnorm3, cticks3 = set_colorbar(pArgs3)
 
-const pArgs5 = set_args(meta, "vg_b_vol", axisunit, Linear;
-   normal=:none, vmin=bmin, vmax=bmax)
-const cnorm5, cticks5 = set_colorbar(pArgs5)
+   const pArgs4 = set_args(meta, "vg_pressure", axisunit, colorscale;
+      normal=:none, vmin=pmin, vmax=pmax)
+   const cnorm4, cticks4 = set_colorbar(pArgs4)
 
-const pArgs6 = set_args(meta, "vg_e_vol", axisunit, Log;
-   normal=:none, vmin=emin, vmax=emax)
-const cnorm6, cticks6 = set_colorbar(pArgs6)
+   const pArgs5 = set_args(meta, "vg_b_vol", axisunit, Linear;
+      normal=:none, vmin=bmin, vmax=bmax)
+   const cnorm5, cticks5 = set_colorbar(pArgs5)
 
-const fontsize = 14
+   const pArgs6 = set_args(meta, "vg_e_vol", axisunit, Log;
+      normal=:none, vmin=emin, vmax=emax)
+   const cnorm6, cticks6 = set_colorbar(pArgs6)
 
-@everywhere begin # broadcast parameters
-   cmap = $cmap
-   colorscale = $colorscale
-   axisunit = $axisunit
-   cnorm1 = $cnorm1; cticks1 = $cticks1
-   cnorm2 = $cnorm2; cticks2 = $cticks2
-   cnorm3 = $cnorm3; cticks3 = $cticks3
-   cnorm4 = $cnorm4; cticks4 = $cticks4
-   cnorm5 = $cnorm5; cticks5 = $cticks5
-   cnorm6 = $cnorm6; cticks6 = $cticks6
-   pArgs1 = $pArgs1; pArgs2 = $pArgs2
-   pArgs3 = $pArgs3; pArgs4 = $pArgs4
-   pArgs5 = $pArgs5; pArgs6 = $pArgs6
-   fontsize = $fontsize
+   const fontsize = 14
 end
 
 println("Total number of files: $nfile")
