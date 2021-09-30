@@ -11,7 +11,7 @@ using Distributed, ParallelDataTransfer, Glob
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
-@everywhere function init_figure()
+@everywhere function init_figure(x1, x2)
    fig = plt.figure(myid(), constrained_layout=true, figsize=(12, 12))
    subfigs = fig.subfigures(1, 2, wspace=0.05)
 
@@ -64,7 +64,7 @@ using Distributed, ParallelDataTransfer, Glob
 end
 
 @everywhere function process(subfigs, axsL, axsR, file, cellids, isinit)
-   isfile("out/"*file[end-8:end-5]*".png") && return true
+   isfile("../out/"*file[end-8:end-5]*".png") && return true
 
    println("file = $(basename(file))")
    meta = load(file)
@@ -120,7 +120,7 @@ end
       cb2.outline.set_linewidth(1.0)
    end
 
-   savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
 
    for ax in axsL
       for line in ax.get_lines()
@@ -140,7 +140,7 @@ function make_jobs(files)
 end
 
 @everywhere function do_work(jobs, results)
-   fig, subfigs, axsL, axsR = init_figure()
+   fig, subfigs, axsL, axsR = init_figure(x1, x2)
    isinit = true
    while true
       file = take!(jobs)
@@ -151,15 +151,11 @@ end
 end
 
 ############################################################################################
-files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
-
-meta = load(files[1])
-
+files = glob("bulk*.vlsv", "../run_rho2_bz-5_timevarying_startfrom300s")
+const nfile = length(files)
 @passobj 1 workers() files
-@passobj 1 workers() meta
 
 @broadcast begin
-   const nfile = length(files)
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
    const colorscale = Linear
@@ -172,6 +168,8 @@ meta = load(files[1])
    const vamin, vamax = 0.0, 250.0  # [km/s]
    const vsmin, vsmax = 30.0, 350.0 # [km/s]
 
+   meta = load(files[1])
+
    const pArgs1 = set_args(meta, "VA", axisunit, colorscale;
       normal=:none, vmin=vamin, vmax=vamax)
    const cnorm1, cticks1 = set_colorbar(pArgs1)
@@ -180,7 +178,6 @@ meta = load(files[1])
       normal=:none, vmin=vsmin, vmax=vsmax)
    const cnorm2, cticks2 = set_colorbar(pArgs2)
 
-   const x1, x2 = 8.0, 29.0
    const fontsize = 14
 end
 
@@ -188,14 +185,14 @@ const jobs    = RemoteChannel(()->Channel{String}(nfile))
 const results = RemoteChannel(()->Channel{Bool}(nfile))
 
 Re = Vlasiator.Re # Earth radii
-
+x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
+meta = load(files[1])
 cellids, _, _ = getcellinline(meta, point1, point2)
 
-@passobj 1 workers cellids
-
+passobj(1, workers(), [:x1, :x2, :cellids])
 @broadcast const loc = range(x1, x2, length=length(cellids))
 
 println("Total number of files: $nfile")
