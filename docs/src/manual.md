@@ -15,7 +15,7 @@ This VLSV meta data contains information of file names, variable names, cell ID 
 readvariablemeta(meta, "proton/vg_rho")
 ```
 
-A list of utility functions has been implemented for checking variable status. See [here](https://henry2004y.github.io/Vlasiator.jl/dev/internal/#Vlasiator.hasname-Tuple{Any,%20Any,%20Any}) for the full list. 
+A list of utility functions has been implemented for checking variable status. See [here](internal.md#Vlasiator.hasname-Tuple{Any, Any, Any}) for the full list. 
 
 - Read variable
 ```
@@ -189,6 +189,8 @@ loc = range(x1, x2, length=length(rho_extract))
 plot(loc, rho_extract)
 ```
 
+For a full list available optional arguments, please refer to the [doc for each method](internal.md#Public-APIs)
+
 ### Plots Backend
 
 To trigger the Plots package plotting, `using Plots`.
@@ -214,7 +216,7 @@ write_vtk(file)
 ```
 This function accepts both file names and file meta.
 
-To see the full list of options, please refer to the documentation in [internal](internal.md). Demo usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
+To see the full list of options, please refer to the documentation in [API Reference](internal.md). Demo usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
 
 !!! warning
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `maxamronly`: when it is set to `true`, then only the image file at the highest refinement level is generated.
