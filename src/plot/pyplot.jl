@@ -490,9 +490,8 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 # Optional arguments
 - `unit::AxisUnit`: axis unit in `SI`, `RE`.
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
-- `slicetype`: string for choosing the slice type from "xy", "xz", "yz", "bperp", "bpar",
-"bpar1".
-- `center`: string for setting the reference frame from "bulk", "peak".
+- `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.
+- `center`: symbol for setting the reference frame from :bulk, :peak.
 - `vslicethick`: setting the velocity space slice thickness in the normal direction. If set
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
@@ -502,8 +501,9 @@ between `:particle` and `:flux`.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
 function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI, slicetype="xy",
-   vslicethick=0.0, center="", weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
+   verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI,
+   slicetype::Symbol=:nothing, vslicethick=0.0, center::Symbol=:nothing,
+   weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
    @unpack ncells = meta
    if haskey(meta.meshes, pop)
@@ -554,10 +554,10 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    V = getvcellcoordinates(meta, vcellids; pop)
 
-   if center == "bulk" # center with bulk velocity
+   if center == :bulk # centered with bulk velocity
       verbose && @info "Transforming to plasma frame"
       V -= Vbulk
-   elseif center == "peak" # center on highest f-value
+   elseif center == :peak # centered on highest f-value
       peakindex = argmax(vcellf)
       Vpeak = V[:,peakindex]
       V -= Vpeak
@@ -584,20 +584,15 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    str_title = @sprintf "t= %4.1fs" meta.time
 
    # Set normal direction
-   if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
-      slicetype = "xz"
-      sliceNormal = [0., 1., 0.]
-      strx = "vx [km/s]"
-      stry = "vz [km/s]"
-   elseif ncells[2] == 1 && slicetype == "xz" # polar
-      sliceNormal = [0., 1., 0.]
-      strx = "vx [km/s]"
-      stry = "vz [km/s]"
-   elseif ncells[3] == 1 && slicetype == "xy" # ecliptic
-      sliceNormal = [0., 0., 1.]
-      strx = "vx [km/s]"
-      stry = "vy [km/s]"
-   elseif slicetype in ("bperp", "bpar", "bpar1")
+   if slicetype == :nothing
+      if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
+         slicetype = :xz
+      elseif ncells[2] == 1 # polar
+         slicetype = :xz
+      elseif ncells[3] == 1 # ecliptic
+         slicetype == :xy
+      end
+   elseif slicetype in (:bperp, :bpar, :bpar1)
       # If necessary, find magnetic field
       if hasvariable(meta, "B_vol")
          B = readvariable(meta, "B_vol", cidNearest)
@@ -605,11 +600,11 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
          B = readvariable(meta, "vg_b_vol", cidNearest)
       end
       BxV = B × Vbulk
-      if slicetype == "bperp" # slice in b_perp1/b_perp2
+      if slicetype == :bperp # slice in b_perp1/b_perp2
          sliceNormal = B ./ norm(B)
          strx = L"$v_{B \times V}$ "
          stry = L"$v_{B \times (B \times V)}$ "
-      elseif slicetype == "bpar1" # slice in b_parallel/b_perp1 plane
+      elseif slicetype == :bpar1 # slice in b_parallel/b_perp1 plane
          sliceNormal = B × BxV
          sliceNormal ./= norm(sliceNormal)
          strx = L"$v_{B}$ "
@@ -621,29 +616,37 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
       end
    end
 
-   if slicetype == "xy"
+   if slicetype == :xy
       v1 = V[1,:]
       v2 = V[2,:]
       vnormal = V[3,:]
-   elseif slicetype == "yz"
+      sliceNormal = [0., 0., 1.]
+      strx = "vx [km/s]"
+      stry = "vy [km/s]"
+   elseif slicetype == :yz
       v1 = V[2,:]
       v2 = V[3,:]
       vnormal = V[1,:]
-   elseif slicetype == "xz"
+      strx = "vy [km/s]"
+      stry = "vz [km/s]"
+   elseif slicetype == :xz
       v1 = V[1,:]
       v2 = V[3,:]
       vnormal = V[2,:]
-   elseif slicetype ∈ ("Bperp", "Bpar", "Bpar1")
+      sliceNormal = [0., 1., 0.]
+      strx = "vx [km/s]"
+      stry = "vz [km/s]"
+   elseif slicetype ∈ (:Bperp, :Bpar, :Bpar1)
       #TODO: NOT working yet!
-      if slicetype == "Bperp"
+      if slicetype == :Bperp
          v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
          v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
          vnormal = Vrot2[3,:] # the Z axis of the slice is B
-      elseif slicetype == "Bpar"
+      elseif slicetype == :Bpar
          v1 = Vrot2[3,:] # the X axis of the slice is B
          v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
          vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
-      elseif slicetype == "Bpara1"
+      elseif slicetype == :Bpara1
          v1 = Vrot2[3,:] # the X axis of the slice is B
          v2 = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
          vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
