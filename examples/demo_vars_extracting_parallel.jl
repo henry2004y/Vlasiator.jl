@@ -1,14 +1,14 @@
 # Multiple variables alone a line across multiple frames, multi-process version.
 #
 # To run on a single node,
-# julia -p $ncores demo_vars_extracting_parallel_pyplot.jl
+# julia -p $ncores demo_vars_extracting_parallel.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Distributed
-@everywhere using Vlasiator, PyPlot, Glob, Printf
+using Distributed, ParallelDataTransfer, Glob
+@everywhere using Vlasiator, PyPlot, Printf
 
-@everywhere function init_figure()
+@everywhere function init_figure(x1, x2)
    fig, axs = plt.subplots(4, 1; num=myid(),
       figsize=(10, 15), sharex=true, constrained_layout=true)
 
@@ -83,6 +83,7 @@ end
    for line in (vl1, vl2, vl3, vl4, hl4)
       line.remove()
    end
+   return
 end
 
 function make_jobs(files)
@@ -92,7 +93,7 @@ function make_jobs(files)
 end
 
 @everywhere function do_work(jobs, results)
-   fig, axs = init_figure()
+   fig, axs = init_figure(x1, x2)
    while true
       file = take!(jobs)
       process(axs, file, cellids)
@@ -103,45 +104,31 @@ end
 
 ############################################################################################
 files = glob("bulk*.vlsv", ".")
-
-const nfile = length(files)
-
-meta = load(files[1])
+nfile = length(files)
 
 Re = Vlasiator.Re # Earth radii
-const x1, x2 = 8.0, 29.0
+x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
-const cellids, _, _ = getcellinline(meta, point1, point2)
+meta = load(files[1])
+cellids, _, _ = getcellinline(meta, point1, point2)
 
-const loc = range(x1, x2, length=length(cellids))
+passobj(1, workers(), [:x1, :x2, :cellids])
 
-const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
-const vmin, vmax = -640.0, 0.0   # [km/s]
-const pmin, pmax = 0.0, 1.82     # [nPa]
-const bmin, bmax = -25.0, 60.0   # [nT]
+@broadcast begin
+   const loc = range(x1, x2, length=length(cellids))
 
-const fontsize = 14
+   const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
+   const vmin, vmax = -640.0, 0.0   # [km/s]
+   const pmin, pmax = 0.0, 1.82     # [nPa]
+   const bmin, bmax = -25.0, 60.0   # [nT]
 
-@everywhere begin # broadcast parameters
-   cellids = $cellids
-   x1 = $x1
-   x2 = $x2
-   ρmin = $ρmin
-   ρmax = $ρmax
-   vmin = $vmin
-   vmax = $vmax
-   pmin = $pmin
-   pmax = $pmax
-   bmin = $bmin
-   bmax = $bmax
-   fontsize = $fontsize
-   loc = $loc
+   const fontsize = 14
 end
 
-const jobs    = RemoteChannel(()->Channel{String}(nfile))
-const results = RemoteChannel(()->Channel{Bool}(nfile))
+jobs    = RemoteChannel(()->Channel{String}(nfile))
+results = RemoteChannel(()->Channel{Bool}(nworkers()))
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
@@ -152,10 +139,10 @@ println("Running with $(nworkers()) workers...")
    @async remote_do(do_work, p, jobs, results)
 end
 
-n = nfile
-@elapsed while n > 0 # wait for all jobs to complete
-   take!(results)
-   global n = n - 1
+let n = nfile
+   t = @elapsed while n > 0 # wait for all jobs to complete
+      take!(results)
+      n -= 1
+   end
+   println("Finished in $(t)s.")
 end
-
-println("Finished!")
