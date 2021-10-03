@@ -8,6 +8,7 @@
 using Glob, DelimitedFiles, Vlasiator, DataFrames
 
 function extract_vars(files, loc)
+   nfiles = length(files)
    # variables to be extracted
    t   = zeros(Float32, nfiles)
    rho = zeros(Float32, nfiles)
@@ -18,7 +19,7 @@ function extract_vars(files, loc)
    ex  = zeros(Float32, nfiles)
    ey  = zeros(Float32, nfiles)
 
-   println("Total number of files: $(length(files))")
+   println("Total number of files: $nfiles")
    println("Extracting location: $loc")
    println("Running with $(Threads.nthreads()) threads...")
 
@@ -49,7 +50,6 @@ Re = Vlasiator.Re # Earth radius
 dir = "./"
 
 files = glob("bulk*.vlsv", dir)
-nfiles = length(files)
 
 # virtual satellite location
 loc = [12Re, 0, 0]
