@@ -113,6 +113,7 @@ point2 = [x2, 0, 0] .* Re
 
 meta = load(files[1])
 cellids, _, _ = getcellinline(meta, point1, point2)
+close(meta.fid)
 
 passobj(1, workers(), [:x1, :x2, :cellids])
 
