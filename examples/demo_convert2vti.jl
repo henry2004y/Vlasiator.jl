@@ -1,6 +1,9 @@
 # Sample script for converting VLSV time series files to VTK image files.
-# For multithreading run,
+#
+# Usage:
 #   julia -t 2 demo_convert2vti.jl
+# or
+#   JULIA_NUM_THREADS=2 julia demo_convert2vti.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 

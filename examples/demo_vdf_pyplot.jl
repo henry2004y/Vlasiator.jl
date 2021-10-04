@@ -1,5 +1,4 @@
-# Sample script for plotting the phase space density near a given spatial
-# location.
+# Sample script for plotting the phase space density near a given spatial location.
 #
 # Hongyang Zhou, hyzhou@umich.edu
 

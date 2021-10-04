@@ -2,6 +2,8 @@
 #
 # Usage:
 #   julia -t nthreads demo_virtual_satellite.jl
+# or
+#   JULIA_NUM_THREADS=nthreads julia demo_virtual_satellite.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
