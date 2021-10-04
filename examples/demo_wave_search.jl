@@ -102,6 +102,9 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
       # Count local peak occuring frequencies at each location
       fPeaks = checkwaves_sma(var, Δt, nboxlength)
       for it in axes(fPeaks,1) # Iterate over time
+         outname = "../out/spatial_perturbation_distribution_"*
+            "$(lowercase(varnames_print[i]))_$(lpad(it, 3, '0')).png"
+         isfile(outname) && continue
          ## Visualization
          im = ax.pcolormesh(y, x, fPeaks[it,:,:], shading="auto")
          ax.set_title("$(varnames_print[i]) Perturbation Detection, "*
@@ -118,9 +121,7 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
          cb = fig.colorbar(im; ax)
          cb.ax.set_ylabel("Frequency of local peak occurrence, [#/s]"; fontsize)
 
-         savefig("../out/spatial_perturbation_distribution_"*
-            "$(lowercase(varnames_print[i]))_$(lpad(it, 3, '0')).png",
-            bbox_inches="tight")
+         savefig(outname, bbox_inches="tight")
          cla()
          cb.remove()
       end
