@@ -95,6 +95,10 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
 
    fig, ax = plt.subplots(figsize=(16,9))
    fontsize = 14
+   vmin, vmax = 0.0, 1.0
+   levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
+   norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
+   ticks = range(vmin, vmax, length=7)
 
    for i in eachindex(varnames)
       # Obtain time series data
@@ -106,7 +110,7 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
             "$(lowercase(varnames_print[i]))_$(lpad(it, 3, '0')).png"
          isfile(outname) && continue
          ## Visualization
-         im = ax.pcolormesh(y, x, fPeaks[it,:,:], shading="auto")
+         im = ax.pcolormesh(y, x, fPeaks[it,:,:]; norm, shading="auto")
          ax.set_title("$(varnames_print[i]) Perturbation Detection, "*
             "t = $(round(tStart+(it-1)*Δt, digits=1)) ~ "*
             "$(round(tStart+(it+nboxlength-1)*Δt, digits=1))s";
@@ -118,7 +122,7 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
          ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
          ax.grid(true, color="grey", linestyle="-")
 
-         cb = fig.colorbar(im; ax)
+         cb = fig.colorbar(im; ax, ticks)
          cb.ax.set_ylabel("Frequency of local peak occurrence, [#/s]"; fontsize)
 
          savefig(outname, bbox_inches="tight")
