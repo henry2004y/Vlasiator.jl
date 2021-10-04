@@ -204,10 +204,10 @@ println("Running with $(nworkers()) workers...")
    @async remote_do(do_work, p, jobs, results)
 end
 
-n = nfile
-@elapsed while n > 0 # Wait for all jobs to complete
-   take!(results)
-   global n = n - 1
+let n = nfile
+   t = @elapsed while n > 0 # wait for all jobs to complete
+      take!(results)
+      n -= 1
+   end
+   println("Finished in $(round(t, digits=2))s.")
 end
-
-println("Finished!")

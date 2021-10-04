@@ -1,7 +1,7 @@
 # Multiple variables alone a line across multiple frames, multi-process version.
 #
-# To run on a single node,
-# julia -p $ncores demo_vars_extracting_parallel.jl
+# Usage:
+#   julia -p $ncores demo_vars_extracting_parallel.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
@@ -145,5 +145,5 @@ let n = nfile
       take!(results)
       n -= 1
    end
-   println("Finished in $(t)s.")
+   println("Finished in $(round(t, digits=2))s.")
 end
