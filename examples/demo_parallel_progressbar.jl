@@ -1,7 +1,7 @@
 # Multiprocess complex figure plotting with progress bar running under ClusterManagers.
 #
 # Usage:
-#   sbatch slurm.job
+#   sbatch job.slurm
 #
 # Sample Slurm job script
 #
@@ -19,7 +19,10 @@
 
 using Distributed, ProgressMeter, Glob
 using ClusterManagers
-addprocs(SlurmManager(2), partition="test", time="00:03:00", mem_per_cpu="2G")
+addprocs(SlurmManager(2),
+   partition=ENV["SBATCH_PARTITION"],
+   time=ENV["SBATCH_TIMELIMIT"],
+   mem_per_cpu=ENV["SBATCH_MEM_PER_CPU"])
 
 @everywhere begin
    using ParallelDataTransfer
@@ -208,17 +211,17 @@ passobj(1, workers(), [:x1, :x2, :cellids])
 end
 
 @sync begin # start two tasks which will be synced in the very end
-    # the first task updates the progress bar
-    @async while take!(channel)
-        next!(p)
-    end
+   # the first task updates the progress bar
+   @async while take!(channel)
+      next!(p)
+   end
 
-    # the second task does the computation
-    @async begin
-        pmap(1:nfiles) do i
-            process(subfigs, axsL, axsR, files[i], cellids)
-            put!(channel, true) # trigger a progress bar update
-        end
-        put!(channel, false) # this tells the printing task to finish
-    end
+   # the second task does the computation
+   @async begin
+      pmap(1:nfiles) do i
+         process(subfigs, axsL, axsR, files[i], cellids)
+         put!(channel, true) # trigger a progress bar update
+      end
+      put!(channel, false) # this tells the printing task to finish
+   end
 end
