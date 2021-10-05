@@ -130,7 +130,7 @@ files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
 const jobs    = RemoteChannel(()->Channel{String}(nfile))
-const results = RemoteChannel(()->Channel{Bool}(nfile))
+const results = RemoteChannel(()->Channel{Bool}(nworkers()))
 
 @passobj 1 workers() files
 

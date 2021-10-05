@@ -182,7 +182,7 @@ const nfile = length(files)
 end
 
 const jobs    = RemoteChannel(()->Channel{String}(nfile))
-const results = RemoteChannel(()->Channel{Bool}(nfile))
+const results = RemoteChannel(()->Channel{Bool}(nworkers()))
 
 Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
