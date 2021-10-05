@@ -3,8 +3,9 @@
 # Usage:
 #   sbatch job.slurm
 #
+
 # Sample Slurm job script
-#
+#=
 #!/bin/bash -l
 # -*- mode: julia -*-
 #SBATCH --nodes=2
@@ -14,8 +15,9 @@
 #SBATCH --partition=test
 #SBATCH --output=%x_%j.log
 #SBATCH --job-name=pmap
-#
-#julia demo_parallel_progressbar.jl
+
+julia demo_parallel_progressbar.jl
+=#
 
 using Distributed, ProgressMeter, Glob
 using ClusterManagers
