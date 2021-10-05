@@ -101,13 +101,18 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
    ticks = range(vmin, vmax, length=7)
 
    for i in eachindex(varnames)
+      outdir = "../out/$(lowercase(varnames_print[i]))"
+      !isdir(outdir) && mkdir(outdir)
+      length(glob("spatial*.png", outdir)) == length(files) - nboxlength + 1 && continue
+
       # Obtain time series data
       var = extract_var(files, ncells, varnames[i], components[i])
       # Count local peak occuring frequencies at each location
       fPeaks = checkwaves_sma(var, Δt, nboxlength)
+
       for it in axes(fPeaks,1) # Iterate over time
-         outname = "../out/spatial_perturbation_distribution_"*
-            "$(lowercase(varnames_print[i]))_$(lpad(it, 3, '0')).png"
+         outname = joinpath(outdir,
+            "spatial_perturbation_distribution_$(lpad(it, 3, '0')).png")
          isfile(outname) && continue
          ## Visualization
          im = ax.pcolormesh(y, x, fPeaks[it,:,:]; norm, shading="auto")
@@ -139,7 +144,7 @@ varnames = ["proton/vg_rho", "vg_pressure", "proton/vg_v", "proton/vg_v", "vg_b_
 varnames_print = ["Density", "Thermal Pressure", "Vx", "Vy", "Bz", "Ex", "Ey"]
 components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
 Δt = 0.5                           # output time interval
-nboxlength = 201                   # moving box average length
+nboxlength = 101                   # moving box average length
 dir = "../run_rho2_bz-5_timevarying_startfrom300s" # data directory
 
 files = glob("bulk*.vlsv", dir)
