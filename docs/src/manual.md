@@ -85,6 +85,7 @@ Here is a full list of available quantities[^1]:
 | MS                    | Sonic Mach number                | Vmag; VS              |
 | Vpar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol   |
 | Vperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol     |
+| Vth                   | proton thermal velocity          | P; vg\_rho            |
 | P                     | scalar thermal pressure          | vg\_ptensor\_diagonal |
 | Ppar                  | pressure $\parallel\mathbf{B}$   | vg\_ptensor\_diagonal; vg\_b\_vol |
 | Pperp                 | pressure $\perp \mathbf{B}$      | vg\_ptensor\_offdiagonal; vg\_b\_vol |
@@ -100,7 +101,7 @@ Here is a full list of available quantities[^1]:
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
 | IonInertial           | proton inertial length           | vg\_rho               | 
-| Larmor                | proton Larmor radius             | Vperp; Bmag           |
+| Larmor                | proton Larmor radius             | Vth; Bmag             |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |
 | Plasmaperiod          | plasma oscillation period        | vg\_rho               |
 | Gyrofrequency         | proton gyro-frequency            | Bmag                  |

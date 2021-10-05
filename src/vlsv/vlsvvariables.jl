@@ -205,6 +205,10 @@ const variables_predefined = Dict(
       end
       T = @. P / (n*kB)
    end,
+   :Vth => function (meta, ids=UInt64[]) # thermal velocity
+      T = readvariable(meta, "T", ids)
+      @. √(3 * kB * T / mᵢ) # assume proton
+   end,
    :Ppar => function (meta, ids=UInt64[]) # P component ∥ B
       P = readvariable(meta, "Protated", ids)
       @views P[3,3,:]
@@ -360,21 +364,16 @@ const variables_predefined = Dict(
       di = @. c / ωi
    end,
    :Larmor => function (meta, ids=UInt64[])
-      if isempty(ids)
-         Vperp = readvariable(meta, "Vperp")
-         B = readvariable(meta, "Bmag")
-      else
-         Vperp = readvariable(meta, "Vperp", ids)
-         B = readvariable(meta, "Bmag", ids)
-      end
-      rg = @. mᵢ * Vperp / (qᵢ * B)
+      Vth = readvariable(meta, "Vth", ids)
+      B = readvariable(meta, "Bmag", ids)
+      rg = @. mᵢ * Vth / (qᵢ * B)
    end,
    :Gyroperiod => function (meta, ids=UInt64[])
       B = readvariable(meta, "Bmag", ids)
       T = @. 2π * mᵢ / (qᵢ * B)
    end,
    :Gyrofrequency => function (meta, ids=UInt64[]) # [1/s]
-      B = isempty(ids) ? readvariable(meta, "Bmag") : readvariable(meta, "Bmag", ids)
+      B = readvariable(meta, "Bmag", ids)
       f = @. qᵢ * B / (mᵢ * 2π)
    end,
    :Plasmaperiod => function (meta, ids=UInt64[])
