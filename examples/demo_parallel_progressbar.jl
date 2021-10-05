@@ -19,10 +19,10 @@
 
 using Distributed, ProgressMeter, Glob
 using ClusterManagers
-addprocs(SlurmManager(2),
-   partition=ENV["SBATCH_PARTITION"],
-   time=ENV["SBATCH_TIMELIMIT"],
-   mem_per_cpu=ENV["SBATCH_MEM_PER_CPU"])
+addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
+   partition=ENV["SLURM_JOB_PARTITION"],
+   time="00:03:00", # No environment variable for time limit
+   mem_per_cpu=ENV["SLURM_MEM_PER_CPU"])
 
 @everywhere begin
    using ParallelDataTransfer
