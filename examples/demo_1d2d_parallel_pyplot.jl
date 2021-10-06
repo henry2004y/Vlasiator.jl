@@ -37,6 +37,34 @@ using Distributed, ParallelDataTransfer, Glob
    axsL[3].set_ylabel("Pressure [nPa]";      fontsize)
    axsL[4].set_ylabel("Magnetic field [nT]"; fontsize)
 
+   fakeline = loc
+   l1 = axsL[1].plot(loc, fakeline, label="Proton density", color="#1f77b4")
+   l2 = axsL[2].plot(loc, fakeline, label="Vx",             color="#1f77b4")
+   l3 = axsL[3].plot(loc, fakeline, label="Dynamic",        color="#1f77b4")
+   l4 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
+   l5 = axsL[4].plot(loc, fakeline, label="Bz",             color="#1f77b4")
+
+   ls = (l1, l2, l3, l4, l5)
+
+   axsL[2].legend(;loc="upper right", fontsize)
+   axsL[3].legend(;loc="lower right", fontsize)
+   axsL[4].legend(;loc="upper right", fontsize)
+
+   vl1 = axsL[1].vlines(loc[imagnetopause_], ρmin, ρmax;
+      colors="r", linestyle="dashed", alpha=0.5)
+
+   vl2 = axsL[2].vlines(loc[imagnetopause_], vmin, vmax;
+      colors="r", linestyle="dashed", alpha=0.5)
+
+   vl3 = axsL[3].vlines(loc[imagnetopause_], pmin, pmax;
+      colors="r", linestyle="dashed", alpha=0.5)
+
+   vl4 = axsL[4].vlines(loc[imagnetopause_], bmin, bmax;
+       colors="r", linestyle="dashed", alpha=0.5)
+   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+
+   vlines = (vl1, vl2, vl3, vl4)
+
    for ax in axsR
       ax.set_aspect("equal")
 
@@ -58,13 +86,47 @@ using Distributed, ParallelDataTransfer, Glob
    axsR[1].set_title("Alfven speed", fontsize="x-large")
    axsR[2].set_title("Sound speed", fontsize="x-large")
 
+   plotrange, sizes = pArgs1.plotrange, pArgs1.sizes
+   if axisunit == RE
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
+   else
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
+   end
+
+   fakedata = zeros(Float32, length(y), length(x))
+
+   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap, shading="auto")
+   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap, shading="auto")
+
+   cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
+   cb1.ax.set_ylabel("[km/s]"; fontsize)
+   cb1.outline.set_linewidth(1.0)
+
+   cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
+   cb2.ax.set_ylabel("[km/s]"; fontsize)
+   cb2.outline.set_linewidth(1.0)
+
    fig.suptitle("Density Pulse Run", fontsize="xx-large")
 
-   return fig, subfigs, axsL, axsR
+   cs = (c1, c2)
+
+   return fig, subfigs, ls, vlines, cs
 end
 
-@everywhere function process(subfigs, axsL, axsR, file, cellids, isinit)
-   isfile("../out/"*file[end-8:end-5]*".png") && return true
+function update_vline(h, x)
+   seg_old = h.get_segments()
+   ymin = seg_old[1][1, 2]
+   ymax = seg_old[1][2, 2]
+
+   seg_new = [[[x, ymin] [x, ymax]]]
+
+   h.set_segments(seg_new)
+end
+
+@everywhere function process(subfigs, ls, vlines, cs, file, cellids)
+   isfile("../out/"*file[end-8:end-5]*".png") && return
 
    println("file = $(basename(file))")
    meta = load(file)
@@ -77,60 +139,28 @@ end
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
 
+   ls[1][1].set_ydata(rho_extract ./ 1e6)
+   ls[2][1].set_ydata(v_extract[1,:] ./ 1e3)
+   ls[3][1].set_ydata(pdyn_extract)
+   ls[4][1].set_ydata(p_extract)
+   ls[5][1].set_ydata(bz)
+
    imagnetopause_ = findfirst(<(0.0), bz)
-
-   axsL[1].plot(loc, rho_extract ./ 1e6, label="Proton density", color="#1f77b4")
-   vl1 = axsL[1].vlines(loc[imagnetopause_], ρmin, ρmax;
-      colors="r", linestyle="dashed", alpha=0.5)
-
-   axsL[2].plot(loc, v_extract[1,:] ./ 1e3, label="Vx", color="#1f77b4")
-   vl2 = axsL[2].vlines(loc[imagnetopause_], vmin, vmax;
-      colors="r", linestyle="dashed", alpha=0.5)
-
-   axsL[3].plot(loc, pdyn_extract, label="Dynamic", color="#1f77b4")
-   axsL[3].plot(loc, p_extract, label="Thermal", color="#ff7f0e")
-   vl3 = axsL[3].vlines(loc[imagnetopause_], pmin, pmax;
-      colors="r", linestyle="dashed", alpha=0.5)
-
-   axsL[4].plot(loc, bz, label="Bz", color="#1f77b4")
-   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
-   vl4 = axsL[4].vlines(loc[imagnetopause_], bmin, bmax;
-       colors="r", linestyle="dashed", alpha=0.5)
+   for vline in vlines
+      update_vline(vline, loc[imagnetopause_])
+   end
 
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
    subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   axsL[2].legend(;loc="upper right", fontsize)
-   axsL[3].legend(;loc="lower right", fontsize)
-   axsL[4].legend(;loc="upper right", fontsize)
+   _, _, data = plot_prep2d(meta, "VA", pArgs1, :z, axisunit)
+   cs[1].set_array(data ./ 1e3)
 
-   x, y, data = plot_prep2d(meta, "VA", pArgs1, :z, axisunit) 
-   c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="auto")
-
-   x, y, data = plot_prep2d(meta, "VS", pArgs2, :z, axisunit) 
-   c2 = axsR[2].pcolormesh(x, y, data ./ 1e3, norm=cnorm2, cmap=cmap, shading="auto")
-
-   if isinit
-      cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
-      cb1.ax.set_ylabel("[km/s]"; fontsize)
-      cb1.outline.set_linewidth(1.0)
-
-      cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
-      cb2.ax.set_ylabel("[km/s]"; fontsize)
-      cb2.outline.set_linewidth(1.0)
-   end
+   _, _, data = plot_prep2d(meta, "VS", pArgs2, :z, axisunit)
+   cs[2].set_array(data ./ 1e3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
-
-   for ax in axsL
-      for line in ax.get_lines()
-         line.remove()
-      end
-   end
-   for line in (vl1, vl2, vl3, vl4, hl4)
-      line.remove()
-   end
-   return false
+   return
 end
 
 function make_jobs(files)
@@ -139,13 +169,12 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, results)
-   fig, subfigs, axsL, axsR = init_figure(x1, x2)
-   isinit = true
+@everywhere function do_work(jobs, status)
+   fig, subfigs, ls, vlines, cs = init_figure(x1, x2)
    while true
       file = take!(jobs)
-      isinit = process(subfigs, axsL, axsR, file, cellids, isinit)
-      put!(results, true)
+      process(subfigs, ls, vlines, cs, file, cellids)
+      put!(status, true)
    end
    close(fig)
 end
@@ -181,8 +210,8 @@ const nfile = length(files)
    const fontsize = 14
 end
 
-const jobs    = RemoteChannel(()->Channel{String}(nfile))
-const results = RemoteChannel(()->Channel{Bool}(nworkers()))
+const jobs   = RemoteChannel(()->Channel{String}(nfile))
+const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
 Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
@@ -201,12 +230,12 @@ println("Running with $(nworkers()) workers...")
 @async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
-   @async remote_do(do_work, p, jobs, results)
+   @async remote_do(do_work, p, jobs, status)
 end
 
 let n = nfile
    t = @elapsed while n > 0 # wait for all jobs to complete
-      take!(results)
+      take!(status)
       n -= 1
    end
    println("Finished in $(round(t, digits=2))s.")

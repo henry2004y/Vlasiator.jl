@@ -15,7 +15,6 @@ using Distributed, ParallelDataTransfer, Glob
 
    for ax in axs
       ax.set_aspect("equal")
-
       # Set border line widths
       for loc in ("left", "bottom", "right", "top")
          edge = get(ax.spines, loc, nothing)
@@ -40,71 +39,81 @@ using Distributed, ParallelDataTransfer, Glob
    axs[2,2].set_title("Magnetic field", fontsize="x-large")
    axs[2,3].set_title("Electric field", fontsize="x-large")
 
-   return fig, axs
+   plotrange, sizes = pArgs1.plotrange, pArgs1.sizes
+   if axisunit == RE
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
+   else
+      x = LinRange(plotrange[1], plotrange[2], sizes[1])
+      y = LinRange(plotrange[3], plotrange[4], sizes[2])
+   end
+
+   fakedata = zeros(Float32, length(y), length(x))
+   c1 = axs[1,1].pcolormesh(x, y, fakedata; norm=cnorm1, cmap=cmap, shading="auto")
+   c2 = axs[1,2].pcolormesh(x, y, fakedata; norm=cnorm2, cmap=cmap, shading="auto")
+   c3 = axs[1,3].pcolormesh(x, y, fakedata;
+      norm=cnorm3, cmap=matplotlib.cm.RdBu, shading="auto")
+   c4 = axs[2,1].pcolormesh(x, y, fakedata; norm=cnorm4, cmap=cmap, shading="auto")
+   c5 = axs[2,2].pcolormesh(x, y, fakedata; norm=cnorm5, cmap=cmap, shading="auto")
+   c6 = axs[2,3].pcolormesh(x, y, fakedata; norm=cnorm6, cmap=cmap, shading="auto")
+
+   cb1 = colorbar(c1; ax=axs[1,1], ticks=cticks1, fraction=0.046, pad=0.04)
+   cb1.ax.set_ylabel("[amu/cc]"; fontsize)
+   cb1.outline.set_linewidth(1.0)
+
+   cb2 = colorbar(c2; ax=axs[1,2], ticks=cticks2, fraction=0.046, pad=0.04)
+   cb2.ax.set_ylabel("[km/s]"; fontsize)
+   cb2.outline.set_linewidth(1.0)
+
+   cb3 = colorbar(c3; ax=axs[1,3], ticks=cticks3, fraction=0.046, pad=0.04)
+   cb3.ax.set_ylabel("[km/s]"; fontsize)
+   cb3.outline.set_linewidth(1.0)
+
+   cb4 = colorbar(c4; ax=axs[2,1], ticks=cticks4, fraction=0.046, pad=0.04)
+   cb4.ax.set_ylabel("[nPa]"; fontsize)
+   cb4.outline.set_linewidth(1.0)
+
+   cb5 = colorbar(c5; ax=axs[2,2], ticks=cticks5, fraction=0.046, pad=0.04)
+   cb5.ax.set_ylabel("[nT]"; fontsize)
+   cb5.outline.set_linewidth(1.0)
+
+   cb6 = colorbar(c6; ax=axs[2,3], ticks=cticks6, fraction=0.046, pad=0.04)
+   cb6.ax.set_ylabel(L"[$\mu V/m$]"; fontsize)
+   cb6.outline.set_linewidth(1.0)
+
+   cs = (c1, c2, c3, c4, c5, c6)
+
+   return fig, cs
 end
 
-@everywhere function process(fig, axs, file, isinit)
-   isfile("out/"*file[end-8:end-5]*".png") && return true
+@everywhere function process(fig, cs, file)
+   isfile("out/"*file[end-8:end-5]*".png") && return
 
    println("file = $file")
    meta = load(file)
 
-   x, y, data = plot_prep2d(meta, "proton/vg_rho", pArgs1, :mag, axisunit) 
-   c1 = axs[1,1].pcolormesh(x, y, data ./ 1e6;
-      norm=cnorm1, cmap=cmap, shading="auto")
+   _, _, data = plot_prep2d(meta, "proton/vg_rho", pArgs1, :mag, axisunit)
+   cs[1].set_array(data ./ 1e6)
 
-   x, y, data = plot_prep2d(meta, "proton/vg_v", pArgs2, :x, axisunit) 
-   c2 = axs[1,2].pcolormesh(x, y, data ./ 1e3;
-      norm=cnorm2, cmap=cmap, shading="auto")
+   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs2, :x, axisunit)
+   cs[2].set_array(data ./ 1e3)
 
-   x, y, data = plot_prep2d(meta, "proton/vg_v", pArgs3, :y, axisunit) 
-   c3 = axs[1,3].pcolormesh(x, y, data ./ 1e3;
-      norm=cnorm3, cmap=matplotlib.cm.RdBu, shading="auto")
+   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs3, :y, axisunit)
+   cs[3].set_array(data ./ 1e3)
 
-   x, y, data = plot_prep2d(meta, "vg_pressure", pArgs4, :mag, axisunit) 
-   c4 = axs[2,1].pcolormesh(x, y, data .* 1e9;
-      norm=cnorm4, cmap=cmap, shading="auto")
+   _, _, data = plot_prep2d(meta, "vg_pressure", pArgs4, :mag, axisunit)
+   cs[4].set_array(data .* 1e9)
 
-   x, y, data = plot_prep2d(meta, "vg_b_vol", pArgs5, :z, axisunit) 
-   c5 = axs[2,2].pcolormesh(x, y, data .* 1e9;
-      norm=cnorm5, cmap=cmap, shading="auto")
+   _, _, data = plot_prep2d(meta, "vg_b_vol", pArgs5, :z, axisunit)
+   cs[5].set_array(data .* 1e9)
 
-   x, y, data = plot_prep2d(meta, "vg_e_vol", pArgs6, :mag, axisunit) 
-   c6 = axs[2,3].pcolormesh(x, y, data .* 1e6;
-      norm=cnorm6, cmap=cmap, shading="auto")
-
-   if isinit
-      cb1 = colorbar(c1; ax=axs[1,1], ticks=cticks1, fraction=0.046, pad=0.04)
-      cb1.ax.set_ylabel("[amu/cc]"; fontsize)
-      cb1.outline.set_linewidth(1.0)
-
-      cb2 = colorbar(c2; ax=axs[1,2], ticks=cticks2, fraction=0.046, pad=0.04)
-      cb2.ax.set_ylabel("[km/s]"; fontsize)
-      cb2.outline.set_linewidth(1.0)
-
-      cb3 = colorbar(c3; ax=axs[1,3], ticks=cticks3, fraction=0.046, pad=0.04)
-      cb3.ax.set_ylabel("[km/s]"; fontsize)
-      cb3.outline.set_linewidth(1.0)
-
-      cb4 = colorbar(c4; ax=axs[2,1], ticks=cticks4, fraction=0.046, pad=0.04)
-      cb4.ax.set_ylabel("[nPa]"; fontsize)
-      cb4.outline.set_linewidth(1.0)
-
-      cb5 = colorbar(c5; ax=axs[2,2], ticks=cticks5, fraction=0.046, pad=0.04)
-      cb5.ax.set_ylabel("[nT]"; fontsize)
-      cb5.outline.set_linewidth(1.0)
-
-      cb6 = colorbar(c6; ax=axs[2,3], ticks=cticks6, fraction=0.046, pad=0.04)
-      cb6.ax.set_ylabel(L"[$\mu V/m$]"; fontsize)
-      cb6.outline.set_linewidth(1.0)
-   end
+   _, _, data = plot_prep2d(meta, "vg_e_vol", pArgs6, :mag, axisunit)
+   cs[6].set_array(data .* 1e6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
    fig.suptitle(str_title, fontsize="x-large")
 
    savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
-
-   return false
 end
 
 function make_jobs(files)
@@ -113,13 +122,12 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, results)
-   fig, axs = init_figure()
-   isinit = true
+@everywhere function do_work(jobs, status)
+   fig, cs = init_figure()
    while true
       file = take!(jobs)
-      isinit = process(fig, axs, file, isinit)
-      put!(results, true)
+      process(fig, cs, file)
+      put!(status, true)
    end
    close(fig)
 end
@@ -129,8 +137,8 @@ files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
 
-const jobs    = RemoteChannel(()->Channel{String}(nfile))
-const results = RemoteChannel(()->Channel{Bool}(nworkers()))
+const jobs   = RemoteChannel(()->Channel{String}(nfile))
+const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
 @passobj 1 workers() files
 
@@ -183,12 +191,12 @@ println("Running with $(nworkers()) workers...")
 @async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
-   @async remote_do(do_work, p, jobs, results)
+   @async remote_do(do_work, p, jobs, status)
 end
 
 let n = nfile
    t = @elapsed while n > 0 # wait for all jobs to complete
-      take!(results)
+      take!(status)
       n -= 1
    end
    println("Finished in $(round(t, digits=2))s.")
