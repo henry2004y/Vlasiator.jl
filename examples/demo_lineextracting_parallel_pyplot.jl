@@ -1,4 +1,5 @@
 # Multiple variables alone a line across multiple frames, multi-process version.
+# Note: this script can be made faster by updating the data without deleting the lines.
 #
 # Usage:
 #   julia -p $ncores demo_vars_extracting_parallel.jl

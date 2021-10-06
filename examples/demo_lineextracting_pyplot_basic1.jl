@@ -1,4 +1,5 @@
 # Sample postprocessing script for extracting data alone a line across frames.
+# Note: this script can be faster by replacing data instead of replotting everytime!
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
@@ -6,11 +7,10 @@ using Vlasiator, Glob, PyPlot, Printf
 
 files = glob("run4/bulk*.vlsv")
 
-meta = load(files[1])
-
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]
 
+meta = load(files[1])
 cellids, distances, coords = getcellinline(meta, point1, point2)
 
 # time density temperature vx

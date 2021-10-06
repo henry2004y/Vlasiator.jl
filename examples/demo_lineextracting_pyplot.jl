@@ -7,13 +7,12 @@ using Vlasiator, PyPlot, Glob, Printf
 files = glob("bulk*.vlsv", ".")
 nfiles = length(files)
 
-meta = load(files[1])
-
 Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
+meta = load(files[1])
 cellids, distances, coords = getcellinline(meta, point1, point2)
 
 loc = range(x1, x2, length=length(cellids))
