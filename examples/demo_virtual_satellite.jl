@@ -1,4 +1,5 @@
 # Sample postprocessing script for virtual satellite tracking.
+# Outputs are stored in CSV format for sharing data.
 #
 # Usage:
 #   julia -t nthreads demo_virtual_satellite.jl
@@ -21,14 +22,14 @@ function extract_vars(files, loc)
    ex  = zeros(Float32, nfiles)
    ey  = zeros(Float32, nfiles)
 
-   println("Total number of files: $nfiles")
-   println("Extracting location: $loc")
-   println("Running with $(Threads.nthreads()) threads...")
+   local id
+   let meta = load(files[1])
+      id = getcell(meta, loc)
+   end
 
    # Extract data from each frame
    Threads.@threads for i = eachindex(files)
       meta = load(files[i])
-      id = getcell(meta, loc)
       t[i] = meta.time
       rho[i] = readvariable(meta, "proton/vg_rho", id)[1]
       vx[i], vy[i] = readvariable(meta, "proton/vg_v", id)[1:2]
@@ -40,23 +41,24 @@ function extract_vars(files, loc)
    df = DataFrame(t = t, rho = rho, vx = vx, vy = vy, p = p, bz = bz, ex = ex, ey = ey)
    # Save into text file
    writedlm("satellite.csv", Iterators.flatten(([names(df)], eachrow(df))), ',')
-
-   println("Virtual satellite extraction done!")
 end
 
 #####
 
 Re = Vlasiator.Re # Earth radius
 
-# data directory
-dir = "./"
-
-files = glob("bulk*.vlsv", dir)
+files = glob("bulk*.vlsv", "./")
 
 # virtual satellite location
 loc = [12Re, 0, 0]
 
+println("Number of files: $(length(files))")
+println("Extracting location: $loc")
+println("Running with $(Threads.nthreads()) threads...")
+
 @time extract_vars(files, loc)
+
+println("Virtual satellite extraction done!")
 
 ## Visualization
 #=
