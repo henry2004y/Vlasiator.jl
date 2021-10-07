@@ -15,6 +15,7 @@
 # 1. When dealing with multiple variables, it is recommended to handle one variable at a
 # time through the whole process due to memory considerations.
 # 2. It assumes uniform sampling in time.
+# 3. Peak-finding is threaded, but plotting is still serial.
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
@@ -22,8 +23,8 @@ using Glob, Vlasiator, PyPlot, LaTeXStrings
 
 "Extract time series variable"
 function extract_var(files, ncells, varname, component=0)
-   nFiles = length(files)
-   var = zeros(Float32, ncells[1], ncells[2], nFiles)
+   nfiles = length(files)
+   var = zeros(Float32, ncells[1], ncells[2], nfiles)
 
    # Extract data from each frame
    if component == 0 # scalar
@@ -43,20 +44,20 @@ end
 
 "Count local maxima of vector `y` with moving box length `n`."
 function countpeaks(y, n)
-   minmaxs = Int[]
+   maxs = Int[]
    for i in 2:length(y)-1
-      if y[i+1] < y[i] > y[i-1] || y[i+1] > y[i] < y[i-1]
-         push!(minmaxs, i)
+      if y[i+1] < y[i] > y[i-1]
+         push!(maxs, i)
       end
    end
    nCounts = zeros(Int, length(y)-n+1)
-   nCounts[1] = count(i->(1 ≤ i ≤ n), minmaxs)
+   nCounts[1] = count(i->(1 ≤ i ≤ n), maxs)
    for i in 1:length(y)-n
       nCounts[i+1] = nCounts[i]
-      if i ∈ minmaxs
+      if i ∈ maxs
          nCounts[i+1] -= 1
       end
-      if i+n-1 ∈ minmaxs
+      if i+n-1 ∈ maxs
          nCounts[i+1] += 1
       end
    end
@@ -78,9 +79,9 @@ end
 
 function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
    @assert nboxlength ≥ 3 && isodd(nboxlength) "Expect odd box length ≥ 3!"
-   if (local nFiles = length(files)) < nboxlength
+   if (local nfiles = length(files)) < nboxlength
       @warn "Set moving box length to the number of files..."
-      nboxlength = nFiles
+      nboxlength = nfiles
    end
    local x, y, tStart, tEnd, ncells
    let Re = Vlasiator.Re
@@ -95,10 +96,23 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
 
    fig, ax = plt.subplots(figsize=(16,9))
    fontsize = 14
-   vmin, vmax = 0.0, 1.0
+   vmin, vmax = 0.0, 0.5
    levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
    norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
-   ticks = range(vmin, vmax, length=7)
+   ticks = range(vmin, vmax, length=11)
+
+   fakedata = zeros(Float32, length(x), length(y))
+   im = ax.pcolormesh(y, x, fakedata; norm, shading="auto")
+
+   ax.set_aspect("equal")
+   ax.set_xlabel(L"y [$R_E$]"; fontsize, weight="black")
+   ax.set_ylabel(L"x [$R_E$]"; fontsize, weight="black")
+   ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+   ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+   ax.grid(true, color="grey", linestyle="-")
+
+   cb = fig.colorbar(im; ax, ticks, pad=0.02)
+   cb.ax.set_ylabel("Frequency of local maxima occurrence, [#/s]"; fontsize)
 
    for i in eachindex(varnames)
       outdir = "../out/$(lowercase(varnames_print[i]))"
@@ -114,25 +128,14 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
          outname = joinpath(outdir,
             "spatial_perturbation_distribution_$(lpad(it, 3, '0')).png")
          isfile(outname) && continue
-         ## Visualization
-         im = ax.pcolormesh(y, x, fPeaks[it,:,:]; norm, shading="auto")
+         # Update plot
+         im.set_array(fPeaks[it,:,:])
          ax.set_title("$(varnames_print[i]) Perturbation Detection, "*
             "t = $(round(tStart+(it-1)*Δt, digits=1)) ~ "*
             "$(round(tStart+(it+nboxlength-1)*Δt, digits=1))s";
             fontsize, fontweight="bold")
-         ax.set_xlabel(L"y [$R_E$]"; fontsize, weight="black")
-         ax.set_ylabel(L"x [$R_E$]"; fontsize, weight="black")
-         ax.set_aspect("equal")
-         ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-         ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-         ax.grid(true, color="grey", linestyle="-")
-
-         cb = fig.colorbar(im; ax, ticks)
-         cb.ax.set_ylabel("Frequency of local peak occurrence, [#/s]"; fontsize)
 
          savefig(outname, bbox_inches="tight")
-         cla()
-         cb.remove()
       end
    end
 end
@@ -143,7 +146,7 @@ varnames = ["proton/vg_rho", "vg_pressure", "proton/vg_v", "proton/vg_v", "vg_b_
    "vg_e_vol", "vg_e_vol"]
 varnames_print = ["Density", "Thermal Pressure", "Vx", "Vy", "Bz", "Ex", "Ey"]
 components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
-Δt = 0.5                           # output time interval
+Δt = 0.5                           # output time interval [s]
 nboxlength = 101                   # moving box average length
 dir = "../run_rho2_bz-5_timevarying_startfrom300s" # data directory
 
