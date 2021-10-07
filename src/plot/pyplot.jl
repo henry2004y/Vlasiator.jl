@@ -424,17 +424,16 @@ function set_colorbar(pArgs, data=[1.0])
    if colorscale == Linear
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-      nticks = 7
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(v1, v2)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
-      ticks = range(v1, v2, length=nticks)
+      ticks = matplotlib.ticker.LinearLocator(numticks=9)
    elseif colorscale == Log # logarithmic
       datapositive = data[data .> 0.0]
       v1 = isinf(vmin) ? minimum(datapositive) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
 
       cnorm = matplotlib.colors.LogNorm(vmin=v1, vmax=v2)
-      ticks = matplotlib.ticker.LogLocator(base=10,subs=collect(0:9))
+      ticks = matplotlib.ticker.LogLocator(base=10, subs=collect(0:9))
    else # symmetric log
       linthresh = 1.0
       logstep = 1
