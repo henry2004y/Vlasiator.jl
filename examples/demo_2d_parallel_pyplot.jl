@@ -11,7 +11,7 @@ using Distributed, ParallelDataTransfer, Glob
 
 @everywhere function init_figure()
    fig, axs = plt.subplots(2, 3; num=myid(),
-      figsize=(14, 9.5), sharex=true, sharey=true, constrained_layout=true)
+      figsize=(13.5, 9.5), sharex=true, sharey=true, constrained_layout=true)
 
    for ax in axs
       ax.set_aspect("equal")
@@ -32,12 +32,12 @@ using Distributed, ParallelDataTransfer, Glob
    axs[1,1].set_ylabel(L"Y [$R_E$]"; fontsize)
    axs[2,1].set_ylabel(L"Y [$R_E$]"; fontsize)
 
-   axs[1,1].set_title("Density", fontsize="x-large")
-   axs[1,2].set_title("Velocity x", fontsize="x-large")
-   axs[1,3].set_title("Velocity y", fontsize="x-large")
-   axs[2,1].set_title("Pressure", fontsize="x-large")
-   axs[2,2].set_title("Magnetic field", fontsize="x-large")
-   axs[2,3].set_title("Electric field", fontsize="x-large")
+   axs[1,1].set_title("Density"; fontsize)
+   axs[1,2].set_title("Velocity x"; fontsize)
+   axs[1,3].set_title("Velocity y"; fontsize)
+   axs[2,1].set_title("Thermal pressure"; fontsize)
+   axs[2,2].set_title("Magnetic field"; fontsize)
+   axs[2,3].set_title("Electric field"; fontsize)
 
    plotrange, sizes = pArgs1.plotrange, pArgs1.sizes
    if axisunit == RE
@@ -57,27 +57,28 @@ using Distributed, ParallelDataTransfer, Glob
    c5 = axs[2,2].pcolormesh(x, y, fakedata; norm=cnorm5, cmap=cmap, shading="auto")
    c6 = axs[2,3].pcolormesh(x, y, fakedata; norm=cnorm6, cmap=cmap, shading="auto")
 
-   cb1 = colorbar(c1; ax=axs[1,1], ticks=cticks1, fraction=0.046, pad=0.04)
+   format = matplotlib.ticker.FormatStrFormatter("%.1f")
+   cb1 = colorbar(c1; ax=axs[1,1], ticks=cticks1, format)
    cb1.ax.set_ylabel("[amu/cc]"; fontsize)
    cb1.outline.set_linewidth(1.0)
 
-   cb2 = colorbar(c2; ax=axs[1,2], ticks=cticks2, fraction=0.046, pad=0.04)
+   cb2 = colorbar(c2; ax=axs[1,2], ticks=cticks2)
    cb2.ax.set_ylabel("[km/s]"; fontsize)
    cb2.outline.set_linewidth(1.0)
 
-   cb3 = colorbar(c3; ax=axs[1,3], ticks=cticks3, fraction=0.046, pad=0.04)
+   cb3 = colorbar(c3; ax=axs[1,3], ticks=cticks3)
    cb3.ax.set_ylabel("[km/s]"; fontsize)
    cb3.outline.set_linewidth(1.0)
 
-   cb4 = colorbar(c4; ax=axs[2,1], ticks=cticks4, fraction=0.046, pad=0.04)
+   cb4 = colorbar(c4; ax=axs[2,1], ticks=cticks4, format)
    cb4.ax.set_ylabel("[nPa]"; fontsize)
    cb4.outline.set_linewidth(1.0)
 
-   cb5 = colorbar(c5; ax=axs[2,2], ticks=cticks5, fraction=0.046, pad=0.04)
+   cb5 = colorbar(c5; ax=axs[2,2], ticks=cticks5, format)
    cb5.ax.set_ylabel("[nT]"; fontsize)
    cb5.outline.set_linewidth(1.0)
 
-   cb6 = colorbar(c6; ax=axs[2,3], ticks=cticks6, fraction=0.046, pad=0.04)
+   cb6 = colorbar(c6; ax=axs[2,3], ticks=cticks6)
    cb6.ax.set_ylabel(L"[$\mu V/m$]"; fontsize)
    cb6.outline.set_linewidth(1.0)
 
@@ -111,7 +112,7 @@ end
    cs[6].set_array(data .* 1e6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
-   fig.suptitle(str_title, fontsize="x-large")
+   fig.suptitle(str_title; fontsize="xx-large")
 
    savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
 end
@@ -153,7 +154,7 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
    const vxmin, vxmax = -640.0, 100.0 # [km/s]
    const vymin, vymax = -300.0, 300.0 # [km/s]
    const pmin, pmax   = 0.0, 0.7      # [nPa]
-   const bmin, bmax   = -5.0, 2e2     # [nT]
+   const bmin, bmax   = -5.0, 50.     # [nT]
    const emin, emax   = 5.0, 3e4      # [muV/m]
 
    meta = load(files[1])
@@ -182,7 +183,7 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
       normal=:none, vmin=emin, vmax=emax)
    const cnorm6, cticks6 = set_colorbar(pArgs6)
 
-   const fontsize = 14
+   const fontsize = "x-large"
 end
 
 println("Total number of files: $nfile")
