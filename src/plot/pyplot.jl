@@ -120,15 +120,13 @@ function set_vector(meta::MetaVLSV, var, comp, axisunit)
 
    data = readvariable(meta, var)
 
-   if startswith(var, "fg_")
-      v1 = data[v1_,:,:]'
-      v2 = data[v2_,:,:]'
-   else # vlasov grid
+   if !startswith(var, "fg_") # vlasov grid
       @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required!"
-      data = reshape(data, 3, sizes...)
-      v1 = data[v1_,:,:]'
-      v2 = data[v2_,:,:]'
+      data = reshape(data, 3, sizes[1], sizes[2])
    end
+
+   v1 = data[v1_,:,:]
+   v2 = data[v2_,:,:]
 
    x, y = get_axis(axisunit, plotrange, sizes)
 
@@ -136,7 +134,7 @@ function set_vector(meta::MetaVLSV, var, comp, axisunit)
    X = [i for _ in y, i in x]
    Y = [j for j in y, _ in x]
 
-   X, Y, v1, v2
+   X, Y, v1', v2'
 end
 
 """
