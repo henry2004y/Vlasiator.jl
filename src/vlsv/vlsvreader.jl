@@ -409,6 +409,7 @@ end
 
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
+"Return 2d scalar/vector data. Nonpublic because it won't work with DCCRG AMR."
 function getdata2d(meta::MetaVLSV, var)
    @assert ndims(meta) == 2 "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
