@@ -312,15 +312,15 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
       return data
    end
 
-   dataV = readvector(fid, footer, var, "VARIABLE")
+   raw = readvector(fid, footer, var, "VARIABLE")
 
    if startswith(var, "fg_") # fsgrid
       bbox = SVector{6}(Vlasiator.readmesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX"))
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")
 
-      if ndims(dataV) > 1
-         @inbounds dataOrdered = zeros(Float32, size(dataV,1), bbox[1], bbox[2], bbox[3])
+      if ndims(raw) > 1
+         @inbounds dataOrdered = zeros(Float32, size(raw,1), bbox[1], bbox[2], bbox[3])
       else
          @inbounds dataOrdered = zeros(Float32, bbox[1], bbox[2], bbox[3])
       end
@@ -343,16 +343,16 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
          currentOffset[i+1] = currentOffset[i] + totalSize
 
          # Reorder data
-         if ndims(dataV) > 1
+         if ndims(raw) > 1
             lend = lstart[:,i] + lsize[:,i] .- 1
 
-            ldata = dataV[:,currentOffset[i]:currentOffset[i+1]-1]
-            ldata = reshape(ldata, size(dataV,1), lsize[1,i], lsize[2,i], lsize[3,i])
+            ldata = raw[:,currentOffset[i]:currentOffset[i+1]-1]
+            ldata = reshape(ldata, size(raw,1), lsize[1,i], lsize[2,i], lsize[3,i])
 
             dataOrdered[:,lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] =
                ldata
          else
-            ldata = dataV[currentOffset[i]:currentOffset[i+1]-1]
+            ldata = raw[currentOffset[i]:currentOffset[i+1]-1]
             ldata = reshape(ldata, lsize[1,i], lsize[2,i], lsize[3,i])
 
             dataOrdered[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
@@ -361,12 +361,10 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
 
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      @inbounds data = ndims(dataV) == 1 ? dataV[cellIndex] : dataV[:,cellIndex]
-      if eltype(data) == Float64
-         data = Float32.(data)
-      end
+      @inbounds d = ndims(raw) == 1 ? raw[cellIndex] : raw[:,cellIndex]
+      data = eltype(raw) == Float64 ? Float32.(d) : d
    else
-      data = dataV
+      data = raw
    end
    return data
 end
@@ -414,12 +412,9 @@ function getdata2d(meta::MetaVLSV, var)
    @assert ndims(meta) == 2 "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
-   if ndims(data) == 1
-      data = reshape(data, sizes[1], sizes[2])
-   else # assumes vector of size 3, may not work in general
-      data = reshape(data, 3, sizes[1], sizes[2])
-   end
-   data
+   data = ndims(data) == 1 ?
+      reshape(data, sizes[1], sizes[2]) :
+      reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
 end
 
 "File size in bytes."
