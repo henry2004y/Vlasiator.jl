@@ -409,6 +409,18 @@ end
 
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
+function getdata2d(meta::MetaVLSV, var)
+   @assert ndims(meta) == 2 "2D outputs required."
+   sizes = filter(!=(1), meta.ncells)
+   data = readvariable(meta, var)
+   if ndims(data) == 1
+      data = reshape(data, sizes[1], sizes[2])
+   else # assumes vector of size 3, may not work in general
+      data = reshape(data, 3, sizes[1], sizes[2])
+   end
+   data
+end
+
 "File size in bytes."
 @inline Base.size(meta::MetaVLSV) = filesize(joinpath(meta.dir, meta.name))
 

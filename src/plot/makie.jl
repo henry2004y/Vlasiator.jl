@@ -21,11 +21,7 @@ function Makie.plot!(vlplot::VlPlot)
    meta = vlplot[:meta][]
    var  = vlplot[:var][]
 
-   if hasvariable(meta, var)
-      data = readvariable(meta, var)
-   else
-      data = Vlasiator.variables_predefined[var](meta)
-   end
+   data = readvariable(meta, var)
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 
@@ -94,36 +90,23 @@ function Makie.plot!(vlplot::VlContourf)
    # Scale the sizes to the highest refinement level
    sizes *= 2^meta.maxamr # data needs to be refined later
 
-   if hasvariable(meta, var)
-      dataRaw = readvariable(meta, var)
-   else
-      dataRaw = Vlasiator.variables_predefined[var](meta)
-   end
+   dataRaw = Vlasiator.getdata2d(meta, var)
 
-   if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
-      data = reshape(dataRaw, sizes[1], sizes[2])
-   else
-      if ndims(dataRaw) == 2
-         dataRaw = reshape(dataRaw, 3, sizes...)
-      end
-      if vlplot.op[] == :x
-         data = dataRaw[1,:,:]
-      elseif vlplot.op[] == :y
-         data = dataRaw[2,:,:]
-      elseif vlplot.op[] == :z
-         data = dataRaw[3,:,:]
+   if ndims(dataRaw) == 3
+      if vlplot.op[] in (:x, :1)
+         data = @view dataRaw[1,:,:]
+      elseif vlplot.op[] in (:y, :2)
+         data = @view dataRaw[2,:,:]
+      elseif vlplot.op[] in (:z, :3)
+         data = @view dataRaw[3,:,:]
       elseif vlplot.op[] == :mag
-         data = hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
+         data = @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
       end
+   else
+      data = dataRaw
    end
 
-   if vlplot.axisunit[] == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
+   x, y = Vlasiator.get_axis(vlplot.axisunit[], plotrange, sizes)
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       rho_ = findfirst(endswith("rho"), meta.variable)
@@ -153,7 +136,7 @@ function Makie.plot!(vlplot::VlContourf)
    elseif vlplot.colorscale[] == Linear
       v1 = isinf(vlplot.vmin[]) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vlplot.vmax[]) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-      nticks = 7
+      nticks = 9
       ticks = range(v1, v2, length=nticks)
    end
    vlplot.colorrange = [v1, v2]

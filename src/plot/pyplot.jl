@@ -41,11 +41,7 @@ end
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
 """
 function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; kwargs...)
-   if hasvariable(meta, var)
-      data = readvariable(meta, var)
-   else
-      data = Vlasiator.variables_predefined[Symbol(var)](meta)
-   end
+   data = readvariable(meta, var)
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 
@@ -122,11 +118,7 @@ function set_vector(meta::MetaVLSV, var, comp, axisunit)
       plotrange = [coordmin[2], coordmax[2], coordmin[3], coordmax[3]]
    end
 
-   if hasvariable(meta, var)
-      data = readvariable(meta, var)
-   else
-      data = Vlasiator.variables_predefined[Symbol(var)](meta)
-   end
+   data = readvariable(meta, var)
 
    if startswith(var, "fg_")
       v1 = data[v1_,:,:]'
@@ -138,13 +130,7 @@ function set_vector(meta::MetaVLSV, var, comp, axisunit)
       v2 = data[v2_,:,:]'
    end
 
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
+   x, y = get_axis(axisunit, plotrange, sizes)
 
    # meshgrid: note the array ordering difference between Julia and Python!
    X = [i for _ in y, i in x]
@@ -258,11 +244,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 
    @unpack sizes, plotrange, idlist, indexlist = pArgs
 
-   if hasvariable(meta, var)
-      data = readvariable(meta, var)
-   else
-      data = Vlasiator.variables_predefined[Symbol(var)](meta)
-   end
+   data = readvariable(meta, var)
 
    if startswith(var, "fg_") # field quantities, fsgrid
       throw(ArgumentError("FS grid variable $var plotting in cut currently not supported!"))
@@ -299,13 +281,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
       end
    end
 
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
+   x, y = get_axis(axisunit, plotrange, sizes)
 
    cnorm, cticks = set_colorbar(pArgs, data)
 
@@ -319,45 +295,32 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 end
 
 "Generate axis and data for 2D plotting."
-function plot_prep2d(meta, var, pArgs, op, axisunit::AxisUnit)
+function plot_prep2d(meta::MetaVLSV, var, pArgs::PlotArgs, op, axisunit::AxisUnit)
    @unpack sizes, plotrange = pArgs
 
-   if hasvariable(meta, var)
-      dataRaw = readvariable(meta, var)
-   else
-      dataRaw = Vlasiator.variables_predefined[Symbol(var)](meta)
-   end
+   dataRaw = Vlasiator.getdata2d(meta, var)
 
-   if ndims(dataRaw) == 1 || (ndims(dataRaw) == 2 && size(dataRaw)[1] == 1)
-      data = reshape(dataRaw, sizes[1], sizes[2])
-   else
-      if ndims(dataRaw) == 2
-         dataRaw = reshape(dataRaw, 3, sizes...)
-      end
+   if ndims(dataRaw) == 3
       if op in (:x, :1)
-         data = dataRaw[1,:,:]
+         data = @view dataRaw[1,:,:]
       elseif op in (:y, :2)
-         data = dataRaw[2,:,:]
+         data = @view dataRaw[2,:,:]
       elseif op in (:z, :3)
-         data = dataRaw[3,:,:]
+         data = @views dataRaw[3,:,:]
       elseif op == :mag
-         data = hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
+         data = @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
       end
+   else
+      data = dataRaw
    end
 
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
+   x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
 
    x, y, data'
 end
 
 "Set plot-related arguments."
-function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
+function set_args(meta::MetaVLSV, var, axisunit::AxisUnit, colorscale::ColorScale;
    normal::Symbol=:z, origin=0.0, vmin=-Inf, vmax=Inf)
    @unpack ncells, coordmin, coordmax = meta
 
@@ -419,7 +382,7 @@ function set_args(meta, var, axisunit::AxisUnit, colorscale::ColorScale;
 end
 
 "Set colorbar norm and ticks."
-function set_colorbar(pArgs, data=[1.0])
+function set_colorbar(pArgs::PlotArgs, data=[1.0])
    @unpack colorscale, vmin, vmax = pArgs
    if colorscale == Linear
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
@@ -456,7 +419,7 @@ end
 
 
 "Configure customized plot."
-function set_plot(c, ax, pArgs, cticks, addcolorbar)
+function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
    @unpack str_title, strx, stry, cb_title_use = pArgs
 
    if addcolorbar
