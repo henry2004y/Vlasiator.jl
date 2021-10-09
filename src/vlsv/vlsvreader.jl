@@ -2,13 +2,6 @@
 
 include("vlsvvariables.jl")
 
-using EzXML, FLoops
-using Mmap: mmap
-
-export MetaVLSV, VarInfo
-export load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
-       hasvariable, hasparameter, hasname, hasvdf
-
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"

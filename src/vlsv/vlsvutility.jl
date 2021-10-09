@@ -1,23 +1,5 @@
 # Utility functions for processing VLSV data.
 
-using LinearAlgebra: dot, norm
-using WriteVTK, Printf
-using LazyGrids: ndgrid
-
-const qₑ = -1.60217662e-19  # electron charge, [C]
-const mₑ = 9.10938356e-31   # electron mass, [kg]
-const qᵢ = 1.60217662e-19   # proton mass, [C]
-const mᵢ = 1.673557546e-27  # proton mass, [kg]
-const c  = 299792458.       # speed of light, [m/s]
-const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
-const ϵ₀ = 1/(c^2*μ₀)       # Vacuum permittivity, [F/m]
-const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)]
-const Re = 6.371e6          # Earth radius, [m]
-
-export getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
-   getchildren, getparent, isparent, getsiblings,
-   getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, issame
-
 """
     getcell(meta, location) -> Int
 

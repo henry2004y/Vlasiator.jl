@@ -1,6 +1,18 @@
 module Vlasiator
 
-using Requires, UnPack
+using Requires
+using StaticArrays
+using Printf: @sprintf
+using UnPack
+using LinearAlgebra: ×, dot, ⋅, norm, I
+using Statistics: mean
+using EzXML
+using FLoops
+using Mmap: mmap
+using WriteVTK
+using LazyGrids: ndgrid
+using LaTeXStrings
+using Dates
 
 include("utility/rotation.jl")
 include("utility/plot.jl")
@@ -8,6 +20,20 @@ include("utility/log.jl")
 include("utility/curvature.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
+
+export
+   # vlsvreader
+   MetaVLSV, VarInfo,
+   load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
+   hasvariable, hasparameter, hasname, hasvdf,
+   # vlsvutility
+   getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
+   getchildren, getparent, isparent, getsiblings,
+   getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, issame,
+   # plot helper
+   SI, RE, Log, Linear, SymLog,
+   # log
+   readlog
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))

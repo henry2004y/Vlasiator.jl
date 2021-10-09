@@ -1,9 +1,5 @@
 # Runtime log file tracking.
 
-using Dates
-
-export readlog
-
 """
     readlog(file)
 

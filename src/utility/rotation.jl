@@ -1,8 +1,5 @@
 # Utility functions for common algebraic operations.
 
-import LinearAlgebra: ⋅, ×, I
-using StaticArrays
-
 """
     rotateTensorToVectorZ(tensor, vector)
 

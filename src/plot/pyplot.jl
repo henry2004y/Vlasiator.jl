@@ -1,7 +1,6 @@
 # Plotting functionalities from Matplotlib.
 
-using PyPlot, Printf, LaTeXStrings
-using LinearAlgebra: norm, ×
+using PyPlot
 
 export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
 
@@ -91,7 +90,7 @@ function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
 
    if isnothing(ax) ax = plt.gca() end
 
-   Xq  = @view X[1:stride:end, 1:stride:end] 
+   Xq  = @view X[1:stride:end, 1:stride:end]
    Yq  = @view Y[1:stride:end, 1:stride:end]
    v1q = @view v1[1:stride:end, 1:stride:end]
    v2q = @view v2[1:stride:end, 1:stride:end]
@@ -408,7 +407,7 @@ function set_colorbar(pArgs::PlotArgs, data=[1.0])
 
       cnorm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin=v1, vmax=v2,
          base=10)
-      ticks = [ [-(10.0^x) for x in minlog:-logstep:logthresh]..., 0.0, 
+      ticks = [ [-(10.0^x) for x in minlog:-logstep:logthresh]..., 0.0,
          [10.0^x for x in logthresh+1:logstep:maxlog]..., ]
    end
 
