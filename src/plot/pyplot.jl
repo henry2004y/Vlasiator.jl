@@ -303,7 +303,7 @@ function plot_prep2d(meta::MetaVLSV, var, pArgs::PlotArgs, op, axisunit::AxisUni
       elseif op in (:y, :2)
          data = @view dataRaw[2,:,:]
       elseif op in (:z, :3)
-         data = @views dataRaw[3,:,:]
+         data = @view dataRaw[3,:,:]
       elseif op == :mag
          data = @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
       end
