@@ -117,14 +117,14 @@ end
 function readvector(fid::IOStream, footer, name, tag)
    T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
 
-   if Sys.free_memory() > Int(1e9) + arraysize*vectorsize*datasize # > 1GB of free memory
+   if Sys.total_memory() > 8*arraysize*vectorsize*datasize
       w = vectorsize == 1 ?
          Vector{T}(undef, arraysize) :
          Array{T,2}(undef, vectorsize, arraysize)
       seek(fid, offset)
       read!(fid, w)
    else
-      @warn "Less than 1GB free memory detected. Using memory-mapped I/O!" maxlog=1
+      @warn "Large array detected. Using memory-mapped I/O!" maxlog=1
       a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
       w = vectorsize == 1 ?
          reinterpret(T, a) :
