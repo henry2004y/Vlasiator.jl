@@ -172,7 +172,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
       return c
    end
 
-   pArgs = set_args(meta, var, axisunit, colorscale; normal=:none, vmin, vmax)
+   pArgs = set_args(meta, var, axisunit, colorscale; vmin, vmax)
 
    x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
 
@@ -318,45 +318,31 @@ end
 
 "Set plot-related arguments."
 function set_args(meta::MetaVLSV, var, axisunit::AxisUnit, colorscale::ColorScale;
-   normal::Symbol=:z, origin=0.0, vmin=-Inf, vmax=Inf)
+   normal::Symbol=:none, origin=0.0, vmin=-Inf, vmax=Inf)
    @unpack ncells, coordmin, coordmax = meta
 
    if normal == :x
-      sizes = [ncells[2], ncells[3]]
-      plotrange = [coordmin[2], coordmax[2], coordmin[3], coordmax[3]]
-      sliceoffset = abs(coordmin[1]) + origin
-      axislabels = ['Y', 'Z']
-
-      idlist, indexlist = getslicecell(meta, sliceoffset; xmin=coordmin[1],xmax=coordmax[1])
-   elseif normal == :y
-      sizes = [ncells[1], ncells[3]]
-      plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
-      sliceoffset = abs(coordmin[2]) + origin
-      axislabels = ['X', 'Z']
-
-      idlist, indexlist = getslicecell(meta, sliceoffset; ymin=coordmin[2],ymax=coordmax[2])
-   elseif normal == :z
-      sizes = [ncells[1], ncells[2]]
-      plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
-      sliceoffset = abs(coordmin[3]) + origin
-      axislabels = ['X', 'Y']
-
-      idlist, indexlist = getslicecell(meta, sliceoffset; zmin=coordmin[3],zmax=coordmax[3])
+      seq = @SVector [2,3]
+      dir = 1
+   elseif normal == :y || (ncells[2] == 1 && ncells[3] != 1) # polar
+      seq = @SVector [1,3]
+      dir = 2
+   elseif normal == :z || (ncells[3] == 1 && ncells[2] != 1) # ecliptic
+      seq = @SVector [1,2]
+      dir = 3
    else
-      idlist, indexlist = Int64[], Int64[]
+      throw(ArgumentError("1D data detected. Please use 1D plot functions."))
+   end
 
-      if ncells[2] == 1 && ncells[3] != 1 # polar
-         plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
-         sizes = [ncells[1], ncells[3]]
-         PLANE = "XZ"
-         axislabels = ['X', 'Z']
-      elseif ncells[3] == 1 && ncells[2] != 1 # ecliptic
-         plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
-         sizes = [ncells[1], ncells[2]]
-         PLANE = "XY"
-         axislabels = ['X', 'Y']
-      else # 1D
-         throw(ArgumentError("1D data detected. Please use 1D plot functions."))
+   sizes = ncells[seq]
+   plotrange = [coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]]]
+   axislabels = ['X', 'Y', 'Z'][seq]
+
+   if normal == :none
+      idlist, indexlist = Int[], Int[]
+   else
+      idlist, indexlist = let sliceoffset = abs(coordmin[dir]) + origin
+         getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])
       end
    end
 
@@ -686,13 +672,13 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
    @unpack coordmin, coordmax, cellid = meta
    if projection == "x"
       sliceoffset = origin - coordmin[1]
-      ids, _ = getslicecell(meta, sliceoffset; xmin=coordmin[1], xmax=coordmax[1])
+      ids, _ = getslicecell(meta, sliceoffset, 1, coordmin[1], coordmax[1])
    elseif projection == "y"
       sliceoffset = origin - coordmin[2]
-      ids, _ = getslicecell(meta, sliceoffset; ymin=coordmin[2], ymax=coordmax[2])
+      ids, _ = getslicecell(meta, sliceoffset, 2, coordmin[2], coordmax[2])
    elseif projection == "z"
       sliceoffset = origin - coordmin[3]
-      ids, _ = getslicecell(meta, sliceoffset; zmin=coordmin[3], zmax=coordmax[3])
+      ids, _ = getslicecell(meta, sliceoffset, 3, coordmin[3], coordmax[3])
    else
       ids = cellid
    end

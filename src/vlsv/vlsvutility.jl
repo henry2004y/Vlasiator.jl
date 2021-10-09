@@ -316,29 +316,17 @@ function getcellinline(meta::MetaVLSV, point1, point2)
 end
 
 """
-    getslicecell(meta, sliceoffset;
-       xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf) -> idlist, indexlist
+    getslicecell(meta, sliceoffset, idim, minCoord, maxCoord) -> idlist, indexlist
 
 Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
-direction given by non-Inf values for optional arguments at `sliceoffset`, which is always
-within the range, and the `indexlist`, which is a mapping from original order to the cut
-plane and can be used to select data onto the plane.
+direction `idim` at `sliceoffset`, and the `indexlist`, which is a mapping from original
+order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaVLSV, sliceoffset;
-   xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, zmin=-Inf, zmax=Inf)
-
+function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
+   @assert idim ∈ (1,2,3) "Unknown slice direction $idim"
    @unpack ncells, maxamr, cellid = meta
 
-   if !isinf(xmin) && !isinf(xmax)
-      minCoord = xmin; maxCoord = xmax; nsize = ncells[1]; idim = 1
-   elseif !isinf(ymin) && !isinf(ymax)
-      minCoord = ymin; maxCoord = ymax; nsize = ncells[2]; idim = 2
-   elseif !isinf(zmin) && !isinf(zmax)
-      minCoord = zmin; maxCoord = zmax; nsize = ncells[3]; idim = 3
-   else
-      throw(ArgumentError("Unspecified slice direction!"))
-   end
-
+   nsize = ncells[idim]
    sliceratio = sliceoffset / (maxCoord - minCoord)
    @assert 0.0 ≤ sliceratio ≤ 1.0 "slice plane index out of bound!"
 

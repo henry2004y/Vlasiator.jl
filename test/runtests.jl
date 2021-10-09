@@ -77,13 +77,13 @@ end
          # AMR data reading, DCCRG grid
          metaAMR = meta3
          sliceoffset = abs(metaAMR.coordmin[2])
-         idlist, indexlist = getslicecell(metaAMR, sliceoffset;
-            ymin=metaAMR.coordmin[2], ymax=metaAMR.coordmax[2])
+         idlist, indexlist = getslicecell(metaAMR, sliceoffset, 2, 
+            metaAMR.coordmin[2], metaAMR.coordmax[2])
 
          data = readvariable(metaAMR, "proton/vg_rho")
          data = refineslice(metaAMR, idlist, data[indexlist], :y)
          @test sum(data) ≈ 7.690352275026747e8
-         @test_throws ArgumentError getslicecell(metaAMR, sliceoffset)
+         @test_throws AssertionError getslicecell(metaAMR, sliceoffset, 1, -2., -1.)
 
          # AMR level
          @test metaAMR.maxamr == 2
