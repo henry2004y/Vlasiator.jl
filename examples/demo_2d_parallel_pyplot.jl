@@ -49,13 +49,13 @@ using Distributed, ParallelDataTransfer, Glob
    end
 
    fakedata = zeros(Float32, length(y), length(x))
-   c1 = axs[1,1].pcolormesh(x, y, fakedata; norm=cnorm1, cmap=cmap, shading="auto")
-   c2 = axs[1,2].pcolormesh(x, y, fakedata; norm=cnorm2, cmap=cmap, shading="auto")
+   c1 = axs[1,1].pcolormesh(x, y, fakedata; norm=cnorm1, cmap=cmap, shading="nearest")
+   c2 = axs[1,2].pcolormesh(x, y, fakedata; norm=cnorm2, cmap=cmap, shading="nearest")
    c3 = axs[1,3].pcolormesh(x, y, fakedata;
-      norm=cnorm3, cmap=matplotlib.cm.RdBu, shading="auto")
-   c4 = axs[2,1].pcolormesh(x, y, fakedata; norm=cnorm4, cmap=cmap, shading="auto")
-   c5 = axs[2,2].pcolormesh(x, y, fakedata; norm=cnorm5, cmap=cmap, shading="auto")
-   c6 = axs[2,3].pcolormesh(x, y, fakedata; norm=cnorm6, cmap=cmap, shading="auto")
+      norm=cnorm3, cmap=matplotlib.cm.RdBu, shading="nearest")
+   c4 = axs[2,1].pcolormesh(x, y, fakedata; norm=cnorm4, cmap=cmap, shading="nearest")
+   c5 = axs[2,2].pcolormesh(x, y, fakedata; norm=cnorm5, cmap=cmap, shading="nearest")
+   c6 = axs[2,3].pcolormesh(x, y, fakedata; norm=cnorm6, cmap=cmap, shading="nearest")
 
    format = matplotlib.ticker.FormatStrFormatter("%.1f")
    cb1 = colorbar(c1; ax=axs[1,1], ticks=cticks1, format)

@@ -97,8 +97,8 @@ using Distributed, ParallelDataTransfer, Glob
 
    fakedata = zeros(Float32, length(y), length(x))
 
-   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap, shading="auto")
-   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap, shading="auto")
+   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap, shading="nearest")
+   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap, shading="nearest")
 
    cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
    cb1.ax.set_ylabel("[km/s]"; fontsize)

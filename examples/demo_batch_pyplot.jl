@@ -39,13 +39,13 @@ for (i, file) in enumerate(files)
    if i == 1
       x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op, axisunit)
    
-      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="auto")
+      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    
       set_plot(c, ax, pArgs, cticks, addcolorbar)
    else
       x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op, axisunit) 
    
-      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="auto")
+      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    end
 
    xlabel("X")

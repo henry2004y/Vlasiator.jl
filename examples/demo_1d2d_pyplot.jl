@@ -137,10 +137,10 @@ function process(i, file)
    axsL[4].legend(;loc="upper right", fontsize)
 
    x, y, data = plot_prep2d(meta, "VA", pArgs1, op, axisunit) 
-   c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="auto")
+   c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="nearest")
 
    x, y, data = plot_prep2d(meta, "VS", pArgs2, op, axisunit) 
-   c2 = axsR[2].pcolormesh(x, y, data ./ 1e3, norm=cnorm2, cmap=cmap, shading="auto")
+   c2 = axsR[2].pcolormesh(x, y, data ./ 1e3, norm=cnorm2, cmap=cmap, shading="nearest")
 
    if i == 1
       cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)

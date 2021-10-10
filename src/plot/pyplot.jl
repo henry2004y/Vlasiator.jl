@@ -199,9 +199,9 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
    if isnothing(ax) ax = plt.gca() end
 
    if colorscale != SymLog
-      c = ax.pcolormesh(x, y, data; norm=cnorm, shading="auto", kwargs...)
+      c = ax.pcolormesh(x, y, data; norm=cnorm, shading="nearest", kwargs...)
    else
-      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu, shading="auto",
+      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu, shading="nearest",
          kwargs...)
    end
 
@@ -284,7 +284,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data'; norm=cnorm, shading="auto", kwargs...)
+   c = ax.pcolormesh(x, y, data'; norm=cnorm, shading="nearest", kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 

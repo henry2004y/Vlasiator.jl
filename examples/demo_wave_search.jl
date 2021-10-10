@@ -102,7 +102,7 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
    ticks = range(vmin, vmax, length=11)
 
    fakedata = zeros(Float32, length(x), length(y))
-   im = ax.pcolormesh(y, x, fakedata; norm, shading="auto")
+   im = ax.pcolormesh(y, x, fakedata; norm, shading="nearest")
 
    ax.set_aspect("equal")
    ax.set_xlabel(L"y [$R_E$]"; fontsize, weight="black")
