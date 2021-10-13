@@ -25,9 +25,9 @@ cmap = matplotlib.cm.turbo
 vmin = 7.0e4
 vmax = 2.5e6
 
-pArgs = set_args(meta, vardict[varname], axisunit, colorscale; normal=:none, vmin, vmax)
+pArgs = set_args(meta, vardict[varname], axisunit; normal=:none)
 
-cnorm, cticks = set_colorbar(pArgs)
+cnorm, cticks = set_colorbar(colorscale, vmin, vmax)
 
 for (i, file) in enumerate(files)
    @info "$i out of $nfile"
@@ -37,13 +37,14 @@ for (i, file) in enumerate(files)
    t = readparameter(meta, "time")
 
    if i == 1
-      x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op)
+      x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+      data = plot_prep2d(meta, vardict[varname], op)
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    
       set_plot(c, ax, pArgs, cticks, addcolorbar)
    else
-      x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op) 
+      data = plot_prep2d(meta, vardict[varname], op) 
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    end

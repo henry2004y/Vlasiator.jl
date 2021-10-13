@@ -61,13 +61,10 @@ function init_figure()
    cmap = matplotlib.cm.turbo
    colorscale = Linear
    axisunit = RE
-   op = :z
          
-   pArgs1 = set_args(meta, "VA", axisunit, colorscale; normal=:none, vmin=vamin, vmax=vamax)
-   cnorm1, cticks1 = set_colorbar(pArgs1)
-   
-   pArgs2 = set_args(meta, "VS", axisunit, colorscale; normal=:none, vmin=vsmin, vmax=vsmax)
-   cnorm2, cticks2 = set_colorbar(pArgs2)
+   pArgs1 = set_args(meta, "VA", axisunit; normal=:none)
+   cnorm1, cticks1 = set_colorbar(colorscale, vamin, vamax)
+   cnorm2, cticks2 = set_colorbar(colorscale, vsmin, vsmax)
 
    for ax in axsR
       ax.set_aspect("equal")
@@ -92,7 +89,7 @@ function init_figure()
    
    fig.suptitle("Density Pulse Run", fontsize="xx-large")
 
-   return fig, axsL, axsR, cmap, op, cnorm1, cticks1, cnorm2, cticks2
+   return fig, axsL, axsR, cmap, cnorm1, cticks1, cnorm2, cticks2
 end
 
 
@@ -136,10 +133,12 @@ function process(i, file)
    axsL[3].legend(;loc="lower right", fontsize)
    axsL[4].legend(;loc="upper right", fontsize)
 
-   x, y, data = plot_prep2d(meta, "VA", pArgs1, op) 
+   x, y = Vlasiator.get_axis(pArgs1.axisunit, pArgs1.plotrange, pArgs1.sizes)
+
+   data = plot_prep2d(meta, "VA") 
    c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="nearest")
 
-   x, y, data = plot_prep2d(meta, "VS", pArgs2, op) 
+   data = plot_prep2d(meta, "VS") 
    c2 = axsR[2].pcolormesh(x, y, data ./ 1e3, norm=cnorm2, cmap=cmap, shading="nearest")
 
    if i == 1

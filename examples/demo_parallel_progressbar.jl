@@ -109,14 +109,7 @@ end
    axsR[1].set_title("Alfven speed", fontsize="x-large")
    axsR[2].set_title("Sound speed", fontsize="x-large")
 
-   plotrange, sizes, axisunit = pArgs1.plotrange, pArgs1.sizes, pArgs1.axisunit
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
+   x, y = Vlasiator.get_axis(axisunit, pArgs1.plotrange, pArgs1.sizes)
 
    fakedata = zeros(Float32, length(y), length(x))
 
@@ -176,10 +169,10 @@ end
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
    subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   _, _, data = plot_prep2d(meta, "VA", pArgs1, :z)
+   data = plot_prep2d(meta, "VA")
    cs[1].set_array(data ./ 1e3)
 
-   _, _, data = plot_prep2d(meta, "VS", pArgs2, :z)
+   data = plot_prep2d(meta, "VS")
    cs[2].set_array(data ./ 1e3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
@@ -201,7 +194,7 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
    colorscale = Linear
-   axisunit = RE
+   const axisunit = RE
 
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
@@ -213,13 +206,9 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
 
    meta = load(files[1])
 
-   const pArgs1 = set_args(meta, "VA", axisunit, colorscale;
-      normal=:none, vmin=vamin, vmax=vamax)
-   const cnorm1, cticks1 = set_colorbar(pArgs1)
-
-   const pArgs2 = set_args(meta, "VS", axisunit, colorscale;
-      normal=:none, vmin=vsmin, vmax=vsmax)
-   const cnorm2, cticks2 = set_colorbar(pArgs2)
+   const pArgs1 = set_args(meta, "VA", axisunit; normal=:none)
+   const cnorm1, cticks1 = set_colorbar(colorscale, vamin, vamax)
+   const cnorm2, cticks2 = set_colorbar(colorscale, vsmin, vsmax)
 
    const fontsize = 14
 end

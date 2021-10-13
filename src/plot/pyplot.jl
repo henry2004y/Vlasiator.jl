@@ -18,14 +18,6 @@ struct PlotArgs
    idlist::Vector{Int}
    "mapping from original cell order to cut plane"
    indexlist::Vector{Int}
-   "scale of data"
-   colorscale::ColorScale
-   "minimum data value"
-   vmin::Float32
-   "maximum data value"
-   vmax::Float32
-   "axis unit"
-   axisunit::AxisUnit
    "title"
    str_title::String
    "xlabel"
@@ -86,7 +78,7 @@ The keyword arguments can be any valid Matplotlib arguments into quiver.
 - `stride::Integer`: arrow strides in number of cells.
 """
 function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit=RE, stride::Integer=10, kwargs...)
+   comp="xy", axisunit::AxisUnit=RE, stride::Integer=10, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -100,7 +92,7 @@ function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
    ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
 end
 
-function set_vector(meta::MetaVLSV, var, comp, axisunit)
+function set_vector(meta::MetaVLSV, var, comp, axisunit::AxisUnit)
    @unpack ncells, coordmin, coordmax = meta
    if occursin("x", comp)
       v1_ = 1
@@ -162,7 +154,8 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 `pcolormesh(data, func, colorscale=Log)`
 """
 function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:mag,
-   axisunit=RE, colorscale=Linear, addcolorbar=true, vmin=-Inf, vmax=Inf, kwargs...)
+   axisunit::AxisUnit=RE, colorscale::ColorScale=Linear, addcolorbar=true,
+   vmin=-Inf, vmax=Inf, kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
@@ -174,9 +167,10 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
       return c
    end
 
-   pArgs = set_args(meta, var, axisunit, colorscale; vmin, vmax)
+   pArgs = set_args(meta, var, axisunit)
 
-   x, y, data = plot_prep2d(meta, var, pArgs, op)
+   x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+   data = plot_prep2d(meta, var, op)
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       rho_ = findfirst(endswith("rho"), meta.variable)
@@ -196,7 +190,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
       end
    end
 
-   cnorm, cticks = set_colorbar(pArgs, data)
+   cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -239,7 +233,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
    origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Linear,
    addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
 
-   pArgs = set_args(meta, var, axisunit, colorscale; normal, origin, vmin, vmax)
+   pArgs = set_args(meta, var, axisunit; normal, origin)
 
    @unpack sizes, plotrange, idlist, indexlist = pArgs
 
@@ -282,7 +276,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 
    x, y = get_axis(axisunit, plotrange, sizes)
 
-   cnorm, cticks = set_colorbar(pArgs, data)
+   cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
 
    if isnothing(ax) ax = plt.gca() end
 
@@ -294,9 +288,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 end
 
 "Generate axis and data for 2D plotting."
-function plot_prep2d(meta::MetaVLSV, var, pArgs::PlotArgs, op)
-   @unpack sizes, plotrange, axisunit = pArgs
-
+function plot_prep2d(meta::MetaVLSV, var, op=:none)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    if ndims(dataRaw) == 3
@@ -313,14 +305,11 @@ function plot_prep2d(meta::MetaVLSV, var, pArgs::PlotArgs, op)
       data = dataRaw
    end
 
-   x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
-
-   x, y, data'
+   data'
 end
 
 "Set plot-related arguments."
-function set_args(meta::MetaVLSV, var, axisunit::AxisUnit, colorscale::ColorScale;
-   normal::Symbol=:none, origin=0.0, vmin=-Inf, vmax=Inf)
+function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
    @unpack ncells, coordmin, coordmax = meta
 
    if normal == :x
@@ -362,13 +351,11 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit, colorscale::ColorScal
    cb_title_use = !isempty(datainfo.variableLaTeX) ?
       datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
 
-   PlotArgs(sizes, plotrange, idlist, indexlist, colorscale,
-      vmin, vmax, axisunit, str_title, strx, stry, cb_title_use)
+   PlotArgs(sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title_use)
 end
 
 "Set colorbar norm and ticks."
-function set_colorbar(pArgs::PlotArgs, data=[1.0])
-   @unpack colorscale, vmin, vmax = pArgs
+function set_colorbar(colorscale::ColorScale, vmin, vmax, data=[1.0])
    if colorscale == Linear
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
       v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax

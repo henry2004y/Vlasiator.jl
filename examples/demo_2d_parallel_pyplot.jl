@@ -39,14 +39,7 @@ using Distributed, ParallelDataTransfer, Glob
    axs[2,2].set_title("Magnetic field"; fontsize)
    axs[2,3].set_title("Electric field"; fontsize)
 
-   plotrange, sizes, axisunit = pArgs1.plotrange, pArgs1.sizes, pArgs1.axisunit
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
-   else
-      x = LinRange(plotrange[1], plotrange[2], sizes[1])
-      y = LinRange(plotrange[3], plotrange[4], sizes[2])
-   end
+   x, y = Vlasiator.get_axis(axisunit, pArgs1.plotrange, pArgs1.sizes)
 
    fakedata = zeros(Float32, length(y), length(x))
    c1 = axs[1,1].pcolormesh(x, y, fakedata; norm=cnorm1, cmap=cmap, shading="nearest")
@@ -93,22 +86,22 @@ end
    println("file = $file")
    meta = load(file)
 
-   _, _, data = plot_prep2d(meta, "proton/vg_rho", pArgs1, :mag)
+   data = plot_prep2d(meta, "proton/vg_rho", :mag)
    cs[1].set_array(data ./ 1e6)
 
-   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs2, :x)
+   data = plot_prep2d(meta, "proton/vg_v", :x)
    cs[2].set_array(data ./ 1e3)
 
-   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs3, :y)
+   data = plot_prep2d(meta, "proton/vg_v", :y)
    cs[3].set_array(data ./ 1e3)
 
-   _, _, data = plot_prep2d(meta, "vg_pressure", pArgs4, :mag)
+   data = plot_prep2d(meta, "vg_pressure", :mag)
    cs[4].set_array(data .* 1e9)
 
-   _, _, data = plot_prep2d(meta, "vg_b_vol", pArgs5, :z)
+   data = plot_prep2d(meta, "vg_b_vol", :z)
    cs[5].set_array(data .* 1e9)
 
-   _, _, data = plot_prep2d(meta, "vg_e_vol", pArgs6, :mag)
+   data = plot_prep2d(meta, "vg_e_vol", :mag)
    cs[6].set_array(data .* 1e6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
@@ -147,7 +140,7 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
    colorscale = Linear
-   axisunit = RE
+   const axisunit = RE
 
    # Upper/lower limits for each variable
    const ρmin, ρmax   = 0.0, 9.0      # [amu/cc]
@@ -159,29 +152,13 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
    meta = load(files[1])
 
-   const pArgs1 = set_args(meta, "proton/vg_rho", axisunit, colorscale;
-      normal=:none, vmin=ρmin, vmax=ρmax)
-   const cnorm1, cticks1 = set_colorbar(pArgs1)
-
-   const pArgs2 = set_args(meta, "proton/vg_v", axisunit, colorscale;
-      normal=:none, vmin=vxmin, vmax=vxmax)
-   const cnorm2, cticks2 = set_colorbar(pArgs2)
-
-   const pArgs3 = set_args(meta, "proton/vg_v", axisunit, colorscale;
-      normal=:none, vmin=vymin, vmax=vymax)
-   const cnorm3, cticks3 = set_colorbar(pArgs3)
-
-   const pArgs4 = set_args(meta, "vg_pressure", axisunit, colorscale;
-      normal=:none, vmin=pmin, vmax=pmax)
-   const cnorm4, cticks4 = set_colorbar(pArgs4)
-
-   const pArgs5 = set_args(meta, "vg_b_vol", axisunit, Linear;
-      normal=:none, vmin=bmin, vmax=bmax)
-   const cnorm5, cticks5 = set_colorbar(pArgs5)
-
-   const pArgs6 = set_args(meta, "vg_e_vol", axisunit, Log;
-      normal=:none, vmin=emin, vmax=emax)
-   const cnorm6, cticks6 = set_colorbar(pArgs6)
+   const pArgs1 = set_args(meta, "proton/vg_rho", axisunit; normal=:none)
+   const cnorm1, cticks1 = set_colorbar(colorscale, ρmin, ρmax)
+   const cnorm2, cticks2 = set_colorbar(colorscale, vxmin, vxmax)
+   const cnorm3, cticks3 = set_colorbar(colorscale, vymin, vymax)
+   const cnorm4, cticks4 = set_colorbar(colorscale, pmin, pmax)
+   const cnorm5, cticks5 = set_colorbar(Linear, bmin, bmax)
+   const cnorm6, cticks6 = set_colorbar(Log, emin, emax)
 
    const fontsize = "x-large"
 end
