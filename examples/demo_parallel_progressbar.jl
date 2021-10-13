@@ -109,7 +109,7 @@ end
    axsR[1].set_title("Alfven speed", fontsize="x-large")
    axsR[2].set_title("Sound speed", fontsize="x-large")
 
-   plotrange, sizes = pArgs1.plotrange, pArgs1.sizes
+   plotrange, sizes, axisunit = pArgs1.plotrange, pArgs1.sizes, pArgs1.axisunit
    if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
@@ -176,10 +176,10 @@ end
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
    subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   _, _, data = plot_prep2d(meta, "VA", pArgs1, :z, axisunit)
+   _, _, data = plot_prep2d(meta, "VA", pArgs1, :z)
    cs[1].set_array(data ./ 1e3)
 
-   _, _, data = plot_prep2d(meta, "VS", pArgs2, :z, axisunit)
+   _, _, data = plot_prep2d(meta, "VS", pArgs2, :z)
    cs[2].set_array(data ./ 1e3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
@@ -200,8 +200,8 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
    const isinit = true
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
-   const colorscale = Linear
-   const axisunit = RE
+   colorscale = Linear
+   axisunit = RE
 
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 10.0     # [amu/cc]

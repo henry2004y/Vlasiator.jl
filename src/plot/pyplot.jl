@@ -24,6 +24,8 @@ struct PlotArgs
    vmin::Float32
    "maximum data value"
    vmax::Float32
+   "axis unit"
+   axisunit::AxisUnit
    "title"
    str_title::String
    "xlabel"
@@ -174,7 +176,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
 
    pArgs = set_args(meta, var, axisunit, colorscale; vmin, vmax)
 
-   x, y, data = plot_prep2d(meta, var, pArgs, op, axisunit)
+   x, y, data = plot_prep2d(meta, var, pArgs, op)
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       rho_ = findfirst(endswith("rho"), meta.variable)
@@ -292,8 +294,8 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 end
 
 "Generate axis and data for 2D plotting."
-function plot_prep2d(meta::MetaVLSV, var, pArgs::PlotArgs, op, axisunit::AxisUnit)
-   @unpack sizes, plotrange = pArgs
+function plot_prep2d(meta::MetaVLSV, var, pArgs::PlotArgs, op)
+   @unpack sizes, plotrange, axisunit = pArgs
 
    dataRaw = Vlasiator.getdata2d(meta, var)
 
@@ -361,7 +363,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit, colorscale::ColorScal
       datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
 
    PlotArgs(sizes, plotrange, idlist, indexlist, colorscale,
-      vmin, vmax, str_title, strx, stry, cb_title_use)
+      vmin, vmax, axisunit, str_title, strx, stry, cb_title_use)
 end
 
 "Set colorbar norm and ticks."

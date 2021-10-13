@@ -37,13 +37,13 @@ for (i, file) in enumerate(files)
    t = readparameter(meta, "time")
 
    if i == 1
-      x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op, axisunit)
+      x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op)
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    
       set_plot(c, ax, pArgs, cticks, addcolorbar)
    else
-      x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op, axisunit) 
+      x, y, data = plot_prep2d(meta, vardict[varname], pArgs, op) 
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    end

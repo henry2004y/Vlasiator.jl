@@ -39,7 +39,7 @@ using Distributed, ParallelDataTransfer, Glob
    axs[2,2].set_title("Magnetic field"; fontsize)
    axs[2,3].set_title("Electric field"; fontsize)
 
-   plotrange, sizes = pArgs1.plotrange, pArgs1.sizes
+   plotrange, sizes, axisunit = pArgs1.plotrange, pArgs1.sizes, pArgs1.axisunit
    if axisunit == RE
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
@@ -93,22 +93,22 @@ end
    println("file = $file")
    meta = load(file)
 
-   _, _, data = plot_prep2d(meta, "proton/vg_rho", pArgs1, :mag, axisunit)
+   _, _, data = plot_prep2d(meta, "proton/vg_rho", pArgs1, :mag)
    cs[1].set_array(data ./ 1e6)
 
-   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs2, :x, axisunit)
+   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs2, :x)
    cs[2].set_array(data ./ 1e3)
 
-   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs3, :y, axisunit)
+   _, _, data = plot_prep2d(meta, "proton/vg_v", pArgs3, :y)
    cs[3].set_array(data ./ 1e3)
 
-   _, _, data = plot_prep2d(meta, "vg_pressure", pArgs4, :mag, axisunit)
+   _, _, data = plot_prep2d(meta, "vg_pressure", pArgs4, :mag)
    cs[4].set_array(data .* 1e9)
 
-   _, _, data = plot_prep2d(meta, "vg_b_vol", pArgs5, :z, axisunit)
+   _, _, data = plot_prep2d(meta, "vg_b_vol", pArgs5, :z)
    cs[5].set_array(data .* 1e9)
 
-   _, _, data = plot_prep2d(meta, "vg_e_vol", pArgs6, :mag, axisunit)
+   _, _, data = plot_prep2d(meta, "vg_e_vol", pArgs6, :mag)
    cs[6].set_array(data .* 1e6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
@@ -146,8 +146,8 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 @broadcast begin # on all workers
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
-   const colorscale = Linear
-   const axisunit = RE
+   colorscale = Linear
+   axisunit = RE
 
    # Upper/lower limits for each variable
    const ρmin, ρmax   = 0.0, 9.0      # [amu/cc]
