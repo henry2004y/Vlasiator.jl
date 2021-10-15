@@ -25,7 +25,7 @@ export
    # vlsvreader
    MetaVLSV, VarInfo,
    load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
-   hasvariable, hasparameter, hasname, hasvdf,
+   hasvariable, hasparameter, hasname,
    # vlsvutility
    getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
    getchildren, getparent, isparent, getsiblings,

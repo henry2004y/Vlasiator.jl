@@ -37,6 +37,7 @@ struct MetaVLSV
    cellIndex::Vector{Int64}
    time::Float64
    maxamr::Int64
+   hasvdf::Bool
    ncells::SVector{3, Int64}
    block_size::SVector{3, Int64}
    coordmin::SVector{3, Float64}
@@ -52,9 +53,8 @@ function Base.show(io::IO, meta::MetaVLSV)
    println(io, "Time: ", round(meta.time, digits=2))
    println(io, "Dimension: $(ndims(meta))")
    println(io, "Maximum AMR level: $(meta.maxamr)")
-   println(io, "Contains VDF: $(hasvdf(meta))")
-   print(io, "variables: ")
-   println(io, meta.variable)
+   println(io, "Contains VDF: $(meta.hasvdf)")
+   println(io, "variables: ", meta.variable)
 end
 
 function Base.show(io::IO, s::VarInfo)
@@ -245,11 +245,13 @@ function load(file::AbstractString)
       @inbounds vars[i] = varinfo[i]["name"]
    end
 
+   hasvdf = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS") |> !isempty
+
    # File IOstream is not closed for sake of data processing later.
 
    meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid[cellIndex],
-      cellIndex, timesim, maxamr, ncells, block_size, coordmin, coordmax, dcoord,
-      populations, meshes)
+      cellIndex, timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
+      dcoord, populations, meshes)
 end
 
 
@@ -506,16 +508,6 @@ end
 Return the dimension of VLSV data.
 """
 Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
-
-"""
-    hasvdf(meta) -> Bool
-
-Check if the VLSV file contains VDF.
-"""
-function hasvdf(meta::MetaVLSV)
-   cells = readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
-   return !isempty(cells)
-end
 
 """
     readvcells(meta, cid; pop="proton")

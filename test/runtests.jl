@@ -64,7 +64,6 @@ end
          point2 = [5.1, 0.0, 0.0]
          @test_throws DomainError getcellinline(meta, point1, point2)
 
-         @test hasvdf(meta) == true
          # Nearest ID with VDF stored
          @test getnearestcellwithvdf(meta, id) == 8
 
