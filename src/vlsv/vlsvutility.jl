@@ -710,7 +710,7 @@ end
 
 
 """
-    issame(file1, file2, tol=1e-4) -> Bool
+    issame(file1, file2, tol=1e-4; verbose=false) -> Bool
 
 Check if two VLSV files are approximately identical.
 """
