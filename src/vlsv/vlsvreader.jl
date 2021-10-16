@@ -539,7 +539,7 @@ function readvcells(meta::MetaVLSV, cid; pop="proton")
    let varinfo = findfirst("//BLOCKVARIABLE", footer)
       datasize = parse(Int, varinfo["datasize"])
       datatype = varinfo["datatype"]
-      @assert datatype == "float" "VDFs must be floating numbers!"
+      datatype == "float" || @error "VDFs must be floating numbers!"
       vectorsize = parse(Int, varinfo["vectorsize"])
       variable_offset = parse(Int, nodecontent(varinfo))
    end
@@ -555,7 +555,7 @@ function readvcells(meta::MetaVLSV, cid; pop="proton")
    let varinfo = findfirst("//BLOCKIDS", footer)
       datasize = parse(Int, varinfo["datasize"])
       datatype = varinfo["datatype"]
-      @assert datatype == "uint" "Block ID must be unsigned integer!"
+      datatype == "uint" || @error "Block ID must be unsigned integer!"
       variable_offset = parse(Int, nodecontent(varinfo))
    end
 
