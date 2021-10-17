@@ -1,4 +1,4 @@
-using Vlasiator, UnPack, Printf
+using Vlasiator, UnPack, Printf, StaticArrays
 using GLMakie
 
 @recipe(VlPlot, meta, var) do scene
@@ -50,18 +50,24 @@ end
 end
 
 function Makie.plot!(vlplot::VlContourf)
-   meta = vlplot[:meta][]
-   var  = vlplot[:var][]
-   
+   meta     = vlplot[:meta][]
+   var      = vlplot[:var][]
+   op       = vlplot.op[]
+   normal   = vlplot.normal[]
+   axisunit = vlplot.axisunit[]
+   vmin     = vlplot.vmin[]
+   vmax     = vlplot.vmax[]
+   colorscale = vlplot.colorscale[]
+
    @unpack ncells, coordmin, coordmax = meta
 
-   if vlplot.normal[] == :x
+   if normal == :x
       seq = @SVector [2,3]
       dir = 1
-   elseif vlplot.normal[] == :y || (ncells[2] == 1 && ncells[3] != 1) # polar
+   elseif normal == :y || (ncells[2] == 1 && ncells[3] != 1) # polar
       seq = @SVector [1,3]
       dir = 2
-   elseif vlplot.normal[] == :z || (ncells[3] == 1 && ncells[2] != 1) # ecliptic
+   elseif normal == :z || (ncells[3] == 1 && ncells[2] != 1) # ecliptic
       seq = @SVector [1,2]
       dir = 3
    else
@@ -83,30 +89,15 @@ function Makie.plot!(vlplot::VlContourf)
    # Scale the sizes to the highest refinement level
    sizes *= 2^meta.maxamr # data needs to be refined later
 
-   dataRaw = Vlasiator.getdata2d(meta, var)
-
-   if ndims(dataRaw) == 3
-      if vlplot.op[] in (:x, :1)
-         data = @view dataRaw[1,:,:]
-      elseif vlplot.op[] in (:y, :2)
-         data = @view dataRaw[2,:,:]
-      elseif vlplot.op[] in (:z, :3)
-         data = @view dataRaw[3,:,:]
-      elseif vlplot.op[] == :mag
-         data = @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
-      end
-   else
-      data = dataRaw
-   end
-
-   x, y = Vlasiator.get_axis(vlplot.axisunit[], plotrange, sizes)
+   x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
+   data = Vlasiator.plot_prep2d(meta, var, op)'
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       rho_ = findfirst(endswith("rho"), meta.variable)
       if !isnothing(rho_)
          rho = readvariable(meta, meta.variable[rho_])
          rho = reshape(rho, pArgs.sizes[1], pArgs.sizes[2])
-         mask = findall(==(0.0), rho')
+         mask = findall(==(0.0), rho)
 
          if ndims(data) == 2
             @inbounds data[mask] .= NaN
@@ -119,16 +110,16 @@ function Makie.plot!(vlplot::VlContourf)
       end
    end
 
-   if vlplot.colorscale[] == Log # Logarithmic plot
+   if colorscale == Log # Logarithmic plot
       if any(<(0), data)
          throw(DomainError(data, "Nonpositive data detected: use linear scale instead!"))
       end
       datapositive = data[data .> 0.0]
-      v1 = isinf(vlplot.vmin[]) ? minimum(datapositive) : vmin
-      v2 = isinf(vlplot.vmax[]) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-   elseif vlplot.colorscale[] == Linear
-      v1 = isinf(vlplot.vmin[]) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
-      v2 = isinf(vlplot.vmax[]) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
+      v1 = isinf(vmin) ? minimum(datapositive) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
+   elseif colorscale == Linear
+      v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
       nticks = 9
       ticks = range(v1, v2, length=nticks)
    end
