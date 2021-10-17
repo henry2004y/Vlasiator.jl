@@ -216,7 +216,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 
    pArgs = set_args(meta, var, axisunit; normal, origin)
 
-   data = plot_prep2dslice(meta, var, normal, pArgs)
+   data = plot_prep2dslice(meta, var, normal, op, pArgs)
    x, y = get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
 
    cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
