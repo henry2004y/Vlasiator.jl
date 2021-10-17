@@ -3,7 +3,7 @@
 using RecipesBase, Printf, UnPack
 
 # Build a recipe which acts on a custom type.
-@recipe function f(meta::MetaVLSV, var::AbstractString; op=:mag, axisunit=RE)
+@recipe function f(meta::MetaVLSV, var::AbstractString; op=:mag, axisunit=RE, normal=:y)
    @unpack ncells, coordmin, coordmax = meta
    if ndims(meta) == 1
       data = readvariable(meta, var)
@@ -44,6 +44,15 @@ using RecipesBase, Printf, UnPack
          x, y, data
       end
    elseif ndims(meta) == 3
-
+      pArgs = set_args(meta, var, axisunit; normal, origin)
+      data = plot_prep2dslice(meta, var, normal, pArgs)
+      x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
+   
+      @series begin
+         seriestype --> :heatmap  # use := if you want to force it
+         seriescolor --> :turbo
+         title --> @sprintf "t= %4.1fs" meta.time
+         x, y, data
+      end
    end
 end

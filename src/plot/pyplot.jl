@@ -8,25 +8,6 @@ export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
    matplotlib.rc("image", cmap="turbo") # set default colormap
 end
 
-"Plotting arguments."
-struct PlotArgs
-   "data array size"
-   sizes::Vector{Int}
-   "plotting data range"
-   plotrange::Vector{Float32}
-   "cell IDs in the cut plane"
-   idlist::Vector{Int}
-   "mapping from original cell order to cut plane"
-   indexlist::Vector{Int}
-   "title"
-   str_title::String
-   "xlabel"
-   strx::String
-   "ylabel"
-   stry::String
-   "colorbar title"
-   cb_title_use::String
-end
 
 """
     plot(meta, var, ax=nothing; kwargs)
@@ -235,139 +216,45 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 
    pArgs = set_args(meta, var, axisunit; normal, origin)
 
-   @unpack sizes, plotrange, idlist, indexlist = pArgs
-
-   data = readvariable(meta, var)
-
-   if startswith(var, "fg_") # field quantities, fsgrid
-      throw(ArgumentError("FS grid variable $var plotting in cut currently not supported!"))
-   else # moments, dccrg grid
-      # vlasov grid, AMR
-      if ndims(data) == 1
-         data = data[indexlist] # find required cells
-      elseif ndims(data) == 2
-         data = data[:,indexlist] # find required cells
-      end
-
-      # Create the plotting grid
-      if ndims(data) == 1
-         data = refineslice(meta, idlist, data, normal)
-      elseif ndims(data) == 2
-         if op in (:x, :y, :z, :1, :2, :3)
-            if op in (:x, :1)
-               slice = @view data[1,:]
-            elseif op in (:y, :2)
-               slice = @view data[2,:]
-            elseif op in (:z, :3)
-               slice = @view data[3,:]
-            end
-            data = refineslice(meta, idlist, slice, normal)
-         elseif op == :mag
-            datax = @views refineslice(meta, idlist, data[1,:], normal)
-            datay = @views refineslice(meta, idlist, data[2,:], normal)
-            dataz = @views refineslice(meta, idlist, data[3,:], normal)
-            data = hypot.(datax, datay, dataz)
-         end
-
-      elseif ndims(data) == 3
-         @error "not implemented yet!"
-      end
-   end
-
-   x, y = get_axis(axisunit, plotrange, sizes)
+   data = plot_prep2dslice(meta, var, normal, pArgs)
+   x, y = get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
 
    cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data'; norm=cnorm, shading="nearest", kwargs...)
+   c = ax.pcolormesh(x, y, data; norm=cnorm, shading="nearest", kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    c
 end
 
-"Set plot-related arguments."
-function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
-   @unpack ncells, coordmin, coordmax = meta
-
-   if normal == :x
-      seq = @SVector [2,3]
-      dir = 1
-   elseif normal == :y || (ncells[2] == 1 && ncells[3] != 1) # polar
-      seq = @SVector [1,3]
-      dir = 2
-   elseif normal == :z || (ncells[3] == 1 && ncells[2] != 1) # ecliptic
-      seq = @SVector [1,2]
-      dir = 3
-   else
-      throw(ArgumentError("1D data detected. Please use 1D plot functions."))
-   end
-
-   sizes = ncells[seq]
-   plotrange = [coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]]]
-   axislabels = ['X', 'Y', 'Z'][seq]
-
-   if normal == :none
-      idlist, indexlist = Int[], Int[]
-   else
-      idlist, indexlist = let sliceoffset = abs(coordmin[dir]) + origin
-         getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])
-      end
-   end
-
-   # Scale the sizes to the highest refinement level
-   sizes *= 2^meta.maxamr # data needs to be refined later
-
-   unitstr = axisunit == RE ? L"$R_E$" : L"$m$"
-   strx = axislabels[1]*"["*unitstr*"]"
-   stry = axislabels[2]*"["*unitstr*"]"
-
-   str_title = @sprintf "t= %4.1fs" meta.time
-
-   datainfo = readvariablemeta(meta, var)
-
-   cb_title_use = !isempty(datainfo.variableLaTeX) ?
-      datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
-
-   PlotArgs(sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title_use)
-end
-
-"Set colorbar norm and ticks."
-function set_colorbar(colorscale::ColorScale, vmin, vmax, data=[1.0])
+"Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorscale`."
+function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0])
+   vmin, vmax = set_lim(v1, v2, data, colorscale)
    if colorscale == Linear
-      v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
-      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-      levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(v1, v2)
+      levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
       cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
       ticks = matplotlib.ticker.LinearLocator(numticks=9)
    elseif colorscale == Log # logarithmic
-      datapositive = data[data .> 0.0]
-      v1 = isinf(vmin) ? minimum(datapositive) : vmin
-      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-
-      cnorm = matplotlib.colors.LogNorm(vmin=v1, vmax=v2)
+      cnorm = matplotlib.colors.LogNorm(;vmin, vmax)
       ticks = matplotlib.ticker.LogLocator(base=10, subs=collect(0:9))
    else # symmetric log
       linthresh = 1.0
       logstep = 1
 
-      v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
-      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
-
       logthresh = floor(Int, log10(linthresh))
-      minlog = ceil(Int, log10(-v1))
-      maxlog = ceil(Int, log10(v2))
+      minlog = ceil(Int, log10(-vmin))
+      maxlog = ceil(Int, log10(vmax))
 
-      cnorm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin=v1, vmax=v2,
-         base=10)
+      cnorm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin, vmax, base=10)
       ticks = [ [-(10.0^x) for x in minlog:-logstep:logthresh]..., 0.0,
          [10.0^x for x in logthresh+1:logstep:maxlog]..., ]
    end
 
    cnorm, ticks
 end
-
 
 "Configure customized plot."
 function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
