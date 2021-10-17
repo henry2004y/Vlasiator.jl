@@ -169,7 +169,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
 
    pArgs = set_args(meta, var, axisunit)
 
-   x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+   x, y = get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
    data = plot_prep2d(meta, var, op)
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
@@ -285,27 +285,6 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
    c
-end
-
-"Generate axis and data for 2D plotting."
-function plot_prep2d(meta::MetaVLSV, var, op=:none)
-   dataRaw = Vlasiator.getdata2d(meta, var)
-
-   if ndims(dataRaw) == 3
-      if op in (:x, :1)
-         data = @view dataRaw[1,:,:]
-      elseif op in (:y, :2)
-         data = @view dataRaw[2,:,:]
-      elseif op in (:z, :3)
-         data = @view dataRaw[3,:,:]
-      elseif op == :mag
-         data = @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
-      end
-   else
-      data = dataRaw
-   end
-
-   data'
 end
 
 "Set plot-related arguments."
@@ -453,7 +432,7 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
-   unit == RE && (location .*= Vlasiator.Re)
+   unit == RE && (location .*= Re)
 
    # Calculate cell ID from given coordinates
    cidReq = getcell(meta, location)

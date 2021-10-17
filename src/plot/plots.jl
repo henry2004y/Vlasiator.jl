@@ -28,23 +28,8 @@ using RecipesBase, Printf, UnPack
          axislabels = ['X', 'Y']
       end
 
-      dataRaw = Vlasiator.getdata2d(meta, var)
-
-      if ndims(dataRaw) == 3
-         if op in (:x, :1)
-            data = @view dataRaw[1,:,:]
-         elseif op in (:y, :2)
-            data = @view dataRaw[2,:,:]
-         elseif op in (:z, :3)
-            data = @view dataRaw[3,:,:]
-         elseif op == :mag
-            data = @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
-         end
-      else
-         data = dataRaw
-      end
-
       x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
+      data = Vlasiator.plot_prep2d(meta, var, op)
       unitstr = axisunit == RE ? "R_E" : "m"
 
       strx = L"\textrm{%$(axislabels[1])}[%$unitstr]"
@@ -56,7 +41,9 @@ using RecipesBase, Printf, UnPack
          xguide --> strx
          yguide --> stry
          title --> @sprintf "t= %4.1fs" meta.time
-         x, y, data'
+         x, y, data
       end
+   elseif ndims(meta) == 3
+
    end
 end
