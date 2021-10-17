@@ -115,7 +115,7 @@ function plot_prep2d(meta::MetaVLSV, var, op=:none)
       data = dataRaw
    end
 
-   data'
+   data
 end
 
 function plot_prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
@@ -157,5 +157,5 @@ function plot_prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
          @error "not implemented yet!"
       end
    end
-   data'
+   data
 end
