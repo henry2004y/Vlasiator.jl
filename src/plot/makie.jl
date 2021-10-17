@@ -12,7 +12,7 @@ function Makie.convert_arguments(P::SurfaceLike, meta::MetaVLSV, var;
    axisunit=RE, op=:mag)
    pArgs = Vlasiator.set_args(meta, var, axisunit)
    x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
-   data = Vlasiator.plot_prep2d(meta, var, op)
+   data = Vlasiator.prep2d(meta, var, op)
    
    (x, y, data)
 end
@@ -70,7 +70,7 @@ function Makie.plot!(vlplot::Viz)
       pArgs = Vlasiator.set_args(meta, var, axisunit)
 
       x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
-      data = Vlasiator.plot_prep2d(meta, var, op)
+      data = Vlasiator.prep2d(meta, var, op)
    
       if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
          rho_ = findfirst(endswith("rho"), meta.variable)
@@ -109,7 +109,7 @@ function Makie.plot!(vlplot::Viz)
    else # 3D
       pArgs = Vlasiator.set_args(meta, var, axisunit; normal, origin)
       x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
-      data = Vlasiator.plot_prep2dslice(meta, var, normal, op, pArgs)
+      data = Vlasiator.prep2dslice(meta, var, normal, op, pArgs)
 
       heatmap!(vlplot, x, y, data, colormap=vlplot.colormap)
    end
@@ -154,7 +154,7 @@ function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
       begin
          origin = ($sliceindex-1)*dx + meta.coordmin[dir]
          pArgs = Vlasiator.set_args(meta, var, axisunit; normal, origin)
-         data = Vlasiator.plot_prep2dslice(meta, var, normal, op, pArgs)
+         data = Vlasiator.prep2dslice(meta, var, normal, op, pArgs)
       end)
 
    fig = Figure()

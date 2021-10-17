@@ -6,7 +6,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob, PyPlot, Printf
-using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
+using Vlasiator: set_args, prep2d, set_colorbar, set_plot
 
 files = glob("out/bulk*.vlsv")
 nfile = length(files)
@@ -38,13 +38,13 @@ for (i, file) in enumerate(files)
 
    if i == 1
       x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
-      data = plot_prep2d(meta, vardict[varname], op)
+      data = prep2d(meta, vardict[varname], op)
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    
       set_plot(c, ax, pArgs, cticks, addcolorbar)
    else
-      data = plot_prep2d(meta, vardict[varname], op) 
+      data = prep2d(meta, vardict[varname], op) 
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
    end

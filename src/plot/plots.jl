@@ -29,7 +29,7 @@ using RecipesBase, Printf, UnPack
       end
 
       x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
-      data = Vlasiator.plot_prep2d(meta, var, op)'
+      data = Vlasiator.prep2d(meta, var, op)'
       unitstr = axisunit == RE ? "R_E" : "m"
 
       strx = L"\textrm{%$(axislabels[1])}[%$unitstr]"
@@ -45,7 +45,7 @@ using RecipesBase, Printf, UnPack
       end
    elseif ndims(meta) == 3
       pArgs = set_args(meta, var, axisunit; normal, origin)
-      data = plot_prep2dslice(meta, var, normal, pArgs)'
+      data = prep2dslice(meta, var, normal, pArgs)'
       x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
    
       @series begin

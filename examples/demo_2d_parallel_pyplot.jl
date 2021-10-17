@@ -7,7 +7,7 @@
 
 using Distributed, ParallelDataTransfer, Glob
 @everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
-@everywhere using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
+@everywhere using Vlasiator: set_args, prep2d, set_colorbar, set_plot
 
 @everywhere function init_figure()
    fig, axs = plt.subplots(2, 3; num=myid(),
@@ -86,22 +86,22 @@ end
    println("file = $file")
    meta = load(file)
 
-   data = plot_prep2d(meta, "proton/vg_rho", :mag)
+   data = prep2d(meta, "proton/vg_rho", :mag)
    cs[1].set_array(data ./ 1e6)
 
-   data = plot_prep2d(meta, "proton/vg_v", :x)
+   data = prep2d(meta, "proton/vg_v", :x)
    cs[2].set_array(data ./ 1e3)
 
-   data = plot_prep2d(meta, "proton/vg_v", :y)
+   data = prep2d(meta, "proton/vg_v", :y)
    cs[3].set_array(data ./ 1e3)
 
-   data = plot_prep2d(meta, "vg_pressure", :mag)
+   data = prep2d(meta, "vg_pressure", :mag)
    cs[4].set_array(data .* 1e9)
 
-   data = plot_prep2d(meta, "vg_b_vol", :z)
+   data = prep2d(meta, "vg_b_vol", :z)
    cs[5].set_array(data .* 1e9)
 
-   data = plot_prep2d(meta, "vg_e_vol", :mag)
+   data = prep2d(meta, "vg_e_vol", :mag)
    cs[6].set_array(data .* 1e6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time

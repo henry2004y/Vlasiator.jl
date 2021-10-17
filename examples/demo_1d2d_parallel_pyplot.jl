@@ -7,7 +7,7 @@
 
 using Distributed, ParallelDataTransfer, Glob
 @everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
-@everywhere using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
+@everywhere using Vlasiator: set_args, prep2d, set_colorbar, set_plot
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
@@ -145,10 +145,10 @@ end
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
    subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   data = plot_prep2d(meta, "VA", :z)
+   data = prep2d(meta, "VA", :z)
    cs[1].set_array(data ./ 1e3)
 
-   data = plot_prep2d(meta, "VS", :z)
+   data = prep2d(meta, "VS", :z)
    cs[2].set_array(data ./ 1e3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")

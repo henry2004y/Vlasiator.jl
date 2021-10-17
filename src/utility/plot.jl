@@ -98,7 +98,7 @@ function get_axis(axisunit::AxisUnit, plotrange, sizes)
 end
 
 "Obtain data from `meta` of `var` for 2D plotting. Use `op` to select vector components."
-function plot_prep2d(meta::MetaVLSV, var, op=:none)
+function prep2d(meta::MetaVLSV, var, op=:none)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    if ndims(dataRaw) == 3
@@ -118,7 +118,7 @@ function plot_prep2d(meta::MetaVLSV, var, op=:none)
    data
 end
 
-function plot_prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
+function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
    @unpack idlist, indexlist = pArgs
 
    data = readvariable(meta, var)

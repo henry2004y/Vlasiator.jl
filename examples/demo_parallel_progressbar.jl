@@ -29,7 +29,7 @@ addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
 @everywhere begin
    using ParallelDataTransfer
    using Vlasiator, PyPlot, Printf, LaTeXStrings
-   using Vlasiator: set_args, plot_prep2d, set_colorbar, set_plot
+   using Vlasiator: set_args, prep2d, set_colorbar, set_plot
 end
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
@@ -169,10 +169,10 @@ end
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
    subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   data = plot_prep2d(meta, "VA")
+   data = prep2d(meta, "VA")
    cs[1].set_array(data ./ 1e3)
 
-   data = plot_prep2d(meta, "VS")
+   data = prep2d(meta, "VS")
    cs[2].set_array(data ./ 1e3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
