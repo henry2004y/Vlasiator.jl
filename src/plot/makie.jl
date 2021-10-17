@@ -41,10 +41,11 @@ Visualize Vlasiator output `var` in `meta` with various options:
       # Vlasiator.jl attributes
       axisunit      = RE,
       colorscale    = Linear,
-      normal        = :none,
+      normal        = :y, # only works in 3D
       vmin          = -Inf,
       vmax          = Inf,
       op            = :mag,
+      origin        = 0.0,
    )
 end
 
@@ -57,6 +58,7 @@ function Makie.plot!(vlplot::Viz)
    vmin        = vlplot.vmin[]
    vmax        = vlplot.vmax[]
    colorscale  = vlplot.colorscale[]
+   origin      = vlplot.origin[]
 
    if ndims(meta) == 1
       data = readvariable(meta, var)
@@ -104,8 +106,12 @@ function Makie.plot!(vlplot::Viz)
       vlplot.colorrange = [v1, v2]
 
       heatmap!(vlplot, x, y, data, colormap=vlplot.colormap)
-   else
+   else # 3D
+      pArgs = Vlasiator.set_args(meta, var, axisunit; normal, origin)
+      x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+      data = Vlasiator.plot_prep2dslice(meta, var, normal, op, pArgs)'
 
+      heatmap!(vlplot, x, y, data, colormap=vlplot.colormap)
    end
    vlplot
 end
@@ -127,13 +133,43 @@ function vlheatmap(meta, var; addcolorbar=true, axisunit=RE, kwargs...)
    fig
 end
 
-#=
-file = "test/data/bulk.2d.vlsv"
-var = "proton/vg_rho"
+"Interactive 2D slice of 3D `var`."
+function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
+   if normal == :x
+      dir = 1
+   elseif normal == :y
+      dir = 2
+   else
+      dir = 3
+   end
 
-meta = load(file)
+   dx = meta.dcoord[dir] / 2^meta.maxamr
 
-vlheatmap(meta, var)
+   pArgs = Vlasiator.set_args(meta, var, axisunit; normal, origin=0.0)
+   x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
 
-heatmap(meta, var)
-=#
+   sliceindex = Node(1)
+   
+   slice = @lift(
+      begin
+         origin = ($sliceindex-1)*dx + meta.coordmin[dir]
+         pArgs = Vlasiator.set_args(meta, var, axisunit; normal, origin)
+         data = Vlasiator.plot_prep2dslice(meta, var, normal, op, pArgs)'
+      end)
+
+   fig = Figure()
+   
+   heatmap(fig[1, 1], slice)
+
+   nsize = meta.ncells[dir]
+   depth = nsize*2^meta.maxamr
+
+   ls = labelslider!(fig, "location:", 2:depth;
+      format = x -> "$(x) cells",
+      sliderkw = Dict(:startvalue=>depth÷2+1))
+   fig[2, 1] = ls.layout
+
+   connect!(sliceindex, ls[1].value)
+   
+   fig
+end
