@@ -49,7 +49,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    if normal == :none
       idlist, indexlist = Int[], Int[]
    else
-      idlist, indexlist = let sliceoffset = abs(coordmin[dir]) + origin
+      idlist, indexlist = let sliceoffset = origin - coordmin[dir]
          getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])
       end
    end
@@ -118,7 +118,7 @@ function plot_prep2d(meta::MetaVLSV, var, op=:none)
    data'
 end
 
-function plot_prep2dslice(meta::MetaVLSV, var, normal, pArgs::PlotArgs)
+function plot_prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
    @unpack idlist, indexlist = pArgs
 
    data = readvariable(meta, var)
