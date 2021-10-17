@@ -182,7 +182,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
          if ndims(data) == 2
             @inbounds data[mask] .= NaN
          else
-            ind = CartesianIndices((pArgs.sizes[1], pArgs.sizes[2]))
+            ind = CartesianIndices((pArgs.sizes[2], pArgs.sizes[1]))
             for m in mask
                @inbounds data[:, ind[m][1], ind[m][2]] .= NaN
             end
