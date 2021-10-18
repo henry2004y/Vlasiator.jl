@@ -261,7 +261,7 @@ function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
    @unpack str_title, strx, stry, cb_title_use = pArgs
 
    if addcolorbar
-      cb = colorbar(c; ax, ticks=cticks, fraction=0.046, pad=0.04)
+      cb = colorbar(c; ax, ticks=cticks, fraction=0.04, pad=0.02)
       !isempty(cb_title_use) && cb.ax.set_ylabel(cb_title_use, fontsize=14)
       cb.outline.set_linewidth(1.0)
    end
