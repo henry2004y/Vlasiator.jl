@@ -77,7 +77,7 @@ end
 
 
 "Return size and type information for the object."
-function getObjInfo(fid::IOStream, footer, name, tag, attr)
+function getObjInfo(footer, name, tag, attr)
    local arraysize, datasize, datatype, vectorsize, variable_offset
    isFound = false
 
@@ -108,7 +108,7 @@ end
 
 "Return vectors of `name` from the vlsv file with `footer` opened by `fid`."
 function readvector(fid::IOStream, footer, name, tag)
-   T, offset, arraysize, datasize, vectorsize = getObjInfo(fid, footer, name, tag, "name")
+   T, offset, arraysize, datasize, vectorsize = getObjInfo(footer, name, tag, "name")
 
    if Sys.total_memory() > 8*arraysize*vectorsize*datasize
       w = vectorsize == 1 ?
@@ -284,7 +284,7 @@ end
 
 "Return mesh related variable."
 function readmesh(fid::IOStream, footer, typeMesh, varMesh)
-   T, offset, arraysize, _, _ = getObjInfo(fid, footer, typeMesh, varMesh, "mesh")
+   T, offset, arraysize, _, _ = getObjInfo(footer, typeMesh, varMesh, "mesh")
 
    w = Vector{T}(undef, arraysize)
    seek(fid, offset)
@@ -475,7 +475,7 @@ Return the parameter value from vlsv file.
 readparameter(meta::MetaVLSV, param) = readparameter(meta.fid, meta.footer, param)
 
 function readparameter(fid::IOStream, footer, param)
-   T, offset, _, _, _ = getObjInfo(fid, footer, param, "PARAMETER", "name")
+   T, offset, _, _, _ = getObjInfo(footer, param, "PARAMETER", "name")
    seek(fid, offset)
    p = read(fid, T)
 end

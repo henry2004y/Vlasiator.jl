@@ -508,7 +508,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    vsize  = @MVector zeros(Int, nv)
    @inbounds for i = 1:nv
       T[i], offset[i], arraysize[i], dsize[i], vsize[i] =
-         getObjInfo(fid, footer, vars[i], "VARIABLE", "name")
+         getObjInfo(footer, vars[i], "VARIABLE", "name")
    end
 
    Tout = copy(T)
