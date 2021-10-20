@@ -222,15 +222,15 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
       zcell *= 2
    end
 
-   indices = @SVector [
+   indices = SVector(
       cid % xcell,
       cid ÷ xcell % ycell,
-      cid ÷ (xcell*ycell) ]
+      cid ÷ (xcell*ycell) )
 
-   coords = @inbounds @SVector [
+   coords = @inbounds SVector(
       coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1]) / xcell,
       coordmin[2] + (indices[2] + 0.5) * (coordmax[2] - coordmin[2]) / ycell,
-      coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3]) / zcell ]
+      coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3]) / zcell )
 
    coords
 end
@@ -474,7 +474,7 @@ end
 Get all the cell IDs with VDF saved.
 """
 getcellwithvdf(meta::MetaVLSV) =
-   readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")
+   readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
 
 
 "Return the first cellid - 1 on `mylevel` given `ncells` on this level."

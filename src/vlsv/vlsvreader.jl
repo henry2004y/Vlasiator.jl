@@ -147,11 +147,11 @@ function load(file::AbstractString)
 
    cellindex = sortperm(cellid)
 
-   bbox = readmesh(fid, footer, "SpatialGrid", "MESH_BBOX")
+   bbox = readmesh(fid, footer, "SpatialGrid", "MESH_BBOX")::Vector{UInt}
 
-   nodeCoordsX = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_X")
-   nodeCoordsY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")
-   nodeCoordsZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")
+   nodeCoordsX = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_X")::Vector{Float64}
+   nodeCoordsY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")::Vector{Float64}
+   nodeCoordsZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")::Vector{Float64}
 
    @inbounds ncells = SVector(bbox[1], bbox[2], bbox[3])
    @inbounds block_size = SVector(bbox[4], bbox[5], bbox[6])
@@ -171,15 +171,15 @@ function load(file::AbstractString)
          # VLSV 5.0 file with bounding box
          popname = varinfo["name"]
 
-         bbox = readmesh(fid, footer, popname, "MESH_BBOX")
+         bbox = readmesh(fid, footer, popname, "MESH_BBOX")::Vector{UInt}
 
-         nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")
-         nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")
-         nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")
+         nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
+         nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
+         nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
          vblocks = SVector(bbox[1], bbox[2], bbox[3])
          vblock_size = SVector(bbox[4], bbox[5], bbox[6])
-         vmin = @SVector [nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin]]
-         vmax = @SVector [nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end]]
+         vmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
+         vmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
          dv = SVector{3}(@. (vmax - vmin) / vblocks / vblock_size)
       else
          popname = "avgs"
@@ -190,23 +190,23 @@ function load(file::AbstractString)
                readparameter(fid, footer, "vxblocks_ini"),
                readparameter(fid, footer, "vyblocks_ini"),
                readparameter(fid, footer, "vzblocks_ini"))
-            vblock_size = @SVector [4, 4, 4]
-            vmin = @SVector [
+            vblock_size = SVector(4, 4, 4)
+            vmin = SVector(
                readparameter(fid, footer, "vxmin"),
                readparameter(fid, footer, "vymin"),
-               readparameter(fid, footer, "vzmin") ]
-            vmax = @SVector [
+               readparameter(fid, footer, "vzmin") )
+            vmax = SVector(
                readparameter(fid, footer, "vxmax"),
                readparameter(fid, footer, "vymax"),
-               readparameter(fid, footer, "vzmax") ]
+               readparameter(fid, footer, "vzmax") )
             dv = SVector{3}(@. (vmax - vmin) / vblocks / vblock_size)
          else
             # No velocity space info, e.g., file not written by Vlasiator
-            vblocks = @SVector [0, 0, 0]
-            vblock_size = @SVector [4, 4, 4]
-            vmin = @SVector [0, 0, 0]
-            vmax = @SVector [0, 0, 0]
-            dv = @SVector [1, 1, 1]
+            vblocks = SVector(0, 0, 0)
+            vblock_size = SVector(4, 4, 4)
+            vmin = SVector(0, 0, 0)
+            vmax = SVector(0, 0, 0)
+            dv = SVector(1, 1, 1)
          end
       end
 
@@ -222,9 +222,9 @@ function load(file::AbstractString)
    end
 
    if hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
-      timesim = readparameter(fid, footer, "time")
+      timesim = readparameter(fid, footer, "time")::Float64
    elseif hasname(footer, "PARAMETER", "t")
-      timesim = readparameter(fid, footer, "t")
+      timesim = readparameter(fid, footer, "t")::Float64
    else
       timesim = Inf
    end
@@ -244,7 +244,10 @@ function load(file::AbstractString)
       @inbounds vars[i] = varinfo[i]["name"]
    end
 
-   hasvdf = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS") |> !isempty
+   hasvdf = let
+      vcells = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
+      !isempty(vcells)
+   end
 
    # File IOstream is not closed for sake of data processing later.
 
@@ -309,9 +312,9 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    raw = readvector(fid, footer, var, "VARIABLE")
 
    if startswith(var, "fg_") # fsgrid
-      bbox = SVector{6}(Vlasiator.readmesh(meta.fid, meta.footer, "fsgrid", "MESH_BBOX"))
+      bbox = SVector{6}(readmesh(fid, footer, "fsgrid", "MESH_BBOX")::Vector{Int})
       # Determine fsgrid domain decomposition
-      nIORanks = readparameter(meta, "numWritingRanks")
+      nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
       if ndims(raw) > 1
          @inbounds dataOrdered = zeros(Float32, size(raw,1), bbox[1], bbox[2], bbox[3])
@@ -415,8 +418,8 @@ end
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
 function getDomainDecomposition(globalsize, nprocs)
-   domainDecomp = @SVector [1, 1, 1]
-   minValue = Inf
+   domainDecomp = SVector(1, 1, 1)
+   minValue = typemax(Int)
 
    @inbounds for i = 1:min(nprocs, globalsize[1])
       iBox = max(globalsize[1]/i, 1)
@@ -439,7 +442,7 @@ function getDomainDecomposition(globalsize, nprocs)
 
             if i * j * k == nprocs && v < minValue
                minValue = v
-               domainDecomp = @SVector [i, j, k]
+               domainDecomp = SVector(i, j, k)
             end
          end
       end
