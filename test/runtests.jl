@@ -45,7 +45,7 @@ end
          # unsorted ID
          @test readvariable(meta, "CellID", false) == UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
          indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
-         @test meta.cellIndex == indexRef
+         @test meta.cellindex == indexRef
          # sorted var by default
          @test meta["vg_boundarytype"] == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
          # ID finding

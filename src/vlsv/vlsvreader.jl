@@ -31,10 +31,10 @@ struct MetaVLSV
    fid::IOStream
    footer::EzXML.Node
    variable::Vector{String}
-   "sorted cell IDs"
+   "unsorted cell IDs"
    cellid::Vector{UInt64}
    "ordered sequence index of raw cell IDs"
-   cellIndex::Vector{Int64}
+   cellindex::Vector{Int64}
    time::Float64
    maxamr::Int64
    hasvdf::Bool
@@ -140,13 +140,12 @@ function load(file::AbstractString)
 
    local cellid
    let
-      T, offset, arraysize, _, vectorsize = 
-         getObjInfo(fid, footer, "CellID", "VARIABLE", "name")
+      T, offset, arraysize, _, vectorsize = getObjInfo(footer, "CellID", "VARIABLE", "name")
       a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
       cellid = reinterpret(T, a)
    end
 
-   cellIndex = sortperm(cellid)
+   cellindex = sortperm(cellid)
 
    bbox = readmesh(fid, footer, "SpatialGrid", "MESH_BBOX")
 
@@ -233,7 +232,7 @@ function load(file::AbstractString)
    # Obtain maximum refinement level
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
-   while @inbounds cid < cellid[cellIndex[end]]
+   while @inbounds cid < cellid[cellindex[end]]
       maxamr += 1
       cid += ncell*8^maxamr
    end
@@ -249,8 +248,8 @@ function load(file::AbstractString)
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid[cellIndex],
-      cellIndex, timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
+   meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid,
+      cellindex, timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
       dcoord, populations, meshes)
 end
 
@@ -301,7 +300,7 @@ Return variable value of `var` from the vlsv file. By default `sorted=true`, whi
 that for DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
-   @unpack fid, footer, cellIndex = meta
+   @unpack fid, footer, cellindex = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta)
       return data
@@ -356,7 +355,7 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
 
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      @inbounds d = ndims(raw) == 1 ? raw[cellIndex] : raw[:,cellIndex]
+      @inbounds d = ndims(raw) == 1 ? raw[cellindex] : raw[:,cellindex]
       data = eltype(raw) == Float64 ? Float32.(d) : d
    else
       data = raw
@@ -371,25 +370,23 @@ Read a variable `var` in a collection of cells `ids`.
 """
 function readvariable(meta::MetaVLSV, var, ids)
    @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
-   @unpack fid, footer = meta
+   @unpack fid, footer, cellid, cellindex = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta, ids)
       return data
    end
 
-   T, offset, arraysize, _, vectorsize = 
-      getObjInfo(fid, footer, var, "VARIABLE", "name")
+   T, offset, arraysize, _, vectorsize = getObjInfo(footer, var, "VARIABLE", "name")
 
    v = Array{T}(undef, vectorsize, length(ids))
 
    a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
    w = reshape(reinterpret(T, a), vectorsize, arraysize)
 
-   cellidRaw = readvector(fid, footer, "CellID", "VARIABLE")
-   id_ = length(meta.cellIndex) < 1000 ?
-      [findfirst(==(id), cellidRaw) for id in ids] :
-      indexin(ids, cellidRaw)
+   id_ = length(cellindex) < 1000 ?
+      [findfirst(==(id), cellid) for id in ids] :
+      indexin(ids, cellid)
 
    for i in eachindex(id_), iv = 1:vectorsize
       @inbounds v[iv,i] = w[iv,id_[i]]

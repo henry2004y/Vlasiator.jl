@@ -324,7 +324,7 @@ order to the cut plane and can be used to select data onto the plane.
 """
 function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
    @assert idim ∈ (1,2,3) "Unknown slice direction $idim"
-   @unpack ncells, maxamr, cellid = meta
+   @unpack ncells, maxamr, cellid, cellindex = meta
 
    nsize = ncells[idim]
    sliceratio = sliceoffset / (maxCoord - minCoord)
@@ -339,9 +339,11 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
    indexlist = Int[]
    idlist = Int[]
 
+   cellidsorted = cellid[cellindex]
+
    @inbounds for ilvl = 0:maxamr
       nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
-      ids = cellid[nLow .< cellid .≤ nHigh]
+      ids = cellidsorted[nLow .< cellidsorted .≤ nHigh]
       ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 
       if idim == 1
@@ -495,7 +497,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
 function fillmesh(meta::MetaVLSV, vars; verbose=false)
-   @unpack cellid, maxamr, fid, footer, ncells = meta
+   @unpack maxamr, fid, footer, ncells, cellid, cellindex = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
@@ -531,11 +533,11 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    # Find the ids
    ncell = prod(ncells)
    nLow, nHigh = 0, ncell
-   cellidRaw = readvector(fid, footer, "CellID", "VARIABLE")
+   cellidsorted = cellid[cellindex]
 
    @inbounds for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
-      ids = cellid[nLow .< cellid .≤ nHigh]
+      ids = cellidsorted[nLow .< cellidsorted .≤ nHigh]
 
       # indicate the condition of non-existing cells
       idrefined = setdiff(nLow+1:nHigh, ids)
@@ -545,7 +547,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
 
-      rOffsetsRaw = indexin(ids, cellidRaw)
+      rOffsetsRaw = indexin(ids, cellid)
 
       if ilvl != maxamr
          for iv in nvarvg
