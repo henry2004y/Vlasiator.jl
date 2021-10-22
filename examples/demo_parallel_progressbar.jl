@@ -169,10 +169,10 @@ end
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
    subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   data = prep2d(meta, "VA")
+   data = prep2d(meta, "VA")'
    cs[1].set_array(data ./ 1e3)
 
-   data = prep2d(meta, "VS")
+   data = prep2d(meta, "VS")'
    cs[2].set_array(data ./ 1e3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")

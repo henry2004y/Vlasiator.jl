@@ -135,10 +135,10 @@ function process(i, file)
 
    x, y = Vlasiator.get_axis(pArgs1.axisunit, pArgs1.plotrange, pArgs1.sizes)
 
-   data = prep2d(meta, "VA") 
+   data = prep2d(meta, "VA")'
    c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="nearest")
 
-   data = prep2d(meta, "VS") 
+   data = prep2d(meta, "VS")'
    c2 = axsR[2].pcolormesh(x, y, data ./ 1e3, norm=cnorm2, cmap=cmap, shading="nearest")
 
    if i == 1
