@@ -8,7 +8,9 @@ export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
    matplotlib.rc("image", cmap="turbo") # set default colormap
 end
 
-matplotlib.rc("font", size=14.0)
+matplotlib.rc("font", size=14)
+matplotlib.rc("xtick", labelsize=10) 
+matplotlib.rc("ytick", labelsize=10) 
 
 """
     plot(meta, var, ax=nothing; kwargs)
@@ -264,7 +266,7 @@ function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
    if addcolorbar
       cb = colorbar(c; ax, ticks=cticks, fraction=0.04, pad=0.02)
       !isempty(cb_title) && cb.ax.set_ylabel(cb_title)
-      cb.outline.set_linewidth(1.0)
+      cb.ax.tick_params(direction="in")
    end
 
    ax.set_title(str_title, fontweight="bold")
