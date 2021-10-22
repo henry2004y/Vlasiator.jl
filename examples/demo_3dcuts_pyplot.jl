@@ -6,28 +6,29 @@
 
 using Vlasiator, PyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
-AxesGrid = axes_grid1.AxesGrid
+ImageGrid = axes_grid1.ImageGrid
 
 file = "bulk1.0001000.vlsv"
 nameρ = "proton/vg_rho"
+colorscale = Log
+addcolorbar = false
 
 meta = load(file)
 
 # normal cuts in the x,y,z directions
 fig = plt.figure(figsize=(12, 4))
-grid = AxesGrid(fig, 111,
-                nrows_ncols=(1, 3),
-                axes_pad=0.7,
-                share_all=false,
-                cbar_mode="single",
-                cbar_location="right",
-                cbar_pad=0.1,
-                label_mode="all"
-                )
+grid = ImageGrid(fig, 111,
+                 nrows_ncols=(1, 3),
+                 axes_pad=0.85,
+                 cbar_mode="single",
+                 cbar_location="right",
+                 cbar_pad=0.1,
+                 label_mode="all"
+                 )
 
-c1 = pcolormesh(meta, nameρ, grid[1]; normal=:x, addcolorbar=false)
-c2 = pcolormesh(meta, nameρ, grid[2]; normal=:y, addcolorbar=false)
-c3 = pcolormesh(meta, nameρ, grid[3]; normal=:z, addcolorbar=false)
+c1 = pcolormesh(meta, nameρ, grid[1]; normal=:x, addcolorbar, colorscale)
+c2 = pcolormesh(meta, nameρ, grid[2]; normal=:y, addcolorbar, colorscale)
+c3 = pcolormesh(meta, nameρ, grid[3]; normal=:z, addcolorbar, colorscale)
 
 cb = fig.colorbar(c3, cax=grid.cbar_axes[1])
 datainfo = readvariablemeta(meta, nameρ)
