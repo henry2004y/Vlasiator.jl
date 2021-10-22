@@ -22,7 +22,7 @@ struct PlotArgs
    "ylabel"
    stry::String
    "colorbar title"
-   cb_title_use::String
+   cb_title::String
 end
 
 "Set plot-related arguments of `var` in `axisunit`."
@@ -65,10 +65,10 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
 
    datainfo = readvariablemeta(meta, var)
 
-   cb_title_use = !isempty(datainfo.variableLaTeX) ?
+   cb_title = !isempty(datainfo.variableLaTeX) ?
       datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
 
-   PlotArgs(sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title_use)
+   PlotArgs(sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title)
 end
 
 "Set colormap limits for `data`."

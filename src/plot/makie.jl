@@ -127,7 +127,7 @@ function vlheatmap(meta, var; addcolorbar=true, axisunit=RE, kwargs...)
    c.axis.ylabel = pArgs.stry
    c.axis.autolimitaspect = 1
    if addcolorbar
-      cbar = Colorbar(fig[1,2], c.plot, label=pArgs.cb_title_use, tickalign=1)
+      cbar = Colorbar(fig[1,2], c.plot, label=pArgs.cb_title, tickalign=1)
       colgap!(fig.layout, 7)
    end
    fig

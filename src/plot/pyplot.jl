@@ -259,11 +259,11 @@ end
 
 "Configure customized plot."
 function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
-   @unpack str_title, strx, stry, cb_title_use = pArgs
+   @unpack str_title, strx, stry, cb_title = pArgs
 
    if addcolorbar
       cb = colorbar(c; ax, ticks=cticks, fraction=0.04, pad=0.02)
-      !isempty(cb_title_use) && cb.ax.set_ylabel(cb_title_use, fontsize=14)
+      !isempty(cb_title) && cb.ax.set_ylabel(cb_title)
       cb.outline.set_linewidth(1.0)
    end
 
