@@ -8,6 +8,7 @@ export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
    matplotlib.rc("image", cmap="turbo") # set default colormap
 end
 
+matplotlib.rc("font", size=14.0)
 
 """
     plot(meta, var, ax=nothing; kwargs)
@@ -266,9 +267,9 @@ function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
       cb.outline.set_linewidth(1.0)
    end
 
-   ax.set_title(str_title, fontsize=14, fontweight="bold")
-   ax.set_xlabel(strx, fontsize=14)
-   ax.set_ylabel(stry, fontsize=14)
+   ax.set_title(str_title, fontweight="bold")
+   ax.set_xlabel(strx)
+   ax.set_ylabel(stry)
    ax.set_aspect("equal")
 
    # Set border line widths
@@ -499,14 +500,14 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm)
 
-   ax.set_title(str_title, fontsize=14, fontweight="bold")
-   ax.set_xlabel(strx, fontsize=14, weight="black")
-   ax.set_ylabel(stry, fontsize=14, weight="black")
+   ax.set_title(str_title, fontweight="bold")
+   ax.set_xlabel(strx, weight="black")
+   ax.set_ylabel(stry, weight="black")
    ax.set_aspect("equal")
    ax.grid(color="grey", linestyle="-")
 
-   cb = colorbar(h[4]; ax=ax, fraction=0.046, pad=0.04)
-   cb_title = cb.ax.set_ylabel("f(v)", fontsize=14)
+   cb = colorbar(h[4]; ax=ax, fraction=0.046, pad=0.02)
+   cb_title = cb.ax.set_ylabel("f(v)")
 
    if slicetype in ("bperp", "bpar", "bpar1")
       # Draw vector of magnetic field direction
