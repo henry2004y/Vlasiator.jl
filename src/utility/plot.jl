@@ -27,7 +27,7 @@ end
 
 "Set plot-related arguments of `var` in `axisunit`."
 function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
-   @unpack ncells, coordmin, coordmax = meta
+   (;ncells, coordmin, coordmax) = meta
 
    if normal == :x
       seq = @SVector [2,3]
@@ -119,7 +119,7 @@ function prep2d(meta::MetaVLSV, var, op=:none)
 end
 
 function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
-   @unpack idlist, indexlist = pArgs
+   (;idlist, indexlist) = pArgs
 
    data = readvariable(meta, var)
 

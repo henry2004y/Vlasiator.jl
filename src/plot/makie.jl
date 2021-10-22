@@ -1,4 +1,4 @@
-using Vlasiator, UnPack, Printf, StaticArrays
+using Vlasiator, Printf, StaticArrays
 using GLMakie
 
 function Makie.convert_arguments(P::PointBased, meta::MetaVLSV, var)

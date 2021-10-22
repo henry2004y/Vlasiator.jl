@@ -3,7 +3,6 @@ module Vlasiator
 using Requires
 using StaticArrays
 using Printf: @sprintf
-using UnPack
 using LinearAlgebra: ×, dot, ⋅, norm, I
 using Statistics: mean
 using EzXML

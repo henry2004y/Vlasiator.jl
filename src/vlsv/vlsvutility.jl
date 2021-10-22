@@ -7,7 +7,7 @@ Return cell ID containing the given spatial `location`, excluding domain boundar
 Only accept 3D location.
 """
 function getcell(meta::MetaVLSV, loc)
-   @unpack coordmin, coordmax, dcoord, ncells, cellid, maxamr = meta
+   (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
 
    @assert coordmin[1] < loc[1] < coordmax[1] "x coordinate out of bound!"
    @assert coordmin[2] < loc[2] < coordmax[2] "y coordinate out of bound!"
@@ -206,7 +206,7 @@ end
 Return a given cell's coordinates.
 """
 function getcellcoordinates(meta::MetaVLSV, cid::Integer)
-   @unpack ncells, coordmin, coordmax = meta
+   (;ncells, coordmin, coordmax) = meta
    cid -= 1 # for easy divisions
 
    xcell, ycell, zcell = ncells
@@ -236,7 +236,7 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
 end
 
 function isInsideDomain(meta::MetaVLSV, point)
-   @unpack coordmin, coordmax = meta
+   (;coordmin, coordmax) = meta
 
    if coordmin[1] < point[1] ≤ coordmax[1] &&
       coordmin[2] < point[2] ≤ coordmax[2] &&
@@ -254,7 +254,7 @@ Returns cell IDs, distances and coordinates for every cell in a line between two
 points `point1` and `point2`. May be improved later with preallocation!
 """
 function getcellinline(meta::MetaVLSV, point1, point2)
-   @unpack coordmin, coordmax, ncells = meta
+   (;coordmin, coordmax, ncells) = meta
 
    if !isInsideDomain(meta, point1)
       throw(DomainError(point1, "point location outside simulation domain!"))
@@ -324,7 +324,7 @@ order to the cut plane and can be used to select data onto the plane.
 """
 function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
    @assert idim ∈ (1,2,3) "Unknown slice direction $idim"
-   @unpack ncells, maxamr, cellid, cellindex = meta
+   (;ncells, maxamr, cellid, cellindex) = meta
 
    nsize = ncells[idim]
    sliceratio = sliceoffset / (maxCoord - minCoord)
@@ -374,7 +374,7 @@ Generate scalar data on the finest refinement level given cellids `idlist` and v
 `data` on the slice perpendicular to `normal`.
 """
 function refineslice(meta::MetaVLSV, idlist, data, normal)
-   @unpack ncells, maxamr = meta
+   (;ncells, maxamr) = meta
 
    if normal == :x
       dims = SVector{2}([ncells[2], ncells[3]] .* 2^maxamr)
@@ -497,7 +497,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
 function fillmesh(meta::MetaVLSV, vars; verbose=false)
-   @unpack maxamr, fid, footer, ncells, cellid, cellindex = meta
+   (;maxamr, fid, footer, ncells, cellid, cellindex) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
@@ -612,7 +612,7 @@ Convert VLSV file to VTK format.
 - `verbose=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, verbose=false)
-   @unpack ncells, maxamr, dcoord, coordmin = meta
+   (;ncells, maxamr, dcoord, coordmin) = meta
 
    append = ascii ? false : true
 
@@ -693,7 +693,7 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 """
 function save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level, ascii=false,
    append=true)
-   @unpack coordmin, dcoord, ncells = meta
+   (;coordmin, dcoord, ncells) = meta
    origin = (coordmin[1], coordmin[2], coordmin[3])
    ratio = 2^level
    spacing = (dcoord[1] / ratio, dcoord[2] / ratio, dcoord[3] / ratio)
