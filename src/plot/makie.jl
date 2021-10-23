@@ -173,3 +173,75 @@ function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
    
    fig
 end
+
+function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
+   @unpack ncells = meta
+   if haskey(meta.meshes, species)
+      vmesh = meta.meshes[species]
+   else
+      throw(ArgumentError("Unable to detect population $species"))
+   end
+
+   unit == RE && (location .*= Re)
+
+   # Calculate cell ID from given coordinates
+   cidReq = getcell(meta, location)
+   cidNearest = getnearestcellwithvdf(meta, cidReq)
+
+   if verbose
+      @info "Original coordinates : $location"
+      @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
+      @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
+      let 
+         x, y, z = getcellcoordinates(meta, cidNearest)
+         @info "cellid $cidNearest, x = $x, y = $y, z = $z"
+      end
+   end
+
+   vcellids, vcellf = readvcells(meta, cidNearest; species)
+
+   V = getvcellcoordinates(meta, vcellids; species)
+
+
+   fig = Figure()
+   ax = LScene(fig[1, 1], scenekw=(show_axis=true,))
+   
+   x = LinRange(vmesh.vmin[1], vmesh.vmax[1], vmesh.vblock_size[1]*vmesh.vblocks[1])
+   y = LinRange(vmesh.vmin[2], vmesh.vmax[2], vmesh.vblock_size[2]*vmesh.vblocks[2])
+   z = LinRange(vmesh.vmin[3], vmesh.vmax[3], vmesh.vblock_size[3]*vmesh.vblocks[3])
+   
+   lsgrid = labelslidergrid!(
+     fig,
+     ["yz plane - x axis", "xz plane - y axis", "xy plane - z axis"],
+     [1:length(x), 1:length(y), 1:length(z)]
+   )
+   fig[2, 1] = lsgrid.layout
+
+   vcellf = reshape(vcellf, length(x), length(y), length(z))
+   @info maximum(vcellf)
+   @info minimum(vcellf)
+   for i in eachindex(vcellf)
+      if vcellf[i] < 1e-16; vcellf[i] = 1e-16; end
+   end
+
+   cmap = cgrad(:turbo, scale = :log10)
+   plt = volumeslices!(ax, x, y, z, vcellf, colormap=cmap)
+   #TODO: Makie has issue with log scale colormap! 
+   cbar = Colorbar(fig, plt, scale=log10,
+      minorticks = IntervalsBetween(9), minorticksvisible=true)
+
+   fig[1, 2] = cbar
+
+   # connect sliders to `volumeslices` update methods
+   sl_yz, sl_xz, sl_xy = lsgrid.sliders
+   
+   on(sl_yz.value) do v; plt[:update_yz][](v) end
+   on(sl_xz.value) do v; plt[:update_xz][](v) end
+   on(sl_xy.value) do v; plt[:update_xy][](v) end
+   
+   set_close_to!(sl_yz, .5length(x))
+   set_close_to!(sl_xz, .5length(y))
+   set_close_to!(sl_xy, .5length(z))
+   
+   fig
+end
