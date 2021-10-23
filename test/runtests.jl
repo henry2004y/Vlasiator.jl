@@ -80,8 +80,8 @@ end
             metaAMR.coordmin[2], metaAMR.coordmax[2])
 
          data = readvariable(metaAMR, "proton/vg_rho")
-         data = refineslice(metaAMR, idlist, data[indexlist], :y)
-         @test sum(data) ≈ 7.690352275026747e8
+         dataslice = refineslice(metaAMR, idlist, data[indexlist], :y)
+         @test sum(dataslice) ≈ 7.690352275026747e8
          @test_throws AssertionError getslicecell(metaAMR, sliceoffset, 1, -2., -1.)
          # AMR ID finding
          loc = [0.0, 0.0, 0.0]

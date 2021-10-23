@@ -20,7 +20,7 @@ function getcell(meta::MetaVLSV, loc)
       round(UInt, (loc[1] - coordmin[1]) ÷ dx),
       round(UInt, (loc[2] - coordmin[2]) ÷ dy),
       round(UInt, (loc[3] - coordmin[3]) ÷ dz) )
-   # Get the cell id
+   # Get cell id
    cid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
    ncells_lowerlevel = UInt(0)
@@ -53,11 +53,12 @@ file of `meta` actually contains `cid`: it may be shadowed by refined children.
 function getlevel(meta::MetaVLSV, cid::Integer)
    ncell = prod(meta.ncells)
    ilevel = 0
-   while cid > 0
-      cid -= 2^(3*ilevel)*ncell
+   c = Int(cid) - ncell
+   while c > 0
       ilevel += 1
+      c -= 2^(3*ilevel)*ncell
    end
-   ilevel - 1
+   ilevel
 end
 
 """
@@ -267,6 +268,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
    ϵ = eps(Float32)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = point1
+   coef_min = MVector(0.0, 0.0, 0.0)
+   coef_max = MVector(0.0, 0.0, 0.0)
 
    while true
       cid = getcell(meta, p)
@@ -277,8 +280,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       max_bounds = min_bounds + cell_lengths
 
       # Check which face we hit first
-      coef_min = (min_bounds - p) ./ unit_vector
-      coef_max = (max_bounds - p) ./ unit_vector
+      @. coef_min = (min_bounds - p) / unit_vector
+      @. coef_max = (max_bounds - p) / unit_vector
 
       # Negative coefficients indicates the opposite direction
       @inbounds for i = 1:3
