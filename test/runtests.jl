@@ -68,8 +68,8 @@ end
          @test getnearestcellwithvdf(meta, id) == 8
 
          # velocity space reading
-         vcellids, vcellf = readvcells(meta, 2; pop="proton")
-         V = getvcellcoordinates(meta, vcellids; pop="proton")
+         vcellids, vcellf = readvcells(meta, 2; species="proton")
+         V = getvcellcoordinates(meta, vcellids; species="proton")
          @test V[:,end] == Float32[2.45, 1.95, 1.95]
          @test_throws ArgumentError readvcells(meta, 20)
 
@@ -247,7 +247,7 @@ end
          loc = [2.0, 0.0, 0.0]
          p = plot_vdf(meta, loc)
          @test p.get_array()[786] == 229.89486651619364
-         @test_throws ArgumentError plot_vdf(meta, loc, pop="helium")
+         @test_throws ArgumentError plot_vdf(meta, loc, species="helium")
 
          # 2D
          meta = meta2

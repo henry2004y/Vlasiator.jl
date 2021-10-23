@@ -304,15 +304,15 @@ between `:particle` and `:flux`.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
 function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, pop="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI,
+   verbose=false, species="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI,
    slicetype::Symbol=:nothing, vslicethick=0.0, center::Symbol=:nothing,
    weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
 
    @unpack ncells = meta
-   if haskey(meta.meshes, pop)
-      vmesh = meta.meshes[pop]
+   if haskey(meta.meshes, species)
+      vmesh = meta.meshes[species]
    else
-      throw(ArgumentError("Unable to detect population $pop"))
+      throw(ArgumentError("Unable to detect population $species"))
    end
 
    unit == RE && (location .*= Re)
@@ -380,21 +380,18 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    if hasvariable(meta, "moments")
       # This should be a restart file
       Vbulk = readvariable(meta, "restart_V", cidNearest)
-   elseif hasvariable(meta, pop*"/vg_v")
-      # multipop v5 bulk file
-      Vbulk = readvariable(meta, pop*"/vg_v", cidNearest)
-   elseif hasvariable(meta, pop*"/V")
-      # multipop bulk file
-      Vbulk = readvariable(meta, pop*"/V", cidNearest)
+   elseif hasvariable(meta, species*"/vg_v")
+      # Vlasiator 5
+      Vbulk = readvariable(meta, species*"/vg_v", cidNearest)
+   elseif hasvariable(meta, species*"/V")
+      Vbulk = readvariable(meta, species*"/V", cidNearest)
    else
-      # regular bulk file, currently analysator supports pre- and
-      # post-multipop files with "V"
       Vbulk = readvariable(meta, "V", cidNearest)
    end
 
-   vcellids, vcellf = readvcells(meta, cidNearest; pop)
+   vcellids, vcellf = readvcells(meta, cidNearest; species)
 
-   V = getvcellcoordinates(meta, vcellids; pop)
+   V = getvcellcoordinates(meta, vcellids; species)
 
    if center == :bulk # centered with bulk velocity
       verbose && @info "Transforming to plasma frame"
@@ -407,12 +404,12 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    end
 
    # Set sparsity threshold
-   if hasvariable(meta, pop*"/EffectiveSparsityThreshold")
+   if hasvariable(meta, species*"/EffectiveSparsityThreshold")
       fThreshold = readvariable(meta,
-         pop*"/EffectiveSparsityThreshold", cidNearest)
-   elseif hasvariable(meta, pop*"/vg_effectivesparsitythreshold")
+         species*"/EffectiveSparsityThreshold", cidNearest)
+   elseif hasvariable(meta, species*"/vg_effectivesparsitythreshold")
       fThreshold = readvariable(meta,
-         pop+"/vg_effectivesparsitythreshold", cidNearest)
+         species+"/vg_effectivesparsitythreshold", cidNearest)
    else
       verbose && @info "Using a default f threshold value of 1e-16."
       fThreshold = 1e-16

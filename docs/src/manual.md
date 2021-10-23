@@ -8,7 +8,7 @@ file = "bulk.0000004.vlsv"
 meta = load(file)
 ```
 
-This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and populations, which can then be passed into all kinds of methods that process the data. 
+This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and species, which can then be passed into all kinds of methods that process the data.
 
 - Read variable meta data
 ```

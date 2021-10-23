@@ -22,7 +22,7 @@ SUITE["read"]["DCCRG_select"] = @benchmarkable readvariable($meta, "proton/vg_rh
 SUITE["read"]["FG"] = @benchmarkable readvariable($meta, "fg_b")
 file = joinpath(directory, files[1])
 meta = load(file)
-SUITE["read"]["VDF"] = @benchmarkable readvcells($meta, 2; pop="proton")
+SUITE["read"]["VDF"] = @benchmarkable readvcells($meta, 2; species="proton")
 
 SUITE["VTK"] = BenchmarkGroup(["conversion"])
 file = joinpath(directory, files[3])

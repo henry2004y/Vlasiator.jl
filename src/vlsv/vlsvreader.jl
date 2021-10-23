@@ -43,7 +43,7 @@ struct MetaVLSV
    coordmin::SVector{3, Float64}
    coordmax::SVector{3, Float64}
    dcoord::SVector{3, Float64}
-   populations::Vector{String}
+   species::Vector{String}
    meshes::Dict{String, VMeshInfo}
 end
 
@@ -162,8 +162,8 @@ function load(file::AbstractString)
 
    meshes = Dict{String, VMeshInfo}()
 
-   # Find all populations by the BLOCKIDS tag
-   populations = String[]
+   # Find all species by the BLOCKIDS tag
+   species = String[]
 
    for varinfo in findall("//BLOCKIDS", footer)
 
@@ -210,9 +210,9 @@ function load(file::AbstractString)
          end
       end
 
-      # Update list of active populations
-      if popname ∉ populations
-         push!(populations, popname)
+      # Update list of active species
+      if popname ∉ species
+         push!(species, popname)
       end
 
       # Create a new object for this population
@@ -253,7 +253,7 @@ function load(file::AbstractString)
 
    meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid,
       cellindex, timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
-      dcoord, populations, meshes)
+      dcoord, species, meshes)
 end
 
 
@@ -510,19 +510,19 @@ Return the dimension of VLSV data.
 Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 
 """
-    readvcells(meta, cid; pop="proton")
+    readvcells(meta, cid; species="proton")
 
 Read velocity cells from a spatial cell of ID `cid`, and return a map of velocity cell
 ids and corresponding value.
 """
-function readvcells(meta::MetaVLSV, cid; pop="proton")
+function readvcells(meta::MetaVLSV, cid; species="proton")
    @unpack fid, footer = meta
-   @unpack vblock_size = meta.meshes[pop]
+   @unpack vblock_size = meta.meshes[species]
    bsize = prod(vblock_size)
 
    local offset, nblocks
-   let cellsWithVDF = readvector(fid, footer, pop, "CELLSWITHBLOCKS"),
-       nblock_C = readvector(fid, footer, pop, "BLOCKSPERCELL")
+   let cellsWithVDF = readvector(fid, footer, species, "CELLSWITHBLOCKS"),
+       nblock_C = readvector(fid, footer, species, "BLOCKSPERCELL")
       # Check if cells have vspace stored
       if cid ∈ cellsWithVDF
          cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
@@ -581,12 +581,12 @@ end
 
 
 """
-    getvcellcoordinates(meta, vcellids, pop="proton")
+    getvcellcoordinates(meta, vcellids, species="proton")
 
-Return velocity cells' coordinates of population `pop` and id `vcellids`.
+Return velocity cells' coordinates of `species` and `vcellids`.
 """
-function getvcellcoordinates(meta::MetaVLSV, vcellids; pop="proton")
-   @unpack vblocks, vblock_size, dv, vmin = meta.meshes[pop]
+function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
+   @unpack vblocks, vblock_size, dv, vmin = meta.meshes[species]
 
    bsize = prod(vblock_size)
    blockid = @. vcellids ÷ bsize
