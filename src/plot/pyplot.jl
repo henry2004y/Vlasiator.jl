@@ -314,13 +314,6 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    else
       throw(ArgumentError("Unable to detect population $pop"))
    end
-   vxsize = vmesh.vblocks[1] * vmesh.vblock_size[1]
-   vysize = vmesh.vblocks[2] * vmesh.vblock_size[2]
-
-   vxmin, vxmax = vmesh.vmin[1], vmesh.vmax[1]
-   vymin, vymax = vmesh.vmin[2], vmesh.vmax[2]
-
-   cellsize = (vxmax - vxmin) / vxsize # this assumes cubic vspace grid!
 
    unit == RE && (location .*= Re)
 
@@ -336,6 +329,50 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    x, y, z = getcellcoordinates(meta, cidNearest)
    verbose && @info "cellid $cidNearest, x = $x, y = $y, z = $z"
+
+   # Set normal direction
+   if slicetype == :nothing
+      if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
+         slicetype = :xz
+         dir1, dir2 = 1, 3
+      elseif ncells[2] == 1 # polar
+         slicetype = :xz
+         dir1, dir2 = 1, 3
+      elseif ncells[3] == 1 # ecliptic
+         slicetype == :xy
+         dir1, dir2 = 1, 2
+      end
+   elseif slicetype in (:bperp, :bpar, :bpar1)
+      if hasvariable(meta, "B_vol")
+         B = readvariable(meta, "B_vol", cidNearest)
+      elseif hasvariable(meta, "vg_b_vol")
+         B = readvariable(meta, "vg_b_vol", cidNearest)
+      end
+      BxV = B × Vbulk
+      if slicetype == :bperp # slice in b_perp1/b_perp2
+         sliceNormal = B ./ norm(B)
+         strx = L"$v_{B \times V}$ "
+         stry = L"$v_{B \times (B \times V)}$ "
+      elseif slicetype == :bpar1 # slice in b_parallel/b_perp1 plane
+         sliceNormal = B × BxV
+         sliceNormal ./= norm(sliceNormal)
+         strx = L"$v_{B}$ "
+         stry = L"$v_{B \times V}$ "
+      else # slice in b_parallel/b_perp2 plane
+         sliceNormal = BxV ./ norm(BxV)
+         strx = L"$v_{B}$ "
+         stry = L"$v_{B \times (B \times V)}$ "
+      end
+   end
+
+   v1size = vmesh.vblocks[dir1] * vmesh.vblock_size[dir1]
+   v2size = vmesh.vblocks[dir2] * vmesh.vblock_size[dir2]
+
+   v1min, v1max = vmesh.vmin[dir1], vmesh.vmax[dir1]
+   v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
+
+   @assert (v1max - v1min) / v1size ≈ (v2max - v2min) / v2size "Noncubic vgrid detected!"
+   cellsize = (v1max - v1min) / v1size
 
    # Extracts Vbulk
    if hasvariable(meta, "moments")
@@ -385,39 +422,6 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    V = V[:,fselect_]
 
    str_title = @sprintf "t= %4.1fs" meta.time
-
-   # Set normal direction
-   if slicetype == :nothing
-      if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
-         slicetype = :xz
-      elseif ncells[2] == 1 # polar
-         slicetype = :xz
-      elseif ncells[3] == 1 # ecliptic
-         slicetype == :xy
-      end
-   elseif slicetype in (:bperp, :bpar, :bpar1)
-      # If necessary, find magnetic field
-      if hasvariable(meta, "B_vol")
-         B = readvariable(meta, "B_vol", cidNearest)
-      elseif hasvariable(meta, "vg_b_vol")
-         B = readvariable(meta, "vg_b_vol", cidNearest)
-      end
-      BxV = B × Vbulk
-      if slicetype == :bperp # slice in b_perp1/b_perp2
-         sliceNormal = B ./ norm(B)
-         strx = L"$v_{B \times V}$ "
-         stry = L"$v_{B \times (B \times V)}$ "
-      elseif slicetype == :bpar1 # slice in b_parallel/b_perp1 plane
-         sliceNormal = B × BxV
-         sliceNormal ./= norm(sliceNormal)
-         strx = L"$v_{B}$ "
-         stry = L"$v_{B \times V}$ "
-      else # slice in b_parallel/b_perp2 plane
-         sliceNormal = BxV ./ norm(BxV)
-         strx = L"$v_{B}$ "
-         stry = L"$v_{B \times (B \times V)}$ "
-      end
-   end
 
    if slicetype == :xy
       v1 = V[1,:]
@@ -479,14 +483,14 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    # Select cells which are within slice area
    if vslicethick > 0.0
       ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
-         (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+         (v1min < v1 < v1max) & (v2min < v2 < v2max)
    else
-      ind_ = @. (vxmin < v1 < vxmax) & (vymin < v2 < vymax)
+      ind_ = @. (v1min < v1 < v1max) & (v2min < v2 < v2max)
    end
 
    # [m/s] --> [km/s]
-   unitfactor = 1e3
-   v1, v2, fw = v1[ind_]./unitfactor, v2[ind_]./unitfactor, fw[ind_]
+   unitvfactor = 1e3
+   v1, v2, fw = v1[ind_]./unitvfactor, v2[ind_]./unitvfactor, fw[ind_]
 
    isinf(fmin) && (fmin = minimum(fw))
    isinf(fmax) && (fmax = maximum(fw))
@@ -497,10 +501,10 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
 
-   rx = LinRange(vxmin/unitfactor, vxmax/unitfactor, vxsize+1)
-   ry = LinRange(vymin/unitfactor, vymax/unitfactor, vysize+1)
+   r1 = LinRange(v1min/unitvfactor, v1max/unitvfactor, v1size+1)
+   r2 = LinRange(v2min/unitvfactor, v2max/unitvfactor, v2size+1)
 
-   h = ax.hist2d(v1, v2, bins=(rx, ry), weights=fw, norm=cnorm)
+   h = ax.hist2d(v1, v2, bins=(r1, r2), weights=fw, norm=cnorm)
 
    ax.set_title(str_title, fontweight="bold")
    ax.set_xlabel(strx, weight="black")
