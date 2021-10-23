@@ -1,7 +1,7 @@
 # Utility functions for processing VLSV data.
 
 """
-    getcell(meta, location) -> Int
+    getcell(meta, location) -> UInt
 
 Return cell ID containing the given spatial `location`, excluding domain boundaries.
 Only accept 3D location.
@@ -16,35 +16,29 @@ function getcell(meta::MetaVLSV, loc)
    dx, dy, dz = dcoord
 
    # Get cell indices
-   indices = @inbounds floor.(Int,
-      [(loc[1] - coordmin[1])/dx,
-       (loc[2] - coordmin[2])/dy,
-       (loc[3] - coordmin[3])/dz])
-   # Get the cell id
+   indices = @inbounds SVector(
+      round(UInt, (loc[1] - coordmin[1]) ÷ dx),
+      round(UInt, (loc[2] - coordmin[2]) ÷ dy),
+      round(UInt, (loc[3] - coordmin[3]) ÷ dz) )
+   # Get cell id
    cid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
-   # Going through AMR levels as needed
-   ilevel = 0
-   ncells_lowerlevel = 0
+   ncells_lowerlevel = UInt(0)
    ncell = prod(ncells)
 
-   @inbounds while ilevel < maxamr + 1
-      if cid in cellid
-         break
-      else
-         ncells_lowerlevel += 2^(3*ilevel)*ncell
-         ilevel += 1
-         dx *= 0.5; dy *= 0.5; dz *= 0.5
+   @inbounds for ilevel = 0:maxamr
+      cid in cellid && break
 
-         indices = floor.(Int,
-            [(loc[1] - coordmin[1])/dx,
-             (loc[2] - coordmin[2])/dy,
-             (loc[3] - coordmin[3])/dz ])
+      ncells_lowerlevel += 2^(3*ilevel)*ncell
 
-         cid = ncells_lowerlevel + indices[1] +
-            2^(ilevel)*xcells*indices[2] +
-            4^(ilevel)*xcells*ycells*indices[3] + 1
-      end
+      indices = SVector(
+         round(UInt, (loc[1] - coordmin[1]) ÷ dx * 2^(ilevel+1)),
+         round(UInt, (loc[2] - coordmin[2]) ÷ dy * 2^(ilevel+1)),
+         round(UInt, (loc[3] - coordmin[3]) ÷ dz * 2^(ilevel+1)) )
+
+      cid = ncells_lowerlevel + indices[1] +
+         2^(ilevel+1)*ncells[1]*indices[2] +
+         4^(ilevel+1)*ncells[1]*ncells[2]*indices[3] + 1
    end
 
    cid
@@ -59,11 +53,12 @@ file of `meta` actually contains `cid`: it may be shadowed by refined children.
 function getlevel(meta::MetaVLSV, cid::Integer)
    ncell = prod(meta.ncells)
    ilevel = 0
-   while cid > 0
-      cid -= 2^(3*ilevel)*ncell
+   c = Int(cid) - ncell
+   while c > 0
       ilevel += 1
+      c -= 2^(3*ilevel)*ncell
    end
-   ilevel - 1
+   ilevel
 end
 
 """
@@ -262,10 +257,10 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       throw(DomainError(point2, "point location outside simulation domain!"))
    end
 
-   cell_lengths = @inbounds [
-      (coordmax[1]-coordmin[1])/ncells[1],
-      (coordmax[2]-coordmin[2])/ncells[2],
-      (coordmax[3]-coordmin[3])/ncells[3]]
+   cell_lengths = @inbounds SVector(
+      (coordmax[1] - coordmin[1]) / ncells[1],
+      (coordmax[2] - coordmin[2]) / ncells[2],
+      (coordmax[3] - coordmin[3]) / ncells[3] )
 
    distances = [0.0]
    cellids = [getcell(meta, point1)]
@@ -273,6 +268,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
    ϵ = eps(Float32)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = point1
+   coef_min = MVector(0.0, 0.0, 0.0)
+   coef_max = MVector(0.0, 0.0, 0.0)
 
    while true
       cid = getcell(meta, p)
@@ -283,8 +280,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       max_bounds = min_bounds + cell_lengths
 
       # Check which face we hit first
-      coef_min = (min_bounds - p) ./ unit_vector
-      coef_max = (max_bounds - p) ./ unit_vector
+      @. coef_min = (min_bounds - p) / unit_vector
+      @. coef_max = (max_bounds - p) / unit_vector
 
       # Negative coefficients indicates the opposite direction
       @inbounds for i = 1:3
@@ -337,7 +334,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
    nStart = SVector{maxamr+2}(vcat(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))))
 
    indexlist = Int[]
-   idlist = Int[]
+   idlist = UInt[]
 
    cellidsorted = cellid[cellindex]
 
@@ -410,7 +407,7 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       iRange = 0:refineRatio-1
       X, Y = ndgrid(iRange, iRange)
 
-      coords = Array{Int64,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
+      coords = Array{Int,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
       @fastmath for ic in eachindex(a, b), ir = 1:2^(2*(maxamr-i))
          coords[1,ic,ir] = muladd(a[ic], refineRatio, 1+X[ir])
          coords[2,ic,ir] = muladd(b[ic], refineRatio, 1+Y[ir])
