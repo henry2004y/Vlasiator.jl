@@ -456,13 +456,13 @@ Find the nearest spatial cell with VDF saved of a given cell `id` in the file `m
 function getnearestcellwithvdf(meta::MetaVLSV, id)
    cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
-   coords = Matrix{Float32}(undef, 3, length(cells))
+   coords = [zeros(SVector{3, Float32}) for _ in cells]
    @inbounds for i in eachindex(cells)
-      coords[:,i] = getcellcoordinates(meta, cells[i])
+      coords[i] = getcellcoordinates(meta, cells[i])
    end
    coords_orig = getcellcoordinates(meta, id)
-   d2 = sum((coords .- coords_orig).^2, dims=1)
-   cells[argmin(d2)[2]]
+   d2 = [sum((c - coords_orig).^2) for c in coords]
+   cells[argmin(d2)]
 end
 
 """
