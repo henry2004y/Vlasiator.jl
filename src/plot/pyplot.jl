@@ -395,11 +395,14 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    if center == :bulk # centered with bulk velocity
       verbose && @info "Transforming to plasma frame"
-      V -= Vbulk
+      for i in eachindex(V)
+         V[i] = V[i] .- Vbulk
+      end
    elseif center == :peak # centered on highest f-value
-      peakindex = argmax(vcellf)
-      Vpeak = V[:,peakindex]
-      V -= Vpeak
+      Vpeak = maximum(vcellf)
+      for i in eachindex(V)
+         V[i] = V[i] .- Vpeak
+      end
       verbose && "Plot in frame of peak f-value, travelling at speed $Vpeak"
    end
 
@@ -418,14 +421,15 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    # Drop all velocity cells which are below the sparsity threshold
    fselect_ = vcellf .≥ fThreshold
    f = vcellf[fselect_]
-   V = V[:,fselect_]
+   Vselect = V[fselect_]
 
    str_title = @sprintf "t= %4.1fs" meta.time
 
    if slicetype ∈ (:xy, :yz, :xz)
-      v1 = V[dir1,:]
-      v2 = V[dir2,:]
-      vnormal = V[dir3,:]
+      v1 = [v[dir1] for v in Vselect]
+      v2 = [v[dir2] for v in Vselect]
+      vnormal = [v[dir3] for v in Vselect]
+
       strx, stry = getindex(["vx", "vy", "vz"], [dir1, dir2])
    elseif slicetype ∈ (:Bperp, :Bpar, :Bpar1)
       #TODO: NOT working yet!

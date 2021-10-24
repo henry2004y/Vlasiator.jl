@@ -591,23 +591,31 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
    bsize = prod(vblock_size)
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
-   @inbounds blockIndX = @. blockid % vblocks[1]
-   @inbounds blockIndY = @. blockid ÷ vblocks[1] % vblocks[2]
-   @inbounds blockIndZ = @. blockid ÷ (vblocks[1] * vblocks[2])
-   @inbounds blockCoordX = @. blockIndX * dv[1] * vblock_size[1] + vmin[1]
-   @inbounds blockCoordY = @. blockIndY * dv[2] * vblock_size[2] + vmin[2]
-   @inbounds blockCoordZ = @. blockIndZ * dv[3] * vblock_size[3] + vmin[3]
+   blockInd = [SVector(
+      bid % vblocks[1],
+      bid ÷ vblocks[1] % vblocks[2],
+      bid ÷ (vblocks[1] * vblocks[2]) )
+      for bid in blockid]
+   blockCoord = [SVector(
+      bInd[1] * dv[1] * vblock_size[1] + vmin[1],
+      bInd[2] * dv[2] * vblock_size[2] + vmin[2],
+      bInd[3] * dv[3] * vblock_size[3] + vmin[3] )
+      for bInd in blockInd]
+
    # Get cell indices
-   cellids = @. vcellids % bsize
-   @inbounds cellidx = @. cellids % vblock_size[1]
-   @inbounds cellidy = @. cellids ÷ vblock_size[1] % vblock_size[2]
-   @inbounds cellidz = @. cellids ÷ (vblock_size[1] * vblock_size[2])
+   vcellblockids = @. vcellids % bsize
+   cellidxyz = [SVector(
+      cid % vblock_size[1],
+      cid ÷ vblock_size[1] % vblock_size[2],
+      cid ÷ (vblock_size[1] * vblock_size[2]) )
+      for cid in vcellblockids]
+
    # Get cell coordinates
-   cellCoords = Matrix{Float32}(undef, 3, length(cellids))
-   @inbounds @floop for i in eachindex(cellids)
-      cellCoords[1,i] = blockCoordX[i] + (cellidx[i] + 0.5) * dv[1]
-      cellCoords[2,i] = blockCoordY[i] + (cellidy[i] + 0.5) * dv[2]
-      cellCoords[3,i] = blockCoordZ[i] + (cellidz[i] + 0.5) * dv[3]
+   cellCoords = [zeros(SVector{3, Float32}) for _ in vcellblockids]
+   @inbounds for i in eachindex(vcellblockids)
+      cellCoords[i] = SVector(blockCoord[i][1] + (cellidxyz[i][1] + 0.5) * dv[1],
+                              blockCoord[i][2] + (cellidxyz[i][2] + 0.5) * dv[2],
+                              blockCoord[i][3] + (cellidxyz[i][3] + 0.5) * dv[3] )
    end
    cellCoords
 end
