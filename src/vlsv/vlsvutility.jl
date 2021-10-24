@@ -447,14 +447,14 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       iRange = 0:refineRatio-1
       X, Y = ndgrid(iRange, iRange)
 
-      coords = Array{Int,3}(undef, 2, length(a), 2^(2*(maxamr-i)))
-      @fastmath for ic in eachindex(a, b), ir = 1:2^(2*(maxamr-i))
-         coords[1,ic,ir] = muladd(a[ic], refineRatio, 1+X[ir])
-         coords[2,ic,ir] = muladd(b[ic], refineRatio, 1+Y[ir])
+      coords = [SVector(0, 0) for _ in a, _ in 1:2^(2*(maxamr-i))]
+      @fastmath for ir = 1:2^(2*(maxamr-i)), ic in eachindex(a, b)
+         coords[ic,ir] = SVector(muladd(a[ic], refineRatio, 1+X[ir]),
+                                 muladd(b[ic], refineRatio, 1+Y[ir]) )
       end
 
-      for ic in eachindex(d)
-         dpoints[coords[1,ic,:],coords[2,ic,:]] .= d[ic]
+      for ic in eachindex(d), ir = 1:2^(2*(maxamr-i))
+         dpoints[ coords[ic,ir][1], coords[ic,ir][2] ] = d[ic]
       end
 
       nLow = nHigh
