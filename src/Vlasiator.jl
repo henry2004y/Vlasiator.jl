@@ -24,10 +24,10 @@ include("utility/plot.jl")
 export
    # vlsvreader
    MetaVLSV, VarInfo,
-   load, readvariable, readparameter, readvariablemeta, readvcells, getvcellcoordinates,
+   load, readvariable, readparameter, readvariablemeta, readvcells,
    hasvariable, hasparameter, hasname,
    # vlsvutility
-   getcell, getslicecell, getlevel, refineslice, getcellcoordinates,
+   getcell, getslicecell, getlevel, refineslice, getcellcoordinates, getvcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
    getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, issame,
    # plot helper
