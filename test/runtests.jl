@@ -82,7 +82,13 @@ end
          data = readvariable(metaAMR, "proton/vg_rho")
          dataslice = refineslice(metaAMR, idlist, data[indexlist], :y)
          @test sum(dataslice) ≈ 7.690352275026747e8
-         @test_throws AssertionError getslicecell(metaAMR, sliceoffset, 1, -2., -1.)
+         let err = nothing
+            try
+               getslicecell(metaAMR, sliceoffset, 1, -2., -1.)
+            catch err
+            end
+            @test err isa Exception
+         end
          # AMR ID finding
          loc = [0.0, 0.0, 0.0]
          @test getcell(metaAMR, loc) == 0x0000000000001591

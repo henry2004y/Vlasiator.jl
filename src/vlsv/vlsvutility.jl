@@ -9,9 +9,9 @@ Only accept 3D location.
 function getcell(meta::MetaVLSV, loc)
    @unpack coordmin, coordmax, dcoord, ncells, cellid, maxamr = meta
 
-   @assert coordmin[1] < loc[1] < coordmax[1] "x coordinate out of bound!"
-   @assert coordmin[2] < loc[2] < coordmax[2] "y coordinate out of bound!"
-   @assert coordmin[3] < loc[3] < coordmax[3] "z coordinate out of bound!"
+   coordmin[1] < loc[1] < coordmax[1] || error("x coordinate out of bound!")
+   coordmin[2] < loc[2] < coordmax[2] || error("y coordinate out of bound!")
+   coordmin[3] < loc[3] < coordmax[3] || error("z coordinate out of bound!")
 
    dx, dy, dz = dcoord
 
@@ -360,12 +360,12 @@ direction `idim` at `sliceoffset`, and the `indexlist`, which is a mapping from 
 order to the cut plane and can be used to select data onto the plane.
 """
 function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
-   @assert idim ∈ (1,2,3) "Unknown slice direction $idim"
+   idim ∉ (1,2,3) && @error "Unknown slice direction $idim"
    @unpack ncells, maxamr, cellid, cellindex = meta
 
    nsize = ncells[idim]
    sliceratio = sliceoffset / (maxCoord - minCoord)
-   @assert 0.0 ≤ sliceratio ≤ 1.0 "slice plane index out of bound!"
+   0.0 ≤ sliceratio ≤ 1.0 || error("slice plane index out of bound!")
 
    # Find the ids
    nlen = 0
@@ -383,13 +383,14 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
       ids = cellidsorted[nLow .< cellidsorted .≤ nHigh]
       ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 
-      if idim == 1
-         coords = ix
-      elseif idim == 2
-         coords = iy
-      elseif idim == 3
-         coords = iz
-      end
+      coords =
+         if idim == 1
+            ix
+         elseif idim == 2
+            iy
+         else # 3
+            iz
+         end
 
       # Find the cut plane index for each refinement level (0-based)
       depth = floor(Int, sliceratio*nsize*2^ilvl)
