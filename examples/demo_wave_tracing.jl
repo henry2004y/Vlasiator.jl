@@ -63,15 +63,15 @@ function dispersion_fast_perp(k, θ, vS, vA, v, di, ωci)
    dv1 =  √(vS^2 + vA^2) + vbulkpar # propagate along +θ direction
    dv2 = -√(vS^2 + vA^2) + vbulkpar # propagate along -θ direction
 
-   if dv1 > 0; dv1 = 0.0; end
-   if dv2 < 0; dv2 = 0.0; end
+   if dv1 < 0; dv1 = 0.0; end
+   if dv2 > 0; dv2 = 0.0; end
 
    for i in 1:turnindex-1
-      ω[i] = dv1*k[i] /(di * ωci)
+      ω[i] = dv2*k[i] /(di * ωci)
    end
 
    for i in turnindex:length(k)
-      ω[i] = dv2*k[i] /(di * ωci)
+      ω[i] = dv1*k[i] /(di * ωci)
    end
    ω
 end
@@ -81,7 +81,7 @@ function dispersion_bulk_flow(k, θ, v, di, ωci)
    ω = zeros(length(k))
    turnindex = findfirst(>=(0), k)
    vbulkpar = v[1]*cos(θ) + v[2]*sin(θ)
-   irange = vbulkpar < 0 ? (turnindex:length(k)) : (1:turnindex)
+   irange = vbulkpar > 0 ? (turnindex:length(k)) : (1:turnindex)
    for i in irange # otherwise 0
       ω[i] = vbulkpar*k[i] /(di * ωci)
    end
