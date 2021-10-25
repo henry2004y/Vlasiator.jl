@@ -354,34 +354,37 @@ Plot mesh cell centers from axis view `projection`. `projection` should be eithe
 function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marker="+",
    kwargs...)
    @unpack coordmin, coordmax, cellid = meta
-   if projection == "x"
-      sliceoffset = origin - coordmin[1]
-      ids, _ = getslicecell(meta, sliceoffset, 1, coordmin[1], coordmax[1])
-   elseif projection == "y"
-      sliceoffset = origin - coordmin[2]
-      ids, _ = getslicecell(meta, sliceoffset, 2, coordmin[2], coordmax[2])
-   elseif projection == "z"
-      sliceoffset = origin - coordmin[3]
-      ids, _ = getslicecell(meta, sliceoffset, 3, coordmin[3], coordmax[3])
-   else
+   if projection in ("x", "y", "z")
+      dirp, dir1, dir2 =
+         if projection == "x"
+            1, 2, 3
+         elseif projection == "y"
+            2, 1, 3
+         else # "z"
+            3, 1, 2
+         end
+      sliceoffset = origin - coordmin[dirp]
+      ids, _ = getslicecell(meta, sliceoffset, dirp, coordmin[dirp], coordmax[dirp])
+   else # 3D
       ids = cellid
    end
 
-   centers = Matrix{Float32}(undef, 3, length(ids))
+   centers = [zeros(SVector{3, Float32}) for _ in ids]
    for (i, id) in enumerate(ids)
-      @inbounds centers[:,i] = getcellcoordinates(meta, id)
+      @inbounds centers[i] = getcellcoordinates(meta, id)
    end
 
    if isnothing(ax) ax = plt.gca() end
 
-   if projection == "x"
-      s = ax.scatter(centers[2,:], centers[3,:]; marker, kwargs...)
-   elseif projection == "y"
-      s = ax.scatter(centers[1,:], centers[3,:]; marker, kwargs...)
-   elseif projection == "z"
-      s = ax.scatter(centers[1,:], centers[2,:]; marker, kwargs...)
+   if projection in ("x", "y", "z")
+      x1 = getindex.(centers, dir1)
+      x2 = getindex.(centers, dir2)
+      s = ax.scatter(x1, x2; marker, kwargs...)
    else
-      s = ax.scatter(centers[1,:], centers[2,:], centers[3,:]; marker, kwargs...)
+      x1 = getindex.(centers, 1)
+      x2 = getindex.(centers, 2)
+      x3 = getindex.(centers, 3)
+      s = ax.scatter(x1, x2, x3; marker, kwargs...)
    end
    s
 end

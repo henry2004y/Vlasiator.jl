@@ -226,13 +226,7 @@ end
          plot(meta, "proton/vg_rho")
          line = gca().lines[1]
          @test line.get_ydata() == meta["proton/vg_rho"]
-         centers = plotmesh(meta, projection="x")
-         points = centers.get_offsets()
-         @test size(points) == (1, 2)
          centers = plotmesh(meta, projection="y")
-         points = centers.get_offsets()
-         @test size(points) == (10, 2)
-         centers = plotmesh(meta, projection="z")
          points = centers.get_offsets()
          @test size(points) == (10, 2)
          fig = plt.figure()
