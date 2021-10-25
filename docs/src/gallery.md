@@ -18,8 +18,19 @@
 * Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
 ![](figures/magnetosphere_earth_proton_density_3cuts.png)
 
-* Proton phase space distribution
+* Proton phase space distribution projected onto xz plane
 ![](figures/phase_space_distribution.png)
+
+## Makie
+
+* Proton phase space distribution projected onto xz plane
+![](figures/VDF_slice.png)
+
+* Proton phase space distribution projected onto three orthogonal planes
+![](figures/VDF_slices.png)
+
+* Proton phase space distribution
+![](figures/VDF_volume.png)
 
 ## ParaView
 
