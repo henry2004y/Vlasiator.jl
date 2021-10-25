@@ -9,8 +9,8 @@ export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
 end
 
 matplotlib.rc("font", size=14)
-matplotlib.rc("xtick", labelsize=10) 
-matplotlib.rc("ytick", labelsize=10) 
+matplotlib.rc("xtick", labelsize=10)
+matplotlib.rc("ytick", labelsize=10)
 
 """
     plot(meta, var, ax=nothing; kwargs)
@@ -291,7 +291,8 @@ end
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
 # Optional arguments
-- `unit::AxisUnit`: axis unit in `SI`, `RE`.
+- `unit::AxisUnit`: location unit in `SI`, `RE`.
+- `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
 - `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.
 - `center`: symbol for setting the reference frame from :bulk, :peak.
@@ -299,198 +300,23 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
 velocity is selected!
+- `fmin, fmax`: minimum and maximum VDF values for plotting.
 - `weight::Symbol`: choosing distribution weights from phase space density or particle flux
 between `:particle` and `:flux`.
+- `flimit`: minimum VDF threshold for plotting.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
 function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, species="proton", fmin=-Inf, fmax=Inf, unit::AxisUnit=SI,
-   slicetype::Symbol=:nothing, vslicethick=0.0, center::Symbol=:nothing,
-   weight::Symbol=:particle, fThreshold=-1.0, kwargs...)
+   verbose=false, species="proton", fmin=-Inf, fmax=Inf, unit=SI, unitv="km/s", 
+   slicetype=:nothing, vslicethick=0.0, center=:nothing, weight=:particle, flimit=-1.0,
+   kwargs...)
 
-   @unpack ncells = meta
-   if haskey(meta.meshes, species)
-      vmesh = meta.meshes[species]
-   else
-      throw(ArgumentError("Unable to detect population $species"))
-   end
+   v1, v2, r1, r2, fweight, strx, stry, str_title =
+      prep_vdf(meta, location;
+         species, unit, unitv, slicetype, vslicethick, center, weight, flimit, verbose)
 
-   unit == RE && (location .*= Re)
-
-   # Calculate cell ID from given coordinates
-   cidReq = getcell(meta, location)
-   cidNearest = getnearestcellwithvdf(meta, cidReq)
-
-   if verbose
-      @info "Original coordinates : $location"
-      @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
-      @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
-   end
-
-   x, y, z = getcellcoordinates(meta, cidNearest)
-   verbose && @info "cellid $cidNearest, x = $x, y = $y, z = $z"
-
-   # Set normal direction
-   if slicetype == :nothing
-      if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
-         slicetype = :xz
-      elseif ncells[2] == 1 # polar
-         slicetype = :xz
-      elseif ncells[3] == 1 # ecliptic
-         slicetype = :xy
-      end
-   end
-
-   if slicetype == :xy
-      dir1, dir2, dir3 = 1, 2, 3
-      sliceNormal = [0., 0., 1.]
-   elseif slicetype == :xz
-      dir1, dir2, dir3 = 1, 3, 2
-      sliceNormal = [0., 1., 0.]
-   elseif slicetype == :yz
-      dir1, dir2, dir3 = 2, 3, 1
-      sliceNormal = [1., 0., 0.]
-   elseif slicetype in (:bperp, :bpar, :bpar1)
-      if hasvariable(meta, "B_vol")
-         B = readvariable(meta, "B_vol", cidNearest)
-      elseif hasvariable(meta, "vg_b_vol")
-         B = readvariable(meta, "vg_b_vol", cidNearest)
-      end
-      BxV = B × Vbulk
-      if slicetype == :bperp # slice in b_perp1/b_perp2
-         sliceNormal = B ./ norm(B)
-      elseif slicetype == :bpar1 # slice in b_parallel/b_perp1 plane
-         sliceNormal = B × BxV
-         sliceNormal ./= norm(sliceNormal)
-      else # slice in b_parallel/b_perp2 plane
-         sliceNormal = BxV ./ norm(BxV)
-      end
-   end
-   
-   v1size = vmesh.vblocks[dir1] * vmesh.vblock_size[dir1]
-   v2size = vmesh.vblocks[dir2] * vmesh.vblock_size[dir2]
-
-   v1min, v1max = vmesh.vmin[dir1], vmesh.vmax[dir1]
-   v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
-
-   @assert (v1max - v1min) / v1size ≈ (v2max - v2min) / v2size "Noncubic vgrid detected!"
-   cellsize = (v1max - v1min) / v1size
-
-   # Extracts Vbulk
-   if hasvariable(meta, "moments")
-      # This should be a restart file
-      Vbulk = readvariable(meta, "restart_V", cidNearest)
-   elseif hasvariable(meta, species*"/vg_v")
-      # Vlasiator 5
-      Vbulk = readvariable(meta, species*"/vg_v", cidNearest)
-   elseif hasvariable(meta, species*"/V")
-      Vbulk = readvariable(meta, species*"/V", cidNearest)
-   else
-      Vbulk = readvariable(meta, "V", cidNearest)
-   end
-
-   vcellids, vcellf = readvcells(meta, cidNearest; species)
-
-   V = getvcellcoordinates(meta, vcellids; species)
-
-   if center == :bulk # centered with bulk velocity
-      verbose && @info "Transforming to plasma frame"
-      for i in eachindex(V)
-         V[i] = V[i] .- Vbulk
-      end
-   elseif center == :peak # centered on highest f-value
-      Vpeak = maximum(vcellf)
-      for i in eachindex(V)
-         V[i] = V[i] .- Vpeak
-      end
-      verbose && "Plot in frame of peak f-value, travelling at speed $Vpeak"
-   end
-
-   # Set sparsity threshold
-   if hasvariable(meta, species*"/EffectiveSparsityThreshold")
-      fThreshold = readvariable(meta,
-         species*"/EffectiveSparsityThreshold", cidNearest)
-   elseif hasvariable(meta, species*"/vg_effectivesparsitythreshold")
-      fThreshold = readvariable(meta,
-         species+"/vg_effectivesparsitythreshold", cidNearest)
-   else
-      verbose && @info "Using a default f threshold value of 1e-16."
-      fThreshold = 1e-16
-   end
-
-   # Drop all velocity cells which are below the sparsity threshold
-   fselect_ = vcellf .≥ fThreshold
-   f = vcellf[fselect_]
-   Vselect = V[fselect_]
-
-   str_title = @sprintf "t= %4.1fs" meta.time
-
-   if slicetype ∈ (:xy, :yz, :xz)
-      v1 = [v[dir1] for v in Vselect]
-      v2 = [v[dir2] for v in Vselect]
-      vnormal = [v[dir3] for v in Vselect]
-
-      strx, stry = getindex(["vx", "vy", "vz"], [dir1, dir2])
-   elseif slicetype ∈ (:Bperp, :Bpar, :Bpar1)
-      #TODO: NOT working yet!
-      if slicetype == :Bperp
-         v1 = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
-         v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-         vnormal = Vrot2[3,:] # the Z axis of the slice is B
-         strx = L"$v_{B \times V}$"
-         stry = L"$v_{B \times (B \times V)}$"
-      elseif slicetype == :Bpar
-         v1 = Vrot2[3,:] # the X axis of the slice is B
-         v2 = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-         vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
-         strx = L"$v_{B}$"
-         stry = L"$v_{B \times V}$"
-      elseif slicetype == :Bpar1
-         v1 = Vrot2[3,:] # the X axis of the slice is B
-         v2 = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
-         vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
-         strx = L"$v_{B}$"
-         stry = L"$v_{B \times (B \times V)}$"
-      end
-   end
-
-   strx *= " [km/s]"
-   stry *= " [km/s]"
-
-   # Weights using particle flux or phase-space density
-   fw = weight == :flux ? f*norm([v1, v2, vnormal]) : f
-
-   if verbose
-      if vslicethick > 0
-         @info "Performing slice with a counting thickness of $vslicethick"
-      else
-         @info "Projecting total VDF to a single plane"
-      end
-   end
-
-   if vslicethick < 0 # Trying to set a proper value automatically
-      # Assure that the slice cut through at least 1 velocity cell
-      if any(sliceNormal .== 1.0)
-         vslicethick = cellsize
-      else # Assume cubic vspace grid, add extra space
-         vslicethick = cellsize*(√3+0.05)
-      end
-   end
-
-   # Select cells which are within slice area
-   if vslicethick > 0.0
-      ind_ = @. (abs(vnormal) ≤ 0.5*vslicethick) &
-         (v1min < v1 < v1max) & (v2min < v2 < v2max)
-   else
-      ind_ = @. (v1min < v1 < v1max) & (v2min < v2 < v2max)
-   end
-
-   # [m/s] --> [km/s]
-   unitvfactor = 1e3
-   v1, v2, fw = v1[ind_]./unitvfactor, v2[ind_]./unitvfactor, fw[ind_]
-
-   isinf(fmin) && (fmin = minimum(fw))
-   isinf(fmax) && (fmax = maximum(fw))
+   isinf(fmin) && (fmin = minimum(fweight))
+   isinf(fmax) && (fmax = maximum(fweight))
 
    verbose && @info "Active f range is $fmin, $fmax"
 
@@ -498,18 +324,17 @@ function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
 
-   r1 = LinRange(v1min/unitvfactor, v1max/unitvfactor, v1size+1)
-   r2 = LinRange(v2min/unitvfactor, v2max/unitvfactor, v2size+1)
-
-   h = ax.hist2d(v1, v2, bins=(r1, r2), weights=fw, norm=cnorm)
+   h = ax.hist2d(v1, v2, bins=(r1, r2), weights=fweight, norm=cnorm)
 
    ax.set_title(str_title, fontweight="bold")
    ax.set_xlabel(strx, weight="black")
    ax.set_ylabel(stry, weight="black")
    ax.set_aspect("equal")
    ax.grid(color="grey", linestyle="-")
+   ax.tick_params(direction="in")
 
-   cb = colorbar(h[4]; ax=ax, fraction=0.046, pad=0.02)
+   cb = colorbar(h[4]; ax, fraction=0.046, pad=0.02)
+   cb.ax.tick_params(direction="in")
    cb_title = cb.ax.set_ylabel("f(v)")
 
    if slicetype in (:bperp, :bpar, :bpar1)
