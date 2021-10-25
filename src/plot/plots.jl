@@ -47,7 +47,7 @@ using RecipesBase, Printf, UnPack
       pArgs = set_args(meta, var, axisunit; normal, origin)
       data = prep2dslice(meta, var, normal, pArgs)'
       x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
-   
+
       @series begin
          seriestype --> :heatmap  # use := if you want to force it
          seriescolor --> :turbo
@@ -55,4 +55,44 @@ using RecipesBase, Printf, UnPack
          x, y, data
       end
    end
+end
+
+@userplot VDFSlice
+
+@recipe function f(h::VDFSlice; species="proton", unit=SI, unitv="km/s", slicetype=:nothing,
+   vslicethick=0.0, center=:nothing, fmin=-Inf, fmax=Inf, weight=:particle, flimit=-1.0,
+   verbose=false)
+
+   if length(h.args) != 2 || !(typeof(h.args[1]) == MetaVLSV) ||
+      !(length(h.args[2]) == 3)
+      error("Input argument error for VDF slices.  Got: $(typeof.(h.args))")
+   end
+   meta, location = h.args
+
+   v1, v2, r1, r2, fweight, strx, stry, str_title =
+      Vlasiator.prep_vdf(meta, location;
+         species, unit, unitv, slicetype, vslicethick, center, weight, flimit, verbose)
+
+   isinf(fmin) && (fmin = minimum(fweight))
+   isinf(fmax) && (fmax = maximum(fweight))
+
+   verbose && @info "Active f range is $fmin, $fmax"
+
+   # setups
+   legend := false
+   grid := true
+
+   #TODO: Plots 1.22.6 needs improvements on colorbar!
+   @series begin
+      seriestype := :histogram2d
+      seriescolor --> :turbo
+      colorbar := true
+      colorbar_scale --> :log10
+      clims --> (fmin, fmax)
+      colorbar_title := "f(v)"
+      weights --> fweight
+      bins --> r1, r2
+      v1, v2
+   end
+
 end

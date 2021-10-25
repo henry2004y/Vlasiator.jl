@@ -76,7 +76,7 @@ end
          # AMR data reading, DCCRG grid
          metaAMR = meta3
          sliceoffset = abs(metaAMR.coordmin[2])
-         idlist, indexlist = getslicecell(metaAMR, sliceoffset, 2, 
+         idlist, indexlist = getslicecell(metaAMR, sliceoffset, 2,
             metaAMR.coordmin[2], metaAMR.coordmax[2])
 
          data = readvariable(metaAMR, "proton/vg_rho")
@@ -277,6 +277,9 @@ end
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :line &&
             rec[1].args[1] isa LinRange
+
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), VDFSlice((meta,[0.0,0.0,0.0])))
+         @test getfield(rec[1], 1)[:seriestype] == :histogram2d
 
          # 2D
          meta = meta2
