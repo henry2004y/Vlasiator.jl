@@ -43,16 +43,16 @@ function extract_var(files, varname, cellids, distances, component=0)
       interp_linear = LinearInterpolation(distances, var_line)
       var_line_resample = interp_linear.(sample_loc)
       var_line_smooth = imfilter(var_line_resample, Kernel.gaussian((3,)))
-      
+
       var[:,i] = var_line_smooth
    end
    var
 end
 
-"CFL constrained normlized frequency."
+"CFL constrained normalized frequency."
 dispersion_CFL(k, dx, dt, di, ωci) = dx/dt * abs(k) /(di * ωci)
 
-"Fast magnetosonic waves normalized frequency with Doppler shift."
+"Normalized frequency of fast magnetosonic waves along angle `θ` with Doppler shift."
 function dispersion_fast_perp(k, θ, vS, vA, v, di, ωci)
    ω = zeros(length(k))
 
@@ -61,27 +61,27 @@ function dispersion_fast_perp(k, θ, vS, vA, v, di, ωci)
    vbulkpar = v[1]*cos(θ) + v[2]*sin(θ)
 
    dv1 =  √(vS^2 + vA^2) + vbulkpar # propagate along +θ direction
-   dv2 = -√(vS^2 + vA^2) - vbulkpar # propagate along -θ direction
+   dv2 = -√(vS^2 + vA^2) + vbulkpar # propagate along -θ direction
 
-   if dv1 < 0; dv1 = 0.0; end
-   if dv2 > 0; dv2 = 0.0; end
+   if dv1 > 0; dv1 = 0.0; end
+   if dv2 < 0; dv2 = 0.0; end
 
    for i in 1:turnindex-1
-      ω[i] = dv2*k[i] /(di * ωci)
-   end   
+      ω[i] = dv1*k[i] /(di * ωci)
+   end
 
    for i in turnindex:length(k)
-      ω[i] = dv1*k[i] /(di * ωci)
+      ω[i] = dv2*k[i] /(di * ωci)
    end
    ω
 end
 
-"Bulk flow normalized frequency with Doppler shift."
+"Normalized frequency of bulk flow along tilted angle `θ`."
 function dispersion_bulk_flow(k, θ, v, di, ωci)
    ω = zeros(length(k))
    turnindex = findfirst(>=(0), k)
    vbulkpar = v[1]*cos(θ) + v[2]*sin(θ)
-   irange = vbulkpar > 0 ? (turnindex:length(k)) : (1:turnindex)
+   irange = vbulkpar < 0 ? (turnindex:length(k)) : (1:turnindex)
    for i in irange # otherwise 0
       ω[i] = vbulkpar*k[i] /(di * ωci)
    end
@@ -391,7 +391,7 @@ dtfile = 0.5                          # output interval, [s]
 Δt   = 0.0147176                      # discrete time step from runlog, [s]
 
 meta = load(files[1])
-   
+
 if ispolar(meta) # polar plane
    @error "not implemented!"
 end
