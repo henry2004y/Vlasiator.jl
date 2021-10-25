@@ -159,7 +159,7 @@ function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
 
    fig = Figure()
 
-   heatmap(fig[1, 1], slice)
+   heatmap!(fig[1, 1], slice)
 
    nsize = meta.ncells[dir]
    depth = nsize*2^meta.maxamr
@@ -206,6 +206,9 @@ function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
 
    fig = Figure()
    ax = Axis3(fig[1, 1], aspect=(1,1,1), title = "VDF at $cellused in log scale")
+   ax.xlabel = "vx [m/s]"
+   ax.ylabel = "vy [m/s]"
+   ax.zlabel = "vz [m/s]"
 
    x = LinRange(vmesh.vmin[1], vmesh.vmax[1], vmesh.vblock_size[1]*vmesh.vblocks[1])
    y = LinRange(vmesh.vmin[2], vmesh.vmax[2], vmesh.vblock_size[2]*vmesh.vblocks[2])
@@ -221,8 +224,6 @@ function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
    fig[2, 1] = lsgrid.layout
 
    vcellf = reshape(vcellf, length(x), length(y), length(z))
-   @info maximum(vcellf)
-   @info minimum(vcellf)
    for i in eachindex(vcellf)
       if vcellf[i] < 1e-16; vcellf[i] = 1e-16; end
    end
@@ -248,6 +249,76 @@ function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
    set_close_to!(sl_yz, .5length(x))
    set_close_to!(sl_xz, .5length(y))
    set_close_to!(sl_xy, .5length(z))
+
+   fig
+end
+
+function vdfvolume(meta, location; species="proton", unit=SI, flimit=-1.0, verbose=false)
+   @unpack ncells = meta
+   if haskey(meta.meshes, species)
+      vmesh = meta.meshes[species]
+   else
+      throw(ArgumentError("Unable to detect population $species"))
+   end
+
+   unit == RE && (location .*= Re)
+
+   # Calculate cell ID from given coordinates
+   cidReq = getcell(meta, location)
+   cidNearest = getnearestcellwithvdf(meta, cidReq)
+
+   cellused = getcellcoordinates(meta, cidNearest)
+
+   if verbose
+      @info "Original coordinates : $location"
+      @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
+      @info "Nearest cell with VDF: $cellused"
+      let
+         x, y, z = getcellcoordinates(meta, cidNearest)
+         @info "cellid $cidNearest, x = $x, y = $y, z = $z"
+      end
+   end
+
+   vcellids, vcellf = readvcells(meta, cidNearest; species)
+
+   V = getvcellcoordinates(meta, vcellids; species)
+
+   # Set sparsity threshold
+   if flimit < 0
+      flimit =
+         if hasvariable(meta, species*"/vg_effectivesparsitythreshold")
+            readvariable(meta, species*"/vg_effectivesparsitythreshold", cidNearest)
+         elseif hasvariable(meta, species*"/EffectiveSparsityThreshold")
+            readvariable(meta, species*"/EffectiveSparsityThreshold", cidNearest)
+         else
+            1e-16
+         end
+   end
+
+   # Drop velocity cells which are below the sparsity threshold
+   findex_ = vcellf .≥ flimit
+   fselect = vcellf[findex_]
+   Vselect = V[findex_]
+
+   cmap = :turbo
+   colors = to_colormap(cmap, 101)
+   alphas = LinRange(0, 1, 101)
+   cmap_alpha = RGBAf0.(colors, alphas)
+
+   fig = Figure()
+   ax = Axis3(fig[1, 1], aspect=(1,1,1), title = "VDF at $cellused in log scale")
+   ax.xlabel = "vx [m/s]"
+   ax.ylabel = "vy [m/s]"
+   ax.zlabel = "vz [m/s]"
+   #TODO: wait for https://github.com/JuliaPlots/Makie.jl/pull/1404   
+   plt = meshscatter!(ax, Vselect, color=log10.(fselect),
+      marker=FRect3D(Vec3f0(0), Vec3f0(4*vmesh.dv[1])),
+      colormap=cmap_alpha,
+      transparency=true, shading=false)
+
+   cbar = Colorbar(fig, plt, label="f(v)")
+
+   fig[1, 2] = cbar
 
    fig
 end
