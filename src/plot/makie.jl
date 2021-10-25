@@ -1,4 +1,4 @@
-using Vlasiator, UnPack, Printf, StaticArrays
+using Vlasiator, StatsBase, Printf, UnPack, StaticArrays
 using GLMakie
 
 function Makie.convert_arguments(P::PointBased, meta::MetaVLSV, var)
@@ -13,7 +13,7 @@ function Makie.convert_arguments(P::SurfaceLike, meta::MetaVLSV, var;
    pArgs = Vlasiator.set_args(meta, var, axisunit)
    x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
    data = Vlasiator.prep2d(meta, var, op)
-   
+
    (x, y, data)
 end
 
@@ -71,14 +71,14 @@ function Makie.plot!(vlplot::Viz)
 
       x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
       data = Vlasiator.prep2d(meta, var, op)
-   
+
       if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
          rho_ = findfirst(endswith("rho"), meta.variable)
          if !isnothing(rho_)
             rho = readvariable(meta, meta.variable[rho_])
             rho = reshape(rho, pArgs.sizes[1], pArgs.sizes[2])
             mask = findall(==(0.0), rho)
-   
+
             if ndims(data) == 2
                @inbounds data[mask] .= NaN
             else
@@ -122,7 +122,7 @@ function vlheatmap(meta, var; addcolorbar=true, axisunit=RE, kwargs...)
    fig = Figure()
    c = viz(fig[1,1], meta, var; axisunit, kwargs...)
    c.axis.title = @sprintf "t= %4.1fs" meta.time
-   # TODO: current limitation in Makie 0.15 that no conversion from initial String type
+   # TODO: current limitation in Makie 0.15.1: no conversion from initial String type
    c.axis.xlabel = pArgs.strx
    c.axis.ylabel = pArgs.stry
    c.axis.autolimitaspect = 1
@@ -149,7 +149,7 @@ function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
    x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
 
    sliceindex = Node(1)
-   
+
    slice = @lift(
       begin
          origin = ($sliceindex-1)*dx + meta.coordmin[dir]
@@ -158,7 +158,7 @@ function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
       end)
 
    fig = Figure()
-   
+
    heatmap(fig[1, 1], slice)
 
    nsize = meta.ncells[dir]
@@ -170,7 +170,7 @@ function vlslice(meta, var; normal=:y, axisunit=RE, op=:mag)
    fig[2, 1] = ls.layout
 
    connect!(sliceindex, ls[1].value)
-   
+
    fig
 end
 
@@ -188,11 +188,13 @@ function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
    cidReq = getcell(meta, location)
    cidNearest = getnearestcellwithvdf(meta, cidReq)
 
+   cellused = getcellcoordinates(meta, cidNearest)
+
    if verbose
       @info "Original coordinates : $location"
       @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
-      @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
-      let 
+      @info "Nearest cell with VDF: $cellused"
+      let
          x, y, z = getcellcoordinates(meta, cidNearest)
          @info "cellid $cidNearest, x = $x, y = $y, z = $z"
       end
@@ -202,18 +204,19 @@ function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
 
    V = getvcellcoordinates(meta, vcellids; species)
 
-
    fig = Figure()
-   ax = LScene(fig[1, 1], scenekw=(show_axis=true,))
-   
+   ax = Axis3(fig[1, 1], aspect=(1,1,1), title = "VDF at $cellused in log scale")
+
    x = LinRange(vmesh.vmin[1], vmesh.vmax[1], vmesh.vblock_size[1]*vmesh.vblocks[1])
    y = LinRange(vmesh.vmin[2], vmesh.vmax[2], vmesh.vblock_size[2]*vmesh.vblocks[2])
    z = LinRange(vmesh.vmin[3], vmesh.vmax[3], vmesh.vblock_size[3]*vmesh.vblocks[3])
-   
+
    lsgrid = labelslidergrid!(
      fig,
-     ["yz plane - x axis", "xz plane - y axis", "xy plane - z axis"],
-     [1:length(x), 1:length(y), 1:length(z)]
+     ["vx", "vy", "vz"],
+     [1:length(x), 1:length(y), 1:length(z)],
+     formats = [i -> "$(round(x[i], digits=2))",
+         i -> "$(round(y[i], digits=2))", i -> "$(round(z[i], digits=2))"]
    )
    fig[2, 1] = lsgrid.layout
 
@@ -224,24 +227,89 @@ function vdfslices(meta, location; species="proton", unit=SI, verbose=false)
       if vcellf[i] < 1e-16; vcellf[i] = 1e-16; end
    end
 
-   cmap = cgrad(:turbo, scale = :log10)
-   plt = volumeslices!(ax, x, y, z, vcellf, colormap=cmap)
-   #TODO: Makie has issue with log scale colormap! 
-   cbar = Colorbar(fig, plt, scale=log10,
-      minorticks = IntervalsBetween(9), minorticksvisible=true)
+   data = [isinf(x) ? NaN : x for x in log10.(vcellf)]
+
+   plt = volumeslices!(ax, x, y, z, data, colormap=:viridis)
+   #TODO: wait for https://github.com/JuliaPlots/Makie.jl/pull/1404
+   cbar = Colorbar(fig, plt,
+      label="f(v)",
+      minorticks = IntervalsBetween(9),
+      minorticksvisible=true)
 
    fig[1, 2] = cbar
 
-   # connect sliders to `volumeslices` update methods
+   # connect sliders to volumeslices update methods
    sl_yz, sl_xz, sl_xy = lsgrid.sliders
-   
+
    on(sl_yz.value) do v; plt[:update_yz][](v) end
    on(sl_xz.value) do v; plt[:update_xz][](v) end
    on(sl_xy.value) do v; plt[:update_xy][](v) end
-   
+
    set_close_to!(sl_yz, .5length(x))
    set_close_to!(sl_xz, .5length(y))
    set_close_to!(sl_xy, .5length(z))
-   
+
+   fig
+end
+
+struct LogMinorTicks end
+
+function MakieLayout.get_minor_tickvalues(::LogMinorTicks, scale, tickvalues, vmin, vmax)
+   vals = Float64[]
+   extended_tickvalues = [
+      tickvalues[1] - (tickvalues[2] - tickvalues[1]);
+      tickvalues;
+      tickvalues[end] + (tickvalues[end] - tickvalues[end-1]);
+   ]
+   for (lo, hi) in zip(
+        @view(extended_tickvalues[1:end-1]),
+        @view(extended_tickvalues[2:end])
+     )
+       interval = hi-lo
+       steps = log10.(LinRange(10^lo, 10^hi, 11))
+       append!(vals, steps[2:end-1])
+   end
+   return filter(x -> vmin < x < vmax, vals)
+end
+
+custom_formatter(values) = map(
+  v -> "10" * Makie.UnicodeFun.to_superscript(round(Int64, v)),
+  values
+)
+
+function vdfslice(meta, location;
+   species="proton", unit=SI, unitv="km/s", slicetype=:nothing, vslicethick=0.0,
+   center=:nothing, fmin=-Inf, fmax=Inf, weight=:particle, flimit=-1.0, verbose=false)
+
+   v1, v2, r1, r2, fweight, strx, stry, str_title =
+      Vlasiator.prep_vdf(meta, location;
+         species, unit, unitv, slicetype, vslicethick, center, weight, flimit, verbose)
+
+   isinf(fmin) && (fmin = minimum(fweight))
+   isinf(fmax) && (fmax = maximum(fweight))
+
+   verbose && @info "Active f range is $fmin, $fmax"
+
+   h = fit(Histogram, (v1, v2), weights(fweight), (r1, r2))
+
+   clims = (fmin, maximum(h.weights))
+
+   data = [isinf(x) ? NaN : x for x in log10.(h.weights)]
+
+   fig = Figure()
+
+   ax, hm = heatmap(fig[1, 1],  r1, r2, data,
+      colormap=:turbo, colorrange=log10.(clims))
+
+   cb = Colorbar(fig[1, 2], hm;
+      label="f(v)",
+      tickformat=custom_formatter,
+      minorticksvisible=true,
+      minorticks=LogMinorTicks() )
+
+   ax.title = str_title
+   ax.xlabel = strx
+   ax.ylabel = stry
+
    fig
 end
