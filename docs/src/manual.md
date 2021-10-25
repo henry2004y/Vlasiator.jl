@@ -180,10 +180,10 @@ pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 
 - Velocity distribution function near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
 ```
-plot_vdf(meta, coordinates)
+vdfslice(meta, coordinates)
 ```
 
-- Extracted quantity line plot:
+- Extracted quantity line plot
 ```
 rho_extract = vec(rho_extract)
 loc = range(x1, x2, length=length(rho_extract))

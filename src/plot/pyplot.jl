@@ -2,7 +2,7 @@
 
 using PyPlot
 
-export plot, pcolormesh, pcolormeshslice, plot_vdf, streamplot, quiver, plotmesh
+export plot, pcolormesh, pcolormeshslice, vdfslice, streamplot, quiver, plotmesh
 
 @static if matplotlib.__version__ >= "3.3"
    matplotlib.rc("image", cmap="turbo") # set default colormap
@@ -286,7 +286,7 @@ function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
 end
 
 """
-    plot_vdf(meta, location, ax=nothing; kwargs...)
+    vdfslice(meta, location, ax=nothing; kwargs...)
 
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
@@ -306,8 +306,8 @@ between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
-function plot_vdf(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, species="proton", fmin=-Inf, fmax=Inf, unit=SI, unitv="km/s", 
+function vdfslice(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
+   verbose=false, species="proton", fmin=-Inf, fmax=Inf, unit=SI, unitv="km/s",
    slicetype=:nothing, vslicethick=0.0, center=:nothing, weight=:particle, flimit=-1.0,
    kwargs...)
 

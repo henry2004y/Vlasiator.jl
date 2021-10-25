@@ -245,9 +245,9 @@ end
          @test_throws ArgumentError pcolormesh(meta, "proton/vg_rho")
 
          loc = [2.0, 0.0, 0.0]
-         p = plot_vdf(meta, loc)
+         p = vdfslice(meta, loc)
          @test p.get_array()[786] == 229.89486651619364
-         @test_throws ArgumentError plot_vdf(meta, loc, species="helium")
+         @test_throws ArgumentError vdfslice(meta, loc, species="helium")
 
          # 2D
          meta = meta2
@@ -270,6 +270,7 @@ end
       end
 
       @testset "Plots" begin
+         isdefined(Main, :PyPlot) && import Vlasiator.vdfslice
          include("../src/plot/plots.jl")
          RecipesBase.is_key_supported(k::Symbol) = true
          # 1D
