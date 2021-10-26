@@ -3,6 +3,7 @@
 ## Loading VLSV data
 
 - Read meta data
+
 ```
 file = "bulk.0000004.vlsv"
 meta = load(file)
@@ -11,6 +12,7 @@ meta = load(file)
 This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and species, which can then be passed into all kinds of methods that process the data.
 
 - Read variable meta data
+
 ```
 readvariablemeta(meta, "proton/vg_rho")
 ```
@@ -18,6 +20,7 @@ readvariablemeta(meta, "proton/vg_rho")
 A list of utility functions has been implemented for checking variable status. See [here](internal.md#Vlasiator.hasname-Tuple{Any, Any, Any}) for the full list. 
 
 - Read variable
+
 ```
 data = meta["proton/vg_rho"]
 # Or equivalently
@@ -27,6 +30,7 @@ data = readvariable(meta, "proton/vg_rho")
 The variable reading is designed for cells, which takes cell ID(s) as inputs, although the same interface works for both DCCRG grid and FS grid variables. By default the returned DCCRG grid variable array is sorted by cell IDs. If in any case you want the original unsorted version as being stored in the file, use `readvariable(meta, var, false)`.
 
 - Get variable at a given location
+
 ```
 loc = [2.0, 0.0, 0.0]
 id = getcell(meta, loc)
@@ -34,6 +38,7 @@ readvariable(meta, "proton/vg_rho", id)
 ```
 
 - Get variable along a line between two points
+
 ```
 Re = Vlasiator.Re # Earth radii
 point1 = [12Re, 0, 0]
@@ -67,6 +72,7 @@ To avoid confusion about variable names, the convention here is that
 * otherwise check the availability in the derived variable list. All predefined names start with a capital letter.
 
 To obtain a derived quantity, use either keys of string or symbol,
+
 ```
 beta = meta["Beta"]
 VA = meta[:VA]
@@ -137,26 +143,31 @@ All the functions with identical names as in Matplotlib accept all possible keyw
     The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`!
 
 - Scalar colored contour for 2D simulation
+
 ```
 pcolormesh(meta, "rho")
 ```
 
 - Vector z component colored contour for 2D simulation in a manually set range
+
 ```
 pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
 - Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
+
 ```
 pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline for 2D simulation
+
 ```
 streamplot(meta, "rho_v", comp="xy")
 ```
 
 - Quiver for 2D simulation
+
 ```
 quiver(meta, "rho_v", comp="xy")
 ```
@@ -169,21 +180,25 @@ The `comp` option is used to specify the two vector components.
 You can choose to use linear/log color scale via `colorscale=Linear` or `colorscale=Log`, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit=RE` etc..
 
 - Mesh denoted by cell centers
+
 ```
 plotmesh(meta; projection="z", color="w")
 ```
 
 - Cut slice colored contour for 3D simulation
+
 ```
 pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 ```
 
 - Velocity distribution function near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
+
 ```
-vdfslice(meta, coordinates)
+vdfslice(meta, coordinates; kwargs...)
 ```
 
 - Extracted quantity line plot
+
 ```
 rho_extract = vec(rho_extract)
 loc = range(x1, x2, length=length(rho_extract))
@@ -198,14 +213,24 @@ To trigger the Plots package plotting, `using Plots`.
 This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but a wide range of other options are also presented.
 
 - Scaler colored contour for 2D simulation
+
 ```
 heatmap(meta, var, aspect_ratio=:equal, c=:turbo)
 ```
 
 - Scaler colored contour with lines for 2D simulation
+
 ```
 contourf(meta, var)
 ```
+
+- VDF projected slice in a normal direction
+
+```
+vdfslice(meta, location; kwargs...)
+```
+
+The keyword arguments are the same as in the PyPlot shown in the API.
 
 ### Makie Backend
 
@@ -231,10 +256,16 @@ For quickly inspecting the data, we have
 vlslice(meta, var; normal=:x)
 ```
 
-* 2D slices of VDFs at a spatial cell
+* 2D slice of VDFs at a spatial cell
 
 ```
-vdfslice(meta, location)
+vdfslice(meta, location; kwargs...)
+```
+
+* 2D orthognal slices of VDFs at a spatial cell
+
+```
+vdfslices(meta, location)
 ```
 
 * 3D scatter of VDFs at a spatial cell
@@ -250,9 +281,11 @@ The interactive plots are available through the OpenGL backend of Makie `GLMakie
 We can convert VLSV files into VTK files! Since DCCRG is Cartesian based with uniform spacing, each level of refinement corresponds to a VTK image file, and the cell refinement relationships are defined by `vtkGhostType` as well as the `vthb` file.
 
 To convert a VLSV file into VTK,
+
 ```
 write_vtk(file)
 ```
+
 This function accepts both file names and file meta.
 
 To see the full list of options, please refer to the documentation in [API Reference](internal.md). Demo usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
@@ -264,6 +297,7 @@ To see the full list of options, please refer to the documentation in [API Refer
 ## Tracking log files
 
 We can monitor the runtime performance per iteration through log files:
+
 ```
 file = "logfile.txt"
 timestamps, speed = readlog(file)
@@ -275,6 +309,7 @@ See a live example at [demo_log.jl](https://github.com/henry2004y/Vlasiator.jl/t
 
 It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
 Following the installation steps described in the manual[^3], and then inside Python REPL:
+
 ```
 # Handling initialization issue for Conda
 from julia.api import Julia
@@ -288,6 +323,7 @@ data = Vlasiator.readvariable(meta, var)
 ```
 
 To run a Julia script in Python,
+
 ```
 # Handling initialization issue for Conda
 from julia.api import Julia
@@ -305,6 +341,7 @@ plt.show()
 ## Examples
 
 There is a list of complete [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) about:
+
 * Plotting with PyPlot
 * Plotting with Plots
 * Variable extraction along a line

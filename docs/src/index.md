@@ -9,6 +9,7 @@ This lightweight package is built upon its sister in Python [Analysator](https:/
 It can be easily integrated with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) to do all kinds of in-depth analysis.
 
 Vlasiator.jl contains the following features:
+
 * Reading [VLSV](https://github.com/fmihpc/vlsv) format data.
 * Calculating derived quantities from VLSV outputs.
 * Extracting quantities at a given point/line/plane.
@@ -20,21 +21,25 @@ Vlasiator.jl contains the following features:
 
 ## Getting started
 
-To install it,
+To install,
+
 ```
 pkg> add Vlasiator
 ```
 
 You can then get started with
+
 ```
 julia> using Vlasiator
 ```
 
 If you want to use Plots.jl for visualization, add it also through the pkg manager; if you aim at using Matplotlib, besides adding `PyPlot`, you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
+
 ```
 ENV["PYTHON"]="your python executable"
 Pkg.build("PyCall")
 ```
+
 Details are described in [automated matplotlib installation](https://github.com/JuliaPy/PyPlot.jl#automated-matplotlib-installation).
 
 ## Author

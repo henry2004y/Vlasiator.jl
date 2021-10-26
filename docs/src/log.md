@@ -20,18 +20,24 @@ The VLSV loader inherits the basic structure from [Analysator](https://github.co
 * It is generally faster to read a bunch of cell IDs together than to read each cell one-by-one.
 
 For development, it is recommended to use [PkgBenchmark.jl](https://github.com/JuliaCI/PkgBenchmark.jl) to run the test suite:
+
 ```
 using PkgBenchmark, Vlasiator
 results = benchmarkpkg(Vlasiator)
 ```
+
 or if you want to compare the current status of the package against a different git version
+
 ```
 judge(Vlasiator, "97e3dca6b2474d7bdc5b62b5bf98ecf070516e5e")
 ```
+
 To export results to markdown format,
+
 ```
 export_markdown("testresult", results)
 ```
+
 See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/dev/).
 
 ### Benchmarks
@@ -83,6 +89,7 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 ## Precision
 
 For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we mostly use `Float32` in Vlasiator.jl. Several exceptions are:
+
 * physical constants are defined in `Float64`, since single precision only resolve up to ±3.4E+38, and it may go out of bound in the middle of calculation (e.g. plasma frequency).
 
 ## Memory
@@ -94,6 +101,7 @@ Vlasiator output files can be large. If we have limited memory relative to the f
 The current design choice is to achieve optimal serial performance per file, and apply parallel processing across individual files. In most common cases, the time it takes for post-processing one snapshot is reasonably short, but the number of snapshots are large. Julia's built-in support for all kinds of parallelism paradigm (multithreads, multiprocess, channel) and external support from packages (MPI.jl, Polyester.jl) can be relatively easily incorported to make the whole workflow parallel.
 
 In the [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples), you can find the usages of
+
 * multi-threading with `@threads` (recommended when working within one node)
 * multi-processing with `pmap` 
 * multi-processing with `RemoteChannel`
