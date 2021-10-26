@@ -124,7 +124,7 @@ Vlasiator.jl does not include any plotting library as explicit dependency, but i
 
 Currently I would recommend using `PyPlot.jl`.
 `Plots.jl` is catching up, but it is still slower and lack of features.
-`Makie.jl` is supported at a very early stage, now manually through `include("src/plot/makie.jl")` (from the package root directory). We need either create a new standalone package for visualization through Makie or wait for a lightweight Makie recipe dependency.
+`Makie.jl` is supported experimentally. A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
