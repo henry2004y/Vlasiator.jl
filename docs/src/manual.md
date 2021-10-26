@@ -124,7 +124,7 @@ Vlasiator.jl does not include any plotting library as explicit dependency, but i
 
 Currently I would recommend using `PyPlot.jl`.
 `Plots.jl` is catching up, but it is still slower and lack of features.
-`Makie.jl` is supported experimentally. A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie.
+`Makie.jl` is supported experimentally. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
@@ -199,13 +199,51 @@ This backend supports all available attributes provided by [Plots.jl](http://doc
 
 - Scaler colored contour for 2D simulation
 ```
-heatmap(meta, "rho", aspect_ratio=:equal, c=:turbo)
+heatmap(meta, var, aspect_ratio=:equal, c=:turbo)
 ```
 
 - Scaler colored contour with lines for 2D simulation
 ```
-contourf(meta, "rho)
+contourf(meta, var)
 ```
+
+### Makie Backend
+
+A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie.
+You can either use intrinsic Makie plotting methods like
+
+```
+lines(meta, var)   # 1D
+heatmap(meta, var) # 2D
+```
+
+or use full recipes created by us
+
+```
+vlheatmap(meta, var)
+``
+
+For quickly inspecting the data, we have
+
+* 2D slices of 3D AMR data
+
+```
+vlslice(meta, var; normal=:x)
+```
+
+* 2D slices of VDFs at a spatial cell
+
+```
+vdfslice(meta, location)
+```
+
+* 3D scatter of VDFs at a spatial cell
+
+```
+vdfvolume(meta, location)
+```
+
+The interactive plots are available through the OpenGL backend of Makie `GLMakie`. For noninteractive high fidelity plots, we can also use the Cairo backend of Makie `CairoMakie`.
 
 ## Converting to VTK
 

@@ -23,10 +23,13 @@
 
 ## Makie
 
+* Interactive proton density slice from 3D AMR run
+![](figures/slice_interactive.png)
+
 * Proton phase space distribution projected onto xz plane
 ![](figures/VDF_slice.png)
 
-* Proton phase space distribution projected onto three orthogonal planes
+* Interactive proton phase space distribution projected onto three orthogonal planes
 ![](figures/VDF_slices.png)
 
 * Proton phase space distribution
