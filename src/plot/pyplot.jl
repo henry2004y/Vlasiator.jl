@@ -153,7 +153,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
 
    pArgs = set_args(meta, var, axisunit)
 
-   x, y = get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+   x, y = get_axis(pArgs)
    data = prep2d(meta, var, op)'
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
@@ -220,7 +220,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
    pArgs = set_args(meta, var, axisunit; normal, origin)
 
    data = prep2dslice(meta, var, normal, op, pArgs)'
-   x, y = get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+   x, y = get_axis(pArgs)
 
    cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
 

@@ -7,6 +7,8 @@
 
 "Plotting arguments."
 struct PlotArgs
+   "Unit of spatial axis"
+   axisunit::AxisUnit
    "data array size"
    sizes::Vector{Int}
    "plotting data range"
@@ -68,7 +70,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    cb_title = !isempty(datainfo.variableLaTeX) ?
       datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
 
-   PlotArgs(sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title)
+   PlotArgs(axisunit, sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title)
 end
 
 "Set colormap limits for `data`."
@@ -96,6 +98,8 @@ function get_axis(axisunit::AxisUnit, plotrange, sizes)
    end
    x, y
 end
+
+get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 "Obtain data from `meta` of `var` for 2D plotting. Use `op` to select vector components."
 function prep2d(meta::MetaVLSV, var, op=:none)

@@ -37,7 +37,7 @@ for (i, file) in enumerate(files)
    t = readparameter(meta, "time")
 
    if i == 1
-      x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+      x, y = Vlasiator.get_axis(pArgs)
       data = prep2d(meta, vardict[varname], op)'
    
       c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")

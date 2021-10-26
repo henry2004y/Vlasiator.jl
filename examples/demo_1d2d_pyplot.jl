@@ -133,7 +133,7 @@ function process(i, file)
    axsL[3].legend(;loc="lower right", fontsize)
    axsL[4].legend(;loc="upper right", fontsize)
 
-   x, y = Vlasiator.get_axis(pArgs1.axisunit, pArgs1.plotrange, pArgs1.sizes)
+   x, y = Vlasiator.get_axis(pArgs1)
 
    data = prep2d(meta, "VA")'
    c1 = axsR[1].pcolormesh(x, y, data ./ 1e3, norm=cnorm1, cmap=cmap, shading="nearest")

@@ -335,7 +335,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       ax[2].set_title("$(varnames_print[i])_$(components[i])")
 
       pArgs = Vlasiator.set_args(meta, varnames[i], axisunit; normal=:none)
-      x, y = Vlasiator.get_axis(axisunit, pArgs.plotrange, pArgs.sizes)
+      x, y = Vlasiator.get_axis(pArgs)
       data = Vlasiator.prep2d(meta, varnames[i], components[i])'
       cnorm, cticks = Vlasiator.set_colorbar(Vlasiator.Linear, -Inf, Inf, data)
       cmesh = ax[3].pcolormesh(x, y, data, norm=cnorm, shading="nearest")

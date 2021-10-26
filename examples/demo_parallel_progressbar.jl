@@ -109,7 +109,7 @@ end
    axsR[1].set_title("Alfven speed", fontsize="x-large")
    axsR[2].set_title("Sound speed", fontsize="x-large")
 
-   x, y = Vlasiator.get_axis(axisunit, pArgs1.plotrange, pArgs1.sizes)
+   x, y = Vlasiator.get_axis(pArgs1)
 
    fakedata = zeros(Float32, length(y), length(x))
 
@@ -194,7 +194,7 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
    colorscale = Linear
-   const axisunit = RE
+   axisunit = RE
 
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 10.0     # [amu/cc]

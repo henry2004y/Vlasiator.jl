@@ -86,7 +86,7 @@ using Distributed, ParallelDataTransfer, Glob
    axsR[1].set_title("Alfven speed", fontsize="x-large")
    axsR[2].set_title("Sound speed", fontsize="x-large")
 
-   x, y = Vlasiator.get_axis(pArgs1.axisunit, pArgs1.plotrange, pArgs1.sizes)
+   x, y = Vlasiator.get_axis(pArgs1)
    fakedata = zeros(Float32, length(y), length(x))
 
    c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap, shading="nearest")

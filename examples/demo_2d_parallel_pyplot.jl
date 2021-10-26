@@ -39,7 +39,7 @@ using Distributed, ParallelDataTransfer, Glob
    axs[2,2].set_title("Magnetic field"; fontsize)
    axs[2,3].set_title("Electric field"; fontsize)
 
-   x, y = Vlasiator.get_axis(axisunit, pArgs1.plotrange, pArgs1.sizes)
+   x, y = Vlasiator.get_axis(pArgs1)
 
    fakedata = zeros(Float32, length(y), length(x))
    c1 = axs[1,1].pcolormesh(x, y, fakedata; norm=cnorm1, cmap=cmap, shading="nearest")
@@ -140,7 +140,7 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
    colorscale = Linear
-   const axisunit = RE
+   axisunit = RE
 
    # Upper/lower limits for each variable
    const ρmin, ρmax   = 0.0, 9.0      # [amu/cc]
