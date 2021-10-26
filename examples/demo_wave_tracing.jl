@@ -303,7 +303,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       cb = colorbar(im1; ax=ax[1])
       cb.ax.tick_params(direction="in")
       ax[1].legend(;fontsize="x-small")
-      ax[1].set_xlabel(L"$k_\perp d_i$")
+      ax[1].set_xlabel(L"$k_\perp \cdot d_i$")
       ax[1].set_ylabel(L"$\omega/\Omega_{ci}$")
       ax[1].set_title(L"$k_\perp$ angle w.r.t. x = %$θ")
 
