@@ -565,7 +565,7 @@ function readvcells(meta::MetaVLSV, cid; species="proton")
    seek(fid, offset * datasize + variable_offset)
    read!(fid, blockIDs)
 
-   # Velocity cell IDs and corresponding distributions
+   # Velocity cell IDs and distributions (ordered by blocks)
    vcellids = zeros(UInt32, bsize*nblocks)
    vcellf = zeros(Float32, bsize*nblocks)
 

@@ -72,6 +72,8 @@ end
          V = getvcellcoordinates(meta, vcellids; species="proton")
          @test V[end] == Float32[2.45, 1.95, 1.95]
          @test_throws ArgumentError readvcells(meta, 20)
+         f = Vlasiator.flatten(meta.meshes["proton"], vcellf)
+         @test f[CartesianIndex(24, 18, 7)] == 1.0f-45
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3

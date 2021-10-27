@@ -270,6 +270,36 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
    cellCoords
 end
 
+"Flatten vblocks-organized `VDFraw` into x-->y-->z ordered 3D `VDF`."
+function flatten(vmesh::VMeshInfo, VDFraw)
+   vblock_size, vblocks = vmesh.vblock_size, vmesh.vblocks
+   blocksize = prod(vblock_size)
+   sliceBz = vblocks[1]*vblocks[2]
+   vsizex, vsizey = vblock_size[1] * vblocks[1], vblock_size[2] * vblocks[2]
+   sliceCz = vblock_size[1]*vblock_size[2]
+
+   VDF = zeros(Float32, vmesh.vblock_size[1]*vmesh.vblocks[1],
+      vmesh.vblock_size[2]*vmesh.vblocks[2],
+      vmesh.vblock_size[3]*vmesh.vblocks[3])
+
+   @inbounds for i in eachindex(VDF)
+      iB = (i - 1) ÷ blocksize
+      iBx = iB % vblocks[1]
+      iBy = iB % sliceBz ÷ vblocks[1]
+      iBz = iB ÷ sliceBz
+      iCellInBlock = (i - 1) % blocksize
+      iCx = iCellInBlock % vblock_size[1]
+      iCy = iCellInBlock % sliceCz ÷ vblock_size[1]
+      iCz = iCellInBlock ÷ sliceCz
+      iBCx = iBx*vblock_size[1] + iCx
+      iBCy = iBy*vblock_size[2] + iCy
+      iBCz = iBz*vblock_size[3] + iCz
+      iF = iBCz*vsizex*vsizey + iBCy*vsizex + iBCx + 1
+      VDF[iF] = VDFraw[i]
+   end
+   VDF
+end
+
 function isInsideDomain(meta::MetaVLSV, point)
    @unpack coordmin, coordmax = meta
 
