@@ -122,43 +122,38 @@ function prep2d(meta::MetaVLSV, var, op=:none)
    data
 end
 
+"Return `data` of `var` on a uniform 2D mesh on the finest AMR level."
 function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
    @unpack idlist, indexlist = pArgs
 
-   data = readvariable(meta, var)
+   data3D = readvariable(meta, var)
 
    if startswith(var, "fg_") # field quantities, fsgrid
       throw(ArgumentError("FS grid variable $var plotting in cut currently not supported!"))
    else # moments, dccrg grid
       # vlasov grid, AMR
-      if ndims(data) == 1
-         data = data[indexlist] # find required cells
-      elseif ndims(data) == 2
-         data = data[:,indexlist] # find required cells
-      end
+      if ndims(data3D) == 1
+         data2D = data3D[indexlist]
 
-      # Create the plotting grid
-      if ndims(data) == 1
-         data = refineslice(meta, idlist, data, normal)
-      elseif ndims(data) == 2
+         data = refineslice(meta, idlist, data2D, normal)
+      elseif ndims(data3D) == 2
+         data2D = data3D[:,indexlist]
+
          if op in (:x, :y, :z, :1, :2, :3)
             if op in (:x, :1)
-               slice = @view data[1,:]
+               slice = @view data2D[1,:]
             elseif op in (:y, :2)
-               slice = @view data[2,:]
+               slice = @view data2D[2,:]
             elseif op in (:z, :3)
-               slice = @view data[3,:]
+               slice = @view data2D[3,:]
             end
             data = refineslice(meta, idlist, slice, normal)
          elseif op == :mag
-            datax = @views refineslice(meta, idlist, data[1,:], normal)
-            datay = @views refineslice(meta, idlist, data[2,:], normal)
-            dataz = @views refineslice(meta, idlist, data[3,:], normal)
+            datax = @views refineslice(meta, idlist, data2D[1,:], normal)
+            datay = @views refineslice(meta, idlist, data2D[2,:], normal)
+            dataz = @views refineslice(meta, idlist, data2D[3,:], normal)
             data = hypot.(datax, datay, dataz)
          end
-
-      elseif ndims(data) == 3
-         @error "not implemented yet!"
       end
    end
    data
@@ -352,7 +347,7 @@ function prep_vdf(meta::MetaVLSV, location;
    else
       v1, v2 = v1select, v2select
    end
-   
+
    v1 ./= unitvfactor
    v2 ./= unitvfactor
 
