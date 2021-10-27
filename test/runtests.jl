@@ -247,27 +247,29 @@ end
          @test_throws ArgumentError pcolormesh(meta, "proton/vg_rho")
 
          loc = [2.0, 0.0, 0.0]
-         p = vdfslice(meta, loc)
-         @test p.get_array()[786] == 229.89486651619364
+         var = vdfslice(meta, loc).get_array()
+         @test var[786] == 229.89486651619364
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
 
          # 2D
          meta = meta2
-         p = pcolormesh(meta, "proton/vg_rho")
-         @test p.get_array()[end-2] == 999535.8f0 && length(p.get_array()) == 6300
-         p = pcolormesh(meta, "fg_b")
-         @test p.get_array()[1] == 3.0058909f-9
-         p = pcolormesh(meta, "proton/vg_v", op=:x, colorscale=SymLog)
-         @test p.get_array()[2] == -699935.2f0
+         var = pcolormesh(meta, "proton/vg_rho").get_array()
+         @test var[end-2] == 999535.8f0 && length(var) == 6300
+         var = pcolormesh(meta, "fg_b").get_array()
+         @test var[1] == 3.0058909f-9
+         var = pcolormesh(meta, "proton/vg_v", op=:x, colorscale=SymLog).get_array()
+         @test var[2] == -699935.2f0
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
-         p = quiver(meta, "proton/vg_v", axisunit=SI, stride=1)
-         @test size(p.get_offsets()) == (6300, 2)
+         var = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
+         @test size(var) == (6300, 2)
 
          # 3D AMR
          meta = meta3
-         p = pcolormesh(meta, "proton/vg_rho")
-         @test p.get_array()[255] == 1.0483886f6 && length(p.get_array()) == 512
+         var = pcolormesh(meta, "proton/vg_rho").get_array()
+         @test var[255] == 1.0483886f6 && length(var) == 512
+         var = pcolormesh(meta, "proton/vg_v").get_array()
+         @test var[255] == 99992.586f0
          @test_throws ArgumentError pcolormesh(meta, "fg_b")
       end
 
