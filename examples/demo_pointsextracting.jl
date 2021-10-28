@@ -47,10 +47,8 @@ function extract_vars(files, locations)
       ey[i,:] = e[2,:]
    end
 
-   for iloc in eachindex(locations)
-      # Save into binary file
-      jldsave("satellite$(lpad(iloc,2,'0')).jld2"; t, rho, vx, vy, p, bz, ex, ey)
-   end
+   # Save into binary file
+   jldsave("satellites.jld2"; t, rho, vx, vy, p, bz, ex, ey)
 end
 
 #####
