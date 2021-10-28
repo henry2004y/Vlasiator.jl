@@ -200,7 +200,7 @@ function estimate_meanstates(files, cellids)
    v̄S  = √(γ * p̄ / (n̄ * mᵢ))             # sonic speed, [m/s]
 
    println("--------------------------------------------------")
-   println("* Average states in the box")
+   println("* Average states along the line at the middle snapshot")
    println("Density               : ", round(n̄/1e6; digits=2), " amu/cc")
    println("Pressure              : ", round(p̄/1e9; digits=2), " nPa")
    println("Parallel velocity     : ", round(v̄par/1e3; digits=2), " km/s")
@@ -221,7 +221,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
    # Parameters
    nfile = length(files)
    npoints = length(cellids)
-   nω = nfile ÷ 2 + 1
+   nt = nfile ÷ 2 + 1
 
    varnames = vars.varnames
    varnames_print = vars.varnames_print
@@ -261,11 +261,16 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
 
    # Only the 1st quadrature
    krange = range(kmin, kmax, length=npoints)
-   ωrange = range(ωmin, ωmax, length=nω)
+   ωrange = range(ωmin, ωmax, length=nt)
 
    axisunit = RE
 
-   windowx = hanning(npoints)
+   # Precalculated lines
+   ωCFL = dispersion_CFL.(krange, dx, Δt, di, ωci)
+   ωfast = dispersion_fast_perp(krange, θ, v̄S, v̄A, v̄perp, di, ωci)
+   ωbulk = dispersion_bulk_flow(krange, θ, v̄perp, di, ωci)
+   # Window filtering for avoiding spectral leakage
+   window = hanning(npoints) * hanning(nfile)'
 
    meta = load(files[end])
 
@@ -273,22 +278,17 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       println("variable name: ", varnames[i])
       var = extract_var(files, varnames[i], cellids, distances, components[i])
 
-      # 2DFFT (filtered for avoiding spectral leakage)
-      F̃ = windowx .* var |> fft |> fftshift
+      # 2DFFT
+      F̃ = window .* var |> fft |> fftshift
 
       # Visualization
       fig = figure(figsize=(12,12), constrained_layout=false)
       ax = [subplot(221), subplot(223), subplot(222), subplot(224, projection="3d")]
 
-      im1 = ax[1].pcolormesh(krange, ωrange, abs.(F̃.*F̃)[:, end-nω+1:end]',
+      dispersion = reverse!(abs.(F̃.*F̃)[:, end-nt+1:end]', dims=1)
+      im1 = ax[1].pcolormesh(krange, ωrange, dispersion,
          shading="nearest",
          norm=matplotlib.colors.LogNorm())
-
-      ωCFL = dispersion_CFL.(krange, dx, Δt, di, ωci)
-
-      ωfast = dispersion_fast_perp(krange, θ, v̄S, v̄A, v̄perp, di, ωci)
-
-      ωbulk = dispersion_bulk_flow(krange, θ, v̄perp, di, ωci)
 
       ax[1].plot([krange[1], 0.0, krange[end]], [ωCFL[1], 0.0, ωCFL[end]], "--",
          linewidth=1.0, color="k", label="CFL Condition")
@@ -378,9 +378,9 @@ const γ = 5 / 3
 xStart = [10.0, 0.0, 0.0].*Re
 xEnd   = [13.3, 0.0, 0.0].*Re
 
-varnames = ["proton/vg_rho", "vg_b_vol", "vg_e_vol", "vg_e_vol"]
-varnames_print = ["rho", "b", "e", "e"]
-components = [0, 3, 1, 2] # 0 for scalar, 1-3 for vector components
+varnames = ["proton/vg_rho", "vg_b_vol", "vg_e_vol", "vg_pressure"]
+varnames_print = ["rho", "b", "e", "p"]
+components = [0, 3, 1, 0] # 0 for scalar, 1-3 for vector components
 
 dir = "../run_rho2_bz-5_timevarying_startfrom300s"
 files = glob("bulk.*.vlsv", dir)
@@ -401,5 +401,10 @@ cellids, distances, coords = getcellinline(meta, xStart, xEnd)
 meanstates = estimate_meanstates(files, cellids)
 
 println("number of extracted points: ", length(cellids))
+println("xStart: ", xStart)
+println("xEnd: ", xEnd)
+tbegin = load(files[1]).time
+tend = load(files[end]).time
+println("time from $tbegin to $tend s")
 
 @time plot_dispersion(files, vars, cellids, distances, coords, meanstates, dtfile, Δt)
