@@ -139,7 +139,7 @@ More examples of customized plots can be found in the [repo](https://github.com/
 To trigger the Matplotlib plotting, `using PyPlot`.
 All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by their Matplotlib counterparts, e.g. font width, font size, colormap, etc.
 
-!!! note
+!!! warning
     The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`. See [Matplotlib's two interfaces](https://aaltoscicomp.github.io/python-for-scicomp/data-visualization/#matplotlib-has-two-different-interfaces) for details.
 
 - Scalar colored contour for 2D simulation
@@ -246,7 +246,7 @@ or use full recipes created by us
 
 ```
 vlheatmap(meta, var)
-``
+```
 
 For quickly inspecting the data, we have
 
