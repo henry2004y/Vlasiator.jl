@@ -334,7 +334,7 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
    ax.tick_params(direction="in")
 
    cb = colorbar(h[4]; ax, fraction=0.046, pad=0.02)
-   cb.ax.tick_params(direction="in")
+   cb.ax.tick_params(which="both", direction="in")
    cb_title = cb.ax.set_ylabel("f(v)")
 
    if slicetype in (:bperp, :bpar, :bpar1)
