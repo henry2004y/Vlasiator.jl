@@ -384,10 +384,12 @@ function readvariable(meta::MetaVLSV, var, ids)
 
    v = Array{T}(undef, vectorsize, length(ids))
 
-   a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
-   w = reshape(reinterpret(T, a), vectorsize, arraysize)
+   w = let
+      a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+      reshape(reinterpret(T, a), vectorsize, arraysize)
+   end
 
-   id_ = length(cellindex) < 1000 ?
+   id_ = length(ids) < 1000 ?
       [findfirst(==(id), cellid) for id in ids] :
       indexin(ids, cellid)
 
