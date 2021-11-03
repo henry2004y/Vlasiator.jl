@@ -176,13 +176,6 @@ end
 
    if group in (:utility, :all)
       @testset "Rotation" begin
-         using LinearAlgebra
-         T = Diagonal([1.0, 2.0, 3.0])
-         B = [0.0, 1.0, 0.0]
-         Vlasiator.rotateWithB!(T, B)
-         @test T == Diagonal([1.0, 3.0, 2.0])
-         @test Vlasiator.rotateWithB(T, B) == Diagonal([1.0, 2.0, 3.0])
-
          v = fill(1/√3, 3)
          θ = π / 4
          R = Vlasiator.getRotationMatrix(v, θ)

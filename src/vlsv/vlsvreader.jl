@@ -316,45 +316,16 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
-      if ndims(raw) > 1
-         @inbounds dataOrdered = zeros(Float32, size(raw,1), bbox[1], bbox[2], bbox[3])
-      else
-         @inbounds dataOrdered = zeros(Float32, bbox[1], bbox[2], bbox[3])
-      end
+      dataOrdered =
+         if ndims(raw) > 1
+            @inbounds zeros(Float32, size(raw,1), bbox[1], bbox[2], bbox[3])
+         else
+            @inbounds zeros(Float32, bbox[1], bbox[2], bbox[3])
+         end
 
       @inbounds fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
 
-      currentOffset = ones(UInt32, nIORanks+1)
-      lsize = ones(Int, 3, nIORanks)
-      lstart = similar(lsize)
-      @inbounds @views @floop for i = 1:nIORanks
-         xyz = SA[
-            (i - 1) ÷ fgDecomposition[3] ÷ fgDecomposition[2],
-            (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
-            (i - 1) % fgDecomposition[3] ]
-
-         lsize[:,i] = calcLocalSize.(bbox[1:3], fgDecomposition, xyz)
-         lstart[:,i] = calcLocalStart.(bbox[1:3], fgDecomposition, xyz)
-
-         totalSize = prod(lsize[:,i])
-         currentOffset[i+1] = currentOffset[i] + totalSize
-
-         # Reorder data
-         if ndims(raw) > 1
-            lend = lstart[:,i] + lsize[:,i] .- 1
-
-            ldata = raw[:,currentOffset[i]:currentOffset[i+1]-1]
-            ldata = reshape(ldata, size(raw,1), lsize[1,i], lsize[2,i], lsize[3,i])
-
-            dataOrdered[:,lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] =
-               ldata
-         else
-            ldata = raw[currentOffset[i]:currentOffset[i+1]-1]
-            ldata = reshape(ldata, lsize[1,i], lsize[2,i], lsize[3,i])
-
-            dataOrdered[lstart[1,i]:lend[1],lstart[2,i]:lend[2],lstart[3,i]:lend[3]] = ldata
-         end
-      end
+      _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
 
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
@@ -400,6 +371,40 @@ function readvariable(meta::MetaVLSV, var, ids)
       v = Float32.(v)
    end
    return v
+end
+
+function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
+
+   offsetnow = 1
+
+   @inbounds @views for i = 1:nIORanks
+      xyz = SA[
+         (i - 1) ÷ fgDecomposition[3] ÷ fgDecomposition[2],
+         (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
+         (i - 1) % fgDecomposition[3] ]
+
+      lsize = SVector{3}(calcLocalSize.(bbox[1:3], fgDecomposition, xyz))
+      lstart = SVector{3}(calcLocalStart.(bbox[1:3], fgDecomposition, xyz))
+
+      offsetnext = offsetnow + lsize[1]*lsize[2]*lsize[3]
+
+      lend = lstart + lsize .- 1
+      # Reorder data
+      if ndims(raw) > 1
+         ldata = raw[:,offsetnow:offsetnext-1]
+         ldata = reshape(ldata, size(raw,1), lsize[1], lsize[2], lsize[3])
+
+         dataOrdered[:,lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] =
+            ldata
+      else
+         ldata = raw[offsetnow:offsetnext-1]
+         ldata = reshape(ldata, lsize[1], lsize[2], lsize[3])
+
+         dataOrdered[lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+      end
+      offsetnow = offsetnext
+   end
+   return
 end
 
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
@@ -522,9 +527,9 @@ function readvcells(meta::MetaVLSV, cid; species="proton")
    @unpack vblock_size = meta.meshes[species]
    bsize = prod(vblock_size)
 
-   local offset, nblocks
+   local offset, nblocks::Int
    let cellsWithVDF = readvector(fid, footer, species, "CELLSWITHBLOCKS"),
-       nblock_C = readvector(fid, footer, species, "BLOCKSPERCELL")
+      nblock_C = readvector(fid, footer, species, "BLOCKSPERCELL")::Vector{UInt32}
       # Check if cells have vspace stored
       if cid ∈ cellsWithVDF
          cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
@@ -548,7 +553,7 @@ function readvcells(meta::MetaVLSV, cid; species="proton")
 
    data = let
       Tavg = datasize == 4 ? Float32 : Float64
-      a = mmap(fid, Vector{UInt8}, sizeof(Tavg)*vectorsize*nblocks,
+      a = mmap(fid, Vector{UInt8}, datasize*vectorsize*nblocks,
          offset*vectorsize*datasize + variable_offset)
       reshape(reinterpret(Tavg, a), vectorsize, nblocks)
    end
@@ -574,9 +579,15 @@ function readvcells(meta::MetaVLSV, cid; species="proton")
    vcellid_local = @inbounds [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
       for i in 0:vblock_size[1]-1, j in 0:vblock_size[2]-1, k in 0:vblock_size[3]-1]
 
-   @inbounds @floop for i in eachindex(blockIDs), j = 1:bsize
-      vcellids[(i-1)*bsize+j] = vcellid_local[j] + bsize*blockIDs[i]
-      vcellf[(i-1)*bsize+j] = data[j,i]
-   end
+   _fillvcell!(vcellids, vcellf, vcellid_local, data, blockIDs, bsize)
+
    vcellids, vcellf
+end
+
+@inline function _fillvcell!(vcellids, vcellf, vcellid_local, data, blockIDs, bsize)
+   @inbounds for i in eachindex(blockIDs), j = 1:bsize
+      index_ = (i-1)*bsize+j
+      vcellids[index_] = vcellid_local[j] + bsize*blockIDs[i]
+      vcellf[index_] = data[j,i]
+   end
 end

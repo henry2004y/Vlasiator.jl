@@ -7,7 +7,6 @@ using UnPack
 using LinearAlgebra: ×, dot, ⋅, norm, I
 using Statistics: mean
 using EzXML
-using FLoops
 using Mmap: mmap
 using WriteVTK
 using LazyGrids: ndgrid
