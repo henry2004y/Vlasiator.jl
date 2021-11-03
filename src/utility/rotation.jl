@@ -49,7 +49,7 @@ function getRotationB(B::AbstractVector{T}) where T
       elseif B[3] / b ≈ 1.0 # B aligned with reference vector
          SMatrix{3,3,T}([0.0 -1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0])
       else
-         @warning "bug: not working correctly for general cases!"
+         @warn "bug: not working correctly for general cases!"
          v0 = SVector{3,T}(0.0, 0.0, 1.0) # reference vector
          v3 = SVector{3,T}(B[1]/b, B[2]/b, B[3]/b) # unit vector along B
          v1 = v0 × v3::SVector{3, T}
