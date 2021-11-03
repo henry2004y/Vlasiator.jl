@@ -274,10 +274,10 @@ const variables_predefined = Dict(
          P[1,1,i] = Pdiag[1,i]
          P[2,2,i] = Pdiag[2,i]
          P[3,3,i] = Pdiag[3,i]
-         P[1,2,i] = P[2,1,i] = Podiag[1,i]
-         P[2,3,i] = P[3,2,i] = Podiag[2,i]
-         P[3,1,i] = P[1,3,i] = Podiag[3,i]
-         @views rotateWithB!(P[:,:,i], B[:,i])
+         P[1,2,i] = P[2,1,i] = Podiag[3,i]
+         P[2,3,i] = P[3,2,i] = Podiag[1,i]
+         P[3,1,i] = P[1,3,i] = Podiag[2,i]
+         P[:,:,i] = @views rotateTensorToVectorZ(P[:,:,i], B[:,i])
       end
       P
    end,
