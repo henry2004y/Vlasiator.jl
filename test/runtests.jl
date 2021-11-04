@@ -92,8 +92,8 @@ end
             @test err isa Exception
          end
          # AMR ID finding
-         loc = [0.0, 0.0, 0.0]
-         @test getcell(metaAMR, loc) == 0x0000000000001591
+         loc = [12*Vlasiator.Re, 0.0, 0.0]
+         @test getcell(metaAMR, loc) == 0x00000000000002d0
 
          # AMR level
          @test metaAMR.maxamr == 2

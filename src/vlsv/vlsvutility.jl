@@ -31,14 +31,15 @@ function getcell(meta::MetaVLSV, loc)
 
       ncells_lowerlevel += 2^(3*ilevel)*ncell
 
+      ratio = 2^(ilevel+1)
+
       indices = SVector(
-         round(UInt, (loc[1] - coordmin[1]) ÷ dx * 2^(ilevel+1)),
-         round(UInt, (loc[2] - coordmin[2]) ÷ dy * 2^(ilevel+1)),
-         round(UInt, (loc[3] - coordmin[3]) ÷ dz * 2^(ilevel+1)) )
+         floor(UInt, (loc[1] - coordmin[1]) / dx * ratio),
+         floor(UInt, (loc[2] - coordmin[2]) / dy * ratio),
+         floor(UInt, (loc[3] - coordmin[3]) / dz * ratio) )
 
       cid = ncells_lowerlevel + indices[1] +
-         2^(ilevel+1)*ncells[1]*indices[2] +
-         4^(ilevel+1)*ncells[1]*ncells[2]*indices[3] + 1
+         ratio*ncells[1]*indices[2] + ratio^2*ncells[1]*ncells[2]*indices[3] + 1
    end
 
    cid
