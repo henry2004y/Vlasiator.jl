@@ -64,7 +64,15 @@ const units_predefined = Dict(
    :effectivesparsitythreshold => ("s3/m6", L"$f_\mathrm{Min}$", L"$\mathrm{m}^{-6}\,\mathrm{s}^{3}$"),
    :rho_loss_adjust => ("1/m3", L"$\Delta_\mathrm{loss} n_\mathrm{p}$", L"$\mathrm{m}^{-3}$"),
    :energydensity => ("eV/cm3", L"$\rho_{\mathrm{energy}}$", L"$\mathrm{eV}\,\mathrm{cm}^{-3}$"),
-   :precipitationdiffflux => ("1/(cm2 sr s eV)", L"$'Delta F_\mathrm{precipitation}$", L"$\mathrm{cm}^{-2} \,\mathrm{sr}^{-1}\,\mathrm{s}^{-1}\,\mathrm{eV}^{-1}$"),
+   :precipitationdiffflux => ("1/(cm2 sr s eV)", L"$\Delta F_\mathrm{precipitation}$", L"$\mathrm{cm}^{-2} \,\mathrm{sr}^{-1}\,\mathrm{s}^{-1}\,\mathrm{eV}^{-1}$"),
+   :Panisotropy => ("", L"$P_\perp / P_\parallel$", ""),
+   :Tanisotropy => ("", L"$T_\perp / T_\parallel$", ""),
+   :VS => ("m/s", L"$V_S$", L"$\mathrm{m}\,\mathrm{s}^{-1}$"),
+   :VA => ("m/s", L"$V_A$", L"$\mathrm{m}\,\mathrm{s}^{-1}$"),
+   :MS => ("", L"$M_S$", ""),
+   :MA => ("", L"$M_A$", ""),
+   :Ppar => ("Pa", L"$P_\parallel$", "Pa"),
+   :Pperp => ("Pa", L"$P_\perp$", "Pa"),
 )
 
 # Define derived parameters
