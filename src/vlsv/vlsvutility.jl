@@ -133,8 +133,8 @@ function getchildren(meta::MetaVLSV, cid::Integer)
    cid = @MVector zeros(Int, nchildren)
    # get the first cell ID on the finer level
    cid1st += ncell*8^mylvl
-   ix_, iy_ = [ix, ix+1], [iy, iy+1]
-   iz_ = zcell != 1 ? [iz, iz+1] : [iz]
+   ix_, iy_ = (ix, ix+1), (iy, iy+1)
+   iz_ = zcell != 1 ? (iz, iz+1) : iz
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell*4 + i[2]*xcell*2 + i[1]
    end
@@ -176,8 +176,8 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
 
    nsiblings = 2^ndims(meta)
    cid = @MVector zeros(Int, nsiblings)
-   ix_, iy_ = [ix, ix1], [iy, iy1]
-   iz_ = zcell != 1 ? [iz, iz1] : [iz]
+   ix_, iy_ = (ix, ix1), (iy, iy1)
+   iz_ = zcell != 1 ? (iz, iz1) : iz
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell + i[2]*xcell + i[1]
    end
@@ -366,7 +366,9 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       # Find the minimum distance from a boundary times a factor
       d = min(minimum(coef_min), minimum(coef_max)) * 1.00001
 
-      coordnew = @. p + d*unit_vector
+      coordnew = SVector(p[1] + d*unit_vector[1],
+                         p[2] + d*unit_vector[2],
+                         p[3] + d*unit_vector[3] )
 
       dot(point2 - coordnew, unit_vector) ≥ 0 || break
 
@@ -500,17 +502,18 @@ end
    slicesize = xcells*ycells*4^ilevel
 
    iz = @. (ids - nCellUptoLowerLvl - 1) ÷ slicesize
-
-   # number of ids up to the coordinate z in the refinement level ilevel
-   idUpToZ = muladd.(iz, slicesize, nCellUptoLowerLvl)
-
-   iy = @. (ids - idUpToZ - 1) ÷ (xcells*2^ilevel)
-   ix = @. ids - idUpToZ - iy*xcells*2^ilevel - 1
-
+   iy = similar(iz)
+   ix = similar(iz)
+   @inbounds for i in eachindex(ids, iz)
+      # number of ids up to the coordinate z in the refinement level ilevel
+      idUpToZ = muladd(iz[i], slicesize, nCellUptoLowerLvl)
+      iy[i] = (ids[i] - idUpToZ - 1) ÷ (xcells*2^ilevel)
+      ix[i] = ids[i] - idUpToZ - iy[i]*xcells*2^ilevel - 1
+   end
    ix, iy, iz
 end
 
-@inline function getindexes(ilvl, xcells, ycells, nCellUptoLowerLvl, id::Int)
+@inline function getindexes(ilvl, xcells, ycells, nCellUptoLowerLvl, id::Integer)
    slicesize = xcells*ycells*4^ilvl
    iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
    idUpToZ = muladd(iz, slicesize, nCellUptoLowerLvl)
@@ -650,10 +653,10 @@ end
 function fillcell!(iv, ilvl, ids, ncells, maxamr, nLow, celldata, data)
    @inbounds for ilvlup = ilvl:maxamr
       r = 2^(ilvlup-ilvl) # ratio on refined level
-      for c in eachindex(ids)
-         ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[c]) .* r
+      for i in eachindex(ids)
+         ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[i]) .* r
          for k = 1:r, j = 1:r, i = 1:r
-            celldata[iv][ilvlup+1][:,ixr+i,iyr+j,izr+k] .= data[:,c]
+            _fillcelldata!(celldata[iv][ilvlup+1], data, ixr+i, iyr+j, izr+k, i)
          end
       end
    end
@@ -662,10 +665,15 @@ end
 function fillcell!(iv, ids, ncells, maxamr, nLow, celldata, data)
    @inbounds for i in eachindex(ids)
       ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
-      celldata[iv][end][:,ix,iy,iz] .= data[:,i]
+      _fillcelldata!(celldata[iv][end], data, ix, iy, iz, i)
    end
 end
 
+@inline function _fillcelldata!(dataout, datain, i, j, k, index)
+   @inbounds for icomp in axes(datain,1)
+      dataout[icomp,i,j,k] = datain[icomp,index]
+   end
+end
 
 """
     write_vtk(meta::MetaVLSV; kwargs...)
@@ -729,7 +737,7 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, ver
          link!(xBlock, AttributeNode("spacing", spacing_str))
          xDataSet = addelement!(xBlock, "DataSet")
          link!(xDataSet, AttributeNode("index", "0"))
-         amr_box = [0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1]
+         amr_box = SA[0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1]
          box_str = @sprintf("%d %d %d %d %d %d", amr_box[1], amr_box[2], amr_box[3],
             amr_box[4], amr_box[5], amr_box[6])
          link!(xDataSet, AttributeNode("amr_box", box_str))
