@@ -44,12 +44,12 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 ### Benchmarks
 
 !!! note
-    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.2.
+    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.25.
 
 * Reading DCCRG grid variables
 | Variable[^1] | 80KB Float32 | 900KB Float64 | 32MB Float64 |
 |:------|:----------:|:-------|:----------:|
-| Julia  [ms] | 0.2 | 5.9 | 313[^2] |
+| Julia  [ms] | 0.2 | 5.9 | 303[^2] |
 | Python [ms] | 2.2 | 10  | 295 |
 
 [^1]: The size here represents the actual size of the variable, not the total file size. The larger the data sizes, the less meaningful in these comparisons since the time is dominant by low level I/O, where in Python it's written in C.
@@ -58,7 +58,7 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 * Reading field solver grid variables[^3]
 | 13 GB  | tmean [s] |
 |:-------|:---------:|
-| Julia  | 9   |
+| Julia  | 8   |
 | Python | 61  |
 
 [^3]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once. It will go out of memory for the second time in Analysator, but not in Vlasiator.jl --- see [Memory](#memory). This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
@@ -66,7 +66,7 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 * From starting Julia/Python to the first plot of 2D density contour[^4]
 | 28 MB  | tmean [s] |
 |:-------|:---------:|
-| Julia 1.6  | 13.5  |
+| Julia 1.6  | 11.6  |
 | Python 3.6 | 9.4   |
 
 [^4]: This inefficieny of Julia is a famous problem in the community known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
