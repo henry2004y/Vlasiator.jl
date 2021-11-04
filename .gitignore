@@ -9,6 +9,7 @@
 *.dat
 *.vti
 *.vthb
+*.mem
 test*
 /benchmark/*.json
 /docs/build/
