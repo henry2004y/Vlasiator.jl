@@ -17,15 +17,15 @@ using RecipesBase, Printf, UnPack
    elseif ndims(meta) == 2
       # Check if ecliptic or polar run
       if ncells[2] == 1 && ncells[3] != 1
-         plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
-         sizes = [ncells[1], ncells[2]]
+         plotrange = (coordmin[1], coordmax[1], coordmin[3], coordmax[3])
+         sizes = (ncells[1], ncells[2])
          PLANE = "XZ"
-         axislabels = ['X', 'Z']
+         axislabels = ('X', 'Z')
       elseif ncells[3] == 1 && ncells[2] != 1
-         plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
-         sizes = [ncells[1], ncells[2]]
+         plotrange = (coordmin[1], coordmax[1], coordmin[2], coordmax[2])
+         sizes = (ncells[1], ncells[2])
          PLANE = "XY"
-         axislabels = ['X', 'Y']
+         axislabels = ('X', 'Y')
       end
 
       x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)

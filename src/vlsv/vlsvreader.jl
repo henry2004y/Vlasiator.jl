@@ -51,9 +51,9 @@ end
 function Base.show(io::IO, meta::MetaVLSV)
    println(io, "File: ", meta.name)
    println(io, "Time: ", round(meta.time, digits=2))
-   println(io, "Dimension: $(ndims(meta))")
-   println(io, "Maximum AMR level: $(meta.maxamr)")
-   println(io, "Contains VDF: $(meta.hasvdf)")
+   println(io, "Dimension: ", ndims(meta))
+   println(io, "Maximum AMR level: ", meta.maxamr)
+   println(io, "Contains VDF: ", meta.hasvdf)
    println(io, "variables: ", meta.variable)
 end
 
@@ -93,35 +93,36 @@ function getObjInfo(footer, name, tag, attr)
       end
    end
 
-   !isFound && throw(ArgumentError("unknown variable $name"))
+   isFound || throw(ArgumentError("unknown variable $name"))
 
-   if datatype == "float"
-      T = datasize == 4 ? Float32 : Float64
-   elseif datatype == "int"
-      T = datasize == 4 ? Int32 : Int64
-   elseif datatype == "uint"
-      T = datasize == 4 ? UInt32 : UInt64
-   end
+   T::Type =
+      if datatype == "float"
+         datasize == 4 ? Float32 : Float64
+      elseif datatype == "int"
+         datasize == 4 ? Int32 : Int64
+      elseif datatype == "uint"
+         datasize == 4 ? UInt32 : UInt64
+      end
 
    T, variable_offset, arraysize, datasize, vectorsize
 end
 
 "Return vectors of `name` from the vlsv file with `footer` opened by `fid`."
 function readvector(fid::IOStream, footer, name, tag)
-   T, offset, arraysize, datasize, vectorsize = getObjInfo(footer, name, tag, "name")
+   T, offset, asize, dsize, vsize = getObjInfo(footer, name, tag, "name")
 
-   if Sys.total_memory() > 8*arraysize*vectorsize*datasize
-      w = vectorsize == 1 ?
-         Vector{T}(undef, arraysize) :
-         Array{T,2}(undef, vectorsize, arraysize)
+   if Sys.total_memory() > 8*asize*vsize*dsize
+      w = vsize == 1 ?
+         Vector{T}(undef, asize) :
+         Array{T,2}(undef, vsize, asize)
       seek(fid, offset)
       read!(fid, w)
    else
       @warn "Large array detected. Using memory-mapped I/O!" maxlog=1
-      a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
-      w = vectorsize == 1 ?
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      w = vsize == 1 ?
          reinterpret(T, a) :
-         reshape(reinterpret(T, a), vectorsize, arraysize)
+         reshape(reinterpret(T, a), vsize, asize)
    end
 
    w
@@ -140,8 +141,8 @@ function load(file::AbstractString)
 
    local cellid
    let
-      T, offset, arraysize, _, vectorsize = getObjInfo(footer, "CellID", "VARIABLE", "name")
-      a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
+      T, offset, asize, dsize, vsize = getObjInfo(footer, "CellID", "VARIABLE", "name")
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
       cellid = reinterpret(T, a)
    end
 
@@ -230,19 +231,10 @@ function load(file::AbstractString)
    end
 
    # Obtain maximum refinement level
-   ncell = prod(ncells)
-   maxamr, cid = 0, ncell
-   while @inbounds cid < cellid[cellindex[end]]
-      maxamr += 1
-      cid += ncell*8^maxamr
-   end
+   maxamr = getmaxrefinement(cellid, cellindex, ncells)
 
    varinfo = findall("//VARIABLE", footer)
-   nVar = length(varinfo)
-   vars = Vector{String}(undef, nVar)
-   for i in eachindex(vars, varinfo)
-      @inbounds vars[i] = varinfo[i]["name"]
-   end
+   vars = [info["name"] for info in varinfo]
 
    hasvdf = let
       vcells = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
@@ -256,6 +248,15 @@ function load(file::AbstractString)
       dcoord, species, meshes)
 end
 
+function getmaxrefinement(cellid, cellindex, ncells)
+   ncell = prod(ncells)
+   maxamr, cid = 0, ncell
+   while @inbounds cid < cellid[cellindex[end]]
+      maxamr += 1
+      cid += ncell*8^maxamr
+   end
+   maxamr
+end
 
 """
     readvariablemeta(meta, var) -> VarInfo
@@ -343,7 +344,7 @@ end
 Read a variable `var` in a collection of cells `ids`.
 """
 function readvariable(meta::MetaVLSV, var, ids)
-   @assert !startswith(var, "fg_") "Currently does not support reading fsgrid!"
+   startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    @unpack fid, footer, cellid, cellindex = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
@@ -351,26 +352,31 @@ function readvariable(meta::MetaVLSV, var, ids)
       return data
    end
 
-   T, offset, arraysize, _, vectorsize = getObjInfo(footer, var, "VARIABLE", "name")
+   T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
-   v = Array{T}(undef, vectorsize, length(ids))
+   v = Array{T}(undef, vsize, length(ids))
 
    w = let
-      a = mmap(fid, Vector{UInt8}, sizeof(T)*vectorsize*arraysize, offset)
-      reshape(reinterpret(T, a), vectorsize, arraysize)
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      reshape(reinterpret(T, a), vsize, asize)
    end
 
    id_ = length(ids) < 1000 ?
       [findfirst(==(id), cellid) for id in ids] :
       indexin(ids, cellid)
 
-   for i in eachindex(id_), iv = 1:vectorsize
-      @inbounds v[iv,i] = w[iv,id_[i]]
-   end
+   _fillv!(v, w, id_, vsize)
+
    if T == Float64
       v = Float32.(v)
    end
    return v
+end
+
+@inline function _fillv!(v, w, id_, vsize)
+   for i in eachindex(id_), iv = 1:vsize
+      @inbounds v[iv,i] = w[iv,id_[i]]
+   end
 end
 
 function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
@@ -383,8 +389,13 @@ function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
          (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
          (i - 1) % fgDecomposition[3] ]
 
-      lsize = SVector{3}(calcLocalSize.(bbox[1:3], fgDecomposition, xyz))
-      lstart = SVector{3}(calcLocalStart.(bbox[1:3], fgDecomposition, xyz))
+      lsize = SVector(calcLocalSize(bbox[1], fgDecomposition[1], xyz[1]),
+                      calcLocalSize(bbox[2], fgDecomposition[2], xyz[2]),
+                      calcLocalSize(bbox[3], fgDecomposition[3], xyz[3]) )
+
+      lstart = SVector(calcLocalStart(bbox[1], fgDecomposition[1], xyz[1]),
+                       calcLocalStart(bbox[2], fgDecomposition[2], xyz[2]),
+                       calcLocalStart(bbox[3], fgDecomposition[3], xyz[3]) )
 
       offsetnext = offsetnow + lsize[1]*lsize[2]*lsize[3]
 
@@ -527,12 +538,12 @@ function readvcells(meta::MetaVLSV, cid; species="proton")
    @unpack vblock_size = meta.meshes[species]
    bsize = prod(vblock_size)
 
-   local offset, nblocks::Int
+   local offset::Int, nblocks::Int
    let cellsWithVDF = readvector(fid, footer, species, "CELLSWITHBLOCKS"),
       nblock_C = readvector(fid, footer, species, "BLOCKSPERCELL")::Vector{UInt32}
       # Check if cells have vspace stored
       if cid ∈ cellsWithVDF
-         cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
+         cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)::Int
       else
          throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
       end
