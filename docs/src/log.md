@@ -44,7 +44,7 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 ### Benchmarks
 
 !!! note
-    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.25.
+    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.26 running Python 3.6.9 and Julia 1.6.3. The timings are performed on a i5-10210U @ 1.6GHz if not specified. Keep in mind that when we are comparing against Python, we are mostly likely comparing with the underlying C libraries with a Python wrapper.
 
 * Reading DCCRG grid variables
 | Variable[^1] | 80KB Float32 | 900KB Float64 | 32MB Float64 |
@@ -78,14 +78,14 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 | Julia  | 0.35  |
 | Python | 1.7   |
 
-* Virtual satellite tracking from 845 frames of 3D AMR data (26G per frame) on a cluster
+* Virtual satellite tracking from 200 frames of 3D AMR data (26G per frame, 32 MB Cell IDs) on a cluster
 
-| 1 core | tmean [m][^5] |
+| 1 core | tmean [s][^5] |
 |:-------|:---------:|
-| Julia  | 11    |
-| Python | 125   |
+| Julia  | 239   |
+| Python | 376   |
 
-[^5]: The timings are for a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon CPUs. With multithreading, the Julia timings can scale linearly on a node with the number of cores used. For example, with 8 threads, Julia takes ~80s to finish.
+[^5]: The timings include importing the libraries, extracting the data and saving to text files using a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon E5-2697 @ 2.70GHz. With multithreading, the Julia timings can scale linearly on a node with the number of cores used.
 
 ## Precision
 
