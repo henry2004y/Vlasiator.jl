@@ -17,8 +17,12 @@ file = joinpath(directory, files[2])
 meta = load(file)
 SUITE["read"]["meta"] = @benchmarkable load($file)
 SUITE["read"]["DCCRG"] = @benchmarkable readvariable($meta, "proton/vg_rho")
+ids = 100:110
+SUITE["read"]["DCCRG_select_small"] =
+   @benchmarkable readvariable($meta, "proton/vg_rho", $ids)
 ids = 3000:6300
-SUITE["read"]["DCCRG_select"] = @benchmarkable readvariable($meta, "proton/vg_rho", $ids)
+SUITE["read"]["DCCRG_select_large"] =
+   @benchmarkable readvariable($meta, "proton/vg_rho", $ids)
 SUITE["read"]["FG"] = @benchmarkable readvariable($meta, "fg_b")
 file = joinpath(directory, files[1])
 meta = load(file)
