@@ -12,7 +12,7 @@ struct PlotArgs
    "data array size"
    sizes::Vector{Int}
    "plotting data range"
-   plotrange::Vector{Float32}
+   plotrange::Tuple{Float64, Float64, Float64, Float64}
    "cell IDs in the cut plane"
    idlist::Vector{Int}
    "mapping from original cell order to cut plane"
@@ -45,7 +45,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    end
 
    sizes = ncells[seq]
-   plotrange = [coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]]]
+   plotrange = (coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]])
    axislabels = ['X', 'Y', 'Z'][seq]
 
    if normal == :none

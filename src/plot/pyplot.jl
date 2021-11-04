@@ -82,17 +82,17 @@ function set_vector(meta::MetaVLSV, var, comp, axisunit::AxisUnit)
       v1_ = 1
       if occursin("y", comp)
          v2_ = 2
-         sizes = [ncells[1], ncells[2]]
-         plotrange = [coordmin[1], coordmax[1], coordmin[2], coordmax[2]]
+         sizes = (ncells[1], ncells[2])
+         plotrange = (coordmin[1], coordmax[1], coordmin[2], coordmax[2])
       else
          v2_ = 3
-         sizes = [ncells[1], ncells[3]]
-         plotrange = [coordmin[1], coordmax[1], coordmin[3], coordmax[3]]
+         sizes = (ncells[1], ncells[3])
+         plotrange = (coordmin[1], coordmax[1], coordmin[3], coordmax[3])
       end
    else
       v1_, v2_ = 2, 3
-      sizes = [ncells[2], ncells[3]]
-      plotrange = [coordmin[2], coordmax[2], coordmin[3], coordmax[3]]
+      sizes = (ncells[2], ncells[3])
+      plotrange = (coordmin[2], coordmax[2], coordmin[3], coordmax[3])
    end
 
    data = readvariable(meta, var)

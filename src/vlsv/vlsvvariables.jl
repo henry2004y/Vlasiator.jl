@@ -82,9 +82,7 @@ const variables_predefined = Dict(
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Bmag = sqrt.(sum(readvariable(meta, "fg_b").^2, dims=1))
       end
-      @inbounds for i = eachindex(ρ) # sparsity/inner boundary
-         Bmag[i] == 0.0 && (Bmag[i] = NaN)
-      end
+      _fillinnerBC!(Bmag, ρ)
       Bmag
    end,
    :Emag => function (meta, ids=UInt64[])
@@ -100,9 +98,7 @@ const variables_predefined = Dict(
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Emag = sqrt.(sum(readvariable(meta, "fg_e").^2, dims=1))
       end
-      @inbounds for i = eachindex(ρ) # sparsity/inner boundary
-         Emag[i] == 0.0 && (Emag[i] = NaN)
-      end
+      _fillinnerBC!(Emag, ρ)
       Emag
    end,
    :Vmag => function (meta, ids=UInt64[])
@@ -113,9 +109,7 @@ const variables_predefined = Dict(
       Vmag = isempty(ids) ?
          vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1))) :
          vec(sqrt.(sum(readvariable(meta, "proton/vg_v", ids).^2, dims=1)))
-      @inbounds for i = eachindex(ρ) # sparsity/inner boundary
-         Vmag[i] == 0.0 && (Vmag[i] = NaN)
-      end
+      _fillinnerBC!(Vmag, ρ)
       Vmag
    end,
    :Rhom => function (meta, ids=UInt64[])
@@ -146,32 +140,24 @@ const variables_predefined = Dict(
    :VS => function (meta, ids=UInt64[]) # sound speed
       P = readvariable(meta, "P", ids)
       ρm = readvariable(meta, "Rhom", ids)
-      @inbounds for i = eachindex(ρm) # sparsity/inner boundary
-         ρm[i] == 0.0 && (ρm[i] = NaN)
-      end
+      _fillinnerBC!(ρm, ρm)
       vs = @. √( (P*5.0f0/3.0f0) / ρm )
    end,
    :VA => function (meta, ids=UInt64[]) # Alfvén speed
       ρm = readvariable(meta, "Rhom", ids)
-      @inbounds for i = eachindex(ρm) # sparsity/inner boundary
-         ρm[i] == 0.0 && (ρm[i] = NaN)
-      end
+      _fillinnerBC!(ρm, ρm)
       Bmag = readvariable(meta, "Bmag", ids)
       VA = @. $vec(Bmag) / √(ρm*μ₀)
    end,
    :MA => function (meta, ids=UInt64[]) # Alfvén Mach number
       V = readvariable(meta, "Vmag", ids)
-      @inbounds for i = eachindex(V) # sparsity/inner boundary
-         V[i] == 0.0 && (V[i] = NaN)
-      end
+      _fillinnerBC!(V, V)
       VA = readvariable(meta, "VA", ids)
       V ./ VA
    end,
    :MS => function (meta, ids=UInt64[]) # Sonic Mach number
       V = readvariable(meta, "Vmag", ids)
-      @inbounds for i = eachindex(V) # sparsity/inner boundary
-         V[i] == 0.0 && (V[i] = NaN)
-      end
+      _fillinnerBC!(V, V)
       VS = readvariable(meta, "VS", ids)
       V ./ VS
    end,
@@ -196,11 +182,16 @@ const variables_predefined = Dict(
          b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
       end
       Vperp = zeros(eltype(V), size(V, 2))
-      # Avoid sqrt of negative values, but does not guarantee orthogonality.
-      @inbounds for i in eachindex(Vperp)
-         Vpar = V[:,i] ⋅ b[:,i] .* b[:,i]
-         Vperp[i] = norm(V[:,i] - Vpar)
+
+      function _computeVperp!()
+         # Avoid sqrt of negative values, but does not guarantee orthogonality.
+         @inbounds for i in eachindex(Vperp)
+            Vpar = V[:,i] ⋅ b[:,i] .* b[:,i]
+            Vperp[i] = norm(V[:,i] - Vpar)
+         end
       end
+
+      _computeVperp!()
       Vperp
    end,
    :T => function (meta, ids=UInt64[]) # scalar temperature
@@ -208,9 +199,7 @@ const variables_predefined = Dict(
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
          readvariable(meta, "proton/vg_rho", ids)
-      @inbounds for i = eachindex(n) # sparsity/inner boundary
-         n[i] == 0.0 && (n[i] = NaN)
-      end
+      _fillinnerBC!(n, n)
       T = @. P / (n*kB)
    end,
    :Vth => function (meta, ids=UInt64[]) # thermal velocity
@@ -230,9 +219,7 @@ const variables_predefined = Dict(
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
          readvariable(meta, "proton/vg_rho", ids)
-      @inbounds for i = eachindex(n) # sparsity/inner boundary
-         n[i] == 0.0 && (n[i] = NaN)
-      end
+      _fillinnerBC!(n, n)
       @. P[3,3,:] / (n*kB)
    end,
    :Tperp => function (meta, ids=UInt64[]) # scalar T component ⟂ B
@@ -240,9 +227,7 @@ const variables_predefined = Dict(
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
          readvariable(meta, "proton/vg_rho", ids)
-      @inbounds for i = eachindex(n) # sparsity/inner boundary
-         n[i] == 0.0 && (n[i] = NaN)
-      end
+      _fillinnerBC!(n, n)
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
    end,
@@ -270,15 +255,20 @@ const variables_predefined = Dict(
          readvariable(meta, "proton/vg_ptensor_offdiagonal") :
          readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
       P = zeros(Float32, 3, 3, size(Pdiag, 2))
-      @inbounds for i = 1:size(P, 3)
-         P[1,1,i] = Pdiag[1,i]
-         P[2,2,i] = Pdiag[2,i]
-         P[3,3,i] = Pdiag[3,i]
-         P[1,2,i] = P[2,1,i] = Podiag[3,i]
-         P[2,3,i] = P[3,2,i] = Podiag[1,i]
-         P[3,1,i] = P[1,3,i] = Podiag[2,i]
-         P[:,:,i] = @views rotateTensorToVectorZ(P[:,:,i], B[:,i])
+
+      function rotate_tensor!()
+         @inbounds for i = 1:size(P, 3)
+            P[1,1,i] = Pdiag[1,i]
+            P[2,2,i] = Pdiag[2,i]
+            P[3,3,i] = Pdiag[3,i]
+            P[1,2,i] = P[2,1,i] = Podiag[3,i]
+            P[2,3,i] = P[3,2,i] = Podiag[1,i]
+            P[3,1,i] = P[1,3,i] = Podiag[2,i]
+            P[:,:,i] = @views rotateTensorToVectorZ(P[:,:,i], B[:,i])
+         end
       end
+
+      rotate_tensor!()
       P
    end,
    :Panisotropy => function (meta, ids=UInt64[]) # P⟂ / P∥
@@ -294,9 +284,7 @@ const variables_predefined = Dict(
       B² = isempty(ids) ?
          vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
          vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
-      @inbounds for i = eachindex(B²) # sparsity/inner boundary
-         B²[i] == 0.0 && (B²[i] = NaN)
-      end
+      _fillinnerBC!(B², B²)
       mu2inv = 0.5/μ₀
       @. B² * mu2inv
    end,
@@ -317,10 +305,16 @@ const variables_predefined = Dict(
          B = readvariable(meta, "B")
       end
       F = similar(E)
-      Rpost = CartesianIndices(size(E)[2:end])
-      @inbounds for i in Rpost
-         F[:,i] = E[:,i] × B[:,i] ./ μ₀
+
+      function computecross!()
+         Rpost = CartesianIndices(size(E)[2:end])
+         @inbounds for i in Rpost
+            F[:,i] = E[:,i] × B[:,i] ./ μ₀
+         end
       end
+
+      computecross!()
+
       F
    end,
    :Agyrotropy => function (meta, ids=UInt64[])
@@ -358,9 +352,7 @@ const variables_predefined = Dict(
       B² = isempty(ids) ?
          vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
          vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
-      @inbounds for i = eachindex(B²) # sparsity/inner boundary
-         B²[i] == 0.0 && (B²[i] = NaN)
-      end
+      _fillinnerBC!(B², B²)
       @. 2 * μ₀ * P / B²
    end,
    :IonInertial => function (meta, ids=UInt64[])
@@ -397,3 +389,9 @@ const variables_predefined = Dict(
       ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
 )
+
+function _fillinnerBC!(data, dataRef)
+   @inbounds for i = eachindex(dataRef) # sparsity/inner boundary
+      data[i] == 0.0 && (data[i] = NaN)
+   end
+end
