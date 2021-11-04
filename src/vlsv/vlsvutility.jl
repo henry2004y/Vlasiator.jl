@@ -626,7 +626,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
             data = @view dataRaw[:,rOffsetsRaw]
 
-            fillcell!(iv, ilvl, ids, ncells, maxamr, nLow, celldata, data)
+            fillcell!(ilvl, ids, ncells, maxamr, nLow, celldata[iv], data)
          end
       else # max amr level
          for (iv, var) = enumerate(vars)
@@ -639,7 +639,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
                data = @view dataRaw[:,rOffsetsRaw]
 
-               fillcell!(iv, ids, ncells, maxamr, nLow, celldata, data)
+               fillcell!(ids, ncells, maxamr, nLow, celldata[iv][end], data)
             end
          end
       end
@@ -650,22 +650,22 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    celldata, vtkGhostType
 end
 
-function fillcell!(iv, ilvl, ids, ncells, maxamr, nLow, celldata, data)
+function fillcell!(ilvl, ids, ncells, maxamr, nLow, dataout, datain)
    @inbounds for ilvlup = ilvl:maxamr
       r = 2^(ilvlup-ilvl) # ratio on refined level
       for i in eachindex(ids)
          ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[i]) .* r
          for k = 1:r, j = 1:r, i = 1:r
-            _fillcelldata!(celldata[iv][ilvlup+1], data, ixr+i, iyr+j, izr+k, i)
+            _fillcelldata!(dataout[ilvlup+1], datain, ixr+i, iyr+j, izr+k, i)
          end
       end
    end
 end
 
-function fillcell!(iv, ids, ncells, maxamr, nLow, celldata, data)
+function fillcell!(ids, ncells, maxamr, nLow, dataout, datain)
    @inbounds for i in eachindex(ids)
       ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
-      _fillcelldata!(celldata[iv][end], data, ix, iy, iz, i)
+      _fillcelldata!(dataout, datain, ix, iy, iz, i)
    end
 end
 
