@@ -4,7 +4,7 @@ using Requires
 using StaticArrays
 using Printf: @sprintf
 using UnPack
-using LinearAlgebra: ×, dot, ⋅, norm, I
+using LinearAlgebra: ×, dot, ⋅, norm, normalize!
 using Statistics: mean
 using EzXML
 using Mmap: mmap
