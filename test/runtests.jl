@@ -201,9 +201,9 @@ end
          @test size(data[1][1]) == (1, 63, 100, 1)
 
          meta = meta3 # amr
-         write_vtk(meta)
-         sha_str = bytes2hex(open(sha1, "bulk.amr_1.vti"))
-         @test sha_str == "bafb52747908cd05c78218078054aa4268f453d9"
+         write_vtk(meta, vars=["proton/vg_rho", "fg_b", "proton/vg_v"])
+         sha_str = bytes2hex(open(sha1, "bulk.amr_3.vti"))
+         @test sha_str == "8a2bb0a15c5dcc329f88821036df840a86eef9d5"
 
          filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
          rm.(filesaved, force=true)
