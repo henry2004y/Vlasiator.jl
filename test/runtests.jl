@@ -29,22 +29,22 @@ end
          meta = meta1
          @test ndims(meta) == 1
          @test startswith(repr(meta), "File: bulk.1d.vlsv")
-         @test size(meta) == 5168730
+         @test size(meta) == 529201
          # Variable strings reading
-         @test meta.variable[end] == "vg_rhom"
+         @test meta.variable[end] == "vg_boundarytype"
          # Variable info reading
          varinfo = readvariablemeta(meta, "proton/vg_rho")
          @test startswith(repr(varinfo), "Variable in LaTeX")
          @test varinfo.unit == "1/m^3"
          # Parameter checking
-         @test hasparameter(meta, "dt") == true
+         @test hasparameter(meta, "dt")
          # Parameter reading
          t = readparameter(meta, "time")
-         @test t == 8.0
+         @test t == 10.0
          @test_throws ArgumentError meta["nonsense"]
          # unsorted ID
-         @test readvariable(meta, "CellID", false) == UInt64[10, 9, 8, 7, 2, 1, 3, 4, 5, 6]
-         indexRef = [6, 5, 7, 8, 9, 10, 4, 3, 2, 1]
+         @test readvariable(meta, "CellID", false) == 10:-1:1
+         indexRef = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
          @test meta.cellindex == indexRef
          # sorted var by default
          @test meta["vg_boundarytype"] == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
@@ -52,28 +52,28 @@ end
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
          coords = getcellcoordinates(meta, id)
-         @test coords == [2.5, 0.0, 0.0]
-         @test readvariable(meta, "proton/vg_rho", id)[1,1] ≈ 1.77599 atol=1e-5
+         @test coords == [3.0, 0.0, 0.0]
+         @test readvariable(meta, "proton/vg_rho", id)[1] == 1.2288102f0
          # ID in a line
-         point1 = [-2.0, 0.0, 0.0]
-         point2 = [2.0, 0.0, 0.0]
+         point1 = [-4.0, 0.0, 0.0]
+         point2 = [4.0, 0.0, 0.0]
          cellids, _, _ = getcellinline(meta, point1, point2)
-         @test cellids == collect(4:7)
-         point1 = [-5.1, 0.0, 0.0]
+         @test cellids == 4:7
+         point1 = [-10.1, 0.0, 0.0]
          @test_throws DomainError getcellinline(meta, point1, point2)
-         point2 = [5.1, 0.0, 0.0]
+         point2 = [10.1, 0.0, 0.0]
          @test_throws DomainError getcellinline(meta, point1, point2)
 
          # Nearest ID with VDF stored
-         @test getnearestcellwithvdf(meta, id) == 8
+         @test getnearestcellwithvdf(meta, id) == 5
 
          # velocity space reading
-         vcellids, vcellf = readvcells(meta, 2; species="proton")
+         vcellids, vcellf = readvcells(meta, 5; species="proton")
          V = getvcellcoordinates(meta, vcellids; species="proton")
          @test V[end] == Float32[2.45, 1.95, 1.95]
-         @test_throws ArgumentError readvcells(meta, 20)
+         @test_throws ArgumentError readvcells(meta, 2)
          f = Vlasiator.flatten(meta.meshes["proton"], vcellf)
-         @test f[CartesianIndex(24, 18, 7)] == 1.0f-45
+         @test f[CartesianIndex(26, 20, 20)] == 85.41775f0
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3
@@ -122,7 +122,11 @@ end
    if group in (:derive, :all)
       @testset "Derived variables" begin
          meta = meta1
-         @test meta["Vmag"] |> sortperm == [7, 6, 5, 4, 3, 1, 2, 8, 9, 10]
+         @test meta["Vmag"] |> sortperm == [3, 4, 1, 2, 8, 9, 10, 5, 7, 6]
+         @test meta["Protated"][2,2,3] == 1.7952461f-29
+         @test meta["Panisotropy"][4] == 1.0147696f0
+         @test meta["Tanisotropy"][4] == 1.0147695404826917
+         @test meta["Agyrotropy"][1] |> isnan
 
          meta = meta2
          @test meta["Bmag"][4] == 3.0052159f-9
@@ -241,7 +245,7 @@ end
 
          loc = [2.0, 0.0, 0.0]
          var = vdfslice(meta, loc).get_array()
-         @test var[786] == 229.89486651619364
+         @test var[786] == 238.24398578141802
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
 
          # 2D
