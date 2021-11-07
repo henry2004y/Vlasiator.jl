@@ -629,7 +629,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
             fillcell!(ilvl, ids, ncells, maxamr, nLow, celldata[iv], data)
          end
-      else # max amr level
+      else # max refinement level
          for (iv, var) = enumerate(vars)
             verbose && @info "reading variable $var..."
             if startswith(var, "fg_")
