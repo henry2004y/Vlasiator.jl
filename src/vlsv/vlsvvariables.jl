@@ -340,20 +340,28 @@ const variables_predefined = Dict(
       Pxx = selectdim(Pdiag, 1, 1)
       Pyy = selectdim(Pdiag, 1, 2)
       Pzz = selectdim(Pdiag, 1, 3)
-      Pxy = selectdim(Podiag, 1, 1)
-      Pyz = selectdim(Podiag, 1, 2) # Warning: the order may be wrong!
-      Pxz = selectdim(Podiag, 1 ,3) # Warning: the order may be wrong!
+      Pxy = selectdim(Podiag, 1, 3)
+      Pyz = selectdim(Podiag, 1, 1)
+      Pxz = selectdim(Podiag, 1 ,2)
 
       Bx = selectdim(B, 1, 1)
       By = selectdim(B, 1, 2)
       Bz = selectdim(B, 1, 3)
 
-      I₁ = @. Pxx + Pyy + Pzz
-      I₂ = @. Pxx*Pyy + Pxx*Pzz + Pyy*Pzz - Pxy*Pxy - Pyz*Pyz - Pxz*Pxz
+      Qsqr = Vector{eltype(Pdiag)}(undef, size(Pdiag,2))
 
-      Ppar = @. (Bx*Bx*Pxx + By*By*Pyy + Bz*Bz*Pzz +
-	      2*(Bx*By*Pxy + Bx*Bz*Pxz + By*Bz*Pyz))/B²
-      Qsqr = @. √(1 - 4I₂/((I₁ - Ppar)*(I₁ + 3Ppar)))
+      @inbounds for ic in eachindex(Qsqr)
+         I₁ = Pxx[ic] + Pyy[ic] + Pzz[ic]
+         I₂ = Pxx[ic]*Pyy[ic] + Pxx[ic]*Pzz[ic] + Pyy[ic]*Pzz[ic] -
+            Pxy[ic]*Pxy[ic] - Pyz[ic]*Pyz[ic] - Pxz[ic]*Pxz[ic]
+
+         Ppar = (Bx[ic]*Bx[ic]*Pxx[ic] + By[ic]*By[ic]*Pyy[ic] + Bz[ic]*Bz[ic]*Pzz[ic] +
+	         2*(Bx[ic]*By[ic]*Pxy[ic] + Bx[ic]*Bz[ic]*Pxz[ic] + By[ic]*Bz[ic]*Pyz[ic])) /
+            (Bx[ic]^2 + By[ic]^2 + Bz[ic]^2)
+
+         Qsqr[ic] = √(1 - 4I₂/((I₁ - Ppar)*(I₁ + 3Ppar)))
+      end
+      Qsqr
    end,
    :Beta => function (meta, ids=UInt64[])
       P = readvariable(meta, "P", ids)
