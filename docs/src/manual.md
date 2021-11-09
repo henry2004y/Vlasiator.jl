@@ -250,25 +250,31 @@ vlheatmap(meta, var)
 
 For quickly inspecting the data, we have
 
-* 2D slices of 3D AMR data
+- 2D slices of 3D AMR data
 
 ```
 vlslice(meta, var; normal=:x)
 ```
 
-* 2D slice of VDFs at a spatial cell
+- Orthognal slices of 3D AMR data
+
+```
+vlslices(meta, var)
+```
+
+- 2D slice of VDFs at a spatial cell
 
 ```
 vdfslice(meta, location; kwargs...)
 ```
 
-* 2D orthognal slices of VDFs at a spatial cell
+- Orthognal slices of VDFs at a spatial cell
 
 ```
 vdfslices(meta, location)
 ```
 
-* 3D scatter of VDFs at a spatial cell
+- 3D scatter of VDFs at a spatial cell
 
 ```
 vdfvolume(meta, location)
