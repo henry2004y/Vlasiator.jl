@@ -274,12 +274,12 @@ function readvariablemeta(meta::MetaVLSV, var)
    elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, MetaVLSV is included
       for varinfo in findall("//VARIABLE", meta.footer)
          if varinfo["name"] == var
+            haskey(varinfo, "unit") || break
             unit = varinfo["unit"]
             unitLaTeX = varinfo["unitLaTeX"]
             variableLaTeX = varinfo["variableLaTeX"]
             unitConversion = varinfo["unitConversion"]
          end
-         # If var isn't predefined or unit isn't found, it will return nothing!
       end
    end
 
