@@ -271,15 +271,30 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
    cellCoords
 end
 
-"Flatten vblocks-organized `VDFraw` into x-->y-->z ordered 3D `VDF`."
-function flatten(vmesh::VMeshInfo, VDFraw)
+"""
+    flatten(vmesh::VMeshInfo, vcellids, vcellf)
+
+Flatten vblock-organized VDFs into x-->y-->z ordered 3D VDFs. `vcellids` are local indices
+of nonzero VDFs and `vcellf` are their corresponding values.
+"""
+function flatten(vmesh::VMeshInfo, vcellids, vcellf)
    vblock_size, vblocks = vmesh.vblock_size, vmesh.vblocks
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
    vsizex, vsizey = vblock_size[1] * vblocks[1], vblock_size[2] * vblocks[2]
    sliceCz = vblock_size[1]*vblock_size[2]
+   # Reconstruct the full velocity space
+   VDFraw = zeros(Float32,
+      vmesh.vblock_size[1]*vmesh.vblocks[1],
+      vmesh.vblock_size[2]*vmesh.vblocks[2],
+      vmesh.vblock_size[3]*vmesh.vblocks[3])
+   # Fill nonzero values
+   @inbounds for i in eachindex(vcellids)
+      VDFraw[vcellids[i]+1] = vcellf[i]
+   end
 
-   VDF = zeros(Float32, vmesh.vblock_size[1]*vmesh.vblocks[1],
+   VDF = zeros(Float32,
+      vmesh.vblock_size[1]*vmesh.vblocks[1],
       vmesh.vblock_size[2]*vmesh.vblocks[2],
       vmesh.vblock_size[3]*vmesh.vblocks[3])
 
