@@ -1,5 +1,7 @@
 # Manual
 
+Here we demonstrate some basic usages of Vlasiator output processing. For more complete description of the arguments, please refer to the [API]((internal.md) documents or type `?foo` to display help message in the REPL.
+
 ## Loading VLSV data
 
 - Read meta data
@@ -17,7 +19,7 @@ This VLSV meta data contains information of file names, variable names, cell ID 
 readvariablemeta(meta, "proton/vg_rho")
 ```
 
-A list of utility functions has been implemented for checking variable status. See [here](internal.md#Vlasiator.hasname-Tuple{Any, Any, Any}) for the full list. 
+A list of utility functions has been implemented for checking variable status. See [here](internal.md#Vlasiator.hasname-Tuple{Any, Any, Any}) for the full list.
 
 - Read variable
 
@@ -50,6 +52,7 @@ rho_extract = readvariable(meta, "VA", cellids)
 - Compare VLSV files
 
 One may want to check if two vlsv files are identical. This is tricky because
+
 1. the structure of VLSV format does not guarantee parallel writing order;
 2. numerical error accumulates with floating point representation.
 
@@ -62,14 +65,14 @@ issame(file1, file2)
 There is an optional third argument to `issame` for setting the relative difference tolerance, with default being 1e-4.
 In practice relative difference works better for "large" numbers, and absolute difference works better for "small" numbers.
 
-
 ## Computing derived quantities
 
 Vlasiator is capable of computing moments and some derived quantities and save them directly into VLSV files.
 More derived quantities computed from the saved quantities are also available in postprocessing, such as plasma β, velocity parallel/perpendicular to the magnetic field, pressure tensor with the third axis aligned with the magnetic field direction and so on.
 To avoid confusion about variable names, the convention here is that
-* if it is directly stored in the VLSV file, read the raw data;
-* otherwise check the availability in the derived variable list. All predefined names start with a capital letter.
+
+- if it is directly stored in the VLSV file, read the raw data;
+- otherwise check the availability in the derived variable list. All predefined names start with a capital letter.
 
 To obtain a derived quantity, use either keys of string or symbol,
 
@@ -194,7 +197,7 @@ pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 - Velocity distribution function near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
 
 ```
-vdfslice(meta, coordinates; kwargs...)
+vdfslice(meta, coordinates)
 ```
 
 - Extracted quantity line plot
@@ -227,10 +230,10 @@ contourf(meta, var)
 - VDF projected slice in a normal direction
 
 ```
-vdfslice(meta, location; kwargs...)
+vdfslice(meta, location)
 ```
 
-The keyword arguments are the same as in the PyPlot shown in the API.
+The keyword arguments are the same as in the PyPlot shown in the [API](internal.md#Vlasiator.vdfslice).
 
 ### Makie Backend
 
@@ -265,7 +268,7 @@ vlslices(meta, var)
 - 2D slice of VDFs at a spatial cell
 
 ```
-vdfslice(meta, location; kwargs...)
+vdfslice(meta, location)
 ```
 
 - Orthognal slices of VDFs at a spatial cell
