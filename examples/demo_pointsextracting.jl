@@ -48,7 +48,7 @@ function extract_vars(files, locations)
    end
 
    # Save into binary file
-   jldsave("satellites.jld2"; t, rho, vx, vy, p, bz, ex, ey)
+   jldsave("satellites.jld2"; locations, t, rho, vx, vy, p, bz, ex, ey)
 end
 
 #####
@@ -58,13 +58,13 @@ Re = Vlasiator.Re # Earth radius
 files = glob("bulk*.vlsv", "./")
 
 # virtual satellite locations
-loc = [[7Re, 0, 0], [9Re, 0, 0], [11Re, 0, 0], [12Re, 0, 0], [13Re, 0, 0], [14Re, 0, 0],
-   [15Re, 0, 0], [16Re, 0, 0], [17Re, 0, 0], [29.3Re, 0, 0]]
+locations = [[7Re, 0, 0], [9Re, 0, 0], [11Re, 0, 0], [12Re, 0, 0], [13Re, 0, 0],
+   [14Re, 0, 0], [15Re, 0, 0], [16Re, 0, 0], [17Re, 0, 0], [29.3Re, 0, 0]]
 
 println("Number of files: $(length(files))")
 println("Number of virtual satellites: $(length(locations))")
 println("Running with $(Threads.nthreads()) threads...")
 
-@time extract_vars(files, loc)
+@time extract_vars(files, locations)
 
 println("Virtual satellite extraction done!")
