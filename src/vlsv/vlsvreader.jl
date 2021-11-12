@@ -159,7 +159,10 @@ function load(file::AbstractString)
    @inbounds coordmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
    @inbounds coordmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
 
-   dcoord = SVector{3}(@. (coordmax - coordmin) / ncells)
+   dcoord = SVector(
+      (coordmax[1] - coordmin[1]) / ncells[1],
+      (coordmax[2] - coordmin[2]) / ncells[2],
+      (coordmax[3] - coordmin[3]) / ncells[3])
 
    meshes = Dict{String, VMeshInfo}()
 
@@ -181,7 +184,10 @@ function load(file::AbstractString)
          vblock_size = SVector(bbox[4], bbox[5], bbox[6])
          vmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
          vmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
-         dv = SVector{3}(@. (vmax - vmin) / vblocks / vblock_size)
+         dv = SVector(
+            (vmax[1] - vmin[1]) / vblocks[1] / vblock_size[1],
+            (vmax[2] - vmin[2]) / vblocks[2] / vblock_size[2],
+            (vmax[3] - vmin[3]) / vblocks[3] / vblock_size[3])
       else
          popname = "avgs"
 

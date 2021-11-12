@@ -382,9 +382,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       # Find the minimum distance from a boundary times a factor
       d = min(minimum(coef_min), minimum(coef_max)) * 1.00001
 
-      coordnew = SVector(p[1] + d*unit_vector[1],
-                         p[2] + d*unit_vector[2],
-                         p[3] + d*unit_vector[3] )
+      coordnew = @inbounds SVector(p[1] + d*unit_vector[1],
+         p[2] + d*unit_vector[2], p[3] + d*unit_vector[3] )
 
       dot(point2 - coordnew, unit_vector) ≥ 0 || break
 
@@ -462,12 +461,15 @@ Generate scalar data on the finest refinement level given cellids `idlist` and v
 function refineslice(meta::MetaVLSV, idlist, data, normal)
    @unpack ncells, maxamr = meta
 
-   if normal == :x
-      dims = SVector{2}([ncells[2], ncells[3]] .* 2^maxamr)
-   elseif normal == :y
-      dims = SVector{2}([ncells[1], ncells[3]] .* 2^maxamr)
-   elseif normal == :z
-      dims = SVector{2}([ncells[1], ncells[2]] .* 2^maxamr)
+   dims = let ratio = 2^maxamr
+      if normal == :x
+         i1, i2 = 2, 3
+      elseif normal == :y
+         i1, i2 = 1, 3
+      elseif normal == :z
+         i1, i2 = 1, 2
+      end
+      SVector(ncells[i1]*ratio, ncells[i2]*ratio)
    end
 
    dpoints = zeros(eltype(data), dims[1], dims[2])
@@ -483,13 +485,14 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       ix, iy, iz = getindexes(i, ncells[1], ncells[2], nLow, ids)
 
       # Get the correct coordinate values and the widths for the plot
-      if normal == :x
-         a, b = iy, iz
-      elseif normal == :y
-         a, b = ix, iz
-      elseif normal == :z
-         a, b = ix, iy
-      end
+      a, b =
+         if normal == :x
+            iy, iz
+         elseif normal == :y
+            ix, iz
+         elseif normal == :z
+            ix, iy
+         end
 
       # Insert the data values into dpoints
       refineRatio = 2^(maxamr - i)
