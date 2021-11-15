@@ -408,6 +408,6 @@ const variables_predefined = Dict(
 
 function _fillinnerBC!(data, dataRef)
    @inbounds for i = eachindex(dataRef) # sparsity/inner boundary
-      data[i] == 0.0 && (data[i] = NaN)
+      dataRef[i] == 0.0 && (data[i] = NaN)
    end
 end
