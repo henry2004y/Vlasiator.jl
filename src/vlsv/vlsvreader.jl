@@ -54,7 +54,7 @@ function Base.show(io::IO, meta::MetaVLSV)
    println(io, "Dimension: ", ndims(meta))
    println(io, "Maximum AMR level: ", meta.maxamr)
    println(io, "Contains VDF: ", meta.hasvdf)
-   println(io, "variables: ", meta.variable)
+   println(io, "Variables: ", meta.variable)
 end
 
 function Base.show(io::IO, s::VarInfo)
