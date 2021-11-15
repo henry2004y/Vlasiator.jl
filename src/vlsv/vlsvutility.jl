@@ -197,7 +197,7 @@ function isparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getcellcoordinates(meta, cid) -> Vector{Float}
+    getcellcoordinates(meta, cid) -> SVector{Float64}
 
 Return a given cell's coordinates.
 """
@@ -563,8 +563,16 @@ end
 
 Get all the cell IDs with VDF saved.
 """
-getcellwithvdf(meta::MetaVLSV) =
-   readmesh(meta.fid, meta.footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
+function getcellwithvdf(meta::MetaVLSV)
+   fid, footer = meta.fid, meta.footer
+   cellsWithVDF = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
+   nblock_C = readmesh(fid, footer, "SpatialGrid", "BLOCKSPERCELL")::Vector{UInt32}
+
+   innerBCCells = findall(==(0), nblock_C)
+
+   deleteat!(cellsWithVDF, innerBCCells)
+   cellsWithVDF
+end
 
 
 "Return the first cellid - 1 on `mylevel` given `ncells` on this level."

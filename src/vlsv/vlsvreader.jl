@@ -534,7 +534,7 @@ Return the dimension of VLSV data.
 Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 
 """
-    readvcells(meta, cid; species="proton")
+    readvcells(meta, cid; species="proton") -> vcellids, vcellf
 
 Read velocity cells from a spatial cell of ID `cid`, and return a map of velocity cell
 ids and corresponding value.
@@ -547,15 +547,18 @@ function readvcells(meta::MetaVLSV, cid; species="proton")
    local offset::Int, nblocks::Int
    let cellsWithVDF = readvector(fid, footer, species, "CELLSWITHBLOCKS"),
       nblock_C = readvector(fid, footer, species, "BLOCKSPERCELL")::Vector{UInt32}
-      # Check if cells have vspace stored
-      if cid ∈ cellsWithVDF
-         cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)::Int
+
+      cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
+      if !isnothing(cellWithVDFIndex)
+         @inbounds nblocks = Int(nblock_C[cellWithVDFIndex])
+         if nblocks == 0
+            throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
+         end
       else
          throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
       end
-      # Navigate to the correct position
+      # Offset position to vcell storage
       offset = sum(@view nblock_C[1:cellWithVDFIndex-1])
-      @inbounds nblocks = Int(nblock_C[cellWithVDFIndex])
    end
 
    local datasize, datatype, vectorsize, variable_offset
