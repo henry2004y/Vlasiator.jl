@@ -42,7 +42,7 @@ function extract_vars(files, dx)
    ey  = zeros(Float32, nfiles, nsize[1], nsize[2])
 
    # Extract data from each frame
-   Threads.@threads for i = eachindex(files)
+   for i = eachindex(files)
       meta = load(files[i])
       t[i] = meta.time
       rho[i,:,:] = readvariable(meta, "proton/vg_rho", ids)
@@ -66,7 +66,7 @@ Re = Vlasiator.Re # Earth radius
 
 files = glob("bulk*.vlsv", "./")
 
-dx = 2Re # uniform sampling distance [m]
+dx = 5Re # uniform sampling distance [m]
 
 println("Number of files: $(length(files))")
 println("Running with $(Threads.nthreads()) threads...")
