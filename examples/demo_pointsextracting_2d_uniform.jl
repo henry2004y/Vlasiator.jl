@@ -2,11 +2,6 @@
 # Simultaneous virtual satellite trackings at uniformly sampled locations on a 2D plane.
 # Outputs are stored in binary format for sharing within Julia.
 #
-# Usage:
-#   julia -t nthreads demo_virtual_satellites.jl
-# or
-#   JULIA_NUM_THREADS=nthreads julia demo_virtual_satellites.jl
-#
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, Vlasiator
