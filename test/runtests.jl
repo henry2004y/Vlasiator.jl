@@ -36,6 +36,8 @@ end
          varinfo = readvariablemeta(meta, "proton/vg_rho")
          @test startswith(repr(varinfo), "Variable in LaTeX")
          @test varinfo.unit == "1/m^3"
+         # Velocity mesh display
+         @test startswith(repr(meta.meshes["proton"]), "vblocks")
          # Parameter checking
          @test hasparameter(meta, "dt")
          # Parameter reading

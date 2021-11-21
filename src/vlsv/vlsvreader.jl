@@ -64,6 +64,14 @@ function Base.show(io::IO, s::VarInfo)
    println(io, "Unit conversion: ", s.unitConversion)
 end
 
+function Base.show(io::IO, vmesh::VMeshInfo)
+   println(io, "vblocks: ", vmesh.vblocks)
+   println(io, "vblock size: ", vmesh.vblock_size)
+   println(io, "vx range: ", vmesh.vmin[1], ":", vmesh.dv[1], ":", vmesh.vmax[1])
+   println(io, "vy range: ", vmesh.vmin[2], ":", vmesh.dv[2], ":", vmesh.vmax[2])
+   println(io, "vz range: ", vmesh.vmin[3], ":", vmesh.dv[3], ":", vmesh.vmax[3])
+end
+
 "Return the xml footer of vlsv."
 function getfooter(fid::IOStream)
    # First 8 bytes indicate big-endian or else
