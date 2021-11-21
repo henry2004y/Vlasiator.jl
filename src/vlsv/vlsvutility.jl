@@ -322,7 +322,7 @@ function getvelocity(meta::MetaVLSV, VDF; species="proton")
       n += f
    end
 
-   u ./= n
+   SVector(u[1] / n, u[2] / n, u[3] / n)
 end
 
 function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
@@ -357,7 +357,8 @@ function getpressure(meta::MetaVLSV, VDF; species="proton")
       p[6] += (vx - u[1])*(vy - u[2])*VDF[i,j,k]
    end
 
-   p .*= mᵢ / 3 * convert(eltype(VDF), prod(dv))
+   factor = mᵢ / 3 * convert(eltype(VDF), prod(dv))
+   SVector{6}(p.*factor)
 end
 
 """
