@@ -28,7 +28,8 @@ export
    # vlsvutility
    getcell, getslicecell, getlevel, refineslice, getcellcoordinates, getvcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
-   getcellinline, getnearestcellwithvdf, getcellwithvdf, write_vtk, issame,
+   getcellinline, getnearestcellwithvdf, getcellwithvdf,
+   getdensity, getvelocity, getpressure, write_vtk, issame,
    # plot helper
    SI, RE, Log, Linear, SymLog,
    # log

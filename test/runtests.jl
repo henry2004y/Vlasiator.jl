@@ -76,6 +76,11 @@ end
          @test_throws ArgumentError readvcells(meta, 2)
          f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
          @test f[CartesianIndex(26, 20, 20)] == 85.41775f0
+         @test getdensity(meta, f) ≈ 1.8255334f0
+         @test getdensity(meta, vcellids, vcellf) ≈ 1.8255334f0
+         @test getvelocity(meta, f) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
+         @test getvelocity(meta, vcellids, vcellf) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
+         @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3

@@ -272,6 +272,95 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
 end
 
 """
+    getdensity(meta, VDF; species="proton")
+    getdensity(meta, vcellids, vcellf; species="proton")
+
+Get density from VDF, n = ∫ f(r,v) dV.
+"""
+function getdensity(meta::MetaVLSV, VDF; species="proton")
+   @unpack dv = meta.meshes[species]
+   n = zero(eltype(VDF))
+
+   @inbounds @simd for f in VDF
+      n += f
+   end
+   n * convert(eltype(VDF), prod(dv))
+end
+
+function getdensity(meta::MetaVLSV, vcellids, vcellf; species="proton")
+   @unpack dv = meta.meshes[species]
+
+   n = zero(eltype(vcellf))
+
+   @inbounds @simd for f in vcellf
+      n += f
+   end
+   n * convert(eltype(vcellf), prod(dv))
+end
+
+"""
+    getvelocity(meta, VDF; species="proton")
+    getvelocity(meta, vcellids, vcellf; species="proton")
+
+Get bulk velocity from VDF, u = ∫ v * f(r,v) dV / n.
+"""
+function getvelocity(meta::MetaVLSV, VDF; species="proton")
+   @unpack dv, vmin = meta.meshes[species]
+   u = zeros(eltype(VDF), 3)
+
+   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
+      vx = vmin[1] + (i - 0.5f0)*dv[1]
+      vy = vmin[2] + (j - 0.5f0)*dv[2]
+      vz = vmin[3] + (k - 0.5f0)*dv[3]
+      u[1] += vx*VDF[i,j,k]
+      u[2] += vy*VDF[i,j,k]
+      u[3] += vz*VDF[i,j,k]
+   end
+
+   n = zero(eltype(VDF))
+   @inbounds @simd for f in VDF
+      n += f
+   end
+
+   u ./= n
+end
+
+function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
+   @unpack dv, vmin = meta.meshes[species]
+
+   VDF = flatten(meta.meshes[species], vcellids, vcellf)
+
+   u = getvelocity(meta, VDF; species)
+end
+
+"""
+    getpressure(VDF)
+
+Get pressure tensor from VDF, pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
+"""
+function getpressure(meta::MetaVLSV, VDF; species="proton")
+   @unpack dv, vmin = meta.meshes[species]
+   p = zeros(eltype(VDF), 6)
+
+   u = getvelocity(meta, VDF; species)
+
+   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
+      vx = vmin[1] + (i - 0.5f0)*dv[1]
+      vy = vmin[2] + (j - 0.5f0)*dv[2]
+      vz = vmin[3] + (k - 0.5f0)*dv[3]
+
+      p[1] += (vx - u[1])*(vx - u[1])*VDF[i,j,k]
+      p[2] += (vy - u[2])*(vy - u[2])*VDF[i,j,k]
+      p[3] += (vz - u[3])*(vz - u[3])*VDF[i,j,k]
+      p[4] += (vy - u[2])*(vz - u[3])*VDF[i,j,k]
+      p[5] += (vx - u[1])*(vz - u[3])*VDF[i,j,k]
+      p[6] += (vx - u[1])*(vy - u[2])*VDF[i,j,k]
+   end
+
+   p .*= mᵢ / 3 * convert(eltype(VDF), prod(dv))
+end
+
+"""
     flatten(vmesh::VMeshInfo, vcellids, vcellf)
 
 Flatten vblock-organized VDFs into x-->y-->z ordered 3D VDFs. `vcellids` are local indices
