@@ -81,7 +81,7 @@ end
          @test getvelocity(meta, f) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
          @test getvelocity(meta, vcellids, vcellf) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
-         @test getmaxwellianity(meta, f) ≈ 96.15337577903871 rtol=1e-4
+         @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3
@@ -176,13 +176,6 @@ end
          @test meta["Omegap"][1] == 209.5467447842415
 
          @test meta["Plasmaperiod"][1] == 0.0047722048893178645
-
-         #@test meta["Panisotropy"]
-
-         #@test meta["Tanisotropy"]
-
-         #@test meta["Agyrotropy"]
-
       end
    end
 

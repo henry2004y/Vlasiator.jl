@@ -436,7 +436,7 @@ function getmaxwellianity(meta, VDF; species="proton")
       ϵₘ += abs(VDF[i,j,k] - g)
    end
 
-   ϵₘ *= -log(0.5 / n * convert(eltype(VDF), prod(dv)))
+   ϵₘ = -log(0.5 / n * convert(eltype(VDF), prod(dv)) * ϵₘ)
 end
 
 function isInsideDomain(meta::MetaVLSV, point)
