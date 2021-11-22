@@ -357,7 +357,7 @@ function getpressure(meta::MetaVLSV, VDF; species="proton")
       p[6] += (vx - u[1])*(vy - u[2])*VDF[i,j,k]
    end
 
-   factor = mᵢ / 3 * convert(eltype(VDF), prod(dv))
+   factor = mᵢ * convert(eltype(VDF), prod(dv))
    SVector{6}(p.*factor)
 end
 
@@ -404,6 +404,39 @@ function flatten(vmesh::VMeshInfo, vcellids, vcellf)
       VDF[iF] = VDFraw[i]
    end
    VDF
+end
+
+"""
+    getmaxwellianity(meta, VDF; species="proton")
+
+Obtain the Maxwellian similarity factor -log(1/(2n) * ∫ |f - g| dv), where `f` is the VDF
+from Vlasiator and `g` is the analytical Maxwellian distribution that generates the same
+density as `f`. The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at
+all, and +∞ a perfect Maxwellian distribution.
+"""
+function getmaxwellianity(meta, VDF; species="proton")
+   @unpack dv, vmin = meta.meshes[species]
+
+   n = getdensity(meta, VDF)
+   u = getvelocity(meta, VDF)
+   P = getpressure(meta, VDF)
+   p = (P[1] + P[2] + P[3]) / 3
+   T = p / (n *kB) # temperature from scalar pressure
+
+   ϵₘ = zero(eltype(VDF))
+   vth2Inv = mᵢ / (2kB*T)
+
+   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
+      vx = vmin[1] + (i - 0.5f0)*dv[1]
+      vy = vmin[2] + (j - 0.5f0)*dv[2]
+      vz = vmin[3] + (k - 0.5f0)*dv[3]
+      dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
+
+      g = n * sqrt(vth2Inv/π) * (vth2Inv / π) * exp(-vth2Inv*dv2)
+      ϵₘ += abs(VDF[i,j,k] - g)
+   end
+
+   ϵₘ *= -log(0.5 / n * convert(eltype(VDF), prod(dv)))
 end
 
 function isInsideDomain(meta::MetaVLSV, point)

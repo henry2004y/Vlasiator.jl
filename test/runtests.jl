@@ -81,6 +81,7 @@ end
          @test getvelocity(meta, f) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
          @test getvelocity(meta, vcellids, vcellf) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
+         @test getmaxwellianity(meta, f) ≈ 96.15337577903871 rtol=1e-4
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3
@@ -235,8 +236,7 @@ end
          ENV["MPLBACKEND"]="agg" # no GUI
          # 1D
          meta = meta1
-         plot(meta, "proton/vg_rho")
-         line = gca().lines[1]
+         line = plot(meta, "proton/vg_rho")[1]
          @test line.get_ydata() == meta["proton/vg_rho"]
          centers = plotmesh(meta, projection="y")
          points = centers.get_offsets()
