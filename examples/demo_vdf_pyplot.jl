@@ -20,8 +20,8 @@ xcell = zeros(size(locations))
 ycell = similar(xcell)
 
 for i in eachindex(locations)
-   xcell[i] = locations[i][1] / Re
-   ycell[i] = locations[i][2] / Re
+   xcell[i] = locations[i][1] / Vlasiator.Re
+   ycell[i] = locations[i][2] / Vlasiator.Re
 end
 
 figure()
