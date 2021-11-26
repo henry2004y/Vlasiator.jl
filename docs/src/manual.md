@@ -143,6 +143,31 @@ which can also be found as keys of dictionary in [vlsvvariables.jl](https://gith
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results. Contributions from users are warmly welcomed!
 
+### Velocity space moments
+
+We can also calculate the plasma moments from the saved VLSV velocity space distributions.
+
+```
+# VDF cell indexes and values, with sparsity
+vcellids, vcellf = readvcells(meta, cellid; species="proton")
+# Recover the full VDF space
+f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
+
+getdensity(meta, f)
+getdensity(meta, vcellids, vcellf)
+
+getvelocity(meta, f)
+getvelocity(meta, vcellids, vcellf)
+
+getpressure(meta, f) # only support full VDF for now
+```
+
+Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln(1/(2n) * ∫ |f - g| dv)``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density and scalar pressure as f. The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at all, and +∞ a perfect Maxwellian distribution.
+
+```
+getmaxwellianity(meta, f)
+```
+
 ## Plotting
 
 Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting functionalities once the target plotting package is used.
@@ -318,6 +343,23 @@ To see the full list of options, please refer to the documentation in [API Refer
 !!! warning
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `maxamronly`: when it is set to `true`, then only the image file at the highest refinement level is generated.
     This part is experimental and subject to change in the future.
+
+## Append to VLSV
+
+We are able to compute derived quantities from an original VLSV file and generate a new VLSV output with new quantities included.
+
+```
+vmag = readvariable(meta, "Vmag", meta.cellid)
+pa = readvariable(meta, "Panisotropy", meta.cellid)
+vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
+push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", ""))) # require LaTeXStrings.jl
+push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
+
+write_vlsv(files[1], "bulk_new.vlsv", vars)
+```
+
+!!! note
+    Currently we only support writing new DCCRG variables. All quantities from the original file is maintained.
 
 ## Tracking log files
 
