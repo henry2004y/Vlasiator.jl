@@ -1,6 +1,6 @@
 # Manual
 
-Here we demonstrate some basic usages of Vlasiator output processing. For more complete description of the arguments, please refer to the [API]((internal.md) documents or type `?foo` to display help message in the REPL.
+Here we demonstrate some basic usages of Vlasiator output processing. For more complete description of the arguments, please refer to the [API](internal.md) documents or type `?foo` to display help message in the REPL.
 
 ## Common physical constants
 
