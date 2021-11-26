@@ -935,6 +935,84 @@ function save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level, ascii
    vtk_save(vtk)
 end
 
+"""
+    write_vlsv(filein, fileout, newvars::Vector{Tuple{Vector, String, VarInfo}};
+       force=false)
+
+Generate a new VLSV `fileout` based on `filein`, with `newvars` added.
+`force=true` overwrites the existing `fileout`.
+"""
+function write_vlsv(filein::AbstractString, fileout::AbstractString,
+   newvars::Vector{Tuple{VecOrMat, String, VarInfo}}; force=false)
+   if isfile(fileout) && !force
+      error("Output target $fileout exists!")
+   end
+
+   fid = open(filein)
+   endian_offset = 8 # First 8 bytes indicate big-endian or else
+   seek(fid, endian_offset)
+   # Obtain the offset of the XML footer
+   offset = read(fid, UInt64)
+   # Store all non-footer part as raw data
+   raw_data = zeros(UInt8, offset)
+
+   seekstart(fid)
+   readbytes!(fid, raw_data, offset)
+   # Read input VLSV file footer
+   doc = read(fid, String) |> parsexml
+   footer = doc |> root
+   close(fid)
+   # Get new variables' offsets
+   offsets = accumulate(+,
+      [offset, [sizeof(newvars[i][1]) for i in eachindex(newvars)[1:end-1]]...])
+   # Create new children for footer
+   for i in eachindex(newvars, offsets)
+      elm = addelement!(footer, "VARIABLE", string(offsets[i]))
+
+      a1 = AttributeNode("arraysize", string(length(newvars[i][1])))
+      a2 = AttributeNode("datasize", string(sizeof(eltype(newvars[i][1]))))
+      a3 =
+         if eltype(newvars[i][1]) <: Signed
+            AttributeNode("datatype", "int")
+         elseif eltype(newvars[i][1]) <: AbstractFloat
+            AttributeNode("datatype", "float")
+         elseif eltype(newvars[i][1]) <: Unsigned
+            AttributeNode("datatype", "uint")
+         end
+      a4 = AttributeNode("mesh", "SpatialGrid")
+      a5 = AttributeNode("name", newvars[i][2])
+      a6 = AttributeNode("unit", newvars[i][3].unit)
+      a7 = AttributeNode("unitConversion", newvars[i][3].unitConversion)
+      a8 = AttributeNode("unitLaTeX", newvars[i][3].unitLaTeX)
+      a9 = AttributeNode("variableLaTeX", newvars[i][3].variableLaTeX)
+      a10 =
+         if ndims(newvars[i][1]) == 1
+            AttributeNode("vectorsize", "1")
+         else
+            AttributeNode("vectorsize", string(size(newvars[i][1], 1)))
+         end
+
+      for attributenode in (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
+         link!(elm, attributenode)
+      end
+   end
+   # Write to fileout
+   open(fileout, "w") do io
+      write(io, @view raw_data[1:8]) # endianness
+      # Compute footer offset
+      totalnewsize = 0
+      for var in newvars
+         totalnewsize += sizeof(var[1])
+      end
+      write(io, offset+totalnewsize) # record new footer offset
+      write(io, @view raw_data[17:end]) # copy original data
+      for var in newvars
+         write(io, var[1])
+      end
+      write(io, string(footer), '\n')
+   end
+   return
+end
 
 """
     issame(file1, file2, tol=1e-4; verbose=false) -> Bool

@@ -1,4 +1,4 @@
-using Vlasiator, SHA, LazyArtifacts
+using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -176,6 +176,20 @@ end
          @test meta["Omegap"][1] == 209.5467447842415
 
          @test meta["Plasmaperiod"][1] == 0.0047722048893178645
+      end
+      @testset "VLSV writing" begin
+         meta = meta1
+         vmag = readvariable(meta, "Vmag", meta.cellid)
+         pa = readvariable(meta, "Panisotropy", meta.cellid)
+         vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
+         push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
+         push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
+
+         write_vlsv(files[1], "bulk_new.vlsv", vars)
+         sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
+         @test sha_str == "a97ae321ef39a0292c018ae377e1fda9aa824426"
+
+         rm("bulk_new.vlsv", force=true)
       end
    end
 

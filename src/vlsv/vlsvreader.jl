@@ -77,7 +77,7 @@ function getfooter(fid::IOStream)
    # First 8 bytes indicate big-endian or else
    endian_offset = 8
    seek(fid, endian_offset)
-   # Obtain the offset of the XML file
+   # Obtain the offset of the XML footer
    offset = read(fid, UInt64)
    seek(fid, offset)
    footer = read(fid, String) |> parsexml |> root

@@ -29,7 +29,7 @@ export
    getcell, getslicecell, getlevel, refineslice, getcellcoordinates, getvcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
    getcellinline, getnearestcellwithvdf, getcellwithvdf,
-   getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, issame,
+   getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, write_vlsv, issame,
    # plot helper
    SI, RE, Log, Linear, SymLog,
    # log
