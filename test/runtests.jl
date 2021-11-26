@@ -179,6 +179,7 @@ end
       end
       @testset "VLSV writing" begin
          meta = meta1
+         # Obtain unsorted derived variables, workaround #59
          vmag = readvariable(meta, "Vmag", meta.cellid)
          pa = readvariable(meta, "Panisotropy", meta.cellid)
          vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
@@ -187,7 +188,7 @@ end
 
          write_vlsv(files[1], "bulk_new.vlsv", vars)
          sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
-         @test sha_str == "a97ae321ef39a0292c018ae377e1fda9aa824426"
+         @test sha_str == "2b209fb022a2db3b013e01606a60c1fac360a79d"
 
          rm("bulk_new.vlsv", force=true)
       end
