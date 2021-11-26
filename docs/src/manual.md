@@ -7,7 +7,7 @@ Here we demonstrate some basic usages of Vlasiator output processing. For more c
 A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: Re` or prepend the module name like `Vlasiator.Re`.
 
 | Physical constant | Value | Meaning |
-|----|-----------------|----------------------|
+|:---:|:--------------:|:-------------|
 | qₑ | -1.60217662e-19 | electron charge, [C]             |
 | mₑ | 9.10938356e-31  | electron mass, [kg]              |
 | qᵢ | 1.60217662e-19  | proton mass, [C]                 |
