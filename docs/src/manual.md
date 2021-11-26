@@ -2,6 +2,22 @@
 
 Here we demonstrate some basic usages of Vlasiator output processing. For more complete description of the arguments, please refer to the [API]((internal.md) documents or type `?foo` to display help message in the REPL.
 
+## Common physical constants
+
+A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: Re` or prepend the module name like `Vlasiator.Re`.
+
+| Physical constant | Value | Meaning |
+|----|-----------------|----------------------|
+| qₑ | -1.60217662e-19 | electron charge, [C]             |
+| mₑ | 9.10938356e-31  | electron mass, [kg]              |
+| qᵢ | 1.60217662e-19  | proton mass, [C]                 |
+| mᵢ | 1.673557546e-27 | proton mass, [kg]                |
+| c  | 299792458.      | speed of light, [m/s]            |
+| μ₀ | 4π*1e-7         | Vacuum permeability, [H/m]       |
+| ϵ₀ | 1/(c^2*μ₀)      | Vacuum permittivity, [F/m]       |
+| kB | 1.38064852e-23  | Boltzmann constant, [m²kg/(s²K)] |
+| Re | 6.371e6         | Earth radius, [m]                |
+
 ## Loading VLSV data
 
 - Read meta data
