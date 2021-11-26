@@ -162,17 +162,19 @@ getvelocity(meta, vcellids, vcellf)
 getpressure(meta, f) # only support full VDF for now
 ```
 
-Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln(1/(2n) * ∫ |f - g| dv)``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density and scalar pressure as f. The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at all, and +∞ a perfect Maxwellian distribution.
+Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big( 1/(2n) \int |f - g| dv \big)``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density and scalar pressure as f.
 
 ```
 getmaxwellianity(meta, f)
 ```
 
+The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at all, and +∞ a perfect Maxwellian distribution.
+
 ## Plotting
 
 Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting functionalities once the target plotting package is used.
 
-Currently I would recommend using `PyPlot.jl`.
+Currently `PyPlot.jl` provides the most complete and fine-tuned plotting capabilities.
 `Plots.jl` is catching up, but it is still slower and lack of features.
 `Makie.jl` is supported experimentally. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend.
 
@@ -344,7 +346,7 @@ To see the full list of options, please refer to the documentation in [API Refer
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `maxamronly`: when it is set to `true`, then only the image file at the highest refinement level is generated.
     This part is experimental and subject to change in the future.
 
-## Append to VLSV
+## Appending to VLSV
 
 We are able to compute derived quantities from an original VLSV file and generate a new VLSV output with new quantities included.
 
@@ -352,10 +354,11 @@ We are able to compute derived quantities from an original VLSV file and generat
 vmag = readvariable(meta, "Vmag", meta.cellid)
 pa = readvariable(meta, "Panisotropy", meta.cellid)
 vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
-push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", ""))) # require LaTeXStrings.jl
+# require LaTeXStrings.jl
+push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
 push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
 
-write_vlsv(files[1], "bulk_new.vlsv", vars)
+write_vlsv("bulk.vlsv", "bulk_new.vlsv", vars)
 ```
 
 !!! note
@@ -363,7 +366,7 @@ write_vlsv(files[1], "bulk_new.vlsv", vars)
 
 ## Tracking log files
 
-We can monitor the runtime performance per iteration through log files:
+The runtime performance per iteration can be monitored through log files:
 
 ```
 file = "logfile.txt"
@@ -401,7 +404,7 @@ plt.show()
 ```
 
 !!! note
-    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, I recommend using the package inside Julia.
+    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, it is recommended to use the package inside Julia.
 
 [^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
 
