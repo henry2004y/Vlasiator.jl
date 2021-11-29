@@ -58,11 +58,11 @@ readvariable(meta, "proton/vg_rho", id)
 - Get variable along a line between two points
 
 ```
-Re = Vlasiator.Re # Earth radii
+using Vlasiator: Re # Earth radii
 point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
-rho_extract = readvariable(meta, "VA", cellids)
+var_extract = readvariable(meta, "VA", cellids)
 ```
 
 - Compare VLSV files
