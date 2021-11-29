@@ -144,10 +144,10 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
 
       for it in 1:nplotstride:size(fPeaks,1) # Iterate over time
          outname = joinpath(outdir,
-            "spatial_perturbation_distribution_$(lpad(it, 3, '0')).png")
+            "spatial_perturbation_distribution_$(lpad(it, 4, '0')).png")
          isfile(outname) && continue
          # Update plot
-         im.set_array(@view fPeaks[it,:,:])
+         im.set_array(fPeaks[it,:,:])
          ax.set_title("$(varnames_print[i]) Perturbation Detection, "*
             "t = $(round(tStart+(it-1)*Δt, digits=1)) ~ "*
             "$(round(tStart+(it+nboxlength-1)*Δt, digits=1))s";
