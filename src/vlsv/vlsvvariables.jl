@@ -206,7 +206,7 @@ const variables_predefined = Dict(
       P = readvariable(meta, "P", ids)
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+         readvariable(meta, "proton/vg_rho", ids) |> vec
       _fillinnerBC!(n, n)
       T = @. P / (n*kB)
    end,
@@ -226,7 +226,7 @@ const variables_predefined = Dict(
       P = readvariable(meta, "Protated", ids)
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+         readvariable(meta, "proton/vg_rho", ids) |> vec
       _fillinnerBC!(n, n)
       @. P[3,3,:] / (n*kB)
    end,
@@ -234,7 +234,7 @@ const variables_predefined = Dict(
       P = readvariable(meta, "Protated", ids)
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+         readvariable(meta, "proton/vg_rho", ids) |> vec
       _fillinnerBC!(n, n)
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
@@ -374,7 +374,7 @@ const variables_predefined = Dict(
    :IonInertial => function (meta, ids=UInt64[])
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+         readvariable(meta, "proton/vg_rho", ids) |> vec
       Z = 1
       ωi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
       di = @. c / ωi
@@ -395,13 +395,13 @@ const variables_predefined = Dict(
    :Plasmaperiod => function (meta, ids=UInt64[])
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+         readvariable(meta, "proton/vg_rho", ids) |> vec
       T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
    end,
    :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+         readvariable(meta, "proton/vg_rho", ids) |> vec
       ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
 )
