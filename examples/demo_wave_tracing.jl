@@ -195,7 +195,7 @@ function estimate_meanstates(files, cellids)
    # Characteristic parameters
    Bnorm = @views abs(mean(B[3,:]))
    di  = √(mᵢ*ϵ₀/(n̄))*c/qᵢ               # ion inertial length, [m]
-   ωci = qᵢ*Bnorm/mᵢ                     # [radian/s]
+   ωci = qᵢ*Bnorm/mᵢ                     # [/s]
    v̄A  = Bnorm / √(μ₀ * n̄ * mᵢ)          # Alfven speed, [m/s]
    v̄S  = √(γ * p̄ / (n̄ * mᵢ))             # sonic speed, [m/s]
 
@@ -208,7 +208,7 @@ function estimate_meanstates(files, cellids)
    println("Flow angle            : ", rpad(round(atand(v̄perp[2], v̄perp[1]); digits=2), 8),
       "degrees")
    println("Ion inertial length   : ", rpad(round(di/1e3; digits=2), 8), "km")
-   println("Gyrofrequency         : ", rpad(round(ωci; digits=2), 8), "rad/s")
+   println("Gyrofrequency         : ", rpad(round(ωci; digits=2), 8), "Hz")
    println("Alfven speed          : ", rpad(round(v̄A/1e3; digits=2), 8), "km/s")
    println("Sonic speed           : ", rpad(round(v̄S/1e3; digits=2), 8), "km/s")
    println("--------------------------------------------------")
