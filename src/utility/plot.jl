@@ -27,7 +27,12 @@ struct PlotArgs
    cb_title::String
 end
 
-"Set plot-related arguments of `var` in `axisunit`."
+"""
+    set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
+
+Set plot-related arguments of `var` in `axisunit`. `normal` and `origin` are used for 2D
+slices of 3D data, as specified in [`pcolormeshslice`](@ref).
+"""
 function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
    (;ncells, coordmin, coordmax) = meta
 
@@ -73,7 +78,11 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    PlotArgs(axisunit, sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title)
 end
 
-"Set colormap limits for `data`."
+"""
+    set_lim(vmin, vmax, data, colorscale=Linear)
+
+Set colormap limits `vmin`, `vmax` for `data` under scale `colorscale`.
+"""
 function set_lim(vmin, vmax, data, colorscale::ColorScale=Linear)
    if colorscale in (Linear, SymLog)
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
@@ -101,7 +110,11 @@ end
 
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
-"Obtain data from `meta` of `var` for 2D plotting. Use `op` to select vector components."
+"""
+    prep2d(meta, var, op=:none) -> Array
+
+Obtain data from `meta` of `var` for 2D plotting. Use `op` to select vector components.
+"""
 function prep2d(meta::MetaVLSV, var, op=:none)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
@@ -122,7 +135,13 @@ function prep2d(meta::MetaVLSV, var, op=:none)
    data
 end
 
-"Return `data` of `var` on a uniform 2D mesh on the finest AMR level."
+"""
+    prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
+
+Return `data` of `var` on a uniform 2D mesh on the finest AMR level. Use `normal` to select
+the plane orientation, and `op` to select the component of a vector, same as in
+[`pcolormeshslice`](@ref).
+"""
 function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
    (;idlist, indexlist) = pArgs
 
