@@ -77,7 +77,7 @@ function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
 end
 
 function set_vector(meta::MetaVLSV, var, comp, axisunit::AxisUnit)
-   @unpack ncells, coordmin, coordmax = meta
+   (;ncells, coordmin, coordmax) = meta
    if occursin("x", comp)
       v1_ = 1
       if occursin("y", comp)
@@ -145,7 +145,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
       # check if origin and normal exist in kwargs
       normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
       origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
-      kwargs = Base.structdiff(kwargs.data, (normal = normal, origin = origin))
+      kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
       c = pcolormeshslice(meta, var, ax; op, axisunit, colorscale, addcolorbar, vmin, vmax,
          normal, origin, kwargs...)
       return c
@@ -261,7 +261,7 @@ end
 
 "Configure customized plot."
 function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
-   @unpack str_title, strx, stry, cb_title = pArgs
+   (;str_title, strx, stry, cb_title) = pArgs
 
    if addcolorbar
       cb = colorbar(c; ax, ticks=cticks, fraction=0.04, pad=0.02)
@@ -353,7 +353,7 @@ Plot mesh cell centers from axis view `projection`. `projection` should be eithe
 """
 function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marker="+",
    kwargs...)
-   @unpack coordmin, coordmax, cellid = meta
+   (;coordmin, coordmax, cellid) = meta
    if projection in ("x", "y", "z")
       dirp, dir1, dir2 =
          if projection == "x"

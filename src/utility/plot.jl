@@ -29,7 +29,7 @@ end
 
 "Set plot-related arguments of `var` in `axisunit`."
 function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
-   @unpack ncells, coordmin, coordmax = meta
+   (;ncells, coordmin, coordmax) = meta
 
    if normal == :x
       seq = @SVector [2,3]
@@ -124,7 +124,7 @@ end
 
 "Return `data` of `var` on a uniform 2D mesh on the finest AMR level."
 function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
-   @unpack idlist, indexlist = pArgs
+   (;idlist, indexlist) = pArgs
 
    data3D = readvariable(meta, var)
 

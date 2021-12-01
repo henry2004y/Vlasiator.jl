@@ -318,7 +318,7 @@ Return variable value of `var` from the vlsv file. By default `sorted=true`, whi
 that for DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
-   @unpack fid, footer, cellindex = meta
+   (;fid, footer, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta)
       return data
@@ -359,7 +359,7 @@ Read a variable `var` in a collection of cells `ids`.
 """
 function readvariable(meta::MetaVLSV, var, ids)
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   @unpack fid, footer, cellid, cellindex = meta
+   (;fid, footer, cellid, cellindex) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta, ids)
@@ -548,8 +548,8 @@ Read velocity cells from a spatial cell of ID `cid`, and return a map of velocit
 ids and corresponding value.
 """
 function readvcells(meta::MetaVLSV, cid; species="proton")
-   @unpack fid, footer = meta
-   @unpack vblock_size = meta.meshes[species]
+   (;fid, footer) = meta
+   (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)
 
    local offset::Int, nblocks::Int
