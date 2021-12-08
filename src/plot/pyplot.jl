@@ -181,8 +181,8 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
    if colorscale != SymLog
       c = ax.pcolormesh(x, y, data; norm=cnorm, shading="nearest", kwargs...)
    else
-      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu, shading="nearest",
-         kwargs...)
+      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu_r,
+         shading="nearest", kwargs...)
    end
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
