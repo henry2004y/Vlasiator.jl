@@ -1,10 +1,10 @@
 # Using user recipes from Plots.
 
-using RecipesBase, Printf, UnPack
+using RecipesBase, Printf
 
 # Build a recipe which acts on a custom type.
 @recipe function f(meta::MetaVLSV, var::AbstractString; op=:mag, axisunit=RE, normal=:y)
-   @unpack ncells, coordmin, coordmax = meta
+   (;ncells, coordmin, coordmax) = meta
    if ndims(meta) == 1
       data = readvariable(meta, var)
 
