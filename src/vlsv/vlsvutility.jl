@@ -665,7 +665,7 @@ end
 end
 
 """
-    getnearestcellwithvdf(meta, id) -> Int
+    getnearestcellwithvdf(meta, id) -> UInt
 
 Find the nearest spatial cell with VDF saved of a given cell `id` in the file `meta`.
 """
