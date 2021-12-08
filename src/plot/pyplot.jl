@@ -126,7 +126,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 # Optional arguments
 - `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
-- `colorscale::ColorScale`: Linear, Log, or SymLog.
+- `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
@@ -233,7 +233,21 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
    c
 end
 
-"Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorscale`."
+"""
+    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0]) -> cnorm, cticks
+
+Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorscale`.
+Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
+linear, logarithmic and symmetric logarithmic, like centered, discrete, and two slope norm.
+For fine-grain control, it is suggested to use the norm methods from `matplotlib.colors`.
+For instance, 
+```
+julia> cnorm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
+julia> cnorm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
+julia> cnorm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
+```
+There are also various options for the ticks available in `matplotlib.ticker`.
+"""
 function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0])
    vmin, vmax = set_lim(v1, v2, data, colorscale)
    if colorscale == Linear
