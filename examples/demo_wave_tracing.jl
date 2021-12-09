@@ -287,9 +287,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       ax = [subplot(221), subplot(223), subplot(222), subplot(224, projection="3d")]
 
       dispersion = reverse!(abs.(F̃.*F̃)[:, end-nt+1:end]', dims=1)
-      im1 = ax[1].pcolormesh(krange, ωrange, dispersion,
-         shading="nearest",
-         norm=matplotlib.colors.LogNorm())
+      im1 = ax[1].pcolormesh(krange, ωrange, dispersion, norm=matplotlib.colors.LogNorm())
 
       ax[1].plot([krange[1], 0.0, krange[end]], [ωCFL[1], 0.0, ωCFL[end]], "--",
          linewidth=1.0, color="k", label="CFL Condition")
@@ -308,7 +306,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       ax[1].set_ylabel(L"$\omega/\Omega_{ci}$")
       ax[1].set_title(L"$k_\perp$ angle w.r.t. x = %$θ")
 
-      im2 = ax[2].pcolormesh((distances .+ coords[1,1])./Re, t, var', shading="nearest")
+      im2 = ax[2].pcolormesh((distances .+ coords[1,1])./Re, t, var')
 
       ax[2].plot((xwave[1] .+ coords[1,1])./Re, twave, ".--",
          color="#d62728", label=L"$V_{bulk}$")
@@ -339,7 +337,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       x, y = Vlasiator.get_axis(pArgs)
       data = Vlasiator.prep2d(meta, varnames[i], components[i])'
       cnorm, cticks = Vlasiator.set_colorbar(Vlasiator.Linear, -Inf, Inf, data)
-      cmesh = ax[3].pcolormesh(x, y, data, norm=cnorm, shading="nearest")
+      cmesh = ax[3].pcolormesh(x, y, data, norm=cnorm)
 
       ax[3].set_xlabel(pArgs.strx)
       ax[3].set_ylabel(pArgs.stry)

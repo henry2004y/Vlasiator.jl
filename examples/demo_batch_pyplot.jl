@@ -40,13 +40,13 @@ for (i, file) in enumerate(files)
       x, y = Vlasiator.get_axis(pArgs)
       data = prep2d(meta, vardict[varname], op)'
    
-      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
+      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap)
    
       set_plot(c, ax, pArgs, cticks, addcolorbar)
    else
       data = prep2d(meta, vardict[varname], op)'
    
-      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap, shading="nearest")
+      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap)
    end
 
    xlabel("X")
