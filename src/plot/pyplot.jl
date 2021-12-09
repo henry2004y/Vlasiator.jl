@@ -4,13 +4,18 @@ using PyPlot
 
 export plot, pcolormesh, pcolormeshslice, vdfslice, streamplot, quiver, plotmesh
 
-@static if matplotlib.__version__ >= "3.3"
+@static if matplotlib.__version__ ≥ "3.3"
    matplotlib.rc("image", cmap="turbo") # set default colormap
+end
+
+@static if matplotlib.__version__ < "3.5"
+   matplotlib.rc("pcolor", shading="nearest") # newer version default "auto"
 end
 
 matplotlib.rc("font", size=14)
 matplotlib.rc("xtick", labelsize=10)
 matplotlib.rc("ytick", labelsize=10)
+
 
 """
     plot(meta, var, ax=nothing; kwargs)
@@ -179,10 +184,9 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
    if isnothing(ax) ax = plt.gca() end
 
    if colorscale != SymLog
-      c = ax.pcolormesh(x, y, data; norm=cnorm, shading="nearest", kwargs...)
+      c = ax.pcolormesh(x, y, data; norm=cnorm, kwargs...)
    else
-      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu_r,
-         shading="nearest", kwargs...)
+      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu_r, kwargs...)
    end
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
@@ -226,7 +230,7 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Sy
 
    if isnothing(ax) ax = plt.gca() end
 
-   c = ax.pcolormesh(x, y, data; norm=cnorm, shading="nearest", kwargs...)
+   c = ax.pcolormesh(x, y, data; norm=cnorm, kwargs...)
 
    set_plot(c, ax, pArgs, cticks, addcolorbar)
 
@@ -338,7 +342,7 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf,
 
    cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
 
-   h = ax.hist2d(v1, v2, bins=(r1, r2), weights=fweight, norm=cnorm)
+   h = ax.hist2d(v1, v2, bins=(r1, r2), weights=fweight, norm=cnorm, shading="flat")
 
    ax.set_title(str_title, fontweight="bold")
    ax.set_xlabel(strx, weight="black")
