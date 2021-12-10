@@ -12,11 +12,11 @@ using Distributed, ParallelDataTransfer, Glob
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
 @everywhere function init_figure(x1, x2)
-   fig = plt.figure(myid(), constrained_layout=true, figsize=(9, 6))
-   subfigs = fig.subfigures(1, 2, wspace=0.02)
+   fig = plt.figure(myid(), constrained_layout=true, figsize=(10, 6))
+   subfigs = fig.subfigures(1, 2, wspace=0.01, width_ratios=[2,1])
 
    axsL = subfigs[1].subplots(4, 1, sharex=true)
-   axsR = subfigs[2].subplots(2, 1, sharex=true, sharey=true)
+   axsR = subfigs[2].subplots(2, 1, sharex=true)
 
    # Set line plots' axes
    axsL[end].set_xlim(x1, x2)
@@ -46,9 +46,9 @@ using Distributed, ParallelDataTransfer, Glob
 
    ls = (l1, l2, l3, l4, l5)
 
-   axsL[2].legend(;loc="upper right", fontsize=12)
-   axsL[3].legend(;loc="lower right", fontsize=12)
-   axsL[4].legend(;loc="upper right", fontsize=12)
+   axsL[2].legend(;loc="upper right", frameon=false, fontsize=12)
+   axsL[3].legend(;loc="upper left", ncol=2, frameon=false, fontsize=12)
+   axsL[4].legend(;loc="upper right", frameon=false, fontsize=12)
 
    vl1 = axsL[1].vlines(loc[1], ρmin, ρmax; colors="r", linestyle="dashed", alpha=0.5)
    vl2 = axsL[2].vlines(loc[1], vmin, vmax; colors="r", linestyle="dashed", alpha=0.5)
@@ -91,7 +91,7 @@ using Distributed, ParallelDataTransfer, Glob
    axsR[1].add_patch(circle1)
    axsR[2].add_patch(circle2)
 
-   cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
+   cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04, extend="max")
    cb1.ax.set_ylabel("[km/s]"; fontsize=14)
 
    cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)

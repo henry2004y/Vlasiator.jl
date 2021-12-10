@@ -34,14 +34,14 @@ function init_figure(varminmax, loc, pArgs)
    (; ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, vamin, vamax, vsmin, vsmax) =
       varminmax
 
-   fig = plt.figure(constrained_layout=true, figsize=(9, 6))
-   subfigs = fig.subfigures(1, 2, wspace=0.02)
+   fig = plt.figure(constrained_layout=true, figsize=(10, 6))
+   subfigs = fig.subfigures(1, 2, wspace=0.01, width_ratios=[2,1])
 
    axsL = subfigs[1].subplots(4, 1, sharex=true)
-   axsR = subfigs[2].subplots(2, 1, sharex=true, sharey=true)
+   axsR = subfigs[2].subplots(2, 1, sharex=true)
 
    # Set line plots' axes
-   axsL[end].set_xlim(x1, x2)
+   axsL[end].set_xlim(loc[1], loc[end])
 
    axsL[1].set_ylim(ρmin, ρmax)
    axsL[2].set_ylim(vmin, vmax)
@@ -68,9 +68,9 @@ function init_figure(varminmax, loc, pArgs)
 
    ls = (l1, l2, l3, l4, l5)
 
-   axsL[2].legend(;loc="upper right", fontsize=12, frameon=false)
-   axsL[3].legend(;loc="lower right", fontsize=12, frameon=false)
-   axsL[4].legend(;loc="upper right", fontsize=12, frameon=false)
+   axsL[2].legend(;loc="upper right", frameon=false, fontsize=12)
+   axsL[3].legend(;loc="upper left", ncol=2, frameon=false, fontsize=12)
+   axsL[4].legend(;loc="upper right", frameon=false, fontsize=12)
 
    vl1 = axsL[1].vlines(loc[1], ρmin, ρmax; colors="r", linestyle="dashed", alpha=0.5)
    vl2 = axsL[2].vlines(loc[1], vmin, vmax; colors="r", linestyle="dashed", alpha=0.5)
