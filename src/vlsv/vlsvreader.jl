@@ -262,6 +262,16 @@ function load(file::AbstractString)
       dcoord, species, meshes)
 end
 
+# Allow do ... end syntax.
+function load(f::Function, file::AbstractString)
+   meta = load(file)
+   try
+      f(meta)
+   finally
+      close(meta.fid)
+   end
+end
+
 function getmaxrefinement(cellid, cellindex, ncells)
    ncell = prod(ncells)
    maxamr, cid = 0, ncell

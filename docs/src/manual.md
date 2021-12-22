@@ -29,6 +29,16 @@ meta = load(file)
 
 This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and species, which can then be passed into all kinds of methods that process the data.
 
+- Read parameter
+
+For convenience we support the do-block syntax that automatically closes the file stream.
+
+```
+t = load(file) do meta
+   readparameter(meta, "time")
+end
+```
+
 - Read variable meta data
 
 ```

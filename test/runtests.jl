@@ -44,6 +44,11 @@ end
          t = readparameter(meta, "time")
          @test t == 10.0
          @test_throws ArgumentError meta["nonsense"]
+         # Do-Block syntax
+         t = load(files[1]) do meta
+            readparameter(meta, "time")
+         end
+         @test t == 10.0
          # unsorted ID
          @test readvariable(meta, "CellID", false) == 10:-1:1
          indexRef = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
