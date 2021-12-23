@@ -379,10 +379,7 @@ function prep_vdf(meta::MetaVLSV, location;
       @info "Original coordinates : $location"
       @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
       @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
-      let
-         x, y, z = getcellcoordinates(meta, cidNearest)
-         @info "cellid $cidNearest, x = $x, y = $y, z = $z"
-      end
+      @info "CellID: $cidNearest"
 
       if center == :bulk
          @info "Transforming to plasma frame, travelling at speed $Vbulk"
