@@ -758,7 +758,11 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
 
    @inbounds for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
-      ids = cellidsorted[nLow .< cellidsorted .≤ nHigh]
+
+      idfirst_ = searchsortedfirst(cellidsorted, nLow+1)
+      idlast_  = searchsortedlast(cellidsorted, nHigh)
+
+      ids = cellidsorted[idfirst_:idlast_]
 
       # indicate the condition of non-existing cells
       idrefined = setdiff(nLow+1:nHigh, ids)
