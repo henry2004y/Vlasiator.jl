@@ -263,7 +263,7 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
 
    # Get cell coordinates
    cellCoords = [zeros(SVector{3, Float32}) for _ in vcellblockids]
-   @inbounds for i in eachindex(vcellblockids)
+   @inbounds @simd for i in eachindex(vcellblockids)
       cellCoords[i] = SVector(blockCoord[i][1] + (cellidxyz[i][1] + 0.5) * dv[1],
                               blockCoord[i][2] + (cellidxyz[i][2] + 0.5) * dv[2],
                               blockCoord[i][3] + (cellidxyz[i][3] + 0.5) * dv[3] )
@@ -379,7 +379,7 @@ function flatten(vmesh::VMeshInfo, vcellids, vcellf)
       vmesh.vblock_size[2]*vmesh.vblocks[2],
       vmesh.vblock_size[3]*vmesh.vblocks[3])
    # Fill nonzero values
-   @inbounds for i in eachindex(vcellids)
+   @inbounds @simd for i in eachindex(vcellids)
       VDFraw[vcellids[i]+1] = vcellf[i]
    end
 
@@ -388,7 +388,7 @@ function flatten(vmesh::VMeshInfo, vcellids, vcellf)
       vmesh.vblock_size[2]*vmesh.vblocks[2],
       vmesh.vblock_size[3]*vmesh.vblocks[3])
 
-   @inbounds for i in eachindex(VDF)
+   @inbounds @simd for i in eachindex(VDF)
       iB = (i - 1) ÷ blocksize
       iBx = iB % vblocks[1]
       iBy = iB % sliceBz ÷ vblocks[1]
@@ -762,7 +762,7 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
       # indicate the condition of non-existing cells
       idrefined = setdiff(nLow+1:nHigh, ids)
 
-      for id in idrefined
+      @simd for id in idrefined
          ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
          vtkGhostType[ilvl+1][ix,iy,iz] = 8
       end
@@ -820,7 +820,7 @@ function fillcell!(ids, ncells, maxamr, nLow, dataout, datain)
 end
 
 @inline function _fillcelldata!(dataout, datain, i, j, k, index)
-   @inbounds for icomp in axes(datain,1)
+   @inbounds @simd for icomp in axes(datain,1)
       dataout[icomp,i,j,k] = datain[icomp,index]
    end
 end
