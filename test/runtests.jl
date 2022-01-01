@@ -222,7 +222,7 @@ end
    if group in (:vtk, :all)
       @testset "VTK" begin
          meta = meta2 # no amr
-         data, ghostType = Vlasiator.fillmesh(meta, "proton/vg_rho")
+         data, ghostType = Vlasiator.fillmesh(meta, ["proton/vg_rho"])
          @test size(data[1][1]) == (1, 63, 100, 1)
 
          meta = meta3 # amr
