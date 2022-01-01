@@ -33,7 +33,7 @@ struct MetaVLSV
    variable::Vector{String}
    "unsorted cell IDs"
    cellid::Vector{UInt64}
-   "ordered sequence index of raw cell IDs"
+   "ordered sequence indexes of raw cell IDs"
    cellindex::Vector{Int64}
    time::Float64
    maxamr::Int64
