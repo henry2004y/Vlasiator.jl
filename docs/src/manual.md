@@ -198,31 +198,37 @@ All the functions with identical names as in Matplotlib accept all possible keyw
 !!! warning
     The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`. See [Matplotlib's two interfaces](https://aaltoscicomp.github.io/python-for-scicomp/data-visualization/#matplotlib-has-two-different-interfaces) for details.
 
-- Scalar colored contour for 2D simulation
+- Scalar colored contour from 2D simulation
 
 ```
 pcolormesh(meta, "rho")
 ```
 
-- Vector z component colored contour for 2D simulation in a manually set range
+- Vector z component colored contour from 2D simulation in a manually set range
 
 ```
 pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
-- Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
+- Vz colored contour from 2D simulation with prescribed colormap
+
+```
+pcolormesh(meta, "proton/vg_v", op=:z, colorscale=Linear, cmap=matplotlib.cm.RdBu_r)
+```
+
+- Derived quantity colored contour from 2D simulation (as long as the input variable is in the predefined dictionary)
 
 ```
 pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
 ```
 
-- Streamline for 2D simulation
+- Streamline from 2D simulation
 
 ```
 streamplot(meta, "rho_v", comp="xy")
 ```
 
-- Quiver for 2D simulation
+- Quiver from 2D simulation
 
 ```
 quiver(meta, "rho_v", comp="xy")
@@ -241,7 +247,7 @@ You can choose to use linear/log color scale via `colorscale=Linear` or `colorsc
 plotmesh(meta; projection="z", color="w")
 ```
 
-- Cut slice colored contour for 3D simulation
+- Cut slice colored contour from 3D simulation
 
 ```
 pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
@@ -268,13 +274,13 @@ For a full list available optional arguments, please refer to the [doc for each 
 To trigger the Plots package plotting, `using Plots`.
 This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but a wide range of other options are also presented.
 
-- Scaler colored contour for 2D simulation
+- Scaler colored contour from 2D simulation
 
 ```
 heatmap(meta, var, aspect_ratio=:equal, c=:turbo)
 ```
 
-- Scaler colored contour with lines for 2D simulation
+- Scaler colored contour with lines from 2D simulation
 
 ```
 contourf(meta, var)
