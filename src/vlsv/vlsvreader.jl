@@ -12,7 +12,7 @@ struct VMeshInfo
    dv::SVector{3, Float64}
 end
 
-"Variable MetaVLSV from the vlsv footer."
+"Variable information from the VLSV footer."
 struct VarInfo
    "unit of the variable as a string"
    unit::String
@@ -72,7 +72,7 @@ function Base.show(io::IO, vmesh::VMeshInfo)
    println(io, "vz range: ", vmesh.vmin[3], ":", vmesh.dv[3], ":", vmesh.vmax[3])
 end
 
-"Return the xml footer of vlsv."
+"Return the XML footer of opened VLSV file."
 function getfooter(fid::IOStream)
    # First 8 bytes indicate big-endian or else
    endian_offset = 8
@@ -84,7 +84,7 @@ function getfooter(fid::IOStream)
 end
 
 
-"Return size and type information for the object."
+"Return size and type information for the inquired parameter/data with `name`."
 function getObjInfo(footer, name, tag, attr)
    local arraysize, datasize, datatype, vectorsize, variable_offset
    isFound = false
@@ -115,7 +115,7 @@ function getObjInfo(footer, name, tag, attr)
    T, variable_offset, arraysize, datasize, vectorsize
 end
 
-"Return vectors of `name` from the vlsv file with `footer` opened by `fid`."
+"Return vector of `name` from the VLSV file with `footer` associated with stream `fid`."
 function readvector(fid::IOStream, footer, name, tag)
    T, offset, asize, dsize, vsize = getObjInfo(footer, name, tag, "name")
 
@@ -139,7 +139,7 @@ end
 """
     load(file) -> MetaVLSV
 
-Return MetaVLSV from a vlsv `file`.
+Generate a MetaVLSV object from `file` of VLSV format.
 """
 function load(file::AbstractString)
    isfile(file) || throw(ArgumentError("Cannot open \'$file\': not a file"))
@@ -285,7 +285,7 @@ end
 """
     readvariablemeta(meta, var) -> VarInfo
 
-Return VarInfo about `var` in the vlsv file linked to `meta`.
+Return VarInfo about `var` in the VLSV file associated with `meta`.
 """
 function readvariablemeta(meta::MetaVLSV, var)
 
@@ -295,7 +295,7 @@ function readvariablemeta(meta::MetaVLSV, var)
 
    if varSym in keys(units_predefined)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
-   elseif hasvariable(meta, var) # For Vlasiator 5 vlsv files, MetaVLSV is included
+   elseif hasvariable(meta, var) # For Vlasiator 5 files, MetaVLSV is included
       for varinfo in findall("//VARIABLE", meta.footer)
          if varinfo["name"] == var
             haskey(varinfo, "unit") || break
@@ -324,8 +324,8 @@ end
 """
     readvariable(meta::MetaVLSV, var, sorted::Bool=true) -> Array
 
-Return variable value of `var` from the vlsv file. By default `sorted=true`, which means
-that for DCCRG grid the variables are sorted by cell ID.
+Return variable value of `var` from the VLSV file associated with `meta`. By default
+`sorted=true`, which means that for DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    (;fid, footer, cellindex) = meta
@@ -365,11 +365,11 @@ end
 """
     readvariable(meta::MetaVLSV, var, ids) -> Array
 
-Read a variable `var` in a collection of cells `ids`.
+Read variable `var` in a collection of cells `ids` associated with `meta`.
 """
 function readvariable(meta::MetaVLSV, var, ids)
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, footer, cellid, cellindex) = meta
+   (;fid, footer, cellid) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta, ids)
@@ -444,7 +444,7 @@ end
 
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
-"Return 2d scalar/vector data. Nonpublic because it won't work with DCCRG AMR."
+"Return 2d scalar/vector data. Nonpublic since it won't work with DCCRG AMR."
 function getdata2d(meta::MetaVLSV, var)
    @assert ndims(meta) == 2 "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
@@ -508,14 +508,14 @@ end
 """
     hasvariable(meta, var) -> Bool
 
-Check if the VLSV file contains a variable.
+Check if the VLSV file associated with `meta` contains a variable `var`.
 """
 hasvariable(meta::MetaVLSV, var) = hasname(meta.footer, "VARIABLE", var)
 
 """
     readparameter(meta, param)
 
-Return the parameter value from vlsv file.
+Return the parameter value from the VLSV file associated with `meta`.
 """
 readparameter(meta::MetaVLSV, param) = readparameter(meta.fid, meta.footer, param)
 
@@ -528,7 +528,7 @@ end
 """
     hasparameter(meta, param) -> Bool
 
-Check if the vlsv file contains a certain parameter.
+Check if the VLSV file contains a certain parameter `param`.
 """
 hasparameter(meta::MetaVLSV, param) = hasname(meta.footer, "PARAMETER", param)
 
@@ -547,15 +547,15 @@ end
 """
     ndims(meta) -> Int
 
-Return the dimension of VLSV data.
+Return the simulation spatial dimension of VLSV data.
 """
 Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 
 """
     readvcells(meta, cid; species="proton") -> vcellids, vcellf
 
-Read velocity cells from a spatial cell of ID `cid`, and return a map of velocity cell
-ids and corresponding value.
+Read velocity cells of `species` from a spatial cell of ID `cid` associated with `meta`, and
+return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
 function readvcells(meta::MetaVLSV, cid; species="proton")
    (;fid, footer) = meta
