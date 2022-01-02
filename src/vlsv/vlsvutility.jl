@@ -48,8 +48,10 @@ end
 """
     getlevel(meta, cid) -> Int
 
-Return the AMR level of a given cell ID. Note that this function does not check if the VLSV
-file of `meta` actually contains `cid`: it may be shadowed by refined children.
+Return the AMR level of a given cell ID `cid`.
+!!! warning
+This function does not check if the VLSV file of `meta` actually contains `cid`; it may be
+shadowed by refined children.
 """
 function getlevel(meta::MetaVLSV, cid::Integer)
    ncell = prod(meta.ncells)
@@ -275,7 +277,9 @@ end
     getdensity(meta, VDF; species="proton")
     getdensity(meta, vcellids, vcellf; species="proton")
 
-Get density from VDF, n = ∫ f(r,v) dV.
+Get density from `VDF` of `species` associated with `meta`, n = ∫ f(r,v) dV. Alternatively,
+one can pass `vcellids` as local indices of nonzero VDFs and `vcellf` as their corresponding
+values.
 """
 function getdensity(meta::MetaVLSV, VDF; species="proton")
    (;dv) = meta.meshes[species]
@@ -299,10 +303,11 @@ function getdensity(meta::MetaVLSV, vcellids, vcellf; species="proton")
 end
 
 """
-    getvelocity(meta, VDF; species="proton")
-    getvelocity(meta, vcellids, vcellf; species="proton")
+    getvelocity(meta, VDF; species="proton") -> SVector{3}
+    getvelocity(meta, vcellids, vcellf; species="proton") -> SVector{3}
 
-Get bulk velocity from VDF, u = ∫ v * f(r,v) dV / n.
+Get bulk velocity from `VDF` of `species`, u = ∫ v * f(r,v) dV / n. Alternatively, one can
+pass `vcellids`, `vcellf`, as in [`getdensity`](@ref).
 """
 function getvelocity(meta::MetaVLSV, VDF; species="proton")
    (;dv, vmin) = meta.meshes[species]
@@ -326,17 +331,15 @@ function getvelocity(meta::MetaVLSV, VDF; species="proton")
 end
 
 function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
-   (;dv, vmin) = meta.meshes[species]
-
    VDF = flatten(meta.meshes[species], vcellids, vcellf)
-
    u = getvelocity(meta, VDF; species)
 end
 
 """
-    getpressure(VDF)
+    getpressure(meta, VDF; species="proton") -> SVector{6}
 
-Get pressure tensor from VDF, pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
+Get pressure tensor of `species` from `VDF` associated with `meta`,
+pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
 """
 function getpressure(meta::MetaVLSV, VDF; species="proton")
    (;dv, vmin) = meta.meshes[species]
@@ -455,7 +458,7 @@ end
     getcellinline(meta, point1, point2) -> cellids, distances, coords
 
 Returns cell IDs, distances and coordinates for every cell in a line between two given
-points `point1` and `point2`. May be improved later with preallocation!
+points `point1` and `point2`. TODO: preallocation?
 """
 function getcellinline(meta::MetaVLSV, point1, point2)
    (;coordmin, coordmax, ncells) = meta
@@ -525,7 +528,7 @@ end
 """
     getslicecell(meta, sliceoffset, idim, minCoord, maxCoord) -> idlist, indexlist
 
-Find the cell ids `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
+Find the cell IDs `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
 direction `idim` at `sliceoffset`, and the `indexlist`, which is a mapping from original
 order to the cut plane and can be used to select data onto the plane.
 """
@@ -668,7 +671,7 @@ end
 """
     getnearestcellwithvdf(meta, id) -> UInt
 
-Find the nearest spatial cell with VDF saved of a given cell `id` in the file `meta`.
+Find the nearest spatial cell with VDF saved of a given cell `id` associated with `meta`.
 """
 function getnearestcellwithvdf(meta::MetaVLSV, id)
    cells = getcellwithvdf(meta)
@@ -685,7 +688,7 @@ end
 """
     getcellwithvdf(meta) -> cellids
 
-Get all the cell IDs with VDF saved.
+Get all the cell IDs with VDF saved associated with `meta`.
 """
 function getcellwithvdf(meta::MetaVLSV)
    fid, footer = meta.fid, meta.footer
@@ -1022,7 +1025,8 @@ end
 """
     issame(file1, file2, tol=1e-4; verbose=false) -> Bool
 
-Check if two VLSV files are approximately identical.
+Check if two VLSV files `file1` and `file2` are approximately identical, under relative
+tolerance `tol`.
 """
 function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
    # 1st sanity check: minimal filesize difference
