@@ -239,7 +239,7 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log color scale via `colorscale=Linear` or `colorscale=Log`, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit=RE` etc..
+You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=RE` etc.
 
 - Mesh denoted by cell centers
 
