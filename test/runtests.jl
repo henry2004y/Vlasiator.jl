@@ -176,7 +176,7 @@ end
 
          @test meta["Gyrofrequency"][1] == 0.04579950356933307
 
-         @test meta["J"][1,1000] == 2.314360722590665e-14
+         @test meta["J"][1,1000] == 1.4322914301940016e-15
 
          @test meta["Omegap"][1] == 209.5467447842415
 
@@ -215,6 +215,18 @@ end
             @test sum(Vlasiator.curl(dx, A)) == 0.0
             A = ones(Float32, 3,3,1,3)
             @test sum(Vlasiator.curl(dx, A)) == 0.0
+         end
+      end
+      @testset "Gradient" begin
+         let dx = ones(Float32, 3)
+            A = ones(Float32, 3,3,3)
+            @test sum(Vlasiator.gradient(dx, A)) == 0.0
+         end
+      end
+      @testset "Divergence" begin
+         let dx = ones(Float32, 3)
+            A = ones(Float32, 3,3,3,3)
+            @test sum(Vlasiator.divergence(dx, A)) == 0.0
          end
       end
    end
