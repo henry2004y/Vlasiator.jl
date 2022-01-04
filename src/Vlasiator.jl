@@ -14,7 +14,7 @@ using Dates
 
 include("utility/rotation.jl")
 include("utility/log.jl")
-include("utility/curvature.jl")
+include("utility/vector.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
