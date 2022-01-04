@@ -209,24 +209,21 @@ end
          Rᵀ = Vlasiator.rotateTensorToVectorZ(R, v)
          @test Rᵀ ≈ [1/√2 -1/√2 0.0; 1/√2 1/√2 0.0; 0.0 0.0 1.0]
       end
-      @testset "Curvature" begin
+      @testset "Curvature, Divergence" begin
          let dx = ones(Float32, 3)
-            A = ones(Float32, 3,3,3,3)
-            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            # 2D
             A = ones(Float32, 3,3,1,3)
             @test sum(Vlasiator.curl(dx, A)) == 0.0
+            # 3D
+            A = ones(Float32, 3,3,3,3)
+            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            @test sum(Vlasiator.divergence(dx, A)) == 0.0
          end
       end
       @testset "Gradient" begin
          let dx = ones(Float32, 3)
             A = ones(Float32, 3,3,3)
             @test sum(Vlasiator.gradient(dx, A)) == 0.0
-         end
-      end
-      @testset "Divergence" begin
-         let dx = ones(Float32, 3)
-            A = ones(Float32, 3,3,3,3)
-            @test sum(Vlasiator.divergence(dx, A)) == 0.0
          end
       end
    end
