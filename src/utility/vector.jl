@@ -1,10 +1,10 @@
 """
-    curl(dx::AbstractVector, A::AbstractArray)
+    curl(dx, A::AbstractArray)
 
 Calculate 2nd order cell-centered ∇×A where `A` is a 4D array of size (3, nx, ny, nz) and
 `dx` is a vector of grid intervals in each dimension.
 """
-function curl(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
+function curl(dx, A::AbstractArray{T,N}) where {T,N}
    @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
 
    @views Ax, Ay, Az = A[1,:,:,:], A[2,:,:,:], A[3,:,:,:]
@@ -12,7 +12,7 @@ function curl(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
    B = zeros(T, size(A))
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
-   invdx = inv.(2*dx)
+   invdx = @. inv(2*dx)
 
    if any(==(1), size(A)) # 2Ds
       if size(A,4) == 1
@@ -60,17 +60,17 @@ function curl(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
 end
 
 """
-    gradient(dx::AbstractVector, A::AbstractArray)
+    gradient(dx, A::AbstractArray)
 
 Calculate 2nd order cell-centered ∇A where `A` is a 3D scalar array of size (nx, ny, nz)
 and `dx` is a vector of grid intervals in each dimension.
 """
-function gradient(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
+function gradient(dx, A::AbstractArray{T,N}) where {T,N}
    @assert N == 3 && length(dx) == 3 "Input scalar shall be indexed in 3D!"
    @assert all(!=(1), size(A)) "Input scalar must be from 3D data!"
 
    B = zeros(T, 3, size(A)[1], size(A)[2], size(A)[3])
-   invdx = inv.(2*dx)
+   invdx = @. inv(2*dx)
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
    # 3D
@@ -87,12 +87,12 @@ function gradient(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
 end
 
 """
-    divergence(dx::AbstractVector, A::AbstractArray)
+    divergence(dx, A::AbstractArray)
 
 Calculate 2nd order cell-centered ∇⋅A where `A` is a 4D array of size (3, nx, ny, nz) and
 `dx` is a vector of grid intervals in each dimension.
 """
-function divergence(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
+function divergence(dx, A::AbstractArray{T,N}) where {T,N}
    @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
    @assert all(!=(1), size(A)) "Input vector must be from 3D data!"
 
@@ -100,7 +100,7 @@ function divergence(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
 
    B = zeros(T, size(A)[2:end])
 
-   invdx = inv.(2*dx)
+   invdx = @. inv(2*dx)
 
    @inbounds for k in 2:size(A,4)-1, j in 2:size(A,3)-1, i in 2:size(A,2)-1
       ∂Ax∂x = (-Ax[i-1,j,k] + Ax[i+1,j,k]) * invdx[1]
