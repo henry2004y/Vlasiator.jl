@@ -5,11 +5,11 @@ include("vlsvvariables.jl")
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
-   vblocks::SVector{3, Int64}
-   vblock_size::SVector{3, Int64}
-   vmin::SVector{3, Float64}
-   vmax::SVector{3, Float64}
-   dv::SVector{3, Float64}
+   vblocks::Tuple{Int64, Int64, Int64}
+   vblock_size::Tuple{Int64, Int64, Int64}
+   vmin::Tuple{Float64, Float64, Float64}
+   vmax::Tuple{Float64, Float64, Float64}
+   dv::Tuple{Float64, Float64, Float64}
 end
 
 "Variable information from the VLSV footer."
@@ -38,11 +38,11 @@ struct MetaVLSV
    time::Float64
    maxamr::Int64
    hasvdf::Bool
-   ncells::SVector{3, Int64}
-   block_size::SVector{3, Int64}
-   coordmin::SVector{3, Float64}
-   coordmax::SVector{3, Float64}
-   dcoord::SVector{3, Float64}
+   ncells::Tuple{Int64, Int64, Int64}
+   block_size::Tuple{Int64, Int64, Int64}
+   coordmin::Tuple{Float64, Float64, Float64}
+   coordmax::Tuple{Float64, Float64, Float64}
+   dcoord::Tuple{Float64, Float64, Float64}
    species::Vector{String}
    meshes::Dict{String, VMeshInfo}
 end
@@ -67,9 +67,8 @@ end
 function Base.show(io::IO, vmesh::VMeshInfo)
    println(io, "vblocks: ", vmesh.vblocks)
    println(io, "vblock size: ", vmesh.vblock_size)
-   println(io, "vx range: ", vmesh.vmin[1], ":", vmesh.dv[1], ":", vmesh.vmax[1])
-   println(io, "vy range: ", vmesh.vmin[2], ":", vmesh.dv[2], ":", vmesh.vmax[2])
-   println(io, "vz range: ", vmesh.vmin[3], ":", vmesh.dv[3], ":", vmesh.vmax[3])
+   foreach((vmin,dv,vmax,comp) -> println(io, "v$comp range: ", vmin, ":", dv, ":", vmax),
+      vmesh.vmin, vmesh.dv, vmesh.vmax, 'x':'z')
 end
 
 "Return the XML footer of opened VLSV file."
@@ -162,15 +161,12 @@ function load(file::AbstractString)
    nodeCoordsY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")::Vector{Float64}
    nodeCoordsZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")::Vector{Float64}
 
-   @inbounds ncells = SVector(bbox[1], bbox[2], bbox[3])
-   @inbounds block_size = SVector(bbox[4], bbox[5], bbox[6])
-   @inbounds coordmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
-   @inbounds coordmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
+   @inbounds ncells = (bbox[1], bbox[2], bbox[3])
+   @inbounds block_size = (bbox[4], bbox[5], bbox[6])
+   @inbounds coordmin = (nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
+   @inbounds coordmax = (nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
 
-   dcoord = SVector(
-      (coordmax[1] - coordmin[1]) / ncells[1],
-      (coordmax[2] - coordmin[2]) / ncells[2],
-      (coordmax[3] - coordmin[3]) / ncells[3])
+   dcoord = ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
    meshes = Dict{String, VMeshInfo}()
 
@@ -188,40 +184,31 @@ function load(file::AbstractString)
          nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
          nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
          nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
-         vblocks = SVector(bbox[1], bbox[2], bbox[3])
-         vblock_size = SVector(bbox[4], bbox[5], bbox[6])
-         vmin = SVector(nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
-         vmax = SVector(nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
-         dv = SVector(
-            (vmax[1] - vmin[1]) / vblocks[1] / vblock_size[1],
-            (vmax[2] - vmin[2]) / vblocks[2] / vblock_size[2],
-            (vmax[3] - vmin[3]) / vblocks[3] / vblock_size[3])
+         vblocks = (bbox[1], bbox[2], bbox[3])
+         vblock_size = (bbox[4], bbox[5], bbox[6])
+         vmin = (nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
+         vmax = (nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
+         dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
       else
          popname = "avgs"
 
          if "vxblocks_ini" in getindex.(findall("//PARAMETER", footer), "name")
             # In VLSV before 5.0 the mesh is defined with parameters.
-            vblocks = SVector(
-               readparameter(fid, footer, "vxblocks_ini"),
-               readparameter(fid, footer, "vyblocks_ini"),
-               readparameter(fid, footer, "vzblocks_ini"))
-            vblock_size = SVector(4, 4, 4)
-            vmin = SVector(
-               readparameter(fid, footer, "vxmin"),
-               readparameter(fid, footer, "vymin"),
-               readparameter(fid, footer, "vzmin") )
-            vmax = SVector(
-               readparameter(fid, footer, "vxmax"),
-               readparameter(fid, footer, "vymax"),
-               readparameter(fid, footer, "vzmax") )
-            dv = SVector{3}(@. (vmax - vmin) / vblocks / vblock_size)
+            vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
+            vmin_str = ("vxmin", "vymin", "vzmin")
+            vmax_str = ("vxmax", "vymax", "vzmax")
+            vblocks = ntuple(i -> readparameter(fid, footer, vblocks_str[i]), Val(3))
+            vblock_size = (4, 4, 4)
+            vmin = ntuple(i -> readparameter(fid, footer, vmin_str[i]), Val(3))
+            vmax = ntuple(i -> readparameter(fid, footer, vmax_str[i]), Val(3))
+            dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
          else
             # No velocity space info, e.g., file not written by Vlasiator
-            vblocks = SVector(0, 0, 0)
-            vblock_size = SVector(4, 4, 4)
-            vmin = SVector(0, 0, 0)
-            vmax = SVector(0, 0, 0)
-            dv = SVector(1, 1, 1)
+            vblocks = (0, 0, 0)
+            vblock_size = (4, 4, 4)
+            vmin = (0, 0, 0)
+            vmax = (0, 0, 0)
+            dv = (1, 1, 1)
          end
       end
 
@@ -337,7 +324,7 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    raw = readvector(fid, footer, var, "VARIABLE")
 
    if startswith(var, "fg_") # fsgrid
-      bbox = SVector{6}(readmesh(fid, footer, "fsgrid", "MESH_BBOX")::Vector{Int})
+      bbox = readmesh(fid, footer, "fsgrid", "MESH_BBOX")::Vector{Int}
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
@@ -413,29 +400,20 @@ function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
          (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
          (i - 1) % fgDecomposition[3] ]
 
-      lsize = SVector(calcLocalSize(bbox[1], fgDecomposition[1], xyz[1]),
-                      calcLocalSize(bbox[2], fgDecomposition[2], xyz[2]),
-                      calcLocalSize(bbox[3], fgDecomposition[3], xyz[3]) )
-
-      lstart = SVector(calcLocalStart(bbox[1], fgDecomposition[1], xyz[1]),
-                       calcLocalStart(bbox[2], fgDecomposition[2], xyz[2]),
-                       calcLocalStart(bbox[3], fgDecomposition[3], xyz[3]) )
-
-      offsetnext = offsetnow + lsize[1]*lsize[2]*lsize[3]
-
-      lend = lstart + lsize .- 1
+      lsize = ntuple(i -> calcLocalSize(bbox[i], fgDecomposition[i], xyz[i]), Val(3))
+      lstart = ntuple(i -> calcLocalStart(bbox[i], fgDecomposition[i], xyz[i]), Val(3))
+      offsetnext = offsetnow + prod(lsize)
+      lend = @. lstart + lsize - 1
+      lrange = map((x,y)->x:y, lstart, lend)
       # Reorder data
       if ndims(raw) > 1
-         ldata = raw[:,offsetnow:offsetnext-1]
-         ldata = reshape(ldata, size(raw,1), lsize[1], lsize[2], lsize[3])
+         ldata = reshape(raw[:,offsetnow:offsetnext-1], size(raw,1), lsize...)
 
-         dataOrdered[:,lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] =
-            ldata
+         dataOrdered[:,lrange...] = ldata
       else
-         ldata = raw[offsetnow:offsetnext-1]
-         ldata = reshape(ldata, lsize[1], lsize[2], lsize[3])
+         ldata = reshape(raw[offsetnow:offsetnext-1], lsize...)
 
-         dataOrdered[lstart[1]:lend[1],lstart[2]:lend[2],lstart[3]:lend[3]] = ldata
+         dataOrdered[lrange...] = ldata
       end
       offsetnow = offsetnext
    end
@@ -446,7 +424,7 @@ end
 
 "Return 2d scalar/vector data. Nonpublic since it won't work with DCCRG AMR."
 function getdata2d(meta::MetaVLSV, var)
-   @assert ndims(meta) == 2 "2D outputs required."
+   ndims(meta) == 2 || @error "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
    data = ndims(data) == 1 ?
@@ -460,7 +438,7 @@ end
 # Optimize decomposition of this grid over the given number of processors.
 # Reference: fsgrid.hpp
 function getDomainDecomposition(globalsize, nprocs)
-   domainDecomp = SVector(1, 1, 1)
+   domainDecomp = (1, 1, 1)
    minValue = typemax(Int)
 
    @inbounds for i = 1:min(nprocs, globalsize[1])
@@ -484,7 +462,7 @@ function getDomainDecomposition(globalsize, nprocs)
 
             if i * j * k == nprocs && v < minValue
                minValue = v
-               domainDecomp = SVector(i, j, k)
+               domainDecomp = (i, j, k)
             end
          end
       end
