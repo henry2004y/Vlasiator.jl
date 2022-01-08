@@ -37,22 +37,22 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    (;ncells, coordmin, coordmax) = meta
 
    if normal == :x
-      seq = @SVector [2,3]
+      seq = (2,3)
       dir = 1
    elseif normal == :y || (ncells[2] == 1 && ncells[3] != 1) # polar
-      seq = @SVector [1,3]
+      seq = (1,3)
       dir = 2
    elseif normal == :z || (ncells[3] == 1 && ncells[2] != 1) # ecliptic
-      seq = @SVector [1,2]
+      seq = (1,2)
       dir = 3
    else
       throw(ArgumentError("1D data detected. Please use 1D plot functions."))
    end
 
    plotrange = (coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]])
-   axislabels = ['X', 'Y', 'Z'][seq]
+   axislabels = ['X', 'Y', 'Z'][[seq...]]
    # Scale the sizes to the highest refinement level
-   sizes = ncells[seq] .* 2^meta.maxamr # data needs to be refined later
+   sizes = ncells[[seq...]] .* 2^meta.maxamr # data needs to be refined later
 
    if normal == :none
       idlist, indexlist = Int[], Int[]

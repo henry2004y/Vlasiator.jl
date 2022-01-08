@@ -395,10 +395,10 @@ function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
    offsetnow = 1
 
    @inbounds @views for i = 1:nIORanks
-      xyz = SA[
+      xyz = (
          (i - 1) ÷ fgDecomposition[3] ÷ fgDecomposition[2],
          (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
-         (i - 1) % fgDecomposition[3] ]
+         (i - 1) % fgDecomposition[3] )
 
       lsize = ntuple(i -> calcLocalSize(bbox[i], fgDecomposition[i], xyz[i]), Val(3))
       lstart = ntuple(i -> calcLocalStart(bbox[i], fgDecomposition[i], xyz[i]), Val(3))

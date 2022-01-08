@@ -124,7 +124,7 @@ function getchildren(meta::MetaVLSV, cid::Integer)
    iz *= 2
 
    nchildren = 2^ndims(meta)
-   cid = @MVector zeros(Int, nchildren)
+   cid = zeros(Int, nchildren)
    # get the first cell ID on the finer level
    cid1st += ncell*8^mylvl
    ix_, iy_ = (ix, ix+1), (iy, iy+1)
@@ -169,7 +169,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
    iz, iz1 = minmax(iz, iz1)
 
    nsiblings = 2^ndims(meta)
-   cid = @MVector zeros(Int, nsiblings)
+   cid = zeros(Int, nsiblings)
    ix_, iy_ = (ix, ix1), (iy, iy1)
    iz_ = zcell != 1 ? (iz, iz1) : iz
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
@@ -465,8 +465,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
    ϵ = eps(Float32)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = point1
-   coef_min = MVector(0.0, 0.0, 0.0)
-   coef_max = MVector(0.0, 0.0, 0.0)
+   coef_min = [0.0, 0.0, 0.0]
+   coef_max = [0.0, 0.0, 0.0]
 
    while true
       cid = getcell(meta, p)
@@ -711,9 +711,9 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
-   offset = @MVector zeros(Int, nv)
-   arraysize = @MVector zeros(Int, nv)
-   vsize  = @MVector zeros(Int, nv)
+   offset = zeros(Int, nv)
+   arraysize = zeros(Int, nv)
+   vsize  = zeros(Int, nv)
    @inbounds for i = 1:nv
       T[i], offset[i], arraysize[i], _, vsize[i] =
          getObjInfo(footer, vars[i], "VARIABLE", "name")
@@ -879,7 +879,7 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, ver
          link!(xBlock, AttributeNode("spacing", spacing_str))
          xDataSet = addelement!(xBlock, "DataSet")
          link!(xDataSet, AttributeNode("index", "0"))
-         amr_box = SA[0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1]
+         amr_box = (0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1)
          box_str = @sprintf("%d %d %d %d %d %d", amr_box[1], amr_box[2], amr_box[3],
             amr_box[4], amr_box[5], amr_box[6])
          link!(xDataSet, AttributeNode("amr_box", box_str))

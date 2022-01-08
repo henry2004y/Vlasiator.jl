@@ -1,7 +1,7 @@
 module Vlasiator
 
 using Requires
-using StaticArrays
+using StaticArrays: SVector, @SMatrix
 using Printf: @sprintf
 using LinearAlgebra: ×, dot, ⋅, norm, normalize!
 using Statistics: mean
