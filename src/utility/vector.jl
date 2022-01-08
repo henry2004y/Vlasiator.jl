@@ -12,7 +12,7 @@ function curl(dx, A::AbstractArray{T,N}) where {T,N}
    B = zeros(T, size(A))
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
-   invdx = inv.(2*dx)
+   invdx = @. inv(2*dx)
 
    if any(==(1), size(A)) # 2Ds
       if size(A,4) == 1
@@ -70,7 +70,7 @@ function gradient(dx, A::AbstractArray{T,N}) where {T,N}
    @assert all(!=(1), size(A)) "Input scalar must be from 3D data!"
 
    B = zeros(T, 3, size(A)[1], size(A)[2], size(A)[3])
-   invdx = inv.(2*dx)
+   invdx = @. inv(2*dx)
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
    # 3D
@@ -100,7 +100,7 @@ function divergence(dx, A::AbstractArray{T,N}) where {T,N}
 
    B = zeros(T, size(A)[2:end])
 
-   invdx = inv.(2*dx)
+   invdx = @. inv(2*dx)
 
    @inbounds for k in 2:size(A,4)-1, j in 2:size(A,3)-1, i in 2:size(A,2)-1
       ∂Ax∂x = (-Ax[i-1,j,k] + Ax[i+1,j,k]) * invdx[1]
