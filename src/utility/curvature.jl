@@ -4,7 +4,7 @@
 Calculate 2nd order cell-centered ∇×A where `A` is a 4D array of size (3, nx, ny, nz) and
 `dx` is a vector of grid intervals in each dimension.
 """
-function curl(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
+function curl(dx, A::AbstractArray{T,N}) where {T,N}
    @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
 
    @views Ax, Ay, Az = A[1,:,:,:], A[2,:,:,:], A[3,:,:,:]

@@ -9,17 +9,11 @@ Only accept 3D location.
 function getcell(meta::MetaVLSV, loc)
    (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
 
-   coordmin[1] < loc[1] < coordmax[1] || error("x coordinate out of bound!")
-   coordmin[2] < loc[2] < coordmax[2] || error("y coordinate out of bound!")
-   coordmin[3] < loc[3] < coordmax[3] || error("z coordinate out of bound!")
-
-   dx, dy, dz = dcoord
+   foreach( (i,comp) -> coordmin[i] < loc[i] < coordmax[i] ? nothing :
+      error("$comp coordinate out of bound!"), 1:3, 'x':'z')
 
    # Get cell indices
-   indices = @inbounds SVector(
-      round(UInt, (loc[1] - coordmin[1]) ÷ dx),
-      round(UInt, (loc[2] - coordmin[2]) ÷ dy),
-      round(UInt, (loc[3] - coordmin[3]) ÷ dz) )
+   indices = @inbounds ntuple(i -> round(UInt, (loc[i] - coordmin[i]) ÷ dcoord[i]), Val(3))
    # Get cell id
    cid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
@@ -33,10 +27,7 @@ function getcell(meta::MetaVLSV, loc)
 
       ratio = 2^(ilevel+1)
 
-      indices = SVector(
-         floor(UInt, (loc[1] - coordmin[1]) / dx * ratio),
-         floor(UInt, (loc[2] - coordmin[2]) / dy * ratio),
-         floor(UInt, (loc[3] - coordmin[3]) / dz * ratio) )
+      indices = ntuple(i -> floor(UInt, (loc[i] - coordmin[i]) / dcoord[i] * ratio), Val(3))
 
       cid = ncells_lowerlevel + indices[1] +
          ratio*ncells[1]*indices[2] + ratio^2*ncells[1]*ncells[2]*indices[3] + 1
@@ -141,7 +132,7 @@ function getchildren(meta::MetaVLSV, cid::Integer)
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell*4 + i[2]*xcell*2 + i[1]
    end
-   SVector{nchildren}(cid)
+   (cid)
 end
 
 """
@@ -184,7 +175,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell + i[2]*xcell + i[1]
    end
-   SVector{nsiblings}(cid)
+   (cid)
 end
 
 """
@@ -199,7 +190,7 @@ function isparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getcellcoordinates(meta, cid) -> SVector{Float64}
+    getcellcoordinates(meta, cid)
 
 Return a given cell's coordinates.
 """
@@ -220,15 +211,14 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
       zcell *= 2
    end
 
-   indices = SVector(
+   indices = (
       cid % xcell,
       cid ÷ xcell % ycell,
       cid ÷ (xcell*ycell) )
 
-   coords = @inbounds SVector(
-      coordmin[1] + (indices[1] + 0.5) * (coordmax[1] - coordmin[1]) / xcell,
-      coordmin[2] + (indices[2] + 0.5) * (coordmax[2] - coordmin[2]) / ycell,
-      coordmin[3] + (indices[3] + 0.5) * (coordmax[3] - coordmin[3]) / zcell )
+   coords = @inbounds ntuple(
+      i -> coordmin[i] + (indices[i] + 0.5) * (coordmax[i] - coordmin[i]) / ncells[i],
+      Val(3))
 
    coords
 end
@@ -244,12 +234,12 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
    bsize = prod(vblock_size)
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
-   blockInd = [SVector(
+   blockInd = [(
       bid % vblocks[1],
       bid ÷ vblocks[1] % vblocks[2],
       bid ÷ (vblocks[1] * vblocks[2]) )
       for bid in blockid]
-   blockCoord = [SVector(
+   blockCoord = [(
       bInd[1] * dv[1] * vblock_size[1] + vmin[1],
       bInd[2] * dv[2] * vblock_size[2] + vmin[2],
       bInd[3] * dv[3] * vblock_size[3] + vmin[3] )
@@ -257,18 +247,16 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
 
    # Get cell indices
    vcellblockids = @. vcellids % bsize
-   cellidxyz = [SVector(
+   cellidxyz = [(
       cid % vblock_size[1],
       cid ÷ vblock_size[1] % vblock_size[2],
       cid ÷ (vblock_size[1] * vblock_size[2]) )
       for cid in vcellblockids]
 
    # Get cell coordinates
-   cellCoords = [zeros(SVector{3, Float32}) for _ in vcellblockids]
+   cellCoords = [(0.0f0, 0.0f0, 0.0f0) for _ in vcellblockids]
    @inbounds @simd for i in eachindex(vcellblockids)
-      cellCoords[i] = SVector(blockCoord[i][1] + (cellidxyz[i][1] + 0.5) * dv[1],
-                              blockCoord[i][2] + (cellidxyz[i][2] + 0.5) * dv[2],
-                              blockCoord[i][3] + (cellidxyz[i][3] + 0.5) * dv[3] )
+      cellCoords[i] = ntuple(j->blockCoord[i][j] + (cellidxyz[i][j] + 0.5) * dv[j], Val(3))
    end
    cellCoords
 end
@@ -303,8 +291,8 @@ function getdensity(meta::MetaVLSV, vcellids, vcellf; species="proton")
 end
 
 """
-    getvelocity(meta, VDF; species="proton") -> SVector{3}
-    getvelocity(meta, vcellids, vcellf; species="proton") -> SVector{3}
+    getvelocity(meta, VDF; species="proton")
+    getvelocity(meta, vcellids, vcellf; species="proton")
 
 Get bulk velocity from `VDF` of `species`, u = ∫ v * f(r,v) dV / n. Alternatively, one can
 pass `vcellids`, `vcellf`, as in [`getdensity`](@ref).
@@ -327,7 +315,7 @@ function getvelocity(meta::MetaVLSV, VDF; species="proton")
       n += f
    end
 
-   SVector(u[1] / n, u[2] / n, u[3] / n)
+   u[1] / n, u[2] / n, u[3] / n
 end
 
 function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
@@ -336,9 +324,9 @@ function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
 end
 
 """
-    getpressure(meta, VDF; species="proton") -> SVector{6}
+    getpressure(meta, VDF; species="proton")
 
-Get pressure tensor of `species` from `VDF` associated with `meta`,
+Get pressure tensor (6 components) of `species` from `VDF` associated with `meta`,
 pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
 """
 function getpressure(meta::MetaVLSV, VDF; species="proton")
@@ -361,7 +349,7 @@ function getpressure(meta::MetaVLSV, VDF; species="proton")
    end
 
    factor = mᵢ * convert(eltype(VDF), prod(dv))
-   SVector{6}(p.*factor)
+   (p.*factor)
 end
 
 """
@@ -469,14 +457,11 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       throw(DomainError(point2, "point location outside simulation domain!"))
    end
 
-   cell_lengths = @inbounds SVector(
-      (coordmax[1] - coordmin[1]) / ncells[1],
-      (coordmax[2] - coordmin[2]) / ncells[2],
-      (coordmax[3] - coordmin[3]) / ncells[3] )
+   cell_lengths = @inbounds ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
    distances = [0.0]
    cellids = [getcell(meta, point1)]
-   coords = point1
+   coords = tuple(point1)
    ϵ = eps(Float32)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = point1
@@ -488,8 +473,8 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       amrlvl = getlevel(meta, cid)
 
       # Get the max and min cell boundaries
-      min_bounds = getcellcoordinates(meta, cid) - 0.5*cell_lengths*0.5^amrlvl
-      max_bounds = min_bounds + cell_lengths
+      min_bounds = getcellcoordinates(meta, cid) .- 0.5.*cell_lengths.*0.5.^amrlvl
+      max_bounds = min_bounds .+ cell_lengths
 
       # Check which face we hit first
       @. coef_min = (min_bounds - p) / unit_vector
@@ -508,10 +493,9 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       # Find the minimum distance from a boundary times a factor
       d = min(minimum(coef_min), minimum(coef_max)) * 1.00001
 
-      coordnew = @inbounds SVector(p[1] + d*unit_vector[1],
-         p[2] + d*unit_vector[2], p[3] + d*unit_vector[3] )
+      coordnew = @inbounds ntuple(i -> p[i] + d*unit_vector[i], Val(3))
 
-      dot(point2 - coordnew, unit_vector) ≥ 0 || break
+      dot(point2 .- coordnew, unit_vector) ≥ 0 || break
 
       cellidnew = getcell(meta, coordnew)
 
@@ -544,7 +528,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
    nlen = 0
    ncell = prod(ncells)
    # number of cells up to each refinement level
-   nStart = SVector{maxamr+2}(vcat(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))))
+   nStart = (vcat(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))))
 
    indexlist = Int[]
    idlist = UInt[]
@@ -595,10 +579,10 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       elseif normal == :z
          i1, i2 = 1, 2
       end
-      SVector(ncells[i1]*ratio, ncells[i2]*ratio)
+      (ncells[i1]*ratio, ncells[i2]*ratio)
    end
 
-   dpoints = zeros(eltype(data), dims[1], dims[2])
+   dpoints = zeros(eltype(data), dims...)
 
    # Create the plot grid
    ncell = prod(ncells)
@@ -625,15 +609,15 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
       iRange = 0:refineRatio-1
       X, Y = ndgrid(iRange, iRange)
 
-      coords = [SVector(0, 0) for _ in a, _ in 1:2^(2*(maxamr-i))]
+      coords = [(0, 0) for _ in a, _ in 1:2^(2*(maxamr-i))]
 
       @inbounds for ir = 1:2^(2*(maxamr-i)), ic in eachindex(a, b)
-         @fastmath coords[ic,ir] = SVector(muladd(a[ic], refineRatio, 1+X[ir]),
-                                           muladd(b[ic], refineRatio, 1+Y[ir]) )
+         @fastmath coords[ic,ir] = (muladd(a[ic], refineRatio, 1+X[ir]),
+                                    muladd(b[ic], refineRatio, 1+Y[ir]) )
       end
 
       for ir = 1:2^(2*(maxamr-i)), ic in eachindex(d)
-         dpoints[ coords[ic,ir][1], coords[ic,ir][2] ] = d[ic]
+         dpoints[ coords[ic,ir]... ] = d[ic]
       end
 
       nLow = nHigh
@@ -676,12 +660,12 @@ Find the nearest spatial cell with VDF saved of a given cell `id` associated wit
 function getnearestcellwithvdf(meta::MetaVLSV, id)
    cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
-   coords = [zeros(SVector{3, Float32}) for _ in cells]
+   coords = [(0.0f0, 0.0f0, 0.0f0) for _ in cells]
    @inbounds for i in eachindex(cells)
       coords[i] = getcellcoordinates(meta, cells[i])
    end
    coords_orig = getcellcoordinates(meta, id)
-   d2 = [sum((c - coords_orig).^2) for c in coords]
+   d2 = [sum((c .- coords_orig).^2) for c in coords]
    cells[argmin(d2)]
 end
 

@@ -59,7 +59,7 @@ end
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
          coords = getcellcoordinates(meta, id)
-         @test coords == [3.0, 0.0, 0.0]
+         @test coords == (3.0, 0.0, 0.0)
          @test readvariable(meta, "proton/vg_rho", id)[1] == 1.2288102f0
          # ID in a line
          point1 = [-4.0, 0.0, 0.0]
@@ -77,14 +77,14 @@ end
          # velocity space reading
          vcellids, vcellf = readvcells(meta, 5; species="proton")
          V = getvcellcoordinates(meta, vcellids; species="proton")
-         @test V[end] == Float32[2.45, 1.95, 1.95]
+         @test V[end] == (2.45f0, 1.95f0, 1.95f0)
          @test_throws ArgumentError readvcells(meta, 2)
          f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
          @test f[CartesianIndex(26, 20, 20)] == 85.41775f0
          @test getdensity(meta, f) ≈ 1.8255334f0
          @test getdensity(meta, vcellids, vcellf) ≈ 1.8255334f0
-         @test getvelocity(meta, f) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
-         @test getvelocity(meta, vcellids, vcellf) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
+         @test getvelocity(meta, f)[1] ≈ 1.0f0 rtol=3e-3
+         @test getvelocity(meta, vcellids, vcellf)[1] ≈ 1.0f0 rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
          @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
 
