@@ -73,8 +73,8 @@ function getparent(meta::MetaVLSV, cid::Integer)
       # get the first cellid on my level
       cid1st = get1stcell(mylvl, ncell) + 1
       # get row and column sequence on my level (starting with 0)
-      xcell = xcell*2^mylvl
-      ycell = ycell*2^mylvl
+      xcell <<= mylvl
+      ycell <<= mylvl
 
       myseq = cid - cid1st
       ix = myseq % xcell
@@ -107,11 +107,11 @@ function getchildren(meta::MetaVLSV, cid::Integer)
    # get the first cell ID on the my level
    cid1st = 1
    for i = 0:mylvl-1
-      cid1st += ncell*8^i
+      cid1st += ncell * 8^i
    end
    # get my row and column sequence on my level (starting with 0)
-   xcell = xcell*2^mylvl
-   ycell = ycell*2^mylvl
+   xcell <<= mylvl
+   ycell <<= mylvl
 
    myseq = cid - cid1st
    ix = myseq % xcell
@@ -148,8 +148,8 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
 
    mylvl == 0 && throw(ArgumentError("CellID $cid is not a child cell!"))
 
-   xcell = xcell * 2^mylvl
-   ycell = ycell * 2^mylvl
+   xcell = xcell << mylvl
+   ycell = ycell << mylvl
 
    # 1st cellid on my level
    cid1st = get1stcell(mylvl, ncell) + 1
@@ -725,11 +725,11 @@ function fillmesh(meta::MetaVLSV, vars; verbose=false)
    end
 
    @inbounds celldata =
-      [[zeros(Tout[iv], vsize[iv], ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i)
+      [[zeros(Tout[iv], vsize[iv], ncells[1] << i, ncells[2] << i, ncells[3] << i)
       for i = 0:maxamr] for iv in 1:nv]
 
    @inbounds vtkGhostType =
-      [zeros(UInt8, ncells[1]*2^i, ncells[2]*2^i, ncells[3]*2^i) for i = 0:maxamr]
+      [zeros(UInt8, ncells[1] << i, ncells[2] << i, ncells[3] << i) for i = 0:maxamr]
 
    if maxamr == 0
       @inbounds for iv = 1:nv

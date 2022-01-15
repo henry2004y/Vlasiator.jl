@@ -52,7 +52,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    plotrange = (coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]])
    axislabels = ['X', 'Y', 'Z'][[seq...]]
    # Scale the sizes to the highest refinement level
-   sizes = ncells[[seq...]] .* 2^meta.maxamr # data needs to be refined later
+   sizes = ncells[[seq...]] .<< meta.maxamr # data needs to be refined later
 
    if normal == :none
       idlist, indexlist = Int[], Int[]
