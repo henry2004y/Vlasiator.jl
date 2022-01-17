@@ -5,11 +5,11 @@ include("vlsvvariables.jl")
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
-   vblocks::Tuple{Int64, Int64, Int64}
-   vblock_size::Tuple{Int64, Int64, Int64}
-   vmin::Tuple{Float64, Float64, Float64}
-   vmax::Tuple{Float64, Float64, Float64}
-   dv::Tuple{Float64, Float64, Float64}
+   vblocks::NTuple{3, Int64}
+   vblock_size::NTuple{3, Int64}
+   vmin::NTuple{3, Float64}
+   vmax::NTuple{3, Float64}
+   dv::NTuple{3, Float64}
 end
 
 "Variable information from the VLSV footer."
@@ -38,11 +38,11 @@ struct MetaVLSV
    time::Float64
    maxamr::Int64
    hasvdf::Bool
-   ncells::Tuple{Int64, Int64, Int64}
-   block_size::Tuple{Int64, Int64, Int64}
-   coordmin::Tuple{Float64, Float64, Float64}
-   coordmax::Tuple{Float64, Float64, Float64}
-   dcoord::Tuple{Float64, Float64, Float64}
+   ncells::NTuple{3, Int64}
+   block_size::NTuple{3, Int64}
+   coordmin::NTuple{3, Float64}
+   coordmax::NTuple{3, Float64}
+   dcoord::NTuple{3, Float64}
    species::Vector{String}
    meshes::Dict{String, VMeshInfo}
 end
