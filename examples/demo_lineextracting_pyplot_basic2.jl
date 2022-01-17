@@ -3,13 +3,13 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Glob, Printf
+using Vlasiator: Re # Earth radius [m]
 
 files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
 nfile = length(files)
 
 meta = load(files[1])
 
-Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
@@ -37,7 +37,7 @@ for (i, file) in enumerate(files)
    ax.set_xlim(x1, x2)
    ax.set_ylim(0.0, 1.8)
    ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-   grid()
+   grid(true)
 
    xlabel("x [Re]", fontsize=14)
    ylabel("Pressure [nPa]", fontsize=14)

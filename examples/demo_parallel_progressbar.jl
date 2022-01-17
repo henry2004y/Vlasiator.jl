@@ -20,6 +20,7 @@ julia demo_parallel_progressbar.jl
 =#
 
 using Distributed, ProgressMeter, Glob
+using Vlasiator: Re # Earth radius [m]
 using ClusterManagers
 addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
    partition=ENV["SLURM_JOB_PARTITION"],
@@ -213,7 +214,6 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
    const fontsize = 14
 end
 
-Re = Vlasiator.Re # Earth radii
 const x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re

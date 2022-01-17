@@ -3,11 +3,11 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Glob, Printf
+using Vlasiator: Re # Earth radius [m]
 
 files = glob("bulk*.vlsv", ".")
 nfiles = length(files)
 
-Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re

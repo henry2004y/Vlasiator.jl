@@ -3,6 +3,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot
+using Vlasiator: Re # Earth radius [m]
 
 file = "bulk.0001347.vlsv"
 
@@ -20,8 +21,8 @@ xcell = zeros(size(locations))
 ycell = similar(xcell)
 
 for i in eachindex(locations)
-   xcell[i] = locations[i][1] / Vlasiator.Re
-   ycell[i] = locations[i][2] / Vlasiator.Re
+   xcell[i] = locations[i][1] / Re
+   ycell[i] = locations[i][2] / Re
 end
 
 figure()

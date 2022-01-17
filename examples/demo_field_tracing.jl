@@ -2,12 +2,8 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-# FieldTracer is not a registered pkg yet
-# using Pkg
-# Pkg.add(url="https://github.com/henry2004y/FieldTracer.jl.git", rev="master")
 using PyPlot, FieldTracer, Vlasiator
-
-Re = Vlasiator.Re
+using Vlasiator: Re # Earth radius, [m]
 
 file = "bulk.0000501.vlsv"
 nameρ = "rho"

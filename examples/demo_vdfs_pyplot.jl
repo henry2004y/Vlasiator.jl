@@ -1,3 +1,6 @@
+using Vlasiator, PyPlot, JLD2
+using Vlasiator: Re # Earth radius [m]
+
 ## Plot velocity space distributions
 xloc = range(7.0, 10.0, step=2.35)
 yloc = range(-0.0, 5.0, step=2.35)
@@ -8,16 +11,14 @@ CIs = CartesianIndices((1:length(xloc), 1:length(yloc)))
 fig, axs = plt.subplots(length(xloc), length(yloc), sharex=true, sharey=true)
 
 for i in CIs
-   loc = Vlasiator.Re .* [xloc[i[1]], yloc[i[2]], zloc]
-   plot_vdf(meta, loc, axs[i]; verbose=false)
+   loc = Re .* [xloc[i[1]], yloc[i[2]], zloc]
+   vdfslice(meta, loc, axs[i]; verbose=false)
 end
 
 for a in axs[end,:] a.set_xlabel("vx [km/s]") end
 for a in axs[:  ,1] a.set_ylabel("vy [km/s]") end
 
 ## Subtract data of cells with VDF
-
-using JLD2
 
 file = "test/data/bulk.1d.vlsv"
 

@@ -2,18 +2,14 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-# FieldTracer is not a registered pkg yet
-# using Pkg
-# Pkg.add(url="https://github.com/henry2004y/FieldTracer.jl.git", rev="master")
-
 using Vlasiator, PyPlot, FieldTracer
+using Vlasiator: Re # Earth radius, [m]
 
 file = "bulk.0000999.vlsv"
 meta = load(file)
 coordmin, coordmax, ncells = meta.coordmin, meta.coordmax, meta.ncells
 pcolormesh(meta, "proton/vg_rho", colorscale=Linear)
 
-Re = Vlasiator.Re
 # regular Cartesian mesh
 gridx = range(coordmin[1], coordmax[1], length=ncells[1]) 
 gridy = range(coordmin[3], coordmax[3], length=ncells[3])

@@ -7,6 +7,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Distributed, ParallelDataTransfer, Glob
+using Vlasiator: Re
 @everywhere using Vlasiator, PyPlot, Printf
 
 @everywhere function init_figure(x1, x2)
@@ -107,7 +108,6 @@ end
 files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
-Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
