@@ -448,7 +448,7 @@ end
 Returns cell IDs, distances and coordinates for every cell in a line between two given
 points `point1` and `point2`. TODO: preallocation?
 """
-function getcellinline(meta::MetaVLSV, point1, point2)
+function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) where T
    (;coordmin, coordmax, ncells) = meta
 
    if !isInsideDomain(meta, point1)
@@ -459,16 +459,16 @@ function getcellinline(meta::MetaVLSV, point1, point2)
 
    cell_lengths = @inbounds ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
-   distances = [0.0]
+   distances = [zero(T)]
    cellids = [getcell(meta, point1)]
-   coords = tuple(point1)
-   ϵ = eps(Float32)
+   coords = [SVector{3}(point1)]
+   ϵ = eps(T)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
-   p = point1
-   coef_min = [0.0, 0.0, 0.0]
-   coef_max = [0.0, 0.0, 0.0]
+   p = coords[1]
+   coef_min = zeros(T, 3)
+   coef_max = zeros(T, 3)
 
-   while true
+   @inbounds while true
       cid = getcell(meta, p)
       amrlvl = getlevel(meta, cid)
 
@@ -481,7 +481,7 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       @. coef_max = (max_bounds - p) / unit_vector
 
       # Negative coefficients indicates the opposite direction
-      @inbounds for i = 1:3
+      for i = 1:3
          if unit_vector[i] == 0.0
             coef_min[i] = Inf
             coef_max[i] = Inf
@@ -493,14 +493,17 @@ function getcellinline(meta::MetaVLSV, point1, point2)
       # Find the minimum distance from a boundary times a factor
       d = min(minimum(coef_min), minimum(coef_max)) * 1.00001
 
-      coordnew = @inbounds ntuple(i -> p[i] + d*unit_vector[i], Val(3))
+      coordnew = SVector(
+         p[1] + d*unit_vector[1],
+         p[2] + d*unit_vector[2],
+         p[3] + d*unit_vector[3])
 
       dot(point2 .- coordnew, unit_vector) ≥ 0 || break
 
       cellidnew = getcell(meta, coordnew)
 
       push!(cellids, cellidnew)
-      coords = hcat(coords, coordnew)
+      push!(coords, coordnew)
       push!(distances, norm(coordnew .- point1))
 
       p = coordnew
