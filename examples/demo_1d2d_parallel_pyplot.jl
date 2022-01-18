@@ -169,7 +169,7 @@ end
 end
 
 ############################################################################################
-files = glob("bulk*.vlsv", "../run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", ".")
 const nfile = length(files)
 @passobj 1 workers() files
 

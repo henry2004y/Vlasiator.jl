@@ -11,8 +11,10 @@ files = glob("run4/bulk*.vlsv")
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]
 
-meta = load(files[1])
-cellids, distances, coords = getcellinline(meta, point1, point2)
+cellids, distances, coords =
+   let meta = load(files[1])
+      getcellinline(meta, point1, point2)
+   end
 
 # time density temperature vx
 inputs = [
