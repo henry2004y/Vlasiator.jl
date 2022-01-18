@@ -5,18 +5,17 @@
 using Vlasiator, PyPlot, Glob, Printf
 using Vlasiator: Re # Earth radius [m]
 
-files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", ".")
 nfile = length(files)
-
-meta = load(files[1])
 
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
-cellids, distances, coords = getcellinline(meta, point1, point2)
-
-close(meta.fid)
+cellids, distances, coords =
+   let meta = load(files[1])
+      getcellinline(meta, point1, point2)
+   end
 
 fig, ax = plt.subplots(figsize=(8, 4.8))
 

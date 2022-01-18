@@ -12,12 +12,12 @@ x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
-meta = load(files[1])
-cellids, distances, coords = getcellinline(meta, point1, point2)
+cellids, distances, coords =
+   let meta = load(files[1])
+      getcellinline(meta, point1, point2)
+   end
 
 loc = range(x1, x2, length=length(cellids))
-
-close(meta.fid)
 
 ρmin, ρmax = 0.0, 10.0     # [amu/cc]
 vmin, vmax = -640.0, 0.0   # [km/s]
