@@ -166,6 +166,8 @@ end
 
          @test meta["Beta"][1] == 1.3359065984817116
 
+         @test meta["BetaStar"][1] == 229.55170154977864
+
          @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
          @test meta["IonInertial"][1] == 8.578087716535188e7

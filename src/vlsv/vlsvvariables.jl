@@ -12,7 +12,7 @@ const Re = 6.371e6          # Earth radius, [m]
 
 # Define units, LaTeX markup names, and LaTeX markup units for intrinsic values
 const units_predefined = Dict(
-   :rhom => ("kg/m3", L"$\rho_m$",  L"$\mathrm{kg}\,\mathrm{m}^{-3}$"),
+   :Rhom => ("kg/m3", L"$\rho_m$",  L"$\mathrm{kg}\,\mathrm{m}^{-3}$"),
    :rhoq => ("C/m3", L"$\rho_q$", L"$\mathrm{C}\,\mathrm{m}^{-3}$"),
    :rho => ("1/m3", L"$n_\mathrm{p}$", L"$\mathrm{m}^{-3}$"),
    :rhobackstream => ("1/m3",  L"$n_\mathrm{p,st}$", L"$\mathrm{m}^{-3}$"),
@@ -204,9 +204,7 @@ const variables_predefined = Dict(
    end,
    :T => function (meta, ids=UInt64[]) # scalar temperature
       P = readvariable(meta, "P", ids)
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids) |> vec
+      n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       T = @. P / (n*kB)
    end,
@@ -224,17 +222,13 @@ const variables_predefined = Dict(
    end,
    :Tpar => function (meta, ids=UInt64[]) # T component ∥ B
       P = readvariable(meta, "Protated", ids)
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids) |> vec
+      n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       @. P[3,3,:] / (n*kB)
    end,
    :Tperp => function (meta, ids=UInt64[]) # scalar T component ⟂ B
       P = readvariable(meta, "Protated", ids)
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids) |> vec
+      n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
@@ -289,9 +283,7 @@ const variables_predefined = Dict(
       @. ρm * V * V
    end,
    :Pb => function (meta, ids=UInt64[])
-      B² = isempty(ids) ?
-         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+      B² = readvariable(meta, "B²", ids)
       _fillinnerBC!(B², B²)
       mu2inv = 0.5/μ₀
       @. B² * mu2inv
@@ -365,16 +357,19 @@ const variables_predefined = Dict(
    end,
    :Beta => function (meta, ids=UInt64[])
       P = readvariable(meta, "P", ids)
-      B² = isempty(ids) ?
-         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+      B² = readvariable(meta, "B²", ids)
       _fillinnerBC!(B², B²)
       @. 2 * μ₀ * P / B²
    end,
+   :BetaStar => function (meta, ids=UInt64[])
+      P = readvariable(meta, "P", ids)
+      Pdyn = readvariable(meta, "Pdynamic", ids)
+      B² = readvariable(meta, "B²", ids)
+      _fillinnerBC!(B², B²)
+      @. 2 * μ₀ * (P + Pdyn) / B²
+   end,
    :IonInertial => function (meta, ids=UInt64[])
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids) |> vec
+      n = readvariable(meta, "n", ids)
       Z = 1
       ωi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
       di = @. c / ωi
@@ -393,18 +388,26 @@ const variables_predefined = Dict(
       f = @. qᵢ * B / (mᵢ * 2π)
    end,
    :Plasmaperiod => function (meta, ids=UInt64[])
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids) |> vec
+      n = readvariable(meta, "n", ids)
       T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
    end,
    :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
+      n = readvariable(meta, "n", ids)
+      ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
+   end,
+   :n => function (meta, ids=UInt64[])
       n = isempty(ids) ?
          readvariable(meta, "proton/vg_rho") :
          readvariable(meta, "proton/vg_rho", ids) |> vec
-      ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
+   end,
+   :B² => function (meta, ids=UInt64[])
+      B² = isempty(ids) ?
+         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
+         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
    end,
 )
+
+
 
 function _fillinnerBC!(data, dataRef)
    @inbounds for i = eachindex(dataRef) # sparsity/inner boundary
