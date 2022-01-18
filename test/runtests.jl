@@ -144,7 +144,7 @@ end
          meta = meta2
          @test meta["Bmag"][4] == 3.0052159f-9
 
-         @test meta["Emag"][1,10,99] == 2.6120072f-6
+         @test meta["Emag"][1,10,99] == 2.6120074f-6
 
          @test meta["VS"] |> nanmaximum == 1.3726345956957596e6
 

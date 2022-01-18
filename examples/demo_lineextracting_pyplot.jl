@@ -56,7 +56,7 @@ for (i, file) in enumerate(files)
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
-   vmag2_extract = sum(v_extract.^2, dims=1) |> vec
+   vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
    pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]

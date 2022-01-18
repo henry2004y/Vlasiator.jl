@@ -84,11 +84,11 @@ const variables_predefined = Dict(
          readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_b_vol")
          Bmag = isempty(ids) ?
-            sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-            sqrt.(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
-         Bmag = sqrt.(sum(readvariable(meta, "fg_b").^2, dims=1))
+         Bmag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_b"), dims=1))
       end
       _fillinnerBC!(Bmag, ρ)
       Bmag
@@ -100,11 +100,11 @@ const variables_predefined = Dict(
          readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_e_vol")
          Emag = isempty(ids) ?
-            sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)) :
-            sqrt.(sum(readvariable(meta, "vg_e_vol", ids).^2, dims=1))
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol"), dims=1)) :
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol", ids), dims=1))
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
-         Emag = sqrt.(sum(readvariable(meta, "fg_e").^2, dims=1))
+         Emag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_e"), dims=1))
       end
       _fillinnerBC!(Emag, ρ)
       Emag
@@ -115,8 +115,8 @@ const variables_predefined = Dict(
          readvariable(meta, meta.variable[rho_]) :
          readvariable(meta, meta.variable[rho_], ids)
       Vmag = isempty(ids) ?
-         vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1))) :
-         vec(sqrt.(sum(readvariable(meta, "proton/vg_v", ids).^2, dims=1)))
+         vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v"), dims=1))) :
+         vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v", ids), dims=1)))
       _fillinnerBC!(Vmag, ρ)
       Vmag
    end,
@@ -402,8 +402,8 @@ const variables_predefined = Dict(
    end,
    :B² => function (meta, ids=UInt64[])
       B² = isempty(ids) ?
-         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+         vec(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
+         vec(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
    end,
 )
 
