@@ -131,11 +131,11 @@ Here is a full list of available quantities[^1]:
 | J                     | current density                  | vg\_b\_vol            |
 | Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
 | Panisotropy           | $P_\perp / P_\parallel$          | ptensor; B            |
-| Pdynamic              | dynamic pressure                 | vg\_rho; Vmag         |
+| Pram                  | dynamic ram pressure             | vg\_rho; Vmag         |
 | Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
-| BetaStar              | modified beta, $(P + Pdyn) / P_B$| P; Pdynamic; vg\_b\_vol |
+| BetaStar              | modified beta, $(P + Pdyn) / P_B$| P; Pram; vg\_b\_vol |
 | IonInertial           | proton inertial length           | vg\_rho               | 
 | Larmor                | proton Larmor radius             | Vth; Bmag             |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |

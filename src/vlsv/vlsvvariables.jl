@@ -277,7 +277,7 @@ const variables_predefined = Dict(
       PR = readvariable(meta, "Protated", ids)
       @. 0.5f0*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
    end,
-   :Pdynamic => function (meta, ids=UInt64[])
+   :Pram => function (meta, ids=UInt64[])
       V = readvariable(meta, "Vmag", ids)
       ρm = readvariable(meta, "Rhom", ids)
       @. ρm * V * V
@@ -363,10 +363,10 @@ const variables_predefined = Dict(
    end,
    :BetaStar => function (meta, ids=UInt64[])
       P = readvariable(meta, "P", ids)
-      Pdyn = readvariable(meta, "Pdynamic", ids)
+      Pram = readvariable(meta, "Pram", ids)
       B² = readvariable(meta, "B²", ids)
       _fillinnerBC!(B², B²)
-      @. 2 * μ₀ * (P + Pdyn) / B²
+      @. 2 * μ₀ * (P + Pram) / B²
    end,
    :IonInertial => function (meta, ids=UInt64[])
       n = readvariable(meta, "n", ids)
