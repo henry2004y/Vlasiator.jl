@@ -62,7 +62,7 @@ function init_figure(varminmax, loc, pArgs)
    fakeline = loc
    l1 = axsL[1].plot(loc, fakeline, label="Proton density", color="#1f77b4")
    l2 = axsL[2].plot(loc, fakeline, label="Vx",             color="#1f77b4")
-   l3 = axsL[3].plot(loc, fakeline, label="Dynamic",        color="#1f77b4")
+   l3 = axsL[3].plot(loc, fakeline, label="Ram",            color="#1f77b4")
    l4 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
    l5 = axsL[4].plot(loc, fakeline, label="Bz",             color="#1f77b4")
 
@@ -144,13 +144,13 @@ function process(plotargs, file)
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
    vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
-   pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
 
    ls[1][1].set_ydata(rho_extract ./ 1e6)
    ls[2][1].set_ydata(v_extract[1,:] ./ 1e3)
-   ls[3][1].set_ydata(pdyn_extract)
+   ls[3][1].set_ydata(pram_extract)
    ls[4][1].set_ydata(p_extract)
    ls[5][1].set_ydata(bz)
 

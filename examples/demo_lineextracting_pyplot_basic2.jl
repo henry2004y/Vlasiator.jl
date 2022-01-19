@@ -27,10 +27,10 @@ for (i, file) in enumerate(files)
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
    vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
-   pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
    loc = range(x1, x2, length=length(rho_extract))
 
-   ax.plot(loc, pdyn_extract, label="dynamic")
+   ax.plot(loc, pram_extract, label="ram")
    ax.plot(loc, p_extract, label="thermal")
 
    ax.set_xlim(x1, x2)

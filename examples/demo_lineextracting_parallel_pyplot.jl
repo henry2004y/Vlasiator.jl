@@ -44,7 +44,7 @@ end
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
    vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
-   pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
 
@@ -58,7 +58,7 @@ end
    vl2 = axs[2].vlines(loc[imagnetopause_], vmin, vmax;
       colors="r", linestyle="dashed", alpha=0.5)
 
-   axs[3].plot(loc, pdyn_extract, label="Dynamic", color="#1f77b4")
+   axs[3].plot(loc, pram_extract, label="Ram", color="#1f77b4")
    axs[3].plot(loc, p_extract, label="Thermal", color="#ff7f0e")
    vl3 = axs[3].vlines(loc[imagnetopause_], pmin, pmax;
       colors="r", linestyle="dashed", alpha=0.5)
