@@ -262,6 +262,8 @@ end
          meta = meta1
          line = plot(meta, "proton/vg_rho")[1]
          @test line.get_ydata() == meta["proton/vg_rho"]
+         line = plot(meta, "proton/vg_v", comp=:3)[1]
+         @test line.get_ydata() == meta["proton/vg_v"][3,:]
          centers = plotmesh(meta, projection="y")
          points = centers.get_offsets()
          @test size(points) == (10, 2)
@@ -285,7 +287,7 @@ end
          @test var[end-2] == 999535.8f0 && length(var) == 6300
          var = pcolormesh(meta, "fg_b").get_array()
          @test var[1] == 3.0058909f-9
-         var = pcolormesh(meta, "proton/vg_v", op=:x, colorscale=SymLog).get_array()
+         var = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
          @test var[2] == -699935.2f0
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject

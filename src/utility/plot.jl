@@ -109,22 +109,22 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
-    prep2d(meta, var, op=:none) -> Array
+    prep2d(meta, var, comp=:0) -> Array
 
-Obtain data from `meta` of `var` for 2D plotting. Use `op` to select vector components.
+Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
 """
-function prep2d(meta::MetaVLSV, var, op=:none)
+function prep2d(meta::MetaVLSV, var, comp=:0)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    data =
       if ndims(dataRaw) == 3
-         if op in (:x, :1)
+         if comp in (:x, :1)
             @view dataRaw[1,:,:]
-         elseif op in (:y, :2)
+         elseif comp in (:y, :2)
             @view dataRaw[2,:,:]
-         elseif op in (:z, :3)
+         elseif comp in (:z, :3)
             @view dataRaw[3,:,:]
-         elseif op == :mag
+         elseif comp == :mag
             @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
          end
       else
@@ -134,13 +134,13 @@ function prep2d(meta::MetaVLSV, var, op=:none)
 end
 
 """
-    prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
+    prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
 
 Return `data` of `var` on a uniform 2D mesh on the finest AMR level. Use `normal` to select
-the plane orientation, and `op` to select the component of a vector, same as in
+the plane orientation, and `comp` to select the component of a vector, same as in
 [`pcolormeshslice`](@ref).
 """
-function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
+function prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
    (;idlist, indexlist) = pArgs
 
    data3D = readvariable(meta, var)
@@ -156,16 +156,16 @@ function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
       elseif ndims(data3D) == 2
          data2D = data3D[:,indexlist]
 
-         if op in (:x, :y, :z, :1, :2, :3)
-            if op in (:x, :1)
+         if comp in (:x, :y, :z, :1, :2, :3)
+            if comp in (:x, :1)
                slice = @view data2D[1,:]
-            elseif op in (:y, :2)
+            elseif comp in (:y, :2)
                slice = @view data2D[2,:]
-            elseif op in (:z, :3)
+            elseif comp in (:z, :3)
                slice = @view data2D[3,:]
             end
             data = refineslice(meta, idlist, slice, normal)
-         elseif op == :mag
+         elseif comp == :mag
             datax = @views refineslice(meta, idlist, data2D[1,:], normal)
             datay = @views refineslice(meta, idlist, data2D[2,:], normal)
             dataz = @views refineslice(meta, idlist, data2D[3,:], normal)

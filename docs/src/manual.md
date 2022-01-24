@@ -208,19 +208,19 @@ pcolormesh(meta, "rho")
 - Vector z component colored contour from 2D simulation in a manually set range
 
 ```
-pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
 - Vz colored contour from 2D simulation with prescribed colormap
 
 ```
-pcolormesh(meta, "proton/vg_v", op=:z, colorscale=Linear, cmap=matplotlib.cm.RdBu_r)
+pcolormesh(meta, "proton/vg_v", comp=:z, colorscale=Linear, cmap=matplotlib.cm.RdBu_r)
 ```
 
 - Derived quantity colored contour from 2D simulation (as long as the input variable is in the predefined dictionary)
 
 ```
-pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
+pcolormesh(meta, "b", comp=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline from 2D simulation

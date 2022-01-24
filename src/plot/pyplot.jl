@@ -18,12 +18,21 @@ matplotlib.rc("ytick", labelsize=10)
 
 
 """
-    plot(meta, var, ax=nothing; kwargs)
+    plot(meta, var, ax=nothing; comp=:0, kwargs)
 
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
+The keyword `comp` in (`:0`, `:1`, `:2`, `:3`) is used to specify the component of a vector.
 """
-function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; kwargs...)
-   data = readvariable(meta, var)
+function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
+   ndims(meta) == 1 || error("plot only accepts 1D data!")
+
+   datafull = readvariable(meta, var)
+
+   if comp == :0
+      data = datafull
+   else
+      data = @view datafull[comp,:]
+   end
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 
@@ -121,7 +130,7 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       op=:mag, axisunit=RE, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
+       comp=:mag, axisunit=RE, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
        kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
@@ -129,7 +138,7 @@ If `ax` is provided, then it will plot on that axes.
 If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
-- `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
+- `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
@@ -142,7 +151,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 `pcolormesh(data, func, colorscale=Log)`
 """
-function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:mag,
+function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp=:mag,
    axisunit::AxisUnit=RE, colorscale::ColorScale=Linear, addcolorbar=true,
    vmin=-Inf, vmax=Inf, kwargs...)
 
@@ -151,15 +160,15 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; op=:
       normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
       origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
       kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
-      c = pcolormeshslice(meta, var, ax; op, axisunit, colorscale, addcolorbar, vmin, vmax,
-         normal, origin, kwargs...)
+      c = pcolormeshslice(meta, var, ax;
+         comp, axisunit, colorscale, addcolorbar, vmin, vmax, normal, origin, kwargs...)
       return c
    end
 
    pArgs = set_args(meta, var, axisunit)
 
    x, y = get_axis(pArgs)
-   data = prep2d(meta, var, op)'
+   data = prep2d(meta, var, comp)'
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       rho_ = findfirst(endswith("rho"), meta.variable)
@@ -202,7 +211,7 @@ If `ax` is provided, then it will plot on that axes.
 It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension.
 
 # Optional arguments
-- `op::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
+- `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `origin::Float`: center of slice plane in the normal direction.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
@@ -213,17 +222,17 @@ It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension
 
 `pcolormeshslice(meta, var)`
 
-`pcolormeshslice(meta, var, op=:z, origin=1.0, normal=:x)`
+`pcolormeshslice(meta, var, comp=:z, origin=1.0, normal=:x)`
 
 `pcolormeshslice(data, func, colorscale=Log)`
 """
-function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; op::Symbol=:mag,
+function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; comp::Symbol=:mag,
    origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Linear,
    addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
 
    pArgs = set_args(meta, var, axisunit; normal, origin)
 
-   data = prep2dslice(meta, var, normal, op, pArgs)'
+   data = prep2dslice(meta, var, normal, comp, pArgs)'
    x, y = get_axis(pArgs)
 
    cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
