@@ -168,7 +168,7 @@ components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
 nboxlength = 101                   # moving box average length
 interval = 2                       # local peak gap minimal interval
 nplotstride = 50                   # plot intervals in frames 
-dir = "../run_rho2_bz-5_timevarying_startfrom300s" # data directory
+dir = "./" # data directory
 
 files = glob("bulk*.vlsv", dir)
 
