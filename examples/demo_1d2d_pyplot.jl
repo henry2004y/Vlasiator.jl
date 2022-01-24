@@ -22,6 +22,9 @@ struct Varminmax{T}
    "Magnetic field, [nT]"
    bmin::T
    bmax::T
+   "Electric field, [nT]"
+   emin::T
+   emax::T
    "Alfven speed, [km/s]"
    vamin::T
    vamax::T
@@ -31,13 +34,13 @@ struct Varminmax{T}
 end
 
 function init_figure(varminmax, loc, pArgs)
-   (; ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, vamin, vamax, vsmin, vsmax) =
-      varminmax
+   (; ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax,
+      vamin, vamax, vsmin, vsmax) = varminmax
 
-   fig = plt.figure(constrained_layout=true, figsize=(10, 6))
+   fig = plt.figure(constrained_layout=true, figsize=(12, 7.2))
    subfigs = fig.subfigures(1, 2, wspace=0.01, width_ratios=[2,1])
 
-   axsL = subfigs[1].subplots(4, 1, sharex=true)
+   axsL = subfigs[1].subplots(5, 1, sharex=true)
    axsR = subfigs[2].subplots(2, 1, sharex=true)
 
    # Set line plots' axes
@@ -47,6 +50,7 @@ function init_figure(varminmax, loc, pArgs)
    axsL[2].set_ylim(vmin, vmax)
    axsL[3].set_ylim(pmin, pmax)
    axsL[4].set_ylim(bmin, bmax)
+   axsL[5].set_ylim(emin, emax)
    for ax in axsL
       ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
       ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
@@ -58,28 +62,40 @@ function init_figure(varminmax, loc, pArgs)
    axsL[2].set_ylabel("V [km/s]";     fontsize=14)
    axsL[3].set_ylabel("P [nPa]";      fontsize=14)
    axsL[4].set_ylabel("B [nT]";       fontsize=14)
+   axsL[5].set_ylabel("E [mV/m]";     fontsize=14)
 
    fakeline = loc
    l1 = axsL[1].plot(loc, fakeline, label="Proton density", color="#1f77b4")
    l2 = axsL[2].plot(loc, fakeline, label="Vx",             color="#1f77b4")
-   l3 = axsL[3].plot(loc, fakeline, label="Ram",            color="#1f77b4")
-   l4 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
-   l5 = axsL[4].plot(loc, fakeline, label="Bz",             color="#1f77b4")
+   l3 = axsL[2].plot(loc, fakeline, label="Vy",             color="#ff7f0e")
+   l4 = axsL[2].plot(loc, fakeline, label="Vz",             color="#2ca02c")
+   l5 = axsL[3].plot(loc, fakeline, label="Ram",            color="#1f77b4")
+   l6 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
+   l7 = axsL[4].plot(loc, fakeline, label="Bx",             color="#1f77b4")
+   l8 = axsL[4].plot(loc, fakeline, label="By",             color="#ff7f0e")
+   l9 = axsL[4].plot(loc, fakeline, label="Bz",             color="#2ca02c")
+   l10= axsL[5].plot(loc, fakeline, label="Ex",             color="#1f77b4")
+   l11= axsL[5].plot(loc, fakeline, label="Ey",             color="#ff7f0e")
+   l12= axsL[5].plot(loc, fakeline, label="Ez",             color="#2ca02c")
 
-   ls = (l1, l2, l3, l4, l5)
+   ls = (l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12)
 
-   axsL[2].legend(;loc="upper right", frameon=false, fontsize=12)
-   axsL[3].legend(;loc="upper left", ncol=2, frameon=false, fontsize=12)
-   axsL[4].legend(;loc="upper right", frameon=false, fontsize=12)
+   axsL[2].legend(;loc="lower left",  ncol=3, frameon=false, fontsize=12)
+   axsL[3].legend(;loc="upper left",  ncol=2, frameon=false, fontsize=12)
+   axsL[4].legend(;loc="upper right", ncol=3, frameon=false, fontsize=12)
+   axsL[5].legend(;loc="lower right", ncol=3, frameon=false, fontsize=12)
 
    vl1 = axsL[1].vlines(loc[1], ρmin, ρmax; colors="r", linestyle="dashed", alpha=0.5)
    vl2 = axsL[2].vlines(loc[1], vmin, vmax; colors="r", linestyle="dashed", alpha=0.5)
-   hl2 = axsL[2].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
    vl3 = axsL[3].vlines(loc[1], pmin, pmax; colors="r", linestyle="dashed", alpha=0.5)
    vl4 = axsL[4].vlines(loc[1], bmin, bmax; colors="r", linestyle="dashed", alpha=0.5)
-   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+   vl5 = axsL[5].vlines(loc[1], emin, emax; colors="r", linestyle="dashed", alpha=0.5)
 
-   vlines = (vl1, vl2, vl3, vl4)
+   hl2 = axsL[2].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+   hl5 = axsL[5].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+
+   vlines = (vl1, vl2, vl3, vl4, vl5)
 
    for ax in axsR
       ax.set_aspect("equal")
@@ -189,7 +205,7 @@ nfile = length(files)
 
 meta = load(files[1])
 
-x1, x2 = 7.0, 20.0 # Earth radii
+x1, x2 = 7.0, 18.0 # Earth radii
 point1 = [x1, 0, 0] .* Vlasiator.Re
 point2 = [x2, 0, 0] .* Vlasiator.Re
 
@@ -204,11 +220,13 @@ pArgs = set_args(meta, "fakename", RE; normal=:none)
 vmin, vmax = -640.0, 100.0 # [km/s]
 pmin, pmax = 0.0, 1.82     # [nPa]
 bmin, bmax = -25.0, 60.0   # [nT]
+emin, emax = -5.0, 5.0     # [mV/m]
 vamin, vamax = 0.0, 250.0  # [km/s]
 vsmin, vsmax = 0.0, 400.0  # [km/s]
 
 varminmax =
-   Varminmax(ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, vamin, vamax, vsmin, vsmax)
+   Varminmax(ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax,
+   vamin, vamax, vsmin, vsmax)
 
 
 plotargs = init_figure(varminmax, loc, pArgs)

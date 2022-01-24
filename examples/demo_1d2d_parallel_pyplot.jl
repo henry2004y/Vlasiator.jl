@@ -12,10 +12,10 @@ using Distributed, ParallelDataTransfer, Glob
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
 @everywhere function init_figure(x1, x2)
-   fig = plt.figure(myid(), constrained_layout=true, figsize=(10, 6))
+   fig = plt.figure(myid(), constrained_layout=true, figsize=(12, 7.2))
    subfigs = fig.subfigures(1, 2, wspace=0.01, width_ratios=[2,1])
 
-   axsL = subfigs[1].subplots(4, 1, sharex=true)
+   axsL = subfigs[1].subplots(5, 1, sharex=true)
    axsR = subfigs[2].subplots(2, 1, sharex=true)
 
    # Set line plots' axes
@@ -25,6 +25,7 @@ using Distributed, ParallelDataTransfer, Glob
    axsL[2].set_ylim(vmin, vmax)
    axsL[3].set_ylim(pmin, pmax)
    axsL[4].set_ylim(bmin, bmax)
+   axsL[5].set_ylim(emin, emax)
    for ax in axsL
       ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
       ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
@@ -36,27 +37,40 @@ using Distributed, ParallelDataTransfer, Glob
    axsL[2].set_ylabel("V [km/s]";     fontsize=14)
    axsL[3].set_ylabel("P [nPa]";      fontsize=14)
    axsL[4].set_ylabel("B [nT]";       fontsize=14)
+   axsL[5].set_ylabel("E [mV/m]";     fontsize=14)
 
    fakeline = loc
    l1 = axsL[1].plot(loc, fakeline, label="Proton density", color="#1f77b4")
    l2 = axsL[2].plot(loc, fakeline, label="Vx",             color="#1f77b4")
-   l3 = axsL[3].plot(loc, fakeline, label="Ram",            color="#1f77b4")
-   l4 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
-   l5 = axsL[4].plot(loc, fakeline, label="Bz",             color="#1f77b4")
+   l3 = axsL[2].plot(loc, fakeline, label="Vy",             color="#ff7f0e")
+   l4 = axsL[2].plot(loc, fakeline, label="Vz",             color="#2ca02c")
+   l5 = axsL[3].plot(loc, fakeline, label="Ram",            color="#1f77b4")
+   l6 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
+   l7 = axsL[4].plot(loc, fakeline, label="Bx",             color="#1f77b4")
+   l8 = axsL[4].plot(loc, fakeline, label="By",             color="#ff7f0e")
+   l9 = axsL[4].plot(loc, fakeline, label="Bz",             color="#2ca02c")
+   l10= axsL[5].plot(loc, fakeline, label="Ex",             color="#1f77b4")
+   l11= axsL[5].plot(loc, fakeline, label="Ey",             color="#ff7f0e")
+   l12= axsL[5].plot(loc, fakeline, label="Ez",             color="#2ca02c")
 
-   ls = (l1, l2, l3, l4, l5)
+   ls = (l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12)
 
-   axsL[2].legend(;loc="upper right", frameon=false, fontsize=12)
-   axsL[3].legend(;loc="upper left", ncol=2, frameon=false, fontsize=12)
-   axsL[4].legend(;loc="upper right", frameon=false, fontsize=12)
+   axsL[2].legend(;loc="lower left",  ncol=3, frameon=false, fontsize=12)
+   axsL[3].legend(;loc="upper left",  ncol=2, frameon=false, fontsize=12)
+   axsL[4].legend(;loc="upper right", ncol=3, frameon=false, fontsize=12)
+   axsL[5].legend(;loc="lower right", ncol=3, frameon=false, fontsize=12)
 
    vl1 = axsL[1].vlines(loc[1], ρmin, ρmax; colors="r", linestyle="dashed", alpha=0.5)
    vl2 = axsL[2].vlines(loc[1], vmin, vmax; colors="r", linestyle="dashed", alpha=0.5)
    vl3 = axsL[3].vlines(loc[1], pmin, pmax; colors="r", linestyle="dashed", alpha=0.5)
    vl4 = axsL[4].vlines(loc[1], bmin, bmax; colors="r", linestyle="dashed", alpha=0.5)
-   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+   vl5 = axsL[5].vlines(loc[1], emin, emax; colors="r", linestyle="dashed", alpha=0.5)
 
-   vlines = (vl1, vl2, vl3, vl4)
+   hl2 = axsL[2].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+   hl5 = axsL[5].hlines(0.0, loc[1], loc[end]; colors="k", linestyle="dashed", alpha=0.2)
+
+   vlines = (vl1, vl2, vl3, vl4, vl5)
 
    for ax in axsR
       ax.set_aspect("equal")
@@ -120,21 +134,30 @@ end
    println("file = $(basename(file))")
    meta = load(file)
 
-   p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
-   rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
-   v_extract = readvariable(meta, "proton/vg_v", cellids)
-   vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
-   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   rho = readvariable(meta, "proton/vg_rho", cellids) |> vec
+   v = readvariable(meta, "proton/vg_v", cellids)
+   p = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
 
-   bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
+   vmag2 = sum(x -> x*x, v, dims=1) |> vec
+   pram = rho .* Vlasiator.mᵢ .* vmag2 .* 1e9 # [nPa]
 
-   ls[1][1].set_ydata(rho_extract ./ 1e6)
-   ls[2][1].set_ydata(v_extract[1,:] ./ 1e3)
-   ls[3][1].set_ydata(pram_extract)
-   ls[4][1].set_ydata(p_extract)
-   ls[5][1].set_ydata(bz)
+   b = readvariable(meta, "vg_b_vol", cellids) .* 1e9 #[nT]
+   e = readvariable(meta, "vg_e_vol", cellids) .* 1e3 #[mV/m]
 
-   imagnetopause_ = findfirst(<(0.0), bz)
+   ls[1][1].set_ydata(rho ./ 1e6)
+   ls[2][1].set_ydata(@views v[1,:] ./ 1e3)
+   ls[3][1].set_ydata(@views v[2,:] ./ 1e3)
+   ls[4][1].set_ydata(@views v[3,:] ./ 1e3)
+   ls[5][1].set_ydata(pram)
+   ls[6][1].set_ydata(p)
+   ls[7][1].set_ydata(@view b[1,:])
+   ls[8][1].set_ydata(@view b[2,:])
+   ls[9][1].set_ydata(@view b[3,:])
+   ls[10][1].set_ydata(@view e[1,:])
+   ls[11][1].set_ydata(@view e[2,:])
+   ls[12][1].set_ydata(@view e[3,:])
+
+   imagnetopause_ = findfirst(<(0.0), @views b[3,:])
    for vline in vlines
       update_vline(vline, loc[imagnetopause_])
    end
@@ -176,21 +199,21 @@ const nfile = length(files)
 @broadcast begin
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
-   colorscale = Linear
    axisunit = RE
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
    const vmin, vmax = -640.0, 100.0 # [km/s]
    const pmin, pmax = 0.0, 1.82     # [nPa]
    const bmin, bmax = -25.0, 60.0   # [nT]
-   const vamin, vamax = 0.0, 250.0  # [km/s]
-   const vsmin, vsmax = 30.0, 350.0 # [km/s]
+   const emin, emax = -5.0, 5.0     # [mV/m]
+   const vamin, vamax = 50.0, 350.0 # [km/s]
+   const vsmin, vsmax = 50.0, 350.0 # [km/s]
 
    meta = load(files[1])
 
    const pArgs1 = set_args(meta, "VA", axisunit; normal=:none)
-   const cnorm1, cticks1 = set_colorbar(colorscale, vamin, vamax)
-   const cnorm2, cticks2 = set_colorbar(colorscale, vsmin, vsmax)
+   const cnorm1, cticks1 = set_colorbar(Linear, vamin, vamax)
+   const cnorm2, cticks2 = set_colorbar(Linear, vsmin, vsmax)
 end
 
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
