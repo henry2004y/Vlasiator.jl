@@ -138,9 +138,14 @@ const variables_predefined = Dict(
             readvariable(meta, "vg_pressure") :
             readvariable(meta, "vg_pressure", ids)
       else
+         if hasvariable(meta, "proton/vg_ptensor_diagonal")
+            Pdiag_str = "proton/vg_ptensor_diagonal"
+         else
+            Pdiag_str = "PTensorDiagonal"
+         end
          Pdiag = isempty(ids) ?
-            readvariable(meta, "proton/vg_ptensor_diagonal") :
-            readvariable(meta, "proton/vg_ptensor_diagonal", ids)
+            readvariable(meta, Pdiag_str) :
+            readvariable(meta, Pdiag_str, ids)
          P = vec(mean(Pdiag, dims=1))
       end
       P
