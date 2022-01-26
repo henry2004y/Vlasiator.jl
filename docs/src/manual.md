@@ -193,7 +193,7 @@ More examples of customized plots can be found in the [repo](https://github.com/
 
 ### PyPlot Backend
 
-To trigger the Matplotlib plotting, `using PyPlot`.
+To trigger Matplotlib plotting, `using PyPlot`.
 All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by their Matplotlib counterparts, e.g. font width, font size, colormap, etc.
 
 !!! warning
@@ -272,7 +272,7 @@ For a full list available optional arguments, please refer to the [doc for each 
 
 ### Plots Backend
 
-To trigger the Plots package plotting, `using Plots`.
+To trigger Plots.jl plotting, `using Plots`. By default [GR](https://github.com/jheinen/GR.jl) is loaded.
 This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but a wide range of other options are also presented.
 
 - Scaler colored contour from 2D simulation
@@ -297,7 +297,7 @@ The keyword arguments are the same as in the PyPlot shown in the [API](internal.
 
 ### Makie Backend
 
-A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie.
+A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie. To trigger Makie plotting, `using VlasiatorMakie, GLMakie`.
 You can either use intrinsic Makie plotting methods like
 
 ```
@@ -305,7 +305,7 @@ lines(meta, var)   # 1D
 heatmap(meta, var) # 2D
 ```
 
-or use full recipes created by us
+or use full recipes customized by us
 
 ```
 vlheatmap(meta, var)
