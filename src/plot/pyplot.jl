@@ -36,7 +36,7 @@ function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
    ax.plot(x, data; kwargs...)
 end
@@ -57,7 +57,7 @@ function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
    streamplot(X, Y, v1, v2; kwargs...)
 end
@@ -80,7 +80,7 @@ function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
    Xq  = @view X[1:stride:end, 1:stride:end]
    Yq  = @view Y[1:stride:end, 1:stride:end]
@@ -188,17 +188,17 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp
       end
    end
 
-   cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
+   norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
    if colorscale != SymLog
-      c = ax.pcolormesh(x, y, data; norm=cnorm, kwargs...)
+      c = ax.pcolormesh(x, y, data; norm, kwargs...)
    else
-      c = ax.pcolormesh(x, y, data; norm=cnorm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+      c = ax.pcolormesh(x, y, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
    end
 
-   set_plot(c, ax, pArgs, cticks, addcolorbar)
+   set_plot(c, ax, pArgs, ticks, addcolorbar)
 
    return c
 end
@@ -235,19 +235,19 @@ function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; comp::
    data = prep2dslice(meta, var, normal, comp, pArgs)'
    x, y = get_axis(pArgs)
 
-   cnorm, cticks = set_colorbar(colorscale, vmin, vmax, data)
+   norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
-   c = ax.pcolormesh(x, y, data; norm=cnorm, kwargs...)
+   c = ax.pcolormesh(x, y, data; norm, kwargs...)
 
-   set_plot(c, ax, pArgs, cticks, addcolorbar)
+   set_plot(c, ax, pArgs, ticks, addcolorbar)
 
    c
 end
 
 """
-    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0]) -> cnorm, cticks
+    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0]) -> norm, ticks
 
 Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorscale`.
 Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
@@ -255,9 +255,9 @@ linear, logarithmic and symmetric logarithmic, like centered, discrete, and two 
 For fine-grain control, it is suggested to use the norm methods from `matplotlib.colors`.
 For instance, 
 ```
-julia> cnorm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
-julia> cnorm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
-julia> cnorm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
+julia> norm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
+julia> norm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
+julia> norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
 ```
 There are also various options for the ticks available in `matplotlib.ticker`.
 """
@@ -265,10 +265,10 @@ function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0])
    vmin, vmax = set_lim(v1, v2, data, colorscale)
    if colorscale == Linear
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
-      cnorm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
+      norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
       ticks = matplotlib.ticker.LinearLocator(numticks=9)
    elseif colorscale == Log # logarithmic
-      cnorm = matplotlib.colors.LogNorm(;vmin, vmax)
+      norm = matplotlib.colors.LogNorm(;vmin, vmax)
       ticks = matplotlib.ticker.LogLocator(base=10, subs=collect(0:9))
    else # symmetric log
       linthresh = 1.0
@@ -278,20 +278,20 @@ function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0])
       minlog = ceil(Int, log10(-vmin))
       maxlog = ceil(Int, log10(vmax))
 
-      cnorm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin, vmax, base=10)
+      norm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin, vmax, base=10)
       ticks = [ [-(10.0^x) for x in minlog:-logstep:logthresh]..., 0.0,
          [10.0^x for x in logthresh+1:logstep:maxlog]..., ]
    end
 
-   cnorm, ticks
+   norm, ticks
 end
 
 "Configure customized plot."
-function set_plot(c, ax, pArgs::PlotArgs, cticks, addcolorbar)
+function set_plot(c, ax, pArgs::PlotArgs, ticks, addcolorbar)
    (;str_title, strx, stry, cb_title) = pArgs
 
    if addcolorbar
-      cb = colorbar(c; ax, ticks=cticks, fraction=0.04, pad=0.02)
+      cb = colorbar(c; ax, ticks, fraction=0.04, pad=0.02)
       !isempty(cb_title) && cb.ax.set_ylabel(cb_title)
       cb.ax.tick_params(direction="in")
    end
@@ -327,47 +327,46 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
 velocity is selected!
-- `fmin, fmax`: minimum and maximum VDF values for plotting.
+- `vmin, vmax`: minimum and maximum VDF values for plotting.
 - `weight::Symbol`: choosing distribution weights from phase space density or particle flux
 between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
 function vdfslice(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, species="proton", fmin=-Inf, fmax=Inf, unit=SI, unitv="km/s",
+   verbose=false, species="proton", vmin=-Inf, vmax=Inf, unit=SI, unitv="km/s",
    slicetype=:nothing, vslicethick=0.0, center=:nothing, weight=:particle, flimit=-1.0,
    kwargs...)
 
-   v1, v2, r1, r2, fweight, strx, stry, str_title =
+   v1, v2, r1, r2, weights, strx, stry, str_title =
       prep_vdf(meta, location;
          species, unit, unitv, slicetype, vslicethick, center, weight, flimit, verbose)
 
-   isinf(fmin) && (fmin = minimum(fweight))
-   isinf(fmax) && (fmax = maximum(fweight))
+   isinf(vmin) && (vmin = minimum(weights))
+   isinf(vmax) && (vmax = maximum(weights))
 
-   verbose && @info "Active f range is $fmin, $fmax"
+   verbose && @info "Active f range is $vmin, $vmax"
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
-   cnorm = matplotlib.colors.LogNorm(vmin=fmin, vmax=fmax)
+   norm = matplotlib.colors.LogNorm(vmin, vmax)
 
-   h = ax.hist2d(v1, v2, bins=(r1, r2), weights=fweight, norm=cnorm, shading="flat")
+   h = ax.hist2d(v1, v2; bins=(r1, r2), weights, norm, shading="flat")
 
    ax.set_title(str_title, fontweight="bold")
-   ax.set_xlabel(strx, weight="black")
-   ax.set_ylabel(stry, weight="black")
+   ax.set_xlabel(strx)
+   ax.set_ylabel(stry)
    ax.set_aspect("equal")
    ax.grid(color="grey", linestyle="-")
    ax.tick_params(direction="in")
 
-   cb = colorbar(h[4]; ax, fraction=0.046, pad=0.02)
+   cb = colorbar(h[4]; ax, fraction=0.04, pad=0.02)
    cb.ax.tick_params(which="both", direction="in")
    cb_title = cb.ax.set_ylabel("f(v)")
 
    if slicetype in (:bperp, :bpar, :bpar1)
       # Draw vector of magnetic field direction
    end
-   plt.tight_layout()
 
    h[4] # h[1] is 2D data, h[2] is x axis, h[3] is y axis
 end
@@ -401,7 +400,7 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
       @inbounds centers[i] = getcellcoordinates(meta, id)
    end
 
-   if isnothing(ax) ax = plt.gca() end
+   isnothing(ax) && (ax = plt.gca())
 
    if projection in ("x", "y", "z")
       x1 = getindex.(centers, dir1)
