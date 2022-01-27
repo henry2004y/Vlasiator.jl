@@ -135,7 +135,7 @@ Here is a full list of available quantities[^1]:
 | Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
-| BetaStar              | modified beta, $(P + Pdyn) / P_B$| P; Pram; vg\_b\_vol |
+| BetaStar              | modified beta, $(P + P_{ram}) / P_B$| P; Pram; vg\_b\_vol |
 | IonInertial           | proton inertial length           | vg\_rho               | 
 | Larmor                | proton Larmor radius             | Vth; Bmag             |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |
