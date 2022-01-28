@@ -971,3 +971,24 @@ function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
    close(meta2.fid)
    return isIdentical
 end
+
+"""
+   downsamplefg(meta, array, ndims) -> vg array
+
+Downsamples a fg array (compatible with meta) of a variable with ndims components to SpatialGrid of the file meta.
+Returns the downsampled values in an array sized [length(meta.cellid), ndims].
+"""
+function downsample_fg(meta, arr, ndims)
+   if ndims > 1
+      vgout = zeros(typeof(arr[1]), (ndims,length(meta.cellid)))
+      for (i,cid) in enumerate(meta.cellid)
+         vgout[:,i] = downsample_fsgrid_subarray(meta, cid, arr)
+      end
+   else
+      vgout = zeros(typeof(arr[1]), (ndims, length(meta.cellid)))
+      for (i,cid) in enumerate(meta.cellid)
+         vgout[:,i] = downsample_fsgrid_subarray(meta, cid, arr)
+      end
+   end
+   vgout
+end

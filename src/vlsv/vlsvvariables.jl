@@ -73,6 +73,7 @@ const units_predefined = Dict(
    :MA => ("", L"$M_A$", ""),
    :Ppar => ("Pa", L"$P_\parallel$", "Pa"),
    :Pperp => ("Pa", L"$P_\perp$", "Pa"),
+   :Beta => ("",L"$\beta$", "")
 )
 
 # Define derived parameters
@@ -122,13 +123,9 @@ const variables_predefined = Dict(
    end,
    :Rhom => function (meta, ids=UInt64[])
       if hasvariable(meta, "vg_rhom")
-         ρm = isempty(ids) ?
-            readvariable(meta, "vg_rhom") :
-            readvariable(meta, "vg_rhom", ids)
+         ρm = readvariable(meta, "vg_rhom", ids)
       elseif hasvariable(meta, "proton/vg_rho")
-         ρm = isempty(ids) ?
-            readvariable(meta, "proton/vg_rho") .* mᵢ :
-            readvariable(meta, "proton/vg_rho", ids) .* mᵢ
+         ρm = readvariable(meta, "proton/vg_rho", ids) .* mᵢ
       end
       ρm
    end,
@@ -152,9 +149,9 @@ const variables_predefined = Dict(
       vs = @. √( (P*5.0f0/3.0f0) / ρm )
    end,
    :VA => function (meta, ids=UInt64[]) # Alfvén speed
-      ρm = readvariable(meta, "Rhom", ids)
+      ρm = readvariable(meta, :Rhom, ids)
       _fillinnerBC!(ρm, ρm)
-      Bmag = readvariable(meta, "Bmag", ids)
+      Bmag = readvariable(meta, :Bmag, ids)
       VA = @. $vec(Bmag) / √(ρm*μ₀)
    end,
    :MA => function (meta, ids=UInt64[]) # Alfvén Mach number

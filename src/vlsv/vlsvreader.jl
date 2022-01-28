@@ -39,6 +39,7 @@ struct MetaVLSV
    maxamr::Int64
    hasvdf::Bool
    ncells::SVector{3, Int64}
+   fsgridcells::SVector{3, Int64}
    block_size::SVector{3, Int64}
    coordmin::SVector{3, Float64}
    coordmax::SVector{3, Float64}
@@ -255,10 +256,13 @@ function load(file::AbstractString)
       !isempty(vcells)
    end
 
+   # Get fsgrid bbox
+   fsbox = SVector{6}(readmesh(fid, footer, "fsgrid", "MESH_BBOX")::Vector{Int})
+   fsbox = SVector{3}(fsbox[1:3])
    # File IOstream is not closed for sake of data processing later.
 
    meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid,
-      cellindex, timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
+      cellindex, timesim, maxamr, hasvdf, ncells, fsbox, block_size, coordmin, coordmax,
       dcoord, species, meshes)
 end
 
@@ -320,7 +324,7 @@ that for DCCRG grid the variables are sorted by cell ID.
 function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    @unpack fid, footer, cellindex = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      data = variables_predefined[symvar](meta)
+      data = variables_predefined[symvar](meta, sorted)
       return data
    end
 

@@ -4,7 +4,7 @@ using Requires
 using StaticArrays
 using Printf: @sprintf
 using UnPack
-using LinearAlgebra: ×, dot, ⋅, norm, normalize!
+using LinearAlgebra: ×, dot, ⋅, norm, normalize!, normalize
 using Statistics: mean
 using EzXML
 using Mmap: mmap
@@ -24,7 +24,7 @@ export
    # vlsvreader
    MetaVLSV, VarInfo,
    load, readvariable, readparameter, readvariablemeta, readvcells,
-   hasvariable, hasparameter, hasname,
+   hasvariable, hasparameter, hasname, readmesh,
    # vlsvutility
    getcell, getslicecell, getlevel, refineslice, getcellcoordinates, getvcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
@@ -33,10 +33,15 @@ export
    # plot helper
    SI, RE, Log, Linear, SymLog,
    # log
-   readlog
+   readlog,
+   # curvature
+   fg_grad, fg_curl, fg_div, matder, fg_curvature, fg_normalize, fg_kappac, fg_kappa
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))
+
+# oo, a typedef!
+realtype=Float64
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
