@@ -195,21 +195,22 @@ function estimate_meanstates(files, cellids)
    # Characteristic parameters
    Bnorm = @views abs(mean(B[3,:]))
    di  = √(mᵢ*ϵ₀/(n̄))*c/qᵢ               # ion inertial length, [m]
-   ωci = qᵢ*Bnorm/mᵢ                     # [radian/s]
+   ωci = qᵢ*Bnorm/mᵢ                     # [/s]
    v̄A  = Bnorm / √(μ₀ * n̄ * mᵢ)          # Alfven speed, [m/s]
    v̄S  = √(γ * p̄ / (n̄ * mᵢ))             # sonic speed, [m/s]
 
    println("--------------------------------------------------")
    println("* Average states along the line at the middle snapshot")
-   println("Density               : ", round(n̄/1e6; digits=2), " amu/cc")
-   println("Pressure              : ", round(p̄/1e9; digits=2), " nPa")
-   println("Parallel velocity     : ", round(v̄par/1e3; digits=2), " km/s")
-   println("Perpendicular velocity: ", round.(v̄perp/1e3; digits=2), " km/s")
-   println("Flow angle            : ", round(atand(v̄perp[2], v̄perp[1]); digits=2), " degrees")
-   println("Ion inertial length   : ", round(di/1e3; digits=2), " km")
-   println("Gyrofrequency         : ", round(ωci; digits=2), " rad/s")
-   println("Alfven speed          : ", round(v̄A/1e3; digits=2), " km/s")
-   println("Sonic speed           : ", round(v̄S/1e3; digits=2), " km/s")
+   println("Density               : ", rpad(round(n̄/1e6; digits=2), 8), "amu/cc")
+   println("Pressure              : ", rpad(round(p̄*1e9; digits=3), 8), "nPa")
+   println("Parallel velocity     : ", rpad(round(v̄par/1e3; digits=2), 8), "km/s")
+   println("Perpendicular velocity: ", rpad(round.(v̄perp/1e3; digits=2), 8), "km/s")
+   println("Flow angle            : ", rpad(round(atand(v̄perp[2], v̄perp[1]); digits=2), 8),
+      "degrees")
+   println("Ion inertial length   : ", rpad(round(di/1e3; digits=2), 8), "km")
+   println("Gyrofrequency         : ", rpad(round(ωci; digits=2), 8), "Hz")
+   println("Alfven speed          : ", rpad(round(v̄A/1e3; digits=2), 8), "km/s")
+   println("Sonic speed           : ", rpad(round(v̄S/1e3; digits=2), 8), "km/s")
    println("--------------------------------------------------")
 
    di, ωci, v̄A, v̄S, v̄perp
@@ -286,9 +287,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       ax = [subplot(221), subplot(223), subplot(222), subplot(224, projection="3d")]
 
       dispersion = reverse!(abs.(F̃.*F̃)[:, end-nt+1:end]', dims=1)
-      im1 = ax[1].pcolormesh(krange, ωrange, dispersion,
-         shading="nearest",
-         norm=matplotlib.colors.LogNorm())
+      im1 = ax[1].pcolormesh(krange, ωrange, dispersion, norm=matplotlib.colors.LogNorm())
 
       ax[1].plot([krange[1], 0.0, krange[end]], [ωCFL[1], 0.0, ωCFL[end]], "--",
          linewidth=1.0, color="k", label="CFL Condition")
@@ -307,7 +306,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       ax[1].set_ylabel(L"$\omega/\Omega_{ci}$")
       ax[1].set_title(L"$k_\perp$ angle w.r.t. x = %$θ")
 
-      im2 = ax[2].pcolormesh((distances .+ coords[1,1])./Re, t, var', shading="nearest")
+      im2 = ax[2].pcolormesh((distances .+ coords[1,1])./Re, t, var')
 
       ax[2].plot((xwave[1] .+ coords[1,1])./Re, twave, ".--",
          color="#d62728", label=L"$V_{bulk}$")
@@ -338,7 +337,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       x, y = Vlasiator.get_axis(pArgs)
       data = Vlasiator.prep2d(meta, varnames[i], components[i])'
       cnorm, cticks = Vlasiator.set_colorbar(Vlasiator.Linear, -Inf, Inf, data)
-      cmesh = ax[3].pcolormesh(x, y, data, norm=cnorm, shading="nearest")
+      cmesh = ax[3].pcolormesh(x, y, data, norm=cnorm)
 
       ax[3].set_xlabel(pArgs.strx)
       ax[3].set_ylabel(pArgs.stry)

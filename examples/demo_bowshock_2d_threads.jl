@@ -8,6 +8,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob
+using Vlasiator: Re # Earth radius, [m]
 using JLD2: jldsave
 
 # Upstream solar wind temperature
@@ -26,7 +27,6 @@ function extract_bowshock_position(files; verbose=true)
    close(meta.fid)
 
    # Only extract bow shock location near the front between y = ±20Re
-   Re = Vlasiator.Re
    ymin_ = findlast(<(-20Re), y)
    ymax_ = findfirst(>(20Re), y)
 
@@ -52,7 +52,7 @@ function extract_bowshock_position(files; verbose=true)
 end
 
 #####
-files = glob("bulk*.vlsv", "run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", ".")
 
 @time x_crossing, y_crossing = extract_bowshock_position(files)
 

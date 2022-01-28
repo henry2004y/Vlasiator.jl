@@ -1,6 +1,22 @@
 # Manual
 
-Here we demonstrate some basic usages of Vlasiator output processing. For more complete description of the arguments, please refer to the [API]((internal.md) documents or type `?foo` to display help message in the REPL.
+Here we demonstrate some basic usages of Vlasiator output processing. For more complete description of the arguments, please refer to the [API](internal.md) documents or type `?foo` to display help message in the REPL.
+
+## Common physical constants
+
+A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: Re` or prepend the module name like `Vlasiator.Re`.
+
+| Physical constant | Value | Meaning |
+|:---:|:--------------:|:-------------|
+| qₑ | -1.60217662e-19 | electron charge, [C]             |
+| mₑ | 9.10938356e-31  | electron mass, [kg]              |
+| qᵢ | 1.60217662e-19  | proton mass, [C]                 |
+| mᵢ | 1.673557546e-27 | proton mass, [kg]                |
+| c  | 299792458.      | speed of light, [m/s]            |
+| μ₀ | 4π*1e-7         | Vacuum permeability, [H/m]       |
+| ϵ₀ | 1/(c^2*μ₀)      | Vacuum permittivity, [F/m]       |
+| kB | 1.38064852e-23  | Boltzmann constant, [m²kg/(s²K)] |
+| Re | 6.371e6         | Earth radius, [m]                |
 
 ## Loading VLSV data
 
@@ -12,6 +28,16 @@ meta = load(file)
 ```
 
 This VLSV meta data contains information of file names, variable names, cell ID list, mesh sizes and species, which can then be passed into all kinds of methods that process the data.
+
+- Read parameter
+
+For convenience we support the do-block syntax that automatically closes the file stream.
+
+```
+t = load(file) do meta
+   readparameter(meta, "time")
+end
+```
 
 - Read variable meta data
 
@@ -42,11 +68,11 @@ readvariable(meta, "proton/vg_rho", id)
 - Get variable along a line between two points
 
 ```
-Re = Vlasiator.Re # Earth radii
+using Vlasiator: Re # Earth radii
 point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
-rho_extract = readvariable(meta, "VA", cellids)
+var_extract = readvariable(meta, "VA", cellids)
 ```
 
 - Compare VLSV files
@@ -105,10 +131,11 @@ Here is a full list of available quantities[^1]:
 | J                     | current density                  | vg\_b\_vol            |
 | Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
 | Panisotropy           | $P_\perp / P_\parallel$          | ptensor; B            |
-| Pdynamic              | dynamic pressure                 | vg\_rho; Vmag         |
+| Pram                  | dynamic ram pressure             | vg\_rho; Vmag         |
 | Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
+| BetaStar              | modified beta, $(P + P_{ram}) / P_B$| P; Pram; vg\_b\_vol |
 | IonInertial           | proton inertial length           | vg\_rho               | 
 | Larmor                | proton Larmor radius             | Vth; Bmag             |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |
@@ -127,11 +154,38 @@ which can also be found as keys of dictionary in [vlsvvariables.jl](https://gith
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results. Contributions from users are warmly welcomed!
 
+### Velocity space moments
+
+We can also calculate the plasma moments from the saved VLSV velocity space distributions.
+
+```
+# VDF cell indexes and values, with sparsity
+vcellids, vcellf = readvcells(meta, cellid; species="proton")
+# Recover the full VDF space
+f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
+
+getdensity(meta, f)
+getdensity(meta, vcellids, vcellf)
+
+getvelocity(meta, f)
+getvelocity(meta, vcellids, vcellf)
+
+getpressure(meta, f) # only support full VDF for now
+```
+
+Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big( 1/(2n) \int |f - g| dv \big)``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density and scalar pressure as f.
+
+```
+getmaxwellianity(meta, f)
+```
+
+The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at all, and +∞ a perfect Maxwellian distribution.
+
 ## Plotting
 
 Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting functionalities once the target plotting package is used.
 
-Currently I would recommend using `PyPlot.jl`.
+Currently `PyPlot.jl` provides the most complete and fine-tuned plotting capabilities.
 `Plots.jl` is catching up, but it is still slower and lack of features.
 `Makie.jl` is supported experimentally. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend.
 
@@ -139,37 +193,43 @@ More examples of customized plots can be found in the [repo](https://github.com/
 
 ### PyPlot Backend
 
-To trigger the Matplotlib plotting, `using PyPlot`.
+To trigger Matplotlib plotting, `using PyPlot`.
 All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by their Matplotlib counterparts, e.g. font width, font size, colormap, etc.
 
 !!! warning
     The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`. See [Matplotlib's two interfaces](https://aaltoscicomp.github.io/python-for-scicomp/data-visualization/#matplotlib-has-two-different-interfaces) for details.
 
-- Scalar colored contour for 2D simulation
+- Scalar colored contour from 2D simulation
 
 ```
 pcolormesh(meta, "rho")
 ```
 
-- Vector z component colored contour for 2D simulation in a manually set range
+- Vector z component colored contour from 2D simulation in a manually set range
 
 ```
-pcolormesh(meta, "rho", op=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
 ```
 
-- Derived quantity colored contour for 2D simulation (as long as the input variable is in the predefined dictionary)
+- Vz colored contour from 2D simulation with prescribed colormap
 
 ```
-pcolormesh(meta, "b", op=:z, colorscale=Linear, axisunit=SI)
+pcolormesh(meta, "proton/vg_v", comp=:z, colorscale=Linear, cmap=matplotlib.cm.RdBu_r)
 ```
 
-- Streamline for 2D simulation
+- Derived quantity colored contour from 2D simulation (as long as the input variable is in the predefined dictionary)
+
+```
+pcolormesh(meta, "b", comp=:z, colorscale=Linear, axisunit=SI)
+```
+
+- Streamline from 2D simulation
 
 ```
 streamplot(meta, "rho_v", comp="xy")
 ```
 
-- Quiver for 2D simulation
+- Quiver from 2D simulation
 
 ```
 quiver(meta, "rho_v", comp="xy")
@@ -180,7 +240,7 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log color scale via `colorscale=Linear` or `colorscale=Log`, plot vector components via e.g. `op=:x` or magnitude by default, and set unit via `axisunit=RE` etc..
+You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=RE` etc.
 
 - Mesh denoted by cell centers
 
@@ -188,7 +248,7 @@ You can choose to use linear/log color scale via `colorscale=Linear` or `colorsc
 plotmesh(meta; projection="z", color="w")
 ```
 
-- Cut slice colored contour for 3D simulation
+- Cut slice colored contour from 3D simulation
 
 ```
 pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
@@ -212,16 +272,16 @@ For a full list available optional arguments, please refer to the [doc for each 
 
 ### Plots Backend
 
-To trigger the Plots package plotting, `using Plots`.
+To trigger Plots.jl plotting, `using Plots`. By default [GR](https://github.com/jheinen/GR.jl) is loaded.
 This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but a wide range of other options are also presented.
 
-- Scaler colored contour for 2D simulation
+- Scaler colored contour from 2D simulation
 
 ```
 heatmap(meta, var, aspect_ratio=:equal, c=:turbo)
 ```
 
-- Scaler colored contour with lines for 2D simulation
+- Scaler colored contour with lines from 2D simulation
 
 ```
 contourf(meta, var)
@@ -237,7 +297,7 @@ The keyword arguments are the same as in the PyPlot shown in the [API](internal.
 
 ### Makie Backend
 
-A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie.
+A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie. To trigger Makie plotting, `using VlasiatorMakie, GLMakie`.
 You can either use intrinsic Makie plotting methods like
 
 ```
@@ -245,7 +305,7 @@ lines(meta, var)   # 1D
 heatmap(meta, var) # 2D
 ```
 
-or use full recipes created by us
+or use full recipes customized by us
 
 ```
 vlheatmap(meta, var)
@@ -303,9 +363,27 @@ To see the full list of options, please refer to the documentation in [API Refer
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `maxamronly`: when it is set to `true`, then only the image file at the highest refinement level is generated.
     This part is experimental and subject to change in the future.
 
+## Appending to VLSV
+
+We are able to compute derived quantities from an original VLSV file and generate a new VLSV output with new quantities included.
+
+```
+vmag = readvariable(meta, "Vmag", meta.cellid)
+pa = readvariable(meta, "Panisotropy", meta.cellid)
+vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
+# require LaTeXStrings.jl
+push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
+push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
+
+write_vlsv("bulk.vlsv", "bulk_new.vlsv", vars)
+```
+
+!!! note
+    Currently we only support writing new DCCRG variables. All quantities from the original file is maintained.
+
 ## Tracking log files
 
-We can monitor the runtime performance per iteration through log files:
+The runtime performance per iteration can be monitored through log files:
 
 ```
 file = "logfile.txt"
@@ -343,7 +421,7 @@ plt.show()
 ```
 
 !!! note
-    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, I recommend using the package inside Julia.
+    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, it is recommended to use the package inside Julia.
 
 [^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
 

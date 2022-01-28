@@ -9,6 +9,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, DelimitedFiles, Vlasiator, DataFrames
+using Vlasiator: Re # Earth radius [m]
 
 function extract_vars(files, loc)
    nfiles = length(files)
@@ -44,8 +45,6 @@ function extract_vars(files, loc)
 end
 
 #####
-
-Re = Vlasiator.Re # Earth radius
 
 files = glob("bulk*.vlsv", "./")
 

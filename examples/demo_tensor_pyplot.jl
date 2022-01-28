@@ -39,10 +39,10 @@ cnorm1, cticks1 = Vlasiator.set_colorbar(colorscale, vmin, vmax)
 fig, axs = subplots(3,2,
    figsize=(6, 12), sharex=true, sharey=true, constrained_layout=true)
 
-c1 = axs[1].pcolormesh(x, y, pxx; norm=cnorm1, cmap, shading="nearest")
+c1 = axs[1].pcolormesh(x, y, pxx; norm=cnorm1, cmap)
 
 for i in eachindex(axs)[2:end]
-   axs[i].pcolormesh(x, y, P[i]; norm=cnorm1, cmap, shading="nearest")
+   axs[i].pcolormesh(x, y, P[i]; norm=cnorm1, cmap)
 end
 
 for (i, ax) in enumerate(axs)

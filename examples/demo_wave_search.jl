@@ -13,7 +13,8 @@
 #
 # Note:
 # 1. When dealing with multiple variables, it is recommended to handle one variable at a
-# time through the whole process due to memory considerations.
+# time through the whole process due to memory considerations. With large number of frame
+# counts, the current procedure is still memory-consuming.
 # 2. It assumes uniform sampling in time.
 # 3. Peak-finding is threaded, but plotting is still serial.
 #
@@ -43,12 +44,28 @@ function extract_var(files, ncells, varname, component=0)
 end
 
 "Count local maxima of vector `y` with moving box length `n`."
-function countpeaks(y, n)
+function countpeaks(y, n; interval=1)
    maxs = Int[]
-   for i in 2:length(y)-1
-      if y[i+1] < y[i] > y[i-1]
-         push!(maxs, i)
+   if interval == 1
+      for i in 2:length(y)-1
+         if y[i-1] < y[i] > y[i+1]
+            push!(maxs, i)
+         end
       end
+   elseif interval == 2
+      for i in 3:length(y)-2
+         if y[i-2] ≤ y[i-1] < y[i] > y[i+1] ≥ y[i+2]
+            push!(maxs, i)
+         end
+      end
+   elseif interval == 3
+      for i in 4:length(y)-3
+         if y[i-3] ≤ y[i-2] ≤ y[i-1] < y[i] > y[i+1] ≥ y[i+2] > y[i+3]
+            push!(maxs, i)
+         end
+      end
+   else
+      error("interval = $interval not implemented!")
    end
    nCounts = zeros(Int, length(y)-n+1)
    nCounts[1] = count(i->(1 ≤ i ≤ n), maxs)
@@ -65,19 +82,20 @@ function countpeaks(y, n)
 end
 
 "Check wave-like occurrence frequencies within box length `n` of output interval `dt`."
-function checkwaves_sma(var, dt=0.5, n::Int=size(var,3))
+function checkwaves_sma(var, dt=0.5, n::Int=size(var,3); interval=1)
    nPeaks = zeros(Int, size(var,3)-n+1, size(var,1), size(var,2))
 
    Threads.@threads for j in axes(var, 2)
       for i in axes(var, 1)
          var_series = @view var[i,j,:]
-         nPeaks[:,i,j] = countpeaks(var_series, n)
+         nPeaks[:,i,j] = countpeaks(var_series, n; interval)
       end
    end
    nPeaks ./ (n*dt)
 end
 
-function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
+function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
+   interval=1, nplotstride=1)
    @assert nboxlength ≥ 3 && isodd(nboxlength) "Expect odd box length ≥ 3!"
    if (local nfiles = length(files)) < nboxlength
       @warn "Set moving box length to the number of files..."
@@ -102,7 +120,7 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
    ticks = range(vmin, vmax, length=11)
 
    fakedata = zeros(Float32, length(x), length(y))
-   im = ax.pcolormesh(y, x, fakedata; norm, shading="nearest")
+   im = ax.pcolormesh(y, x, fakedata; norm)
 
    ax.set_aspect("equal")
    ax.set_xlabel(L"y [$R_E$]"; fontsize, weight="black")
@@ -122,11 +140,11 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
       # Obtain time series data
       var = extract_var(files, ncells, varnames[i], components[i])
       # Count local peak occuring frequencies at each location
-      fPeaks = checkwaves_sma(var, Δt, nboxlength)
+      fPeaks = checkwaves_sma(var, Δt, nboxlength; interval)
 
-      for it in axes(fPeaks,1) # Iterate over time
+      for it in 1:nplotstride:size(fPeaks,1) # Iterate over time
          outname = joinpath(outdir,
-            "spatial_perturbation_distribution_$(lpad(it, 3, '0')).png")
+            "spatial_perturbation_distribution_$(lpad(it, 4, '0')).png")
          isfile(outname) && continue
          # Update plot
          im.set_array(fPeaks[it,:,:])
@@ -148,13 +166,16 @@ varnames_print = ["Density", "Thermal Pressure", "Vx", "Vy", "Bz", "Ex", "Ey"]
 components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
 Δt = 0.5                           # output time interval [s]
 nboxlength = 101                   # moving box average length
-dir = "../run_rho2_bz-5_timevarying_startfrom300s" # data directory
+interval = 2                       # local peak gap minimal interval
+nplotstride = 50                   # plot intervals in frames 
+dir = "./" # data directory
 
 files = glob("bulk*.vlsv", dir)
 
 println("Total number of snapshots: $(length(files))")
 println("Running with $(Threads.nthreads()) threads...")
 
-@time plot_dist(files, varnames, varnames_print, components, Δt, nboxlength)
+@time plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
+   interval, nplotstride)
 
 println("Virtual satellite extraction done!")

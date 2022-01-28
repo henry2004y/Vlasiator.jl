@@ -4,14 +4,17 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob, PyPlot, Printf
+using Vlasiator: Re # Earth radius, [m]
 
 files = glob("run4/bulk*.vlsv")
 
 point1 = [0e8, 0, 0]
 point2 = [1.9e8, 0, 0]
 
-meta = load(files[1])
-cellids, distances, coords = getcellinline(meta, point1, point2)
+cellids, distances, coords =
+   let meta = load(files[1])
+      getcellinline(meta, point1, point2)
+   end
 
 # time density temperature vx
 inputs = [
@@ -46,12 +49,12 @@ for (i, file) in enumerate(files)
 
    local t = readparameter(meta, "time")
 
-   ax[1].plot(coords[1,:]./ Vlasiator.Re, rho, label="rho")
+   ax[1].plot(coords[1,:] ./ Re, rho, label="rho")
    ax[1].set_ylim(lim_rho)
    ax[1].legend()
    ax[1].minorticks_on()
 
-   ax[2].plot(coords[1,:]./ Vlasiator.Re, abs.(vx), label="vx")
+   ax[2].plot(coords[1,:] ./ Re, abs.(vx), label="vx")
    ax[2].set_ylim(lim_v)
    ax[2].legend()
    ax[2].minorticks_on()

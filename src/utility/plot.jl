@@ -10,7 +10,7 @@ struct PlotArgs
    "Unit of spatial axis"
    axisunit::AxisUnit
    "data array size"
-   sizes::Vector{Int}
+   sizes::Tuple{Int64, Int64}
    "plotting data range"
    plotrange::Tuple{Float64, Float64, Float64, Float64}
    "cell IDs in the cut plane"
@@ -27,26 +27,32 @@ struct PlotArgs
    cb_title::String
 end
 
-"Set plot-related arguments of `var` in `axisunit`."
+"""
+    set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
+
+Set plot-related arguments of `var` in `axisunit`. `normal` and `origin` are used for 2D
+slices of 3D data, as specified in [`pcolormeshslice`](@ref).
+"""
 function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
-   @unpack ncells, coordmin, coordmax = meta
+   (;ncells, coordmin, coordmax) = meta
 
    if normal == :x
-      seq = @SVector [2,3]
+      seq = (2,3)
       dir = 1
    elseif normal == :y || (ncells[2] == 1 && ncells[3] != 1) # polar
-      seq = @SVector [1,3]
+      seq = (1,3)
       dir = 2
    elseif normal == :z || (ncells[3] == 1 && ncells[2] != 1) # ecliptic
-      seq = @SVector [1,2]
+      seq = (1,2)
       dir = 3
    else
       throw(ArgumentError("1D data detected. Please use 1D plot functions."))
    end
 
-   sizes = ncells[seq]
    plotrange = (coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]])
-   axislabels = ['X', 'Y', 'Z'][seq]
+   axislabels = ['X', 'Y', 'Z'][[seq...]]
+   # Scale the sizes to the highest refinement level
+   sizes = ncells[[seq...]] .<< meta.maxamr # data needs to be refined later
 
    if normal == :none
       idlist, indexlist = Int[], Int[]
@@ -55,9 +61,6 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
          getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])
       end
    end
-
-   # Scale the sizes to the highest refinement level
-   sizes *= 2^meta.maxamr # data needs to be refined later
 
    unitstr = axisunit == RE ? L"$R_E$" : L"$m$"
    strx = axislabels[1]*"["*unitstr*"]"
@@ -73,7 +76,11 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    PlotArgs(axisunit, sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title)
 end
 
-"Set colormap limits for `data`."
+"""
+    set_lim(vmin, vmax, data, colorscale=Linear)
+
+Set colormap limits `vmin`, `vmax` for `data` under scale `colorscale`.
+"""
 function set_lim(vmin, vmax, data, colorscale::ColorScale=Linear)
    if colorscale in (Linear, SymLog)
       v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
@@ -90,8 +97,8 @@ end
 "Return x and y ranges for 2D."
 function get_axis(axisunit::AxisUnit, plotrange, sizes)
    if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Vlasiator.Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Vlasiator.Re
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Re
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Re
    else
       x = LinRange(plotrange[1], plotrange[2], sizes[1])
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
@@ -101,19 +108,23 @@ end
 
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
-"Obtain data from `meta` of `var` for 2D plotting. Use `op` to select vector components."
-function prep2d(meta::MetaVLSV, var, op=:none)
+"""
+    prep2d(meta, var, comp=:0) -> Array
+
+Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
+"""
+function prep2d(meta::MetaVLSV, var, comp=:0)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    data =
       if ndims(dataRaw) == 3
-         if op in (:x, :1)
+         if comp in (:x, :1)
             @view dataRaw[1,:,:]
-         elseif op in (:y, :2)
+         elseif comp in (:y, :2)
             @view dataRaw[2,:,:]
-         elseif op in (:z, :3)
+         elseif comp in (:z, :3)
             @view dataRaw[3,:,:]
-         elseif op == :mag
+         elseif comp == :mag
             @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
          end
       else
@@ -122,9 +133,15 @@ function prep2d(meta::MetaVLSV, var, op=:none)
    data
 end
 
-"Return `data` of `var` on a uniform 2D mesh on the finest AMR level."
-function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
-   @unpack idlist, indexlist = pArgs
+"""
+    prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
+
+Return `data` of `var` on a uniform 2D mesh on the finest AMR level. Use `normal` to select
+the plane orientation, and `comp` to select the component of a vector, same as in
+[`pcolormeshslice`](@ref).
+"""
+function prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
+   (;idlist, indexlist) = pArgs
 
    data3D = readvariable(meta, var)
 
@@ -139,16 +156,16 @@ function prep2dslice(meta::MetaVLSV, var, normal, op, pArgs::PlotArgs)
       elseif ndims(data3D) == 2
          data2D = data3D[:,indexlist]
 
-         if op in (:x, :y, :z, :1, :2, :3)
-            if op in (:x, :1)
+         if comp in (:x, :y, :z, :1, :2, :3)
+            if comp in (:x, :1)
                slice = @view data2D[1,:]
-            elseif op in (:y, :2)
+            elseif comp in (:y, :2)
                slice = @view data2D[2,:]
-            elseif op in (:z, :3)
+            elseif comp in (:z, :3)
                slice = @view data2D[3,:]
             end
             data = refineslice(meta, idlist, slice, normal)
-         elseif op == :mag
+         elseif comp == :mag
             datax = @views refineslice(meta, idlist, data2D[1,:], normal)
             datay = @views refineslice(meta, idlist, data2D[2,:], normal)
             dataz = @views refineslice(meta, idlist, data2D[3,:], normal)
@@ -360,10 +377,7 @@ function prep_vdf(meta::MetaVLSV, location;
       @info "Original coordinates : $location"
       @info "Original cell        : $(getcellcoordinates(meta, cidReq))"
       @info "Nearest cell with VDF: $(getcellcoordinates(meta, cidNearest))"
-      let
-         x, y, z = getcellcoordinates(meta, cidNearest)
-         @info "cellid $cidNearest, x = $x, y = $y, z = $z"
-      end
+      @info "CellID: $cidNearest"
 
       if center == :bulk
          @info "Transforming to plasma frame, travelling at speed $Vbulk"

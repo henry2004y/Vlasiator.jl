@@ -1,4 +1,4 @@
-using Vlasiator, SHA, LazyArtifacts
+using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -44,6 +44,11 @@ end
          t = readparameter(meta, "time")
          @test t == 10.0
          @test_throws ArgumentError meta["nonsense"]
+         # Do-Block syntax
+         t = load(files[1]) do meta
+            readparameter(meta, "time")
+         end
+         @test t == 10.0
          # unsorted ID
          @test readvariable(meta, "CellID", false) == 10:-1:1
          indexRef = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
@@ -54,7 +59,7 @@ end
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
          coords = getcellcoordinates(meta, id)
-         @test coords == [3.0, 0.0, 0.0]
+         @test coords == (3.0, 0.0, 0.0)
          @test readvariable(meta, "proton/vg_rho", id)[1] == 1.2288102f0
          # ID in a line
          point1 = [-4.0, 0.0, 0.0]
@@ -72,14 +77,14 @@ end
          # velocity space reading
          vcellids, vcellf = readvcells(meta, 5; species="proton")
          V = getvcellcoordinates(meta, vcellids; species="proton")
-         @test V[end] == Float32[2.45, 1.95, 1.95]
+         @test V[end] == (2.45f0, 1.95f0, 1.95f0)
          @test_throws ArgumentError readvcells(meta, 2)
          f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
          @test f[CartesianIndex(26, 20, 20)] == 85.41775f0
          @test getdensity(meta, f) ≈ 1.8255334f0
          @test getdensity(meta, vcellids, vcellf) ≈ 1.8255334f0
-         @test getvelocity(meta, f) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
-         @test getvelocity(meta, vcellids, vcellf) ≈ [1.0f0, 0.0f0, 0.0f0] rtol=3e-3
+         @test getvelocity(meta, f)[1] ≈ 1.0f0 rtol=3e-3
+         @test getvelocity(meta, vcellids, vcellf)[1] ≈ 1.0f0 rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
          @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
 
@@ -139,7 +144,7 @@ end
          meta = meta2
          @test meta["Bmag"][4] == 3.0052159f-9
 
-         @test meta["Emag"][1,10,99] == 2.6120072f-6
+         @test meta["Emag"][1,10,99] ≈ 2.6120074f-6
 
          @test meta["VS"] |> nanmaximum == 1.3726345956957596e6
 
@@ -155,11 +160,13 @@ end
 
          @test meta["T"][1] == 347619.9817319378
 
-         @test meta["Pdynamic"][1] == 8.204415428337215e-10
+         @test meta["Pram"][1] == 8.204415428337215e-10
 
          @test meta["Pb"][1] == 3.59502523919876e-12
 
          @test meta["Beta"][1] == 1.3359065984817116
+
+         @test meta["BetaStar"][1] == 229.55170154977864
 
          @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
@@ -171,11 +178,26 @@ end
 
          @test meta["Gyrofrequency"][1] == 0.04579950356933307
 
-         @test meta["J"][1,1000] == 2.314360722590665e-14
+         @test meta["J"][1,1000] == 1.4322914301940016e-15
 
          @test meta["Omegap"][1] == 209.5467447842415
 
          @test meta["Plasmaperiod"][1] == 0.0047722048893178645
+      end
+      @testset "VLSV writing" begin
+         meta = meta1
+         # Obtain unsorted derived variables, workaround #59
+         vmag = readvariable(meta, "Vmag", meta.cellid)
+         pa = readvariable(meta, "Panisotropy", meta.cellid)
+         vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
+         push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
+         push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
+
+         write_vlsv(files[1], "bulk_new.vlsv", vars)
+         sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
+         @test sha_str == "2b209fb022a2db3b013e01606a60c1fac360a79d"
+
+         rm("bulk_new.vlsv", force=true)
       end
    end
 
@@ -189,12 +211,21 @@ end
          Rᵀ = Vlasiator.rotateTensorToVectorZ(R, v)
          @test Rᵀ ≈ [1/√2 -1/√2 0.0; 1/√2 1/√2 0.0; 0.0 0.0 1.0]
       end
-      @testset "Curvature" begin
+      @testset "Curvature, Divergence" begin
          let dx = ones(Float32, 3)
-            A = ones(Float32, 3,3,3,3)
-            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            # 2D
             A = ones(Float32, 3,3,1,3)
             @test sum(Vlasiator.curl(dx, A)) == 0.0
+            # 3D
+            A = ones(Float32, 3,3,3,3)
+            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            @test sum(Vlasiator.divergence(dx, A)) == 0.0
+         end
+      end
+      @testset "Gradient" begin
+         let dx = ones(Float32, 3)
+            A = ones(Float32, 3,3,3)
+            @test sum(Vlasiator.gradient(dx, A)) == 0.0
          end
       end
    end
@@ -202,7 +233,7 @@ end
    if group in (:vtk, :all)
       @testset "VTK" begin
          meta = meta2 # no amr
-         data, ghostType = Vlasiator.fillmesh(meta, "proton/vg_rho")
+         data, ghostType = Vlasiator.fillmesh(meta, ["proton/vg_rho"])
          @test size(data[1][1]) == (1, 63, 100, 1)
 
          meta = meta3 # amr
@@ -231,6 +262,8 @@ end
          meta = meta1
          line = plot(meta, "proton/vg_rho")[1]
          @test line.get_ydata() == meta["proton/vg_rho"]
+         line = plot(meta, "proton/vg_v", comp=:3)[1]
+         @test line.get_ydata() == meta["proton/vg_v"][3,:]
          centers = plotmesh(meta, projection="y")
          points = centers.get_offsets()
          @test size(points) == (10, 2)
@@ -254,7 +287,7 @@ end
          @test var[end-2] == 999535.8f0 && length(var) == 6300
          var = pcolormesh(meta, "fg_b").get_array()
          @test var[1] == 3.0058909f-9
-         var = pcolormesh(meta, "proton/vg_v", op=:x, colorscale=SymLog).get_array()
+         var = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
          @test var[2] == -699935.2f0
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject

@@ -12,7 +12,7 @@ const Re = 6.371e6          # Earth radius, [m]
 
 # Define units, LaTeX markup names, and LaTeX markup units for intrinsic values
 const units_predefined = Dict(
-   :rhom => ("kg/m3", L"$\rho_m$",  L"$\mathrm{kg}\,\mathrm{m}^{-3}$"),
+   :Rhom => ("kg/m3", L"$\rho_m$",  L"$\mathrm{kg}\,\mathrm{m}^{-3}$"),
    :rhoq => ("C/m3", L"$\rho_q$", L"$\mathrm{C}\,\mathrm{m}^{-3}$"),
    :rho => ("1/m3", L"$n_\mathrm{p}$", L"$\mathrm{m}^{-3}$"),
    :rhobackstream => ("1/m3",  L"$n_\mathrm{p,st}$", L"$\mathrm{m}^{-3}$"),
@@ -54,9 +54,6 @@ const units_predefined = Dict(
    :ptensorbackstreamoffdiagonal => ("Pa",  L"$\mathcal{P}_\mathrm{st,off-diag}$", "Pa"),
    :ptensornonbackstreamdiagonal => ("Pa", L"$\mathcal{P}_\mathrm{th,diag}$", "Pa"),
    :ptensornonbackstreamoffdiagonal => ("Pa", L"$\mathcal{P}_\mathrm{th,off-diag}$", "Pa"),
-   :t => ("K", L"$T$", "K"),
-   :tpar => ("K", L"$T$", "K"),
-   :tperp => ("K", L"$T$", "K"),
    :max_v_dt => ("s", L"$\Delta t_{\mathrm{max},v}$", "s"),
    :max_r_dt => ("s", L"$\Delta t_{\mathrm{max},r}$", "s"),
    :max_fields_dt => ("s", L"$\Delta t_\mathrm{max,FS}$", "s"),
@@ -65,6 +62,9 @@ const units_predefined = Dict(
    :rho_loss_adjust => ("1/m3", L"$\Delta_\mathrm{loss} n_\mathrm{p}$", L"$\mathrm{m}^{-3}$"),
    :energydensity => ("eV/cm3", L"$\rho_{\mathrm{energy}}$", L"$\mathrm{eV}\,\mathrm{cm}^{-3}$"),
    :precipitationdiffflux => ("1/(cm2 sr s eV)", L"$\Delta F_\mathrm{precipitation}$", L"$\mathrm{cm}^{-2} \,\mathrm{sr}^{-1}\,\mathrm{s}^{-1}\,\mathrm{eV}^{-1}$"),
+   :T => ("K", L"$T$", "K"),
+   :Tpar => ("K", L"$T$", "K"),
+   :Tperp => ("K", L"$T$", "K"),
    :Panisotropy => ("", L"$P_\perp / P_\parallel$", ""),
    :Tanisotropy => ("", L"$T_\perp / T_\parallel$", ""),
    :VS => ("m/s", L"$V_S$", L"$\mathrm{m}\,\mathrm{s}^{-1}$"),
@@ -85,11 +85,11 @@ const variables_predefined = Dict(
          readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_b_vol")
          Bmag = isempty(ids) ?
-            sqrt.(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-            sqrt.(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
-         Bmag = sqrt.(sum(readvariable(meta, "fg_b").^2, dims=1))
+         Bmag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_b"), dims=1))
       end
       _fillinnerBC!(Bmag, ρ)
       Bmag
@@ -101,11 +101,11 @@ const variables_predefined = Dict(
          readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_e_vol")
          Emag = isempty(ids) ?
-            sqrt.(sum(readvariable(meta, "vg_e_vol").^2, dims=1)) :
-            sqrt.(sum(readvariable(meta, "vg_e_vol", ids).^2, dims=1))
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol"), dims=1)) :
+            sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol", ids), dims=1))
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
-         Emag = sqrt.(sum(readvariable(meta, "fg_e").^2, dims=1))
+         Emag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_e"), dims=1))
       end
       _fillinnerBC!(Emag, ρ)
       Emag
@@ -116,8 +116,8 @@ const variables_predefined = Dict(
          readvariable(meta, meta.variable[rho_]) :
          readvariable(meta, meta.variable[rho_], ids)
       Vmag = isempty(ids) ?
-         vec(sqrt.(sum(readvariable(meta, "proton/vg_v").^2, dims=1))) :
-         vec(sqrt.(sum(readvariable(meta, "proton/vg_v", ids).^2, dims=1)))
+         vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v"), dims=1))) :
+         vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v", ids), dims=1)))
       _fillinnerBC!(Vmag, ρ)
       Vmag
    end,
@@ -135,9 +135,14 @@ const variables_predefined = Dict(
             readvariable(meta, "vg_pressure") :
             readvariable(meta, "vg_pressure", ids)
       else
+         if hasvariable(meta, "proton/vg_ptensor_diagonal")
+            Pdiag_str = "proton/vg_ptensor_diagonal"
+         else
+            Pdiag_str = "PTensorDiagonal"
+         end
          Pdiag = isempty(ids) ?
-            readvariable(meta, "proton/vg_ptensor_diagonal") :
-            readvariable(meta, "proton/vg_ptensor_diagonal", ids)
+            readvariable(meta, Pdiag_str) :
+            readvariable(meta, Pdiag_str, ids)
          P = vec(mean(Pdiag, dims=1))
       end
       P
@@ -201,9 +206,7 @@ const variables_predefined = Dict(
    end,
    :T => function (meta, ids=UInt64[]) # scalar temperature
       P = readvariable(meta, "P", ids)
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+      n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       T = @. P / (n*kB)
    end,
@@ -221,17 +224,13 @@ const variables_predefined = Dict(
    end,
    :Tpar => function (meta, ids=UInt64[]) # T component ∥ B
       P = readvariable(meta, "Protated", ids)
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+      n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       @. P[3,3,:] / (n*kB)
    end,
    :Tperp => function (meta, ids=UInt64[]) # scalar T component ⟂ B
       P = readvariable(meta, "Protated", ids)
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+      n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
@@ -280,15 +279,13 @@ const variables_predefined = Dict(
       PR = readvariable(meta, "Protated", ids)
       @. 0.5f0*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
    end,
-   :Pdynamic => function (meta, ids=UInt64[])
+   :Pram => function (meta, ids=UInt64[])
       V = readvariable(meta, "Vmag", ids)
       ρm = readvariable(meta, "Rhom", ids)
       @. ρm * V * V
    end,
    :Pb => function (meta, ids=UInt64[])
-      B² = isempty(ids) ?
-         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+      B² = readvariable(meta, "B²", ids)
       _fillinnerBC!(B², B²)
       mu2inv = 0.5/μ₀
       @. B² * mu2inv
@@ -362,16 +359,19 @@ const variables_predefined = Dict(
    end,
    :Beta => function (meta, ids=UInt64[])
       P = readvariable(meta, "P", ids)
-      B² = isempty(ids) ?
-         vec(sum(readvariable(meta, "vg_b_vol").^2, dims=1)) :
-         vec(sum(readvariable(meta, "vg_b_vol", ids).^2, dims=1))
+      B² = readvariable(meta, "B²", ids)
       _fillinnerBC!(B², B²)
       @. 2 * μ₀ * P / B²
    end,
+   :BetaStar => function (meta, ids=UInt64[])
+      P = readvariable(meta, "P", ids)
+      Pram = readvariable(meta, "Pram", ids)
+      B² = readvariable(meta, "B²", ids)
+      _fillinnerBC!(B², B²)
+      @. 2 * μ₀ * (P + Pram) / B²
+   end,
    :IonInertial => function (meta, ids=UInt64[])
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+      n = readvariable(meta, "n", ids)
       Z = 1
       ωi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
       di = @. c / ωi
@@ -390,18 +390,26 @@ const variables_predefined = Dict(
       f = @. qᵢ * B / (mᵢ * 2π)
    end,
    :Plasmaperiod => function (meta, ids=UInt64[])
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+      n = readvariable(meta, "n", ids)
       T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
    end,
    :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids)
+      n = readvariable(meta, "n", ids)
       ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
+   :n => function (meta, ids=UInt64[])
+      n = isempty(ids) ?
+         readvariable(meta, "proton/vg_rho") :
+         readvariable(meta, "proton/vg_rho", ids) |> vec
+   end,
+   :B² => function (meta, ids=UInt64[])
+      B² = isempty(ids) ?
+         vec(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
+         vec(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
+   end,
 )
+
+
 
 function _fillinnerBC!(data, dataRef)
    @inbounds for i = eachindex(dataRef) # sparsity/inner boundary

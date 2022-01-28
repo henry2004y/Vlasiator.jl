@@ -3,21 +3,21 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Glob, Printf
+using Vlasiator: Re # Earth radius [m]
 
 files = glob("bulk*.vlsv", ".")
 nfiles = length(files)
 
-Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re
 
-meta = load(files[1])
-cellids, distances, coords = getcellinline(meta, point1, point2)
+cellids, distances, coords =
+   let meta = load(files[1])
+      getcellinline(meta, point1, point2)
+   end
 
 loc = range(x1, x2, length=length(cellids))
-
-close(meta.fid)
 
 ρmin, ρmax = 0.0, 10.0     # [amu/cc]
 vmin, vmax = -640.0, 0.0   # [km/s]
@@ -56,8 +56,8 @@ for (i, file) in enumerate(files)
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
-   vmag2_extract = sum(v_extract.^2, dims=1) |> vec
-   pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
 
@@ -71,7 +71,7 @@ for (i, file) in enumerate(files)
    vl2 = axs[2].vlines(loc[imagnetopause_], vmin, vmax;
       colors="r", linestyle="dashed", alpha=0.5)
 
-   axs[3].plot(loc, pdyn_extract, label="Dynamic", color="#1f77b4")
+   axs[3].plot(loc, pram_extract, label="Ram", color="#1f77b4")
    axs[3].plot(loc, p_extract, label="Thermal", color="#ff7f0e")
    vl3 = axs[3].vlines(loc[imagnetopause_], pmin, pmax;
       colors="r", linestyle="dashed", alpha=0.5)

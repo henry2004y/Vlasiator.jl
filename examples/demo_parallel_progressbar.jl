@@ -20,6 +20,7 @@ julia demo_parallel_progressbar.jl
 =#
 
 using Distributed, ProgressMeter, Glob
+using Vlasiator: Re # Earth radius [m]
 using ClusterManagers
 addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
    partition=ENV["SLURM_JOB_PARTITION"],
@@ -63,7 +64,7 @@ end
    fakeline = loc
    l1 = axsL[1].plot(loc, fakeline, label="Proton density", color="#1f77b4")
    l2 = axsL[2].plot(loc, fakeline, label="Vx",             color="#1f77b4")
-   l3 = axsL[3].plot(loc, fakeline, label="Dynamic",        color="#1f77b4")
+   l3 = axsL[3].plot(loc, fakeline, label="Ram",            color="#1f77b4")
    l4 = axsL[3].plot(loc, fakeline, label="Thermal",        color="#ff7f0e")
    l5 = axsL[4].plot(loc, fakeline, label="Bz",             color="#1f77b4")
 
@@ -113,8 +114,8 @@ end
 
    fakedata = zeros(Float32, length(y), length(x))
 
-   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap, shading="nearest")
-   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap, shading="nearest")
+   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap)
+   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap)
 
    cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
    cb1.ax.set_ylabel("[km/s]"; fontsize)
@@ -150,14 +151,14 @@ end
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
-   vmag2_extract = sum(v_extract.^2, dims=1) |> vec
-   pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
 
    ls[1][1].set_ydata(rho_extract ./ 1e6)
    ls[2][1].set_ydata(v_extract[1,:] ./ 1e3)
-   ls[3][1].set_ydata(pdyn_extract)
+   ls[3][1].set_ydata(pram_extract)
    ls[4][1].set_ydata(p_extract)
    ls[5][1].set_ydata(bz)
 
@@ -213,7 +214,6 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
    const fontsize = 14
 end
 
-Re = Vlasiator.Re # Earth radii
 const x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re

@@ -23,6 +23,9 @@
 
 ## Makie
 
+* Various colored contours from 2D equatorial run
+![](figures/XY_contours_makie.png)
+
 * Interactive proton density slice from 3D AMR run
 ![](figures/slice_interactive.png)
 

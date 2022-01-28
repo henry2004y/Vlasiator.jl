@@ -7,6 +7,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Distributed, ParallelDataTransfer, Glob
+using Vlasiator: Re
 @everywhere using Vlasiator, PyPlot, Printf
 
 @everywhere function init_figure(x1, x2)
@@ -42,8 +43,8 @@ end
    p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
-   vmag2_extract = sum(v_extract.^2, dims=1) |> vec
-   pdyn_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
 
    bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
 
@@ -57,7 +58,7 @@ end
    vl2 = axs[2].vlines(loc[imagnetopause_], vmin, vmax;
       colors="r", linestyle="dashed", alpha=0.5)
 
-   axs[3].plot(loc, pdyn_extract, label="Dynamic", color="#1f77b4")
+   axs[3].plot(loc, pram_extract, label="Ram", color="#1f77b4")
    axs[3].plot(loc, p_extract, label="Thermal", color="#ff7f0e")
    vl3 = axs[3].vlines(loc[imagnetopause_], pmin, pmax;
       colors="r", linestyle="dashed", alpha=0.5)
@@ -107,7 +108,6 @@ end
 files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
-Re = Vlasiator.Re # Earth radii
 x1, x2 = 8.0, 29.0
 point1 = [x1, 0, 0] .* Re
 point2 = [x2, 0, 0] .* Re

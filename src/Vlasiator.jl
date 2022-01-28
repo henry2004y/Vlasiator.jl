@@ -1,9 +1,8 @@
 module Vlasiator
 
 using Requires
-using StaticArrays
+using StaticArrays: SVector, @SMatrix
 using Printf: @sprintf
-using UnPack
 using LinearAlgebra: ×, dot, ⋅, norm, normalize!, normalize
 using Statistics: mean
 using EzXML
@@ -15,7 +14,7 @@ using Dates
 
 include("utility/rotation.jl")
 include("utility/log.jl")
-include("utility/curvature.jl")
+include("utility/vector.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
@@ -29,7 +28,7 @@ export
    getcell, getslicecell, getlevel, refineslice, getcellcoordinates, getvcellcoordinates,
    getchildren, getparent, isparent, getsiblings,
    getcellinline, getnearestcellwithvdf, getcellwithvdf,
-   getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, issame,
+   getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, write_vlsv, issame,
    # plot helper
    SI, RE, Log, Linear, SymLog,
    # log
