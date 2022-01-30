@@ -7,7 +7,7 @@
 
 using Distributed, ParallelDataTransfer, Glob
 @everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
-@everywhere using Vlasiator: set_args, prep2d, set_colorbar, set_plot
+@everywhere using Vlasiator: set_args, prep2d, set_colorbar
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 

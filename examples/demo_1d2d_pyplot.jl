@@ -3,7 +3,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Glob, Printf, LaTeXStrings
-using Vlasiator: set_args, prep2d, set_colorbar, set_plot
+using Vlasiator: set_args, prep2d, set_colorbar
 
 @assert VERSION ≥ v"1.7.0" "Compatible with Julia v1.7+!"
 @assert matplotlib.__version__ >= "3.4" "Require Matplotlib version 3.4+ to use subfigure!"

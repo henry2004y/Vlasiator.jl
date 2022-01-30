@@ -7,7 +7,7 @@
 
 using Distributed, ParallelDataTransfer, Glob
 @everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
-@everywhere using Vlasiator: set_args, prep2d, set_colorbar, set_plot
+@everywhere using Vlasiator: set_args, prep2d, set_colorbar
 
 @everywhere function init_figure()
    fig, axs = plt.subplots(2, 3; num=myid(),
