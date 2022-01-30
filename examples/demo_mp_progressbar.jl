@@ -16,7 +16,7 @@
 #SBATCH --output=%x_%j.log
 #SBATCH --job-name=pmap
 
-julia demo_parallel_progressbar.jl
+julia demo_mp_progressbar.jl
 =#
 
 using Distributed, ProgressMeter, Glob

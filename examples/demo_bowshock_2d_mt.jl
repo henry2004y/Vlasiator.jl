@@ -1,9 +1,9 @@
 # Extract the bow shock location from 2D equatorial run outputs and save into file.
 #
 # To run in multi-threading mode
-#   julia -t nthreads demo_bowshock_series.jl
+#   julia -t nthreads demo_bowshock_2d_mt.jl
 # or alternatively
-#   JULIA_NUM_THREADS=$nthreads ./julia demo_bowshock_series.jl
+#   JULIA_NUM_THREADS=$nthreads ./julia demo_bowshock_2d_mt.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 

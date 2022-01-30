@@ -1,7 +1,7 @@
 # Combined 2D plots across multiple frames, multi-process version.
 #
 # To run on a single node,
-# julia -p $ncores demo_2d_parallel_pyplot.jl
+# julia -p $ncores demo_2d_mp_pyplot.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 

@@ -156,16 +156,16 @@ function process(plotargs, file)
 
    meta = load(file)
 
-   p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
+   p_extract = readvariable(meta, "vg_pressure", cellids) .* 1f9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
    vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
-   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1f9 # [nPa]
 
-   bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
+   bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1f9 #[nT]
 
-   ls[1][1].set_ydata(rho_extract ./ 1e6)
-   ls[2][1].set_ydata(v_extract[1,:] ./ 1e3)
+   ls[1][1].set_ydata(rho_extract ./ 1f6)
+   ls[2][1].set_ydata(v_extract[1,:] ./ 1f3)
    ls[3][1].set_ydata(pram_extract)
    ls[4][1].set_ydata(p_extract)
    ls[5][1].set_ydata(bz)

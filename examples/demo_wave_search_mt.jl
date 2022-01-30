@@ -2,9 +2,9 @@
 # searching.
 #
 # Usage:
-#   julia -t 4 demo_wave_search.jl
+#   julia -t 4 demo_wave_search_mt.jl
 # or
-#   JULIA_NUM_THREADS=4 julia demo_wave_search.jl
+#   JULIA_NUM_THREADS=4 julia demo_wave_search_mt.jl
 #
 # Procedures:
 # 1. Extract variables in all cells from all snapshots.

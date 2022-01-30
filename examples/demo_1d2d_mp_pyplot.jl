@@ -1,7 +1,7 @@
 # Combined 1D/2D plots across multiple frames, multi-process version.
 #
 # To run on a single node,
-# julia -p $ncores demo_1d2d_parallel_pyplot.jl
+# julia -p $ncores demo_1d2d_mp_pyplot.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
@@ -136,18 +136,18 @@ end
 
    rho = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v = readvariable(meta, "proton/vg_v", cellids)
-   p = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
+   p = readvariable(meta, "vg_pressure", cellids) .* 1f9 |> vec # [nPa]
 
    vmag2 = sum(x -> x*x, v, dims=1) |> vec
-   pram = rho .* Vlasiator.mᵢ .* vmag2 .* 1e9 # [nPa]
+   pram = rho .* Vlasiator.mᵢ .* vmag2 .* 1f9 # [nPa]
 
-   b = readvariable(meta, "vg_b_vol", cellids) .* 1e9 #[nT]
-   e = readvariable(meta, "vg_e_vol", cellids) .* 1e3 #[mV/m]
+   b = readvariable(meta, "vg_b_vol", cellids) .* 1f9 #[nT]
+   e = readvariable(meta, "vg_e_vol", cellids) .* 1f3 #[mV/m]
 
-   ls[1][1].set_ydata(rho ./ 1e6)
-   ls[2][1].set_ydata(@views v[1,:] ./ 1e3)
-   ls[3][1].set_ydata(@views v[2,:] ./ 1e3)
-   ls[4][1].set_ydata(@views v[3,:] ./ 1e3)
+   ls[1][1].set_ydata(rho ./ 1f6)
+   ls[2][1].set_ydata(@views v[1,:] ./ 1f3)
+   ls[3][1].set_ydata(@views v[2,:] ./ 1f3)
+   ls[4][1].set_ydata(@views v[3,:] ./ 1f3)
    ls[5][1].set_ydata(pram)
    ls[6][1].set_ydata(p)
    ls[7][1].set_ydata(@view b[1,:])
@@ -166,10 +166,10 @@ end
    subfigs[1].suptitle(str_title, fontsize=14)
 
    data = prep2d(meta, "VA", :z)'
-   cs[1].set_array(data ./ 1e3)
+   cs[1].set_array(data ./ 1f3)
 
    data = prep2d(meta, "VS", :z)'
-   cs[2].set_array(data ./ 1e3)
+   cs[2].set_array(data ./ 1f3)
 
    savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
    return

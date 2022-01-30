@@ -4,6 +4,10 @@
 # On a meridional plane, B is in-plane, we can find a local line region ∥ B and ⟂ B.
 #
 # Currently only working on a equatorial plane.
+# Usage:
+#   julia -t 4 demo_wave_tracing_mt.jl
+# or
+#   JULIA_NUM_THREADS=4 julia demo_wave_tracing_mt.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
