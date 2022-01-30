@@ -7,7 +7,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Distributed, ParallelDataTransfer, Glob
-using Vlasiator: Re
+using Vlasiator: RE
 @everywhere using Vlasiator, PyPlot, Printf
 
 @everywhere function init_figure(x1, x2)
@@ -26,7 +26,7 @@ using Vlasiator: Re
       ax.grid(true)
    end
 
-   axs[end].set_xlabel("x [Re]"; fontsize)
+   axs[end].set_xlabel("x [RE]"; fontsize)
    axs[1].set_ylabel("Density [amu/cc]"; fontsize)
    axs[2].set_ylabel("Velocity [km/s]"; fontsize)
    axs[3].set_ylabel("Pressure [nPa]"; fontsize)
@@ -109,8 +109,8 @@ files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
 x1, x2 = 8.0, 29.0
-point1 = [x1, 0, 0] .* Re
-point2 = [x2, 0, 0] .* Re
+point1 = [x1, 0, 0] .* RE
+point2 = [x2, 0, 0] .* RE
 
 meta = load(files[1])
 cellids, _, _ = getcellinline(meta, point1, point2)

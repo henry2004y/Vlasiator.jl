@@ -102,12 +102,12 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
       nboxlength = nfiles
    end
    local x, y, tStart, tEnd, ncells
-   let Re = Vlasiator.Re
+   let RE = Vlasiator.RE
       meta = load(files[1])
       tStart = meta.time
       ncells = meta.ncells
-      x = LinRange{Float32}(meta.coordmin[1]/Re, meta.coordmax[1]/Re, meta.ncells[1])
-      y = LinRange{Float32}(meta.coordmin[2]/Re, meta.coordmax[2]/Re, meta.ncells[2])
+      x = LinRange{Float32}(meta.coordmin[1]/RE, meta.coordmax[1]/RE, meta.ncells[1])
+      y = LinRange{Float32}(meta.coordmin[2]/RE, meta.coordmax[2]/RE, meta.ncells[2])
       meta = load(files[end])
       tEnd = meta.time
    end

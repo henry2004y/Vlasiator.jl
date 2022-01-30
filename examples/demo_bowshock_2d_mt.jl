@@ -8,7 +8,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob
-using Vlasiator: Re # Earth radius, [m]
+using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
 # Upstream solar wind temperature

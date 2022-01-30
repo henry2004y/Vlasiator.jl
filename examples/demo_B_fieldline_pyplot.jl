@@ -3,7 +3,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, FieldTracer
-using Vlasiator: Re # Earth radius, [m]
+using Vlasiator: RE # Earth radius, [m]
 
 file = "../../bulk.0000999.vlsv"
 meta = load(file)
@@ -51,8 +51,8 @@ for i = axes(seeds,2)
    startx, starty = seeds[:,i]
    x1, y1 = trace(b1, b2, startx, starty, grid1, grid2;
       ds=0.5, maxstep=3000, gridtype="ndgrid")
-   x1 ./= Re
-   y1 ./= Re
+   x1 ./= RE
+   y1 ./= RE
    if length(x1) < 5; continue; end
    line = plot(x1, y1, color="w")
    add_arrow(line[1])

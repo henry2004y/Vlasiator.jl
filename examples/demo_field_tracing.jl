@@ -3,7 +3,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using PyPlot, FieldTracer, Vlasiator
-using Vlasiator: Re # Earth radius, [m]
+using Vlasiator: RE # Earth radius, [m]
 
 file = "bulk.0000501.vlsv"
 nameρ = "rho"
@@ -25,8 +25,8 @@ y = range(meta.coordmin[2], meta.coordmax[2], length=meta.ncells[2])
 # RK4 scheme by default
 x1, y1 = trace2d(vx, vy, xstart, ystart, x, y;
    ds=0.5, maxstep=3000, gridType="ndgrid")
-x1 ./= Re
-y1 ./= Re
+x1 ./= RE
+y1 ./= RE
 
 plot(x1, y1)
 

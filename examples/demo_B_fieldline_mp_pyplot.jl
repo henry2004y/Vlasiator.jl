@@ -7,7 +7,7 @@
 
 using Distributed, ParallelDataTransfer, Glob
 @everywhere using Vlasiator, PyPlot, PyCall, Printf, LaTeXStrings, FieldTracer
-@everywhere using Vlasiator: set_args, prep2d, set_colorbar, Re
+@everywhere using Vlasiator: set_args, prep2d, set_colorbar, RE
 
 @everywhere function init_figure()
    fig, ax = plt.subplots(1, 1; num=myid(),
@@ -91,8 +91,8 @@ end
       startx, starty = seeds[:,i]
       x1, y1 = trace(b1, b2, startx, starty, grid1, grid2;
          ds=0.5, maxstep=4000, gridtype="ndgrid")
-      x1 ./= Re
-      y1 ./= Re
+      x1 ./= RE
+      y1 ./= RE
       if length(x1) < 5; continue; end
       ls[i][1].set_xdata(x1)
       ls[i][1].set_ydata(y1)

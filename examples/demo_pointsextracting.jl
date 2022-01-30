@@ -10,7 +10,6 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, Vlasiator
-using Vlasiator: Re # Earth radius [m]
 using JLD2: jldsave
 
 function extract_vars(files, locations)

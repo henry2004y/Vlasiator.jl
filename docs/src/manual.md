@@ -4,7 +4,7 @@ Here we demonstrate some basic usages of Vlasiator output processing. For more c
 
 ## Common physical constants
 
-A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: Re` or prepend the module name like `Vlasiator.Re`.
+A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: RE` or prepend the module name like `Vlasiator.RE`.
 
 | Physical constant | Value | Meaning |
 |:---:|:--------------:|:-------------|
@@ -16,7 +16,7 @@ A bunch of physical constants are predefined in Vlasiator.jl. To use them, you n
 | μ₀ | 4π*1e-7         | Vacuum permeability, [H/m]       |
 | ϵ₀ | 1/(c^2*μ₀)      | Vacuum permittivity, [F/m]       |
 | kB | 1.38064852e-23  | Boltzmann constant, [m²kg/(s²K)] |
-| Re | 6.371e6         | Earth radius, [m]                |
+| RE | 6.371e6         | Earth radius, [m]                |
 
 ## Loading VLSV data
 
@@ -68,7 +68,7 @@ readvariable(meta, "proton/vg_rho", id)
 - Get variable along a line between two points
 
 ```
-using Vlasiator: Re # Earth radii
+using Vlasiator: RE # Earth radii
 point1 = [12Re, 0, 0]
 point2 = [15Re, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
@@ -208,7 +208,7 @@ pcolormesh(meta, "rho")
 - Vector z component colored contour from 2D simulation in a manually set range
 
 ```
-pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
 ```
 
 - Vz colored contour from 2D simulation with prescribed colormap
@@ -240,7 +240,7 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=RE` etc.
+You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=EARTH` etc.
 
 - Mesh denoted by cell centers
 

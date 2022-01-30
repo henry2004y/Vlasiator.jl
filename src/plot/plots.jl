@@ -3,7 +3,9 @@
 using RecipesBase, Printf
 
 # Build a recipe which acts on a custom type.
-@recipe function f(meta::MetaVLSV, var::AbstractString; comp=:mag, axisunit=RE, normal=:y)
+@recipe function f(meta::MetaVLSV, var::AbstractString;
+   comp=:mag, axisunit=Vlasiator.EARTH, normal=:y)
+
    (;ncells, coordmin, coordmax) = meta
    if ndims(meta) == 1
       data = readvariable(meta, var)
@@ -30,7 +32,7 @@ using RecipesBase, Printf
 
       x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
       data = Vlasiator.prep2d(meta, var, comp)'
-      unitstr = axisunit == RE ? "R_E" : "m"
+      unitstr = axisunit == Vlasiator.EARTH ? "R_E" : "m"
 
       strx = L"\textrm{%$(axislabels[1])}[%$unitstr]"
       stry = L"\textrm{%$(axislabels[2])}[%$unitstr]"

@@ -1,7 +1,7 @@
 # Plot helpers
 
-"Axis unit type. Currently supported: `SI`, `RE`."
-@enum AxisUnit SI RE
+"Axis unit type. Currently supported: `SI`, `EARTH`."
+@enum AxisUnit SI EARTH
 "Color scales type for 2D plots. Currently supported: `Log`, `Linear`, `SymLog`."
 @enum ColorScale Log Linear SymLog
 
@@ -62,7 +62,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
       end
    end
 
-   unitstr = axisunit == RE ? L"$R_E$" : L"$m$"
+   unitstr = axisunit == EARTH ? L"$R_E$" : L"$m$"
    strx = axislabels[1]*"["*unitstr*"]"
    stry = axislabels[2]*"["*unitstr*"]"
 
@@ -96,9 +96,9 @@ end
 
 "Return x and y ranges for 2D."
 function get_axis(axisunit::AxisUnit, plotrange, sizes)
-   if axisunit == RE
-      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ Re
-      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ Re
+   if axisunit == EARTH
+      x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ RE
+      y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ RE
    else
       x = LinRange(plotrange[1], plotrange[2], sizes[1])
       y = LinRange(plotrange[3], plotrange[4], sizes[2])
@@ -183,7 +183,7 @@ Return the cell velocities `v1, v2`, bin ranges `r1, r2`, cell VDF values `fweig
 and strings of labels and titles for VDF plots.
 
 # Optional arguments
-- `unit::AxisUnit`: location unit in `SI`, `RE`.
+- `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
 - `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.
@@ -209,7 +209,7 @@ function prep_vdf(meta::MetaVLSV, location;
       throw(ArgumentError("Unable to detect population $species"))
    end
 
-   unit == RE && (location .*= Re)
+   unit == EARTH && (location .*= RE)
 
    # Set unit conversion factor
    unitvfactor = unitv == "km/s" ? 1f3 : 1.0f0

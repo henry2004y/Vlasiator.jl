@@ -6,7 +6,6 @@
 
 using Glob, Vlasiator
 using JLD2: jldsave
-using Vlasiator: Re # Earth radius [m]
 
 "Select cells in 2D `meta` with uniform distance `dx`."
 function sample(meta, dx)

@@ -42,18 +42,17 @@ function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
 end
 
 """
-    streamplot(meta, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
+    streamplot(meta, var, ax=nothing; comp="xy", axisunit=EARTH, kwargs...)
 
-Wrapper over Matplotlib's streamplot function. The `comp` option can take a subset of "xyz"
-in any order. `axisunit` can be chosen from `RE, SI`.
+Wrapper over Matplotlib's streamplot function.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 
 # Optional arguments
 - `comp`: a subset of "xyz" in any order.
-- `axisunit`: chosen from RE and SI.
+- `axisunit`: chosen from `EARTH` and `SI`.
 """
 function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit=RE, kwargs...)
+   comp="xy", axisunit=EARTH, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -63,20 +62,19 @@ function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
 end
 
 """
-    quiver(meta, var, ax=nothing; comp="xy", axisunit=RE, stride=10, kwargs...)
+    quiver(meta, var, ax=nothing; comp="xy", axisunit=EARTH, stride=10, kwargs...)
 
 Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current active
-axes. The `comp` option can take a subset of "xyz" in any order. `axisunit` can be chosen
-from `RE, SI`.
+axes.
 The keyword arguments can be any valid Matplotlib arguments into quiver.
 
 # Optional arguments
 - `comp`: a subset of "xyz" in any order.
-- `axisunit`: chosen from RE and SI.
+- `axisunit`: chosen from `EARTH` and `SI`.
 - `stride::Integer`: arrow strides in number of cells.
 """
 function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit::AxisUnit=RE, stride::Integer=10, kwargs...)
+   comp="xy", axisunit::AxisUnit=EARTH, stride::Integer=10, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -130,7 +128,7 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       comp=:mag, axisunit=RE, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
+       comp=:mag, axisunit=EARTH, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
        kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
@@ -139,7 +137,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
 - `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
-- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
@@ -152,7 +150,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 `pcolormesh(data, func, colorscale=Log)`
 """
 function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp=:mag,
-   axisunit::AxisUnit=RE, colorscale::ColorScale=Linear, addcolorbar=true,
+   axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
    vmin=-Inf, vmax=Inf, kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
@@ -214,7 +212,7 @@ It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension
 - `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
 - `origin::Float`: center of slice plane in the normal direction.
 - `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
-- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`, `SymLog`)
 - `vmin::Real`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Real`: maximum data range. Set to minimum of data if not specified.
@@ -227,7 +225,7 @@ It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension
 `pcolormeshslice(data, func, colorscale=Log)`
 """
 function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; comp::Symbol=:mag,
-   origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Linear,
+   origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear,
    addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
 
    pArgs = set_args(meta, var, axisunit; normal, origin)
@@ -318,7 +316,7 @@ end
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
 # Optional arguments
-- `unit::AxisUnit`: location unit in `SI`, `RE`.
+- `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
 - `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.

@@ -9,7 +9,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, DelimitedFiles, Vlasiator, DataFrames
-using Vlasiator: Re # Earth radius [m]
+using Vlasiator: RE # Earth radius [m]
 
 function extract_vars(files, loc)
    nfiles = length(files)

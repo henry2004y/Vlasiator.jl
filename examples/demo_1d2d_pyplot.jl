@@ -129,8 +129,8 @@ function init_figure(varminmax, loc, pArgs)
    c2 = axsR[2].pcolormesh(x, y, fakedata; norm=cnorm2, cmap)
 
    rInner = 31.8e6 # [m]
-   circle1 = plt.Circle((0, 0), rInner/Vlasiator.Re, color="w")
-   circle2 = plt.Circle((0, 0), rInner/Vlasiator.Re, color="w")
+   circle1 = plt.Circle((0, 0), rInner/Vlasiator.RE, color="w")
+   circle2 = plt.Circle((0, 0), rInner/Vlasiator.RE, color="w")
    axsR[1].add_patch(circle1)
    axsR[2].add_patch(circle2)
 
@@ -206,8 +206,8 @@ nfile = length(files)
 meta = load(files[1])
 
 x1, x2 = 7.0, 18.0 # Earth radii
-point1 = [x1, 0, 0] .* Vlasiator.Re
-point2 = [x2, 0, 0] .* Vlasiator.Re
+point1 = [x1, 0, 0] .* Vlasiator.RE
+point2 = [x2, 0, 0] .* Vlasiator.RE
 
 cellids, distances, coords = getcellinline(meta, point1, point2)
 

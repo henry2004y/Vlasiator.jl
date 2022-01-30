@@ -20,7 +20,7 @@ julia demo_mp_progressbar.jl
 =#
 
 using Distributed, ProgressMeter, Glob
-using Vlasiator: Re # Earth radius [m]
+using Vlasiator: RE # Earth radius [m]
 using ClusterManagers
 addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
    partition=ENV["SLURM_JOB_PARTITION"],
@@ -215,8 +215,8 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
 end
 
 const x1, x2 = 8.0, 29.0
-point1 = [x1, 0, 0] .* Re
-point2 = [x2, 0, 0] .* Re
+point1 = [x1, 0, 0] .* RE
+point2 = [x2, 0, 0] .* RE
 
 meta = load(files[1])
 const cellids, _, _ = getcellinline(meta, point1, point2)
