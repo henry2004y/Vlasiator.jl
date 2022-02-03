@@ -160,12 +160,12 @@ norm6, ticks6 = Vlasiator.set_colorbar(Linear, emin, emax)
 norms = (norm1, norm2, norm3, norm4, norm5, norm6)
 ticks = (ticks1, ticks2, ticks3, ticks4, ticks5, ticks6)
 
-const fontsize = "x-large"
-
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
-@passobj 1 workers() files
+@broadcast begin
+   const fontsize = "x-large"
+end
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
