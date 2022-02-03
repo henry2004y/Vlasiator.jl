@@ -63,8 +63,8 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    end
 
    unitstr = axisunit == EARTH ? L"$R_E$" : L"$m$"
-   strx = axislabels[1]*"["*unitstr*"]"
-   stry = axislabels[2]*"["*unitstr*"]"
+   strx = axislabels[1]*" ["*unitstr*"]"
+   stry = axislabels[2]*" ["*unitstr*"]"
 
    str_title = @sprintf "t= %4.1fs" meta.time
 
