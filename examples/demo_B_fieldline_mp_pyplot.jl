@@ -75,14 +75,14 @@ end
    b = meta["vg_b_vol"]
    b1 = reshape(b[dim_[1],:], meta.ncells[dim_[1]], meta.ncells[dim_[2]])
    b2 = reshape(b[dim_[2],:], meta.ncells[dim_[1]], meta.ncells[dim_[2]])
-   
+   # Find existing arrow annotations
    annotations = [child for child in ax.get_children() if
       pybuiltin(:isinstance)(child, matplotlib.text.Annotation)]
-   
+   # Remove existing arrows
    for a in annotations
       a.remove()
    end
-
+   # Add new arrows along field lines
    for i in axes(seeds,2)
       startx, starty = seeds[:,i]
       x1, y1 = trace(b1, b2, startx, starty, grid1, grid2;
