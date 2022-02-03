@@ -3,13 +3,14 @@
 # Outputs are stored in binary format for sharing within Julia.
 #
 # Usage:
-#   julia -t nthreads demo_virtual_satellites.jl
+#   julia -t nthreads demo_pointsextracting.jl
 # or
-#   JULIA_NUM_THREADS=nthreads julia demo_virtual_satellites.jl
+#   JULIA_NUM_THREADS=nthreads julia demo_pointsextracting.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, Vlasiator
+using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
 function extract_vars(files, locations)
@@ -56,8 +57,8 @@ end
 files = glob("bulk*.vlsv", "./")
 
 # virtual satellite locations
-locations = [[7Re, 0, 0], [9Re, 0, 0], [11Re, 0, 0], [12Re, 0, 0], [13Re, 0, 0],
-   [14Re, 0, 0], [15Re, 0, 0], [16Re, 0, 0], [17Re, 0, 0], [29.3Re, 0, 0]]
+locations = [[7RE, 0, 0], [9RE, 0, 0], [11RE, 0, 0], [12RE, 0, 0], [13RE, 0, 0],
+   [14RE, 0, 0], [15RE, 0, 0], [16RE, 0, 0], [17RE, 0, 0], [29.3RE, 0, 0]]
 
 println("Number of files: $(length(files))")
 println("Number of virtual satellites: $(length(locations))")

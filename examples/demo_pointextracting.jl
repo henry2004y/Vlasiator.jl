@@ -49,7 +49,7 @@ end
 files = glob("bulk*.vlsv", "./")
 
 # virtual satellite location
-loc = [12Re, 0, 0]
+loc = [12RE, 0, 0]
 
 println("Number of files: $(length(files))")
 println("Extracting location: $loc")

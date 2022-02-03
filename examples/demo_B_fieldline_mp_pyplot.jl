@@ -131,7 +131,7 @@ const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 @broadcast begin # on all workers
    # Set contour plots' axes and colorbars
    colorscale = Linear
-   axisunit = RE
+   axisunit = EARTH
 
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 11.0 # [amu/cc]

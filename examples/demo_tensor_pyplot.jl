@@ -6,7 +6,7 @@ using Vlasiator, PyPlot, LaTeXStrings, Printf
 
 file = "/home/hongyang/Vlasiator/test/equatorial/timevarying/bulk.0001582.vlsv"
 
-axisunit = RE
+axisunit = EARTH
 colorscale = Linear
 cmap = matplotlib.cm.turbo
 

@@ -199,7 +199,7 @@ const nfile = length(files)
 @broadcast begin
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
-   axisunit = RE
+   axisunit = EARTH
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
    const vmin, vmax = -640.0, 100.0 # [km/s]

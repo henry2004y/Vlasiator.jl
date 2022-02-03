@@ -26,9 +26,9 @@ function extract_bowshock_position(files; verbose=true)
 
    close(meta.fid)
 
-   # Only extract bow shock location near the front between y = ±20Re
-   ymin_ = findlast(<(-20Re), y)
-   ymax_ = findfirst(>(20Re), y)
+   # Only extract bow shock location near the front between y = ±20RE
+   ymin_ = findlast(<(-20RE), y)
+   ymax_ = findfirst(>(20RE), y)
 
    x_crossing = zeros(Float32, ymax_-ymin_+1, nfiles)
    y_crossing = y[ymin_:ymax_]

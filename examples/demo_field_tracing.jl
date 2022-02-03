@@ -17,7 +17,7 @@ v = readvariable(meta, nameV)
 vx = reshape(v[1,:], meta.ncells[1], meta.ncells[2])
 vy = reshape(v[2,:], meta.ncells[1], meta.ncells[2])
 # tracing starting point
-xstart, ystart = 12Re, 0Re
+xstart, ystart = 12RE, 0RE
 # regular Cartesian mesh
 x = range(meta.coordmin[1], meta.coordmax[1], length=meta.ncells[1]) 
 y = range(meta.coordmin[2], meta.coordmax[2], length=meta.ncells[2])

@@ -268,7 +268,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
    krange = range(kmin, kmax, length=npoints)
    ωrange = range(ωmin, ωmax, length=nt)
 
-   axisunit = RE
+   axisunit = EARTH
 
    # Precalculated lines
    ωCFL = dispersion_CFL.(krange, dx, Δt, di, ωci)

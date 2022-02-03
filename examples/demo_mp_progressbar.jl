@@ -195,7 +195,7 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
    # Set contour plots' axes and colorbars
    const cmap = matplotlib.cm.turbo
    colorscale = Linear
-   axisunit = RE
+   axisunit = EARTH
 
    # Upper/lower limits for each variable
    const ρmin, ρmax = 0.0, 10.0     # [amu/cc]

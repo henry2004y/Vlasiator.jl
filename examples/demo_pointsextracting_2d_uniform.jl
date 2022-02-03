@@ -69,7 +69,7 @@ end
 
 files = glob("bulk*.vlsv", "./")
 
-dx = 5Re # uniform sampling distance [m]
+dx = 5RE # uniform sampling distance [m]
 
 println("Number of files: $(length(files))")
 println("Running with $(Threads.nthreads()) threads...")

@@ -18,7 +18,7 @@ varname = "rho"
 fig, ax = plt.subplots()
 
 comp = :z
-axisunit = RE
+axisunit = EARTH
 colorscale = Log
 addcolorbar = true
 cmap = matplotlib.cm.turbo

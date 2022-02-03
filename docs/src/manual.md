@@ -69,8 +69,8 @@ readvariable(meta, "proton/vg_rho", id)
 
 ```
 using Vlasiator: RE # Earth radii
-point1 = [12Re, 0, 0]
-point2 = [15Re, 0, 0]
+point1 = [12RE, 0, 0]
+point2 = [15RE, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
 var_extract = readvariable(meta, "VA", cellids)
 ```
