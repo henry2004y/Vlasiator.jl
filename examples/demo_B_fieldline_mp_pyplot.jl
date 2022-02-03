@@ -7,11 +7,21 @@
 
 using Distributed, ParallelDataTransfer, Glob
 @everywhere using Vlasiator, PyPlot, PyCall, Printf, LaTeXStrings, FieldTracer
-@everywhere using Vlasiator: set_args, prep2d, set_colorbar, RE
+@everywhere using Vlasiator: RE
 
-@everywhere function init_figure()
+function generate_seeds(coordmin, coordmax, dim_, nseeds)
+   seeds = Matrix{Float64}(undef, 2, nseeds)
+   for i in 1:nseeds
+      seeds[1,i] = coordmin[dim_[1]] +
+         (coordmax[dim_[1]] - coordmin[dim_[1]]) / nseeds * (i - 1)
+      seeds[2,i] = -20RE
+   end
+   seeds
+end
+
+@everywhere function init_figure(pArgs, norm, ticks, seeds, extent)
    fig, ax = plt.subplots(1, 1; num=myid(),
-      figsize=(9, 9), constrained_layout=true)
+      figsize=(6, 8), constrained_layout=true)
 
    fontsize = "x-large"
 
@@ -26,59 +36,45 @@ using Distributed, ParallelDataTransfer, Glob
    ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
    ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-   ax.set_xlabel(L"X [$R_E$]"; fontsize)
-   ax.set_ylabel(L"Y [$R_E$]"; fontsize)
+   ax.set_xlabel(pArgs.strx; fontsize)
+   ax.set_ylabel(pArgs.stry; fontsize)
 
    ax.set_title("Density"; fontsize)
 
-   x, y = Vlasiator.get_axis(pArgs)
+   x1, x2 = Vlasiator.get_axis(pArgs)
 
-   fakedata = zeros(Float32, length(y), length(x))
-   c = ax.pcolormesh(x, y, fakedata; norm, cmap=matplotlib.cm.turbo)
+   range1 = searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2])
+   range2 = searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+
+   fakedata = zeros(Float32, length(range2), length(range1))
+   c = ax.pcolormesh(x1[range1], x2[range2], fakedata; norm, cmap=matplotlib.cm.turbo)
 
    format = matplotlib.ticker.FormatStrFormatter("%.1f")
    cb1 = colorbar(c; ax, ticks, format)
    cb1.ax.set_ylabel("[amu/cc]"; fontsize)
    cb1.outline.set_linewidth(1.0)
 
-   nseeds = 10
-
    fakeline = [0.0, 1.0]
-   ls = [ax.plot(fakeline, fakeline,  color="w") for _ in 1:nseeds]
+   ls = [ax.plot(fakeline, fakeline,  color="w") for _ in 1:size(seeds,2)]
 
-   return fig, ax, c, ls
+   return fig, ax, c, ls, range1, range2
 end
 
-@everywhere function process(fig, ax, c, ls, file)
+@everywhere function update_plot(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2, file)
    isfile("out/"*file[end-8:end-5]*".png") && return
 
    println("file = $file")
    meta = load(file)
 
-   data = prep2d(meta, "proton/vg_rho", :mag)'
-   c.set_array(data ./ 1f6)
+   data = Vlasiator.prep2d(meta, "proton/vg_rho", :mag)'
+   c.set_array(data[range2,range1] ./ 1f6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
    ax.set_title(str_title; fontsize="x-large")
 
-   (;coordmin, coordmax, ncells) = meta
-   dim_ = (1,2)
-
-   # regular Cartesian mesh
-   grid1 = range(coordmin[dim_[1]], coordmax[dim_[1]], length=ncells[dim_[1]]) 
-   grid2 = range(coordmin[dim_[2]], coordmax[dim_[2]], length=ncells[dim_[2]])
-
-   nseeds = length(ls)
-   seeds = Matrix{Float64}(undef, 2, nseeds)
-   for i in 1:nseeds
-      seeds[1,i] = coordmin[dim_[1]] +
-         (coordmax[dim_[1]] - coordmin[dim_[1]]) / nseeds * (i - 1)
-      seeds[2,i] = -20RE
-   end
-
    b = meta["vg_b_vol"]
-   b1 = reshape(b[dim_[1],:], ncells[dim_[1]], ncells[dim_[2]])
-   b2 = reshape(b[dim_[2],:], ncells[dim_[1]], ncells[dim_[2]])
+   b1 = reshape(b[dim_[1],:], meta.ncells[dim_[1]], meta.ncells[dim_[2]])
+   b2 = reshape(b[dim_[2],:], meta.ncells[dim_[1]], meta.ncells[dim_[2]])
    
    annotations = [child for child in ax.get_children() if
       pybuiltin(:isinstance)(child, matplotlib.text.Annotation)]
@@ -87,7 +83,7 @@ end
       a.remove()
    end
 
-   for i = 1:nseeds
+   for i in axes(seeds,2)
       startx, starty = seeds[:,i]
       x1, y1 = trace(b1, b2, startx, starty, grid1, grid2;
          ds=0.5, maxstep=4000, gridtype="ndgrid")
@@ -108,11 +104,14 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, status)
-   fig, ax, c, ls = init_figure()
+@everywhere function do_work(jobs, status, pArgs,
+   norm, ticks, grid1, grid2, dim_, seeds, extent)
+
+   fig, ax, c, ls, range1, range2 = init_figure(pArgs, norm, ticks, seeds, extent)
+
    while true
       file = take!(jobs)
-      process(fig, ax, c, ls, file)
+      update_plot(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2, file)
       put!(status, true)
    end
    close(fig)
@@ -126,21 +125,30 @@ nfile = length(files)
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
+axisunit = EARTH # contour plot axes unit
+extent = [0., 20., -20., 20.] # [RE], default full domain: [-Inf32, Inf32, -Inf32, Inf32]
+
+# Upper/lower limits for each variable
+ρmin, ρmax = 0.0, 11.0      # [amu/cc]
+
+meta = load(files[1])
+# Construct pieces for plotting
+pArgs = Vlasiator.set_args(meta, "proton/vg_rho", axisunit; normal=:none)
+norm, ticks = Vlasiator.set_colorbar(Linear, ρmin, ρmax)
+
+# Mark spatial dimensions
+dim_ = pArgs.stry[1] == 'Z' ? (1,3) : (1,2)
+
+(;coordmin, coordmax, ncells) = meta
+
+# Generate regular Cartesian range
+grid1 = range(coordmin[dim_[1]], coordmax[dim_[1]], length=ncells[dim_[1]]) 
+grid2 = range(coordmin[dim_[2]], coordmax[dim_[2]], length=ncells[dim_[2]])
+# Generate seeds for in-plane field line tracing
+nseeds = 10
+seeds = generate_seeds(coordmin, coordmax, dim_, nseeds)
+
 @passobj 1 workers() files
-
-@broadcast begin # on all workers
-   # Set contour plots' axes and colorbars
-   colorscale = Linear
-   axisunit = EARTH
-
-   # Upper/lower limits for each variable
-   const ρmin, ρmax = 0.0, 11.0 # [amu/cc]
-
-   meta = load(files[1])
-
-   const pArgs = set_args(meta, "proton/vg_rho", axisunit; normal=:none)
-   const norm, ticks = set_colorbar(colorscale, ρmin, ρmax)
-end
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
@@ -148,7 +156,8 @@ println("Running with $(nworkers()) workers...")
 @async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
-   @async remote_do(do_work, p, jobs, status)
+   @async remote_do(do_work, p, jobs, status,
+      pArgs, norm, ticks, grid1, grid2, dim_, seeds, extent)
 end
 
 let n = nfile
