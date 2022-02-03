@@ -5,7 +5,7 @@
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Distributed, ParallelDataTransfer, Glob
+using Distributed, Glob
 @everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
