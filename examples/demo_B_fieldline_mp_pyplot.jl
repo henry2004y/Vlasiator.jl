@@ -59,7 +59,7 @@ end
    c.set_array(data ./ 1f6)
 
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
-   ax.set_title(str_title; fontsize)
+   ax.set_title(str_title; fontsize="x-large")
 
    (;coordmin, coordmax, ncells) = meta
    dim_ = (1,2)
