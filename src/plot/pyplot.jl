@@ -128,8 +128,8 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       comp=:mag, axisunit=EARTH, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
-       kwargs...)
+       comp=:mag, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
+       addcolorbar=true, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
 If `ax` is provided, then it will plot on that axes.
@@ -142,6 +142,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
+- `extent::Vector`: extent of axis ranges for plotting in the same unit as `axisunit`.
 
 `pcolormesh(meta, var)`
 
@@ -149,9 +150,9 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 `pcolormesh(data, func, colorscale=Log)`
 """
-function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp=:mag,
-   axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
-   vmin=-Inf, vmax=Inf, kwargs...)
+function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
+   comp=:mag, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
+   vmin=-Inf32, vmax=Inf32, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
@@ -165,7 +166,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp
 
    pArgs = set_args(meta, var, axisunit)
 
-   x, y = get_axis(pArgs)
+   x1, x2 = get_axis(pArgs)
    data = prep2d(meta, var, comp)'
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
@@ -176,11 +177,11 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp
          mask = findall(==(0.0), rho')
 
          if ndims(data) == 2
-            @inbounds data[mask] .= NaN
+            @inbounds data[mask] .= NaN32
          else
             ind = CartesianIndices((pArgs.sizes[2], pArgs.sizes[1]))
             for m in mask
-               @inbounds data[:, ind[m][1], ind[m][2]] .= NaN
+               @inbounds data[:, ind[m][1], ind[m][2]] .= NaN32
             end
          end
       end
@@ -188,12 +189,23 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp
 
    norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
 
+   range1, range2 =
+      if axisunit == EARTH
+         searchsortedfirst(x1, extent[1]*RE):searchsortedlast(x1, extent[2]*RE),
+         searchsortedfirst(x2, extent[3]*RE):searchsortedlast(x2, extent[4]*RE)
+      else
+         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2])
+         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+      end
+
    isnothing(ax) && (ax = plt.gca())
 
    if colorscale != SymLog
-      c = ax.pcolormesh(x, y, data; norm, kwargs...)
+      c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
+         norm, kwargs...)
    else
-      c = ax.pcolormesh(x, y, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+      c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
+         norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
    end
 
    set_plot(c, ax, pArgs, ticks, addcolorbar)
@@ -226,7 +238,7 @@ It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension
 """
 function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; comp::Symbol=:mag,
    origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear,
-   addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
+   addcolorbar=true, vmin::Real=-Inf32, vmax::Real=Inf32, kwargs...)
 
    pArgs = set_args(meta, var, axisunit; normal, origin)
 
@@ -331,9 +343,10 @@ between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
-function vdfslice(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, species="proton", vmin=-Inf, vmax=Inf, unit=SI, unitv="km/s",
-   slicetype=:nothing, vslicethick=0.0, center=:nothing, weight=:particle, flimit=-1.0,
+function vdfslice(meta::MetaVLSV, location, ax=nothing;
+   limits=[-Inf32, Inf32, -Inf32, Inf32], verbose=false, species="proton",
+   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:nothing, vslicethick=0.0,
+   center=:nothing, weight=:particle, flimit=-1.0,
    kwargs...)
 
    v1, v2, r1, r2, weights, strx, stry, str_title =

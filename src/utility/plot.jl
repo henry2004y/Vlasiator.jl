@@ -81,14 +81,14 @@ end
 
 Set colormap limits `vmin`, `vmax` for `data` under scale `colorscale`.
 """
-function set_lim(vmin, vmax, data, colorscale::ColorScale=Linear)
+function set_lim(vmin::T, vmax::T, data, colorscale::ColorScale=Linear) where T
    if colorscale in (Linear, SymLog)
-      v1 = isinf(vmin) ? minimum(x->isnan(x) ? +Inf : x, data) : vmin
-      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
+      v1 = isinf(vmin) ? minimum(x->isnan(x) ? typemax(T) : x, data) : vmin
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? typemin(T) : x, data) : vmax
    else # logarithmic
       datapositive = data[data .> 0.0]
       v1 = isinf(vmin) ? minimum(datapositive) : vmin
-      v2 = isinf(vmax) ? maximum(x->isnan(x) ? -Inf : x, data) : vmax
+      v2 = isinf(vmax) ? maximum(x->isnan(x) ? typemin(T) : x, data) : vmax
    end
 
    v1, v2
