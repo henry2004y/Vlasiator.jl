@@ -148,7 +148,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 `pcolormesh(meta, var, axisunit=SI)`
 
-`pcolormesh(data, func, colorscale=Log)`
+`pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])`
 """
 function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
    comp=:mag, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
@@ -159,32 +159,18 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
       normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
       origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
       kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
-      c = pcolormeshslice(meta, var, ax;
-         comp, axisunit, colorscale, addcolorbar, vmin, vmax, normal, origin, kwargs...)
-      return c
+
+      pArgs = set_args(meta, var, axisunit; normal, origin)
+      data = prep2dslice(meta, var, normal, comp, pArgs)'
+   else
+      pArgs = set_args(meta, var, axisunit)
+      data = prep2d(meta, var, comp)'
    end
 
-   pArgs = set_args(meta, var, axisunit)
-
    x1, x2 = get_axis(pArgs)
-   data = prep2d(meta, var, comp)'
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
-      rho_ = findfirst(endswith("rho"), meta.variable)
-      if !isnothing(rho_)
-         rho = readvariable(meta, meta.variable[rho_])
-         rho = reshape(rho, pArgs.sizes[1], pArgs.sizes[2])
-         mask = findall(==(0.0), rho')
-
-         if ndims(data) == 2
-            @inbounds data[mask] .= NaN32
-         else
-            ind = CartesianIndices((pArgs.sizes[2], pArgs.sizes[1]))
-            for m in mask
-               @inbounds data[:, ind[m][1], ind[m][2]] .= NaN32
-            end
-         end
-      end
+      _fillinnerBC!(data, data)
    end
 
    norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
@@ -211,49 +197,6 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
    set_plot(c, ax, pArgs, ticks, addcolorbar)
 
    return c
-end
-
-"""
-    pcolormeshslice(meta, var, ax=nothing; kwargs...)
-
-Plot pseudocolor var on a 2D slice of 3D vlsv data.
-If `ax` is provided, then it will plot on that axes.
-It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension.
-
-# Optional arguments
-- `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
-- `origin::Float`: center of slice plane in the normal direction.
-- `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
-- `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
-- `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`, `SymLog`)
-- `vmin::Real`: minimum data range. Set to maximum of data if not specified.
-- `vmax::Real`: maximum data range. Set to minimum of data if not specified.
-- `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
-
-`pcolormeshslice(meta, var)`
-
-`pcolormeshslice(meta, var, comp=:z, origin=1.0, normal=:x)`
-
-`pcolormeshslice(data, func, colorscale=Log)`
-"""
-function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; comp::Symbol=:mag,
-   origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear,
-   addcolorbar=true, vmin::Real=-Inf32, vmax::Real=Inf32, kwargs...)
-
-   pArgs = set_args(meta, var, axisunit; normal, origin)
-
-   data = prep2dslice(meta, var, normal, comp, pArgs)'
-   x, y = get_axis(pArgs)
-
-   norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
-
-   isnothing(ax) && (ax = plt.gca())
-
-   c = ax.pcolormesh(x, y, data; norm, kwargs...)
-
-   set_plot(c, ax, pArgs, ticks, addcolorbar)
-
-   c
 end
 
 """
