@@ -31,16 +31,16 @@ for i in 1:ns1
    seeds[2,i] = 0.0
 end
 for i in 1:ns2
-   seeds[1,ns1+i] = -10Re
+   seeds[1,ns1+i] = -10RE
    seeds[2,ns1+i] = coordmin[dim_[2]] + (coordmax[dim_[2]] - coordmin[dim_[2]]) / ns2 * (i - 1)
-   seeds[1,ns1+ns2+i] = -30Re
+   seeds[1,ns1+ns2+i] = -30RE
    seeds[2,ns1+ns2+i] = coordmin[dim_[2]] + (coordmax[dim_[2]] - coordmin[dim_[2]]) / ns2 * (i - 1)
 end
 for i in 1:ns4
-   seeds[1,ns1+2*ns2+i] = -20Re + 10Re*(i - 1)
-   seeds[2,ns1+2*ns2+i] = 30Re
-   seeds[1,ns1+2*ns2+ns4+i] = -20Re + 10Re*(i - 1)
-   seeds[2,ns1+2*ns2+ns4+i] = -30Re
+   seeds[1,ns1+2*ns2+i] = -20RE + 10RE*(i - 1)
+   seeds[2,ns1+2*ns2+i] = 30RE
+   seeds[1,ns1+2*ns2+ns4+i] = -20RE + 10RE*(i - 1)
+   seeds[2,ns1+2*ns2+ns4+i] = -30RE
 end
 
 b = meta["vg_b_vol"]

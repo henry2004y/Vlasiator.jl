@@ -73,7 +73,7 @@ end
    for i in 1:nseeds
       seeds[1,i] = coordmin[dim_[1]] +
          (coordmax[dim_[1]] - coordmin[dim_[1]]) / nseeds * (i - 1)
-      seeds[2,i] = -20Re
+      seeds[2,i] = -20RE
    end
 
    b = meta["vg_b_vol"]
