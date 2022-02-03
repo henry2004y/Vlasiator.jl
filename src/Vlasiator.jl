@@ -30,7 +30,7 @@ export
    getcellinline, getnearestcellwithvdf, getcellwithvdf,
    getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, write_vlsv, issame,
    # plot helper
-   SI, RE, Log, Linear, SymLog,
+   SI, EARTH, Log, Linear, SymLog,
    # log
    readlog
 
