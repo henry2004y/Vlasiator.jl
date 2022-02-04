@@ -10,7 +10,7 @@ using Distributed, Glob
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
-struct Varminmax{T}
+@everywhere struct Varminmax{T}
    "Density, [amu/cc]"
    ρmin::T
    ρmax::T
@@ -75,7 +75,7 @@ end
    ls = (l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12)
 
    axsL[2].legend(;loc="lower left",  ncol=3, frameon=false, fontsize=12)
-   axsL[3].legend(;loc="upper left",  ncol=2, frameon=false, fontsize=12)
+   axsL[3].legend(;loc="upper right", ncol=2, frameon=false, fontsize=12)
    axsL[4].legend(;loc="upper right", ncol=3, frameon=false, fontsize=12)
    axsL[5].legend(;loc="lower right", ncol=3, frameon=false, fontsize=12)
 
@@ -104,12 +104,12 @@ end
       ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
       ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-      ax.set_ylabel(L"Y [$R_E$]"; fontsize=14)
+      ax.set_ylabel(pArgs1.stry; fontsize=14)
    end
 
-   axsR[2].set_xlabel(L"X [$R_E$]"; fontsize=14)
+   axsR[2].set_xlabel(pArgs1.strx; fontsize=14)
 
-   axsR[1].set_title("Alfven speed", fontsize=14)
+   axsR[1].set_title("Alfvén speed", fontsize=14)
    axsR[2].set_title("Sound speed", fontsize=14)
 
    x, y = Vlasiator.get_axis(pArgs1)
@@ -124,10 +124,10 @@ end
    axsR[1].add_patch(circle1)
    axsR[2].add_patch(circle2)
 
-   cb1 = colorbar(c1; ax=axsR[1], ticks=ticks[1], fraction=0.046, pad=0.04, extend="max")
+   cb1 = colorbar(c1; ax=axsR[1], ticks=ticks[1], fraction=0.046, pad=0.02, extend="max")
    cb1.ax.set_ylabel("[km/s]"; fontsize=14)
 
-   cb2 = colorbar(c2; ax=axsR[2], ticks=ticks[2], fraction=0.046, pad=0.04)
+   cb2 = colorbar(c2; ax=axsR[2], ticks=ticks[2], fraction=0.046, pad=0.02, extend="max")
    cb2.ax.set_ylabel("[km/s]"; fontsize=14)
 
    fig.suptitle("Density Pulse Run", fontsize="x-large")
@@ -147,8 +147,8 @@ end
    h.set_segments(seg_new)
 end
 
-@everywhere function update_plot(subfigs, ls, vlines, cs, file, cellids)
-   isfile("../out/"*file[end-8:end-5]*".png") && return
+@everywhere function update_plot(subfigs, ls, vlines, cs, file, cellids, loc)
+   isfile("1d2d/"*file[end-8:end-5]*".png") && return
 
    println("file = $(basename(file))")
    meta = load(file)
@@ -190,7 +190,7 @@ end
    data = Vlasiator.prep2d(meta, "VS", :z)'
    cs[2].set_array(data ./ 1f3)
 
-   savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig("1d2d/"*file[end-8:end-5]*".png", bbox_inches="tight")
    return
 end
 
@@ -204,7 +204,7 @@ end
    fig, subfigs, ls, vlines, cs = init_figure(loc, norms, ticks, pArgs1, varminmax)
    while true
       file = take!(jobs)
-      update_plot(subfigs, ls, vlines, cs, file, cellids)
+      update_plot(subfigs, ls, vlines, cs, file, cellids, loc)
       put!(status, true)
    end
    close(fig)
@@ -218,13 +218,13 @@ nfile = length(files)
 # Set contour plots' axes
 axisunit = EARTH
 # Upper/lower limits for each variable
-ρmin, ρmax = 0.0, 10.0     # [amu/cc]
-vmin, vmax = -640.0, 100.0 # [km/s]
-pmin, pmax = 0.0, 1.82     # [nPa]
-bmin, bmax = -25.0, 60.0   # [nT]
-emin, emax = -5.0, 5.0     # [mV/m]
-vamin, vamax = 50.0, 350.0 # [km/s]
-vsmin, vsmax = 50.0, 350.0 # [km/s]
+ρmin, ρmax = 0.0, 14.0     # [amu/cc]
+vmin, vmax = -620.0, 150.0 # [km/s]
+pmin, pmax = 0.0, 2.8      # [nPa]
+bmin, bmax = -60.0, 60.0   # [nT]
+emin, emax = -8.0, 8.0     # [mV/m]
+vamin, vamax = 50.0, 600.0 # [km/s]
+vsmin, vsmax = 50.0, 600.0 # [km/s]
 
 varminmax = Varminmax(ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax)
 
@@ -240,13 +240,13 @@ ticks = (ticks1, ticks2)
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
-xmin, xmax = 7.0, 20.0 # Earth radii
+xmin, xmax = 7.0, 17.0 # Earth radii
 point1 = [xmin, 0, 0] .* Vlasiator.RE
 point2 = [xmax, 0, 0] .* Vlasiator.RE
 
 meta = load(files[1])
 cellids, _, _ = getcellinline(meta, point1, point2)
-loc = range(x1, x2, length=length(cellids))
+loc = range(xmin, xmax, length=length(cellids))
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
