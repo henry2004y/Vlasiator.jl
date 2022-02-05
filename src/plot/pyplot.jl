@@ -31,7 +31,7 @@ function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
    if comp == :0
       data = datafull
    else
-      data = @view datafull[comp,:]
+      data = datafull[comp,:]
    end
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
@@ -80,10 +80,8 @@ function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
 
    isnothing(ax) && (ax = plt.gca())
 
-   Xq  = @view X[1:stride:end, 1:stride:end]
-   Yq  = @view Y[1:stride:end, 1:stride:end]
-   v1q = @view v1[1:stride:end, 1:stride:end]
-   v2q = @view v2[1:stride:end, 1:stride:end]
+   Xq,  Yq  = X[1:stride:end, 1:stride:end],  Y[1:stride:end, 1:stride:end]
+   v1q, v2q = v1[1:stride:end, 1:stride:end], v2[1:stride:end, 1:stride:end]
 
    ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
 end
