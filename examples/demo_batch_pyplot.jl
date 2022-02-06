@@ -1,15 +1,16 @@
 # Sample postprocessing script for customized figure.
 #
-# Plotting of the same style from a series of input files. Combined with ffmpeg,
-# we can easily make animations from data.
+# This script creates contours from a series of input files with a fixed color range.
+# Combined with ffmpeg, we can easily make animations from data.
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob, PyPlot, Printf
-using Vlasiator: set_args, prep2d, set_colorbar, set_plot
 
-files = glob("out/bulk*.vlsv")
+files = glob("bulk*.vlsv")
 nfile = length(files)
+# Set output directory
+outdir = "out/"
 
 meta = load(files[1])
 vardict = Dict("v"=>"proton/vg_v", "rho"=>"proton/vg_rho", "b"=>"vg_b_vol", "b2"=>"fg_b")
@@ -17,17 +18,27 @@ varname = "rho"
 
 fig, ax = plt.subplots()
 
-comp = :z
+comp = :z # vector component for plotting (if applicable)
 axisunit = EARTH
 colorscale = Log
 addcolorbar = true
+# Choose colormap
 cmap = matplotlib.cm.turbo
+# Set data plotting range
 vmin = 7.0e4
 vmax = 2.5e6
 
-pArgs = set_args(meta, vardict[varname], axisunit; normal=:none)
+pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit; normal=:none)
 
-cnorm, cticks = set_colorbar(colorscale, vmin, vmax)
+x1, x2 = Vlasiator.get_axis(pArgs)
+
+norm, ticks = Vlasiator.set_colorbar(colorscale, vmin, vmax)
+
+fakedata = zeros(Float32, length(x2), length(x1))
+
+c = ax.pcolormesh(x1, x2, fakedata; norm, cmap)
+
+Vlasiator.set_plot(c, ax, pArgs, ticks, addcolorbar)
 
 for (i, file) in enumerate(files)
    @info "$i out of $nfile"
@@ -36,27 +47,13 @@ for (i, file) in enumerate(files)
    var = meta[vardict[varname]]
    t = readparameter(meta, "time")
 
-   if i == 1
-      x, y = Vlasiator.get_axis(pArgs)
-      data = prep2d(meta, vardict[varname], comp)'
-   
-      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap)
-   
-      set_plot(c, ax, pArgs, cticks, addcolorbar)
-   else
-      data = prep2d(meta, vardict[varname], comp)'
-   
-      c = ax.pcolormesh(x, y, data, norm=cnorm, cmap=cmap)
-   end
+   data = Vlasiator.prep2d(meta, vardict[varname], comp)'
+   c.set_array(data)
 
-   xlabel("X")
-   ylabel("Y")
    str_title = @sprintf "t= %4.1fs" t
-   title(str_title)
+   ax.set_title(str_title)
 
-   savefig("out/"*lpad(i, 4, '0')*".png", bbox_inches="tight")
-
-   ax.cla()
+   savefig(outdir*lpad(i, 4, '0')*".png", bbox_inches="tight")
 end
 
 close()
