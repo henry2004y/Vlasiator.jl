@@ -147,8 +147,8 @@ end
    h.set_segments(seg_new)
 end
 
-@everywhere function update_plot(subfigs, ls, vlines, cs, file, cellids, loc)
-   isfile("1d2d/"*file[end-8:end-5]*".png") && return
+@everywhere function update_plot!(subfigs, ls, vlines, cs, outdir, file, cellids, loc)
+   isfile(outdir*file[end-8:end-5]*".png") && return
 
    println("file = $(basename(file))")
    meta = load(file)
@@ -190,7 +190,7 @@ end
    data = Vlasiator.prep2d(meta, "VS", :z)'
    cs[2].set_array(data ./ 1f3)
 
-   savefig("1d2d/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight")
    return
 end
 
@@ -200,11 +200,13 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, status, loc, norms, ticks, pArgs1, cellids, varminmax)
+@everywhere function do_work(jobs, status,
+   outdir, loc, norms, ticks, pArgs1, cellids, varminmax)
+
    fig, subfigs, ls, vlines, cs = init_figure(loc, norms, ticks, pArgs1, varminmax)
    while true
       file = take!(jobs)
-      update_plot(subfigs, ls, vlines, cs, file, cellids, loc)
+      update_plot!(subfigs, ls, vlines, cs, outdir, file, cellids, loc)
       put!(status, true)
    end
    close(fig)
@@ -214,6 +216,8 @@ end
 files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
+# Set output directory
+outdir = "1d2d/"
 
 # Set contour plots' axes
 axisunit = EARTH
@@ -254,7 +258,8 @@ println("Running with $(nworkers()) workers...")
 @async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
-   @async remote_do(do_work, p, jobs, status, loc, norms, ticks, pArgs1, cellids, varminmax)
+   @async remote_do(do_work, p, jobs, status,
+      outdir, loc, norms, ticks, pArgs1, cellids, varminmax)
 end
 
 let n = nfile

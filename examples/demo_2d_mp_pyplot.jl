@@ -82,8 +82,8 @@ using Distributed, ParallelDataTransfer, Glob
    return fig, cs, range1, range2
 end
 
-@everywhere function update_plot(fig, cs, range1, range2, file)
-   isfile("contour/"*file[end-8:end-5]*".png") && return
+@everywhere function update_plot!(fig, cs, range1, range2, outdir, file)
+   isfile(outdir*file[end-8:end-5]*".png") && return
 
    println("file = $file")
    meta = load(file)
@@ -109,7 +109,7 @@ end
    str_title = @sprintf "Density pulse run, t= %4.1fs" meta.time
    fig.suptitle(str_title; fontsize="xx-large")
 
-   savefig("contour/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight")
 end
 
 function make_jobs(files)
@@ -118,11 +118,11 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, status, cmaps, norms, ticks, pArgs1, extent)
+@everywhere function do_work(jobs, status, outdir, cmaps, norms, ticks, pArgs1, extent)
    fig, cs, range1, range2 = init_figure(cmaps, norms, ticks, pArgs1, extent)
    while true
       file = take!(jobs)
-      update_plot(fig, cs, range1, range2, file)
+      update_plot!(fig, cs, range1, range2, outdir, file)
       put!(status, true)
    end
    close(fig)
@@ -132,6 +132,8 @@ end
 files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
+# Set output directory
+outdir = "contour/"
 
 # Set colormaps for continuous and divergent data
 cmaps = (matplotlib.cm.turbo, matplotlib.cm.RdBu_r)
@@ -173,7 +175,7 @@ println("Running with $(nworkers()) workers...")
 @async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
-   @async remote_do(do_work, p, jobs, status, cmaps, norms, ticks, pArgs1, extent)
+   @async remote_do(do_work, p, jobs, status, outdir, cmaps, norms, ticks, pArgs1, extent)
 end
 
 let n = nfile

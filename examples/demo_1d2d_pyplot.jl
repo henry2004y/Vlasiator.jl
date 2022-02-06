@@ -149,8 +149,8 @@ end
 
 
 "Update frame."
-function process(plotargs, file)
-   isfile("../out/"*file[end-8:end-5]*".png") && return
+function update_plot!(plotargs, outdir, file)
+   isfile(outdir*file[end-8:end-5]*".png") && return
 
    fig, subfigs, ls, vlines, cs = plotargs
 
@@ -184,7 +184,7 @@ function process(plotargs, file)
    data = prep2d(meta, "VS", :z)'
    cs[2].update(Dict("array" => data ./ 1e3))
 
-   savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight")
    return
 end
 
@@ -200,8 +200,10 @@ end
 
 ####### Main
 
-files = glob("bulk*.vlsv", "../run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", ".")
 nfile = length(files)
+# Set output directory
+outdir = "out/"
 
 meta = load(files[1])
 
@@ -234,7 +236,7 @@ plotargs = init_figure(varminmax, loc, pArgs)
 # Loop over snapshots
 for (i, file) in enumerate(files)
    println("i = $i/$nfile, file = $(basename(file))")
-   process(plotargs, file)
+   update_plot!(plotargs, outdir, file)
 end
 
 close(plotargs[1])

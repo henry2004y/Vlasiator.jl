@@ -60,8 +60,9 @@ end
    return fig, ax, c, ls, range1, range2
 end
 
-@everywhere function update_plot(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2, file)
-   isfile("out/"*file[end-8:end-5]*".png") && return
+@everywhere function update_plot!(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2,
+   outdir, file)
+   isfile(outdir*file[end-8:end-5]*".png") && return
 
    println("file = $file")
    meta = load(file)
@@ -95,7 +96,7 @@ end
       add_arrow(ls[i][1])
    end
 
-   savefig("out/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight")
 end
 
 function make_jobs(files)
@@ -104,14 +105,14 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, status, pArgs,
-   norm, ticks, grid1, grid2, dim_, seeds, extent)
+@everywhere function do_work(jobs, status,
+   outdir, pArgs, norm, ticks, grid1, grid2, dim_, seeds, extent)
 
    fig, ax, c, ls, range1, range2 = init_figure(pArgs, norm, ticks, seeds, extent)
 
    while true
       file = take!(jobs)
-      update_plot(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2, file)
+      update_plot!(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2, outdir, file)
       put!(status, true)
    end
    close(fig)
@@ -121,6 +122,8 @@ end
 files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
+# Set output directory
+outdir = "out/"
 
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))
@@ -148,7 +151,6 @@ grid2 = range(coordmin[dim_[2]], coordmax[dim_[2]], length=ncells[dim_[2]])
 nseeds = 10
 seeds = generate_seeds(coordmin, coordmax, dim_, nseeds)
 
-@passobj 1 workers() files
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
@@ -157,7 +159,7 @@ println("Running with $(nworkers()) workers...")
 
 @sync for p in workers()
    @async remote_do(do_work, p, jobs, status,
-      pArgs, norm, ticks, grid1, grid2, dim_, seeds, extent)
+      outdir, pArgs, norm, ticks, grid1, grid2, dim_, seeds, extent)
 end
 
 let n = nfile
