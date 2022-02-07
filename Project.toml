@@ -1,6 +1,6 @@
 name = "Vlasiator"
 uuid = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
-authors = ["Hongyang Zhou <hongyang.zhou@helsinki.fi>"]
+authors = ["Hongyang Zhou <hyzhou@umich.edu>"]
 version = "0.9.7"
 
 [deps]
