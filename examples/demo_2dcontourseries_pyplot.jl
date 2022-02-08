@@ -53,7 +53,7 @@ for (i, file) in enumerate(files)
    str_title = @sprintf "t= %4.1fs" t
    ax.set_title(str_title)
 
-   savefig(outdir*lpad(i, 4, '0')*".png", bbox_inches="tight")
+   savefig(outdir*lpad(i, 4, '0')*".png", bbox_inches="tight", dpi=100)
 end
 
 close()

@@ -184,7 +184,7 @@ function update_plot!(plotargs, outdir, file)
    data = prep2d(meta, "VS", :z)'
    cs[2].update(Dict("array" => data ./ 1e3))
 
-   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight", dpi=100)
    return
 end
 
