@@ -173,7 +173,7 @@ getvelocity(meta, vcellids, vcellf)
 getpressure(meta, f) # only support full VDF for now
 ```
 
-Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big( 1/(2n) \int |f - g| dv \big)``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density and scalar pressure as f.
+Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big[ 1/(2n) \int |f(v) - g(v)| dv \big]``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density, bulk velocity and scalar pressure as f.
 
 ```
 getmaxwellianity(meta, f)
@@ -183,11 +183,11 @@ The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at al
 
 ## Plotting
 
-Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting functionalities once the target plotting package is used.
+Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting recipes/wrappers once the target plotting package is used.
 
 Currently `PyPlot.jl` provides the most complete and fine-tuned plotting capabilities.
-`Plots.jl` is catching up, but it is still slower and lack of features.
-`Makie.jl` is supported experimentally. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend.
+`Plots.jl`, which is a collection of multiple plotting libraries with uniform frontend, is catching up, but it lacks many detailed supports, an easy-to-use manual, and suffers from compatibilty issues.
+`Makie.jl`, a native Julia plotting library, is also supported. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend in the future.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
