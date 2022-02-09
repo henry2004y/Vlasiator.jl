@@ -178,7 +178,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
          searchsortedfirst(x1, extent[1]*RE):searchsortedlast(x1, extent[2]*RE),
          searchsortedfirst(x2, extent[3]*RE):searchsortedlast(x2, extent[4]*RE)
       else
-         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2])
+         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
          searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
       end
 
@@ -212,8 +212,8 @@ julia> norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
 ```
 There are also various options for the ticks available in `matplotlib.ticker`.
 """
-function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0])
-   vmin, vmax = set_lim(v1, v2, data, colorscale)
+function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0f0])
+   vmin, vmax = set_lim(Float32(v1), Float32(v2), data, colorscale)
    if colorscale == Linear
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
       norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)

@@ -287,6 +287,9 @@ end
          @test var[end-2] == 999535.8f0 && length(var) == 6300
          var = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
          @test var[end] == 1.0000151f6 && length(var) == 2500
+         var = pcolormesh(meta, "proton/vg_rho";
+            extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI).get_array()
+         @test var[end] == 1.00022675f6 && length(var) == 100
          var = pcolormesh(meta, "fg_b").get_array()
          @test var[1] == 3.0058909f-9
          var = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
