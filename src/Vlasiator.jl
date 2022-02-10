@@ -14,6 +14,7 @@ using Dates
 
 include("utility/rotation.jl")
 include("utility/log.jl")
+include("utility/monitor.jl")
 include("utility/vector.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
@@ -32,7 +33,9 @@ export
    # plot helper
    SI, EARTH, Log, Linear, SymLog,
    # log
-   readlog
+   readlog,
+   # physical parameter monitor
+   check_plasma_characteristics
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))

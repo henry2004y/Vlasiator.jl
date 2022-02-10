@@ -256,6 +256,16 @@ end
       end
    end
 
+   if group in (:monitor, :all)
+      @testset "Monitor" begin
+         n = 2e6    # [amu/m³]
+         v = 6e5    # [m/s]
+         T = 5e5    # [K]
+         B = 5e-9   # [T]
+         @test check_plasma_characteristics(n, v, T, B)
+      end
+   end
+
    if group in (:plot, :all)
       @testset "PyPlot" begin
          using PyPlot
