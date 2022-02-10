@@ -176,6 +176,8 @@ end
 
          @test meta["Gyroperiod"][1] == 21.834297799454554
 
+         @test Vlasiator.getdata2d(meta, "Gyroperiod") |> ndims == 2
+
          @test meta["Gyrofrequency"][1] == 0.04579950356933307
 
          @test meta["J"][1,1000] == 1.4322914301940016e-15
