@@ -1,4 +1,5 @@
 using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
+using Suppressor: @capture_out
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -258,11 +259,14 @@ end
 
    if group in (:monitor, :all)
       @testset "Monitor" begin
-         n = 2e6    # [amu/m³]
-         v = 6e5    # [m/s]
-         T = 5e5    # [K]
-         B = 5e-9   # [T]
-         @test check_plasma_characteristics(n, v, T, B; doshow=false)
+         output = @capture_out begin
+            n = 2e6    # [amu/m³]
+            v = 6e5    # [m/s]
+            T = 5e5    # [K]
+            B = 5e-9   # [T]
+            check_plasma_characteristics(n, v, T, B)
+         end
+         @test startswith(output, "---")
       end
    end
 
