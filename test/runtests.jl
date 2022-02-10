@@ -262,7 +262,7 @@ end
          v = 6e5    # [m/s]
          T = 5e5    # [K]
          B = 5e-9   # [T]
-         @test check_plasma_characteristics(n, v, T, B)
+         @test check_plasma_characteristics(n, v, T, B; doshow=false)
       end
    end
 
