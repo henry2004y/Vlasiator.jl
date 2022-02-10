@@ -14,8 +14,8 @@ function check_plasma_characteristics(n, v, T, B; doshow=true)
 
    # Characteristic parameters
    di  = √(mᵢ*ϵ₀/n)*c/qᵢ           # ion inertial length, [m]
-   ωci = qᵢ*B/mᵢ                   # [/s]
-   vA  = B / √(μ₀ * n * mᵢ)        # Alfven speed, [m/s]
+   ωci = qᵢ * B / (mᵢ * 2π)        # [/s]
+   vA  = B / √(μ₀ * n * mᵢ)        # Alfvén speed, [m/s]
    vS  = √(γ * p / (n * mᵢ))       # sonic speed, [m/s]
    vT  = √(kB * T / mᵢ)            # thermal speed, [m/s]
    rᵢ  = vT / ωci
