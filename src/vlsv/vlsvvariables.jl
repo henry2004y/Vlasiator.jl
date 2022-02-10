@@ -73,6 +73,10 @@ const units_predefined = Dict(
    :MA => ("", L"$M_A$", ""),
    :Ppar => ("Pa", L"$P_\parallel$", "Pa"),
    :Pperp => ("Pa", L"$P_\perp$", "Pa"),
+   :Gyroperiod => ("s", L"$T_{gyro}$", "s"),
+   :Plasmaperiod => ("s", L"$T_{plasma}$", "s"),
+   :Gyrofrequency => ("/s", L"$\omega_{g}$", L"s^{-1}"),
+   :Omegap => ("/s", L"$\omega_{p}$", L"s^{-1}"),
 )
 
 # Define derived parameters
