@@ -1,5 +1,5 @@
 using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
-using Suppressor: @capture_out
+using Suppressor: @capture_out, @capture_err
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -297,6 +297,11 @@ end
          @test var[786] == 238.24398578141802
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
 
+         output = @capture_err begin
+            vdfslice(meta, loc; verbose=true)
+         end
+         @test startswith(output, "[ Info:")
+
          # 2D
          meta = meta2
          var = pcolormesh(meta, "proton/vg_rho").get_array()
@@ -304,7 +309,7 @@ end
          var = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
          @test var[end] == 1.0000151f6 && length(var) == 2500
          var = pcolormesh(meta, "proton/vg_rho";
-            extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI).get_array()
+            extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI, colorscale=Log).get_array()
          @test var[end] == 1.00022675f6 && length(var) == 100
          var = pcolormesh(meta, "fg_b").get_array()
          @test var[1] == 3.0058909f-9
@@ -333,9 +338,9 @@ end
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :line &&
             rec[1].args[1] isa LinRange
-#=
+
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(),
-            Vlasiator.VDFSlice((meta,[0.0,0.0,0.0])))
+            VDFSlice((meta, [0.0,0.0,0.0])))
          @test getfield(rec[1], 1)[:seriestype] == :histogram2d
 
          # 2D
@@ -343,7 +348,6 @@ end
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
             rec[1].args[1] isa LinRange
-            =#
       end
    end
    for meta in (meta1, meta2, meta3)
