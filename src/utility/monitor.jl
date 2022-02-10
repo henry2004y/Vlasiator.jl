@@ -14,11 +14,11 @@ function check_plasma_characteristics(n, v, T, B; doshow=true)
 
    # Characteristic parameters
    di  = √(mᵢ*ϵ₀/n)*c/qᵢ           # ion inertial length, [m]
-   ωci = qᵢ * B / (mᵢ * 2π)        # [/s]
+   fci = qᵢ * B / (mᵢ * 2π)        # [/s]
    vA  = B / √(μ₀ * n * mᵢ)        # Alfvén speed, [m/s]
    vS  = √(γ * p / (n * mᵢ))       # sonic speed, [m/s]
    vT  = √(kB * T / mᵢ)            # thermal speed, [m/s]
-   rᵢ  = vT / ωci
+   rᵢ  = vT / fci
 
    if doshow
       println("--------------------------------------------------")
@@ -30,7 +30,7 @@ function check_plasma_characteristics(n, v, T, B; doshow=true)
       println("Magnetic field      : ", rpad(round(B*1e9; digits=2), 9), "nT")
       println("Ion inertial length : ", rpad(round(di/1e3; digits=2),9), "km")
       println("Ion gyroradius      : ", rpad(round(rᵢ/1e3; digits=2),9), "km")
-      println("Gyrofrequency       : ", rpad(round(ωci; digits=2),   9), "Hz")
+      println("Gyrofrequency       : ", rpad(round(fci; digits=2),   9), "Hz")
       println("Alfvén speed        : ", rpad(round(vA/1e3; digits=2),9), "km/s")
       println("Sonic speed         : ", rpad(round(vS/1e3; digits=2),9), "km/s")
       println("--------------------------------------------------")

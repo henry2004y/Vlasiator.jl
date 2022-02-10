@@ -170,7 +170,7 @@ end
 
          @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         @test meta["IonInertial"][1] == 8.578087716535188e7
+         @test meta["IonInertial"][1] == 5.389771470423157e8
 
          @test readvariable(meta, "Larmor", UInt64[1])[1] == 322324.70603759587
 

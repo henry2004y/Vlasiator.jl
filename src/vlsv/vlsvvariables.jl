@@ -380,8 +380,8 @@ const variables_predefined = Dict(
    :IonInertial => function (meta, ids=UInt64[])
       n = readvariable(meta, "n", ids)
       Z = 1
-      ωi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
-      di = @. c / ωi
+      fi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ / 2π
+      di = @. c / fi
    end,
    :Larmor => function (meta, ids=UInt64[])
       Vth = readvariable(meta, "Vth", ids)
@@ -402,7 +402,7 @@ const variables_predefined = Dict(
    end,
    :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
       n = readvariable(meta, "n", ids)
-      ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
+      fₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
    :n => function (meta, ids=UInt64[])
       n = isempty(ids) ?
