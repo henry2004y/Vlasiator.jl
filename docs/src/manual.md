@@ -392,39 +392,6 @@ timestamps, speed = readlog(file)
 
 See a live example at [demo_log.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples/demo_log.jl).
 
-## Calling from Python
-
-It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
-Following the installation steps described in the manual[^3], and then inside Python REPL:
-
-```
-# Handling initialization issue for Conda
-from julia.api import Julia
-jl = Julia(compiled_modules=False)
-
-from julia import Vlasiator
-file = "bulk1.0001000.vlsv"
-meta = Vlasiator.load(file)
-var = "proton/vg_rho"
-data = Vlasiator.readvariable(meta, var)
-```
-
-To run a Julia script in Python,
-
-```
-# Handling initialization issue for Conda
-from julia.api import Julia
-jl = Julia(compiled_modules=False)
-jl.eval('include("examples/demo_2dplot_pyplot.jl")')
-import matplotlib.pyplot as plt
-plt.show()
-```
-
-!!! note
-    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, it is recommended to use the package inside Julia.
-
-[^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
-
 ## Examples
 
 There is a list of complete [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) about:

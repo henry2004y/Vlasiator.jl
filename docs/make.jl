@@ -15,6 +15,7 @@ makedocs(;
     pages=[
         "Home" => "index.md",
         "User Guide" => "manual.md",
+        "Calling from Python" => "python.md",
         "Gallery" => "gallery.md",
         "API Reference" => "internal.md",
         "Contributing" => "contributing.md",
