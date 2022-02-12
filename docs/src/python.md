@@ -10,11 +10,20 @@ JuliaCall will link to the first Julia version in the system path. If Vlasiator.
 ```python
 from juliacall import Main as jl
 jl.seval("using Vlasiator")
-file = "bulk.2d.vlsv"
+file = "bulk.1d.vlsv"
 meta = jl.load(file)
 ```
 
 Matplotlib can then be used to visualize the data.
+
+```python
+from matplotlib import pyplot as plt
+import numpy as np
+rho = jl.readvariable(meta, "proton/vg_rho")
+x = np.arange(meta.coordmin[0], meta.coordmax[0], meta.dcoord[0])
+plt.plot(x, rho)
+plt.show()
+```
 
 ## PyJulia
 
