@@ -18,13 +18,11 @@ function extract_vars(files, locations)
    nlocs = length(locations)
    # variables to be extracted
    t   = zeros(Float32, nfiles)
-   rho = zeros(Float32, nfiles, nlocs)
-   vx  = zeros(Float32, nfiles, nlocs)
-   vy  = zeros(Float32, nfiles, nlocs)
-   p   = zeros(Float32, nfiles, nlocs)
-   bz  = zeros(Float32, nfiles, nlocs)
-   ex  = zeros(Float32, nfiles, nlocs)
-   ey  = zeros(Float32, nfiles, nlocs)
+   rho = zeros(Float32, nlocs, nfiles)
+   v   = zeros(Float32, 3, nlocs, nfiles)
+   p   = zeros(Float32, nlocs, nfiles)
+   b   = zeros(Float32, 3, nlocs, nfiles)
+   e   = zeros(Float32, 3, nlocs, nfiles)
 
    ids = Vector{UInt64}(undef, nlocs)
    let meta = load(files[1])
@@ -37,19 +35,15 @@ function extract_vars(files, locations)
    Threads.@threads for i = eachindex(files)
       meta = load(files[i])
       t[i] = meta.time
-      rho[i,:] = readvariable(meta, "proton/vg_rho", ids)
-      v = readvariable(meta, "proton/vg_v", ids)
-      vx[i,:] = v[1,:]
-      vy[i,:] = v[2,:]
-      p[i,:] = readvariable(meta, "vg_pressure", ids)
-      bz[i,:] = readvariable(meta, "vg_b_vol", ids)[3,:]
-      e = readvariable(meta, "vg_e_vol", ids)
-      ex[i,:] = e[1,:]
-      ey[i,:] = e[2,:]
+      rho[:,i] = readvariable(meta, "proton/vg_rho", ids)
+      v[:,:,i] = readvariable(meta, "proton/vg_v",   ids)
+      p[  :,i] = readvariable(meta, "vg_pressure",   ids)
+      b[:,:,i] = readvariable(meta, "vg_b_vol",      ids)
+      e[:,:,i] = readvariable(meta, "vg_e_vol",      ids)
    end
 
    # Save into binary file
-   jldsave("satellites.jld2"; locations, t, rho, vx, vy, p, bz, ex, ey)
+   jldsave("satellites.jld2"; locations, t, rho, v, p, b, e)
 end
 
 #####
