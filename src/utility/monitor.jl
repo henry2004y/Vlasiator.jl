@@ -17,7 +17,7 @@ function check_plasma_characteristics(n, v, T, B)
    vA  = B / √(μ₀ * n * mᵢ)        # Alfvén speed, [m/s]
    vS  = √(γ * p / (n * mᵢ))       # sonic speed, [m/s]
    vT  = √(kB * T / mᵢ)            # thermal speed, [m/s]
-   rᵢ  = vT / fci
+   rᵢ  = mᵢ * vT / (qᵢ * B)        # gyroradius, [m]
 
    println("--------------------------------------------------")
    println("* Characteristic plasma properties")
