@@ -175,8 +175,8 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
 
    range1, range2 =
       if axisunit == EARTH
-         searchsortedfirst(x1, extent[1]*RE):searchsortedlast(x1, extent[2]*RE),
-         searchsortedfirst(x2, extent[3]*RE):searchsortedlast(x2, extent[4]*RE)
+         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
+         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
       else
          searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
          searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])

@@ -313,7 +313,7 @@ end
          var = pcolormesh(meta, "proton/vg_rho").get_array()
          @test var[end-2] == 999535.8f0 && length(var) == 6300
          var = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
-         @test var[end] == 1.0000151f6 && length(var) == 2500
+         @test var[end] == 0.0 && length(var) == 6
          var = pcolormesh(meta, "proton/vg_rho";
             extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI, colorscale=Log).get_array()
          @test var[end] == 1.00022675f6 && length(var) == 100
