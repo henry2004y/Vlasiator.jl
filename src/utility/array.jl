@@ -64,6 +64,9 @@ end
 
 Calculate 2nd order cell-centered ∇A where `A` is a scalar array and `dx` is a vector of
 grid intervals in each dimension.
+!!! warning
+    The current implementation has issues at the boundary if gradient is taken multiple
+    times.
 """
 function gradient(A::AbstractArray{T,N}, dx=ones(T, N)) where {T,N}
    @assert N < 4 "$N dimension array A detected!"
