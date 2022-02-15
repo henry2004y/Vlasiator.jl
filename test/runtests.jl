@@ -226,8 +226,7 @@ end
          end
       end
       @testset "Gradient" begin
-         let dx = ones(Float32, 3)
-            A = ones(Float32, 3,3,3)
+         let A = ones(Float32, 3,3,3), dx = ones(Float32, 3)
             @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
          let A = ones(Float32, 3,3)
@@ -240,8 +239,8 @@ end
       @testset "FluxFunction" begin
          b = reshape(1:75, 3, 5, 5)
          dx = [1,2]
-         flux = compute_flux_function(b, dx)
-         @test flux[3,3] == -39
+         flux = compute_flux_function(b, dx, 1)
+         @test flux[3,3] == 29
          # saddle point test func
          flux = [x^2 - y^2 for x in -10:1.0:10, y in -10:1.0:10]
          xi_, oi_ = find_reconnection_points(flux)
