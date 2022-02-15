@@ -251,7 +251,7 @@ const variables_predefined = Dict(
       @assert isempty(ids) "Do not support current calculation for selected cells!"
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
-      J = curl(meta.dcoord, B) ./ μ₀
+      J = curl(B, meta.dcoord) ./ μ₀
       J = reshape(J, 3, :) # To be consistent with shape assumptions
    end,
    :Protated => function (meta, ids=UInt64[])

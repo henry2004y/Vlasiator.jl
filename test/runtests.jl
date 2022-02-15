@@ -218,17 +218,23 @@ end
          let dx = ones(Float32, 3)
             # 2D
             A = ones(Float32, 3,3,1,3)
-            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            @test sum(Vlasiator.curl(A, dx)) == 0.0
             # 3D
             A = ones(Float32, 3,3,3,3)
-            @test sum(Vlasiator.curl(dx, A)) == 0.0
-            @test sum(Vlasiator.divergence(dx, A)) == 0.0
+            @test sum(Vlasiator.curl(A, dx)) == 0.0
+            @test sum(Vlasiator.divergence(A, dx)) == 0.0
          end
       end
       @testset "Gradient" begin
          let dx = ones(Float32, 3)
             A = ones(Float32, 3,3,3)
-            @test sum(Vlasiator.gradient(dx, A)) == 0.0
+            @test sum(Vlasiator.gradient(A, dx)) == 0.0
+         end
+         let A = ones(Float32, 3,3)
+            @test sum(Vlasiator.gradient(A)) == 0.0
+         end
+         let A = ones(Float32, 3)
+            @test sum(Vlasiator.gradient(A)) == 0.0
          end
       end
    end
