@@ -16,6 +16,7 @@ include("utility/rotation.jl")
 include("utility/log.jl")
 include("utility/monitor.jl")
 include("utility/array.jl")
+include("utility/fluxfunction.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
@@ -35,7 +36,9 @@ export
    # log
    readlog,
    # physical parameter monitor
-   check_plasma_characteristics
+   check_plasma_characteristics,
+   # fluxfunction
+   compute_flux_function, find_reconnection_points
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))

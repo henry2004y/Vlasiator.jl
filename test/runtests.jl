@@ -237,6 +237,16 @@ end
             @test sum(Vlasiator.gradient(A)) == 0.0
          end
       end
+      @testset "FluxFunction" begin
+         b = reshape(1:75, 3, 5, 5)
+         dx = [1,2]
+         flux = compute_flux_function(b, dx)
+         @test flux[3,3] == -39
+         # saddle point test func
+         flux = [x^2 - y^2 for x in -10:1.0:10, y in -10:1.0:10]
+         xi_, oi_ = find_reconnection_points(flux)
+         @test xi_ == [11; 11;;]
+      end
    end
 
    if group in (:vtk, :all)

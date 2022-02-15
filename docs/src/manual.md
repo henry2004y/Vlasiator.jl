@@ -436,5 +436,6 @@ There is a list of complete [examples](https://github.com/henry2004y/Vlasiator.j
 * Simulation log file tracking
 * Converting VLSV to VTK format
 * Parallel post-processing
+* Finding X-point and O-point in 2D reconnection
 
 Feel free to check those out and try on your data!
