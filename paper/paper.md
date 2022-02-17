@@ -38,6 +38,8 @@ size.
 - Plotting 1D curves/2D cuts of saved/derived variables and phase space
 distributions via mutiple visualization libraries such as
 `Matplotlib` [@matplotlib], `Plots.jl` [@plots], and `Makie.jl` [@makie].
+- Analyzing the velocity distribution functions reconstructed from sparsity
+storage.
 - Converting VLSV into VTK format for post-processing and 3D rendering in e.g.
 ParaView and VisIt.
 - Easy interoperability between Julia and Python via community packages.
