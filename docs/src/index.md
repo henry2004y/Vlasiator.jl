@@ -14,7 +14,9 @@ Vlasiator.jl contains the following features:
 * Calculating derived quantities from VLSV outputs.
 * Extracting quantities at a given point/line/plane.
 * Plotting 1D curves/2D cuts of saved/derived variables, and phase space distributions.
+* Analyzing velocity distribution functions.
 * Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
+* Monitoring Vlasiator run log files.
 
 !!! warning
     This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standard for outputs, and is not guaranteed to work. [This analysator wiki page](https://github.com/fmihpc/analysator/wiki/Supported-variables-and-data-reducers) describes the old and new naming standards in detail.
@@ -40,7 +42,7 @@ ENV["PYTHON"]="your python executable"
 Pkg.build("PyCall")
 ```
 
-Details are described in [automated matplotlib installation](https://github.com/JuliaPy/PyPlot.jl#automated-matplotlib-installation).
+If `ENV["PYTHON"] = ""` before building, a private Python distribution will be installed via Miniconda. Details are described in [automated matplotlib installation](https://github.com/JuliaPy/PyPlot.jl#automated-matplotlib-installation).
 
 ## Author
 
