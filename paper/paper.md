@@ -11,14 +11,15 @@ authors:
 affiliations:
  - name: University of Helsinki
    index: 1
-date: 15 Semptember 2021
+date: 17 Febrary 2022
 bibliography: paper.bib
 ---
 
 # Summary
 
 `Vlasiator.jl` is a Julia package for processing and analyzing simulation data
-from Vlasiator.
+from the collisionless ion-kinetic plasma physics numerical model Vlasiator
+[@vlasiator5.1].
 This lightweight package is built upon its sister package in Python `Analysator`
 [@analysator] and is carefully designed for performance, capability and ease of
 use. It can be easily integrated with other open source packages in the
@@ -35,9 +36,11 @@ size.
 - Calculating derived quantities from VLSV outputs.
 - Extracting quantities at a given point/line/plane.
 - Plotting 1D curves/2D cuts of saved/derived variables and phase space
-distributions from mutiple backends such as `Matplotlib` [@matplotlib],
-`Plots.jl` [@plots], and `Makie.jl` [@makie].
-- Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
+distributions via mutiple visualization libraries such as
+`Matplotlib` [@matplotlib], `Plots.jl` [@plots], and `Makie.jl` [@makie].
+- Converting VLSV into VTK format for post-processing and 3D rendering in e.g.
+ParaView and VisIt.
+- Easy interoperability between Julia and Python via community packages.
 
 `Vlasiator.jl` is targeted at space physics researchers who want to visualize
 and analyze Vlasiator simulation outputs in an efficient manner.
@@ -46,8 +49,8 @@ directly applied to parallel batch jobs using both multithreads and
 multiprocesses. It has preliminarily been used in ultra-low frequency wave
 studies under time-varying solar wind conditions [@ressac].
 
-The combination of speed and design in `Vlasiator.jl` will enable exciting
-scientific explorations of forthcoming data from the large scale simulation by
+The performance and ease-of-use of `Vlasiator.jl` will enable exciting
+scientific explorations of forthcoming data from the exascale simulation by
 students and experts alike.
 
 # Statement of need
@@ -66,11 +69,12 @@ challenges are immense. The storage required to resolve the phase space
 distributions can easily go beyond tegabytes with each reduced snapshot goes
 beyond 10 GB, which needs efficient numerical tools for processing the data.
 
-`Vlasiator.jl` tackles the challenges by taking advantage of novel techniques
-shared in the community, which is built from ground up to leverage the power of
-Julia and successful applications implemented in other languages like C++ and
-Python. The analysis of high-dimensional (>3) simulation data will new insights
-into plasma physics with the aid of advanced tools like `Vlasiator.jl`.
+`Vlasiator.jl` tackles the post-procesing challenges by taking advantage of
+novel techniques shared in the community, which is built from ground up to
+leverage the power of Julia and successful applications implemented in other
+languages like C++ and Python. The analysis of high-dimensional (>3) simulation
+data will new insights into plasma physics with the aid of advanced tools like
+`Vlasiator.jl`.
 
 # Acknowledgements
 
