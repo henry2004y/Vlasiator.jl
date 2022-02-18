@@ -159,6 +159,10 @@ end
 
          @test meta["Vperp"][1] == 40982.48f0
 
+         @test_throws ArgumentError meta["Epar"]
+
+         @test_throws ArgumentError meta["Eperp"]
+
          @test meta["T"][1] == 347619.9817319378
 
          @test meta["Pram"][1] == 8.204415428337215e-10

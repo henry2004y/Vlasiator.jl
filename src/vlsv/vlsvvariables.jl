@@ -187,7 +187,7 @@ const variables_predefined = Dict(
       else
          b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
       end
-      [V[:,i] ⋅ b[:,i] for i in 1:size(V,2)]
+      [V[:,i] ⋅ b[:,i] for i in axes(V,2)]
    end,
    :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
       V = isempty(ids) ?
@@ -296,6 +296,39 @@ const variables_predefined = Dict(
       _fillinnerBC!(B², B²)
       mu2inv = 0.5/μ₀
       @. B² * mu2inv
+   end,
+   :Epar => function (meta, ids=UInt64[])
+      E, b =
+         if isempty(ids)
+            readvariable(meta, "vg_e_vol"),
+            readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+         else
+            readvariable(meta, "vg_e_vol", ids),
+            readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+         end
+      [E[:,i] ⋅ b[:,i] for i in axes(E,2)]
+   end,
+   :Eperp => function (meta, ids=UInt64[])
+      E, b =
+         if isempty(ids)
+            readvariable(meta, "vg_e_vol"),
+            readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+         else
+            readvariable(meta, "vg_e_vol", ids),
+            readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+         end
+      Eperp = zeros(eltype(E), size(E, 2))
+
+      function _computeEperp!()
+         # Avoid sqrt of negative values, but does not guarantee orthogonality.
+         @inbounds for i in eachindex(Eperp)
+            Epar = E[:,i] ⋅ b[:,i] .* b[:,i]
+            Eperp[i] = norm(E[:,i] - Epar)
+         end
+      end
+
+      _computeEperp!()
+      Eperp
    end,
    :Poynting => function (meta, ids=UInt64[])
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
