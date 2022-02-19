@@ -10,13 +10,14 @@ It can be easily integrated with external packages like [FieldTracer.jl](https:/
 
 Vlasiator.jl contains the following features:
 
-* Reading [VLSV](https://github.com/fmihpc/vlsv) format data.
-* Calculating derived quantities from VLSV outputs.
-* Extracting quantities at a given point/line/plane.
-* Plotting 1D curves/2D cuts of saved/derived variables, and phase space distributions.
-* Analyzing velocity distribution functions.
-* Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
-* Monitoring Vlasiator run log files.
+- Reading [VLSV](https://github.com/fmihpc/vlsv) format data.
+- Calculating derived quantities from raw VLSV outputs.
+- Appending [DCCRG](https://github.com/fmihpc/dccrg) arrays to VLSV files.
+- Extracting quantities at a given point/line/plane.
+- Plotting 1D curves/2D cuts of saved/derived variables, and phase space distributions.
+- Analyzing velocity distribution functions.
+- Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
+- Monitoring Vlasiator run log files.
 
 !!! warning
     This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standard for outputs, and is not guaranteed to work. [This analysator wiki page](https://github.com/fmihpc/analysator/wiki/Supported-variables-and-data-reducers) describes the old and new naming standards in detail.
