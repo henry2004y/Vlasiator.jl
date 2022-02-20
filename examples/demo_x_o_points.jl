@@ -42,9 +42,10 @@ ax.plot_surface(X[xmin_:xmax_,zmin_:zmax_], Z[xmin_:xmax_,zmin_:zmax_],
    cmap=matplotlib.cm.turbo,
    linewidth=0, antialiased=false)
 
-indices_x, indices_o = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_], 1e-1)
+indices_x, indices_o = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_], 1e-2)
 
 fig, ax = subplots(figsize=(6,10), constrained_layout=true)
+
 pcolormesh(meta, "proton/vg_rho", ax; extent=[5, 10, -7.5, 7.5])
 s1 = ax.scatter(x[indices_x[1,:].+xmin_.-1], z[indices_x[2,:].+zmin_.-1];
    s=12, marker="x", color="tab:gray")
