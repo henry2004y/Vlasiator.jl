@@ -12,11 +12,11 @@ using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
 """
-    extract_magnetopause_var(files; zmin=-5RE, zmax=5RE, verbose=true)
+    extract_magnetopause_var(files; zmin=-4RE, zmax=4RE, verbose=true)
 
 Extract variables on the magnetopause defined by ``B_z = 0``.
 """
-function extract_magnetopause_var(files; zmin=-5RE, zmax=5RE, verbose=true)
+function extract_magnetopause_var(files; zmin=-4RE, zmax=4RE, verbose=true)
    nfiles = length(files)
 
    verbose && println("Number of files: $nfiles")
@@ -47,9 +47,9 @@ function extract_magnetopause_var(files; zmin=-5RE, zmax=5RE, verbose=true)
       b = meta["vg_b_vol"]
       b = reshape(b, 3, meta.ncells[1], meta.ncells[3])
 
-      # Extract magnetopause location from the 1st point which fulfills Bz > 0
+      # Extract the last point from right to left which fulfills Bz < 0
       for (i,k) in enumerate(z_range) # scan in z direction
-         ind_ = findlast(>(0), @view b[3,:,k]) # count from upstream
+         ind_ = findlast(>(0), @view b[3,:,k]) + 1 # count from upstream
          isnothing(ind_) && (ind_ = 1) # if not found then set to 1
          x_crossing[i] = x[ind_]
       end
