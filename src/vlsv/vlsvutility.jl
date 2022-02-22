@@ -215,10 +215,10 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
       cid % xcell,
       cid ÷ xcell % ycell,
       cid ÷ (xcell*ycell) )
-
    coords = @inbounds ntuple(
       i -> coordmin[i] + (indices[i] + 0.5) * (coordmax[i] - coordmin[i]) / ncells[i],
       Val(3))
+   println(ncells,", ", coordmin, ", ", coordmax, ", indices = ", indices, ", cellid = ", cid, ", coords = ", coords, ", reflevel = ", reflevel)
 
    coords
 end

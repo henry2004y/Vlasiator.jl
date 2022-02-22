@@ -14,7 +14,7 @@ using Dates
 
 include("utility/rotation.jl")
 include("utility/log.jl")
-include("utility/vector.jl")
+#include("utility/vector.jl")
 include("utility/differential.jl")
 include("utility/monitor.jl")
 include("utility/array.jl")

@@ -14,29 +14,74 @@ function fg_grad(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
    if false && any(==(1), size(A)) # 2D
       if size(A,4) == 1
          @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
-            ∂Ay∂x = (-Ay[i-1,j,1] + Ay[i+1,j,1]) * invdx[1]
-            ∂Az∂x = (-Az[i-1,j,1] + Az[i+1,j,1]) * invdx[1]
-            ∂Ax∂y = (-Ax[i-1,j,1] + Ax[i+1,j,1]) * invdx[2]
-            ∂Az∂y = (-Az[i-1,j,1] + Az[i+1,j,1]) * invdx[2]
-            ∂Ax∂z = (-Ax[i-1,j,1] + Ax[i+1,j,1]) * invdx[3]
-            ∂Ay∂z = (-Ay[i-1,j,1] + Ay[i+1,j,1]) * invdx[3]
+            ∂A∂x = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[1]
+            ∂A∂y = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[2]
+            ∂A∂z = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[3]
 
-            Bx[i,j,1] = ∂Az∂y - ∂Ay∂z
-            By[i,j,1] = ∂Ax∂z - ∂Az∂x
-            Bz[i,j,1] = ∂Ay∂x - ∂Ax∂y
+            Bx[i,j,1] = ∂A∂x
+            By[i,j,1] = ∂A∂y
+            Bz[i,j,1] = ∂A∂z
          end
       elseif size(A,3) == 1
          @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
-            ∂Ay∂x = (-Ay[i-1,1,k] + Ay[i+1,1,k]) * invdx[1]
-            ∂Az∂x = (-Az[i-1,1,k] + Az[i+1,1,k]) * invdx[1]
-            ∂Ax∂y = (-Ax[i-1,1,k] + Ax[i+1,1,k]) * invdx[2]
-            ∂Az∂y = (-Az[i-1,1,k] + Az[i+1,1,k]) * invdx[2]
-            ∂Ax∂z = (-Ax[i-1,1,k] + Ax[i+1,1,k]) * invdx[3]
-            ∂Ay∂z = (-Ay[i-1,1,k] + Ay[i+1,1,k]) * invdx[3]
+            ∂A∂x = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[1]
+            ∂A∂y = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[2]
+            ∂A∂z = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[3]
 
-            Bx[i,1,k] = ∂Az∂y - ∂Ay∂z
-            By[i,1,k] = ∂Ax∂z - ∂Az∂x
-            Bz[i,1,k] = ∂Ay∂x - ∂Ax∂y
+            Bx[i,1,k] = ∂A∂x
+            By[i,1,k] = ∂A∂y
+            Bz[i,1,k] = ∂A∂z
+         end
+      end
+   else # 3D
+      @inbounds for k in 2:size(A,3)-1, j in 2:size(A,2)-1, i in 2:size(A,1)-1
+         ∂A∂x = (-A[i-1,j,k] + A[i+1,j,k]) * invdx[1]
+         ∂A∂y = (-A[i,j-1,k] + A[i,j+1,k]) * invdx[2]
+         ∂A∂z = (-A[i,j,k-1] + A[i,j,k+1]) * invdx[3]
+
+         Bx[i,j,k] = ∂A∂x
+         By[i,j,k] = ∂A∂y
+         Bz[i,j,k] = ∂A∂z
+      end
+   end
+   B
+end
+
+"""
+    fg_grad_component(dx::AbstractVector, Ain::AbstractArray, c::Integer)
+
+Calculate 2nd order cell-centered ∇A where `A` is a 4D array of size (nx, ny, nz) and
+`dx` is a vector of grid intervals in each dimension, operating on component c of A.
+"""
+function fg_grad_component(dx::AbstractVector, Ain::AbstractArray{T,N}, c::Integer) where {T,N}
+   @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
+
+   @views A = Ain[c,:,:,:]
+
+   B = zeros(T, 3, size(A)[1], size(A)[2], size(A)[3])
+   invdx = inv.(dx*2)
+   @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
+   
+   if false && any(==(1), size(A)) # 2D
+      if size(A,4) == 1
+         @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
+            ∂A∂x = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[1]
+            ∂A∂y = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[2]
+            ∂A∂z = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[3]
+
+            Bx[i,j,1] = ∂A∂x
+            By[i,j,1] = ∂A∂y
+            Bz[i,j,1] = ∂A∂z
+         end
+      elseif size(A,3) == 1
+         @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
+            ∂A∂x = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[1]
+            ∂A∂y = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[2]
+            ∂A∂z = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[3]
+
+            Bx[i,1,k] = ∂A∂x
+            By[i,1,k] = ∂A∂y
+            Bz[i,1,k] = ∂A∂z
          end
       end
    else # 3D
