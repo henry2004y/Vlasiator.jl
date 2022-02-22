@@ -56,7 +56,7 @@ end
          @test meta.cellindex == indexRef
          # sorted var by default
          @test meta["vg_boundarytype"] == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
-         # ID finding
+         # ID finding (noAMR)
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
          coords = getcellcoordinates(meta, id)
@@ -94,6 +94,11 @@ end
          sliceoffset = abs(metaAMR.coordmin[2])
          idlist, indexlist = getslicecell(metaAMR, sliceoffset, 2,
             metaAMR.coordmin[2], metaAMR.coordmax[2])
+
+         # ID finding (AMR)
+         loc = (2.5e6, 2.5e6, 2.5e6) # exact cell center
+         id = getcell(metaAMR, loc)
+         @test getcellcoordinates(metaAMR, id) == loc
 
          data = readvariable(metaAMR, "proton/vg_rho")
          dataslice = refineslice(metaAMR, idlist, data[indexlist], :y)
