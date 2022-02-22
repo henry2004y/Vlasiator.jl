@@ -15,6 +15,7 @@ using Dates
 include("utility/rotation.jl")
 include("utility/log.jl")
 include("utility/vector.jl")
+include("utility/differential.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
@@ -33,8 +34,8 @@ export
    SI, RE, Log, Linear, SymLog,
    # log
    readlog,
-   # curvature
-   fg_grad, fg_curl, fg_div, matder, fg_curvature, fg_normalize, fg_kappac, fg_kappa
+   # differential
+   fg_grad, fg_curl, fg_div, fg_matder, fg_curvature, fg_normalize, fg_kappac, fg_kappa
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))
