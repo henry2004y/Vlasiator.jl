@@ -3,8 +3,8 @@
 """
     getcell(meta, location) -> UInt
 
-Return cell ID containing the given spatial `location`, excluding domain boundaries.
-Only accept 3D location.
+Return cell ID containing the given spatial `location` in meter, excluding domain
+boundaries. Only accept 3D location.
 """
 function getcell(meta::MetaVLSV, loc)
    (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
@@ -192,7 +192,7 @@ end
 """
     getcellcoordinates(meta, cid)
 
-Return a given cell's coordinates.
+Return a given cell's spatial coordinates.
 """
 function getcellcoordinates(meta::MetaVLSV, cid::Integer)
    (;ncells, coordmin, coordmax) = meta
