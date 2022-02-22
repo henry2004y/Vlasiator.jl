@@ -13,7 +13,7 @@ point1 = [x1, 0, 0] .* RE
 point2 = [x2, 0, 0] .* RE
 
 cellids, distances, coords =
-   let meta = load(files[1])
+   load(files[1]) do meta
       getcellinline(meta, point1, point2)
    end
 

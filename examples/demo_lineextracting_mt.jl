@@ -18,7 +18,7 @@ point1 = [x1, 0, 0] .* Vlasiator.RE
 point2 = [x2, 0, 0] .* Vlasiator.RE
 # Extract cell info along the line
 cellids, distances, coords =
-   let meta = load(files[1])
+   load(files[1]) do meta
       getcellinline(meta, point1, point2)
    end
 

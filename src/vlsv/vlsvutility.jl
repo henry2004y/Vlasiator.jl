@@ -3,8 +3,8 @@
 """
     getcell(meta, location) -> UInt
 
-Return cell ID containing the given spatial `location`, excluding domain boundaries.
-Only accept 3D location.
+Return cell ID containing the given spatial `location` in meter, excluding domain
+boundaries. Only accept 3D location.
 """
 function getcell(meta::MetaVLSV, loc)
    (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
@@ -192,13 +192,13 @@ end
 """
     getcellcoordinates(meta, cid)
 
-Return a given cell's coordinates.
+Return a given cell's spatial coordinates.
 """
 function getcellcoordinates(meta::MetaVLSV, cid::Integer)
    (;ncells, coordmin, coordmax) = meta
    cid -= 1 # for easy divisions
 
-   xcell, ycell, zcell = ncells
+   ncells_refmax = collect(ncells)
    reflevel = 0
    subtraction = prod(ncells) * (2^reflevel)^3
    # sizes on the finest level
@@ -206,19 +206,19 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
       cid -= subtraction
       reflevel += 1
       subtraction *= 8
-      xcell *= 2
-      ycell *= 2
-      zcell *= 2
+      ncells_refmax[1] *= 2
+      ncells_refmax[2] *= 2
+      ncells_refmax[3] *= 2
    end
 
-   indices = (
-      cid % xcell,
-      cid ÷ xcell % ycell,
-      cid ÷ (xcell*ycell) )
-   coords = @inbounds ntuple(
-      i -> coordmin[i] + (indices[i] + 0.5) * (coordmax[i] - coordmin[i]) / ncells[i],
+   indices = @inbounds (
+      cid % ncells_refmax[1],
+      cid ÷ ncells_refmax[1] % ncells_refmax[2],
+      cid ÷ (ncells_refmax[1] * ncells_refmax[2]) )
+
+   coords = @inbounds ntuple( i ->
+      coordmin[i] + (indices[i] + 0.5) * (coordmax[i] - coordmin[i]) / ncells_refmax[i],
       Val(3))
-   println(ncells,", ", coordmin, ", ", coordmax, ", indices = ", indices, ", cellid = ", cid, ", coords = ", coords, ", reflevel = ", reflevel)
 
    coords
 end

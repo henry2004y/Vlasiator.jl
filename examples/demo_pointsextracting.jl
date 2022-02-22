@@ -25,7 +25,7 @@ function extract_vars(files, locations)
    e   = zeros(Float32, 3, nlocs, nfiles)
 
    ids = Vector{UInt64}(undef, nlocs)
-   let meta = load(files[1])
+   load(files[1]) do meta
       for iloc in eachindex(locations)
          ids[iloc] = getcell(meta, locations[iloc])
       end
