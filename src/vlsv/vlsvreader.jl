@@ -431,7 +431,7 @@ function getdata2d(meta::MetaVLSV, var)
    ndims(meta) == 2 || @error "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
-   data = ndims(data) == 1 ?
+   data = ndims(data) == 1 || size(data, 1) == 1 ?
       reshape(data, sizes[1], sizes[2]) :
       reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
 end

@@ -3,7 +3,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Glob, Printf, LaTeXStrings
-using Vlasiator: set_args, prep2d, set_colorbar, set_plot
+using Vlasiator: set_args, prep2d, set_colorbar
 
 @assert VERSION ≥ v"1.7.0" "Compatible with Julia v1.7+!"
 @assert matplotlib.__version__ >= "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
@@ -129,8 +129,8 @@ function init_figure(varminmax, loc, pArgs)
    c2 = axsR[2].pcolormesh(x, y, fakedata; norm=cnorm2, cmap)
 
    rInner = 31.8e6 # [m]
-   circle1 = plt.Circle((0, 0), rInner/Vlasiator.Re, color="w")
-   circle2 = plt.Circle((0, 0), rInner/Vlasiator.Re, color="w")
+   circle1 = plt.Circle((0, 0), rInner/Vlasiator.RE, color="w")
+   circle2 = plt.Circle((0, 0), rInner/Vlasiator.RE, color="w")
    axsR[1].add_patch(circle1)
    axsR[2].add_patch(circle2)
 
@@ -149,23 +149,23 @@ end
 
 
 "Update frame."
-function process(plotargs, file)
-   isfile("../out/"*file[end-8:end-5]*".png") && return
+function update_plot!(plotargs, outdir, file)
+   isfile(outdir*file[end-8:end-5]*".png") && return
 
    fig, subfigs, ls, vlines, cs = plotargs
 
    meta = load(file)
 
-   p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
+   p_extract = readvariable(meta, "vg_pressure", cellids) .* 1f9 |> vec # [nPa]
    rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v_extract = readvariable(meta, "proton/vg_v", cellids)
    vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
-   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1f9 # [nPa]
 
-   bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1e9 #[nT]
+   bz = readvariable(meta, "vg_b_vol", cellids)[3,:] .* 1f9 #[nT]
 
-   ls[1][1].set_ydata(rho_extract ./ 1e6)
-   ls[2][1].set_ydata(v_extract[1,:] ./ 1e3)
+   ls[1][1].set_ydata(rho_extract ./ 1f6)
+   ls[2][1].set_ydata(v_extract[1,:] ./ 1f3)
    ls[3][1].set_ydata(pram_extract)
    ls[4][1].set_ydata(p_extract)
    ls[5][1].set_ydata(bz)
@@ -184,7 +184,7 @@ function process(plotargs, file)
    data = prep2d(meta, "VS", :z)'
    cs[2].update(Dict("array" => data ./ 1e3))
 
-   savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight", dpi=100)
    return
 end
 
@@ -200,14 +200,16 @@ end
 
 ####### Main
 
-files = glob("bulk*.vlsv", "../run_rho2_bz-5_timevarying_startfrom300s")
+files = glob("bulk*.vlsv", ".")
 nfile = length(files)
+# Set output directory
+outdir = "out/"
 
 meta = load(files[1])
 
 x1, x2 = 7.0, 18.0 # Earth radii
-point1 = [x1, 0, 0] .* Vlasiator.Re
-point2 = [x2, 0, 0] .* Vlasiator.Re
+point1 = [x1, 0, 0] .* Vlasiator.RE
+point2 = [x2, 0, 0] .* Vlasiator.RE
 
 cellids, distances, coords = getcellinline(meta, point1, point2)
 
@@ -234,7 +236,7 @@ plotargs = init_figure(varminmax, loc, pArgs)
 # Loop over snapshots
 for (i, file) in enumerate(files)
    println("i = $i/$nfile, file = $(basename(file))")
-   process(plotargs, file)
+   update_plot!(plotargs, outdir, file)
 end
 
 close(plotargs[1])

@@ -3,7 +3,7 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using PyPlot, FieldTracer, Vlasiator
-using Vlasiator: Re # Earth radius, [m]
+using Vlasiator: RE # Earth radius, [m]
 
 file = "bulk.0000501.vlsv"
 nameρ = "rho"
@@ -17,7 +17,7 @@ v = readvariable(meta, nameV)
 vx = reshape(v[1,:], meta.ncells[1], meta.ncells[2])
 vy = reshape(v[2,:], meta.ncells[1], meta.ncells[2])
 # tracing starting point
-xstart, ystart = 12Re, 0Re
+xstart, ystart = 12RE, 0RE
 # regular Cartesian mesh
 x = range(meta.coordmin[1], meta.coordmax[1], length=meta.ncells[1]) 
 y = range(meta.coordmin[2], meta.coordmax[2], length=meta.ncells[2])
@@ -25,8 +25,8 @@ y = range(meta.coordmin[2], meta.coordmax[2], length=meta.ncells[2])
 # RK4 scheme by default
 x1, y1 = trace2d(vx, vy, xstart, ystart, x, y;
    ds=0.5, maxstep=3000, gridType="ndgrid")
-x1 ./= Re
-y1 ./= Re
+x1 ./= RE
+y1 ./= RE
 
 plot(x1, y1)
 

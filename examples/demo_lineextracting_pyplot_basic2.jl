@@ -3,14 +3,14 @@
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, PyPlot, Glob, Printf
-using Vlasiator: Re # Earth radius [m]
+using Vlasiator: RE # Earth radius [m]
 
 files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
 x1, x2 = 8.0, 29.0
-point1 = [x1, 0, 0] .* Re
-point2 = [x2, 0, 0] .* Re
+point1 = [x1, 0, 0] .* RE
+point2 = [x2, 0, 0] .* RE
 
 cellids, distances, coords =
    let meta = load(files[1])

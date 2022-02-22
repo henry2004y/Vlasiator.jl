@@ -4,11 +4,15 @@
 # On a meridional plane, B is in-plane, we can find a local line region ∥ B and ⟂ B.
 #
 # Currently only working on a equatorial plane.
+# Usage:
+#   julia -t 4 demo_wave_tracing_mt.jl
+# or
+#   JULIA_NUM_THREADS=4 julia demo_wave_tracing_mt.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator
-using Vlasiator: qᵢ, μ₀, c, mᵢ, ϵ₀, Re
+using Vlasiator: qᵢ, μ₀, c, mᵢ, ϵ₀, RE
 using Glob, DSP, FFTW, ImageFiltering, Interpolations
 using Statistics: mean
 using LinearAlgebra
@@ -264,7 +268,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
    krange = range(kmin, kmax, length=npoints)
    ωrange = range(ωmin, ωmax, length=nt)
 
-   axisunit = RE
+   axisunit = EARTH
 
    # Precalculated lines
    ωCFL = dispersion_CFL.(krange, dx, Δt, di, ωci)
@@ -306,26 +310,26 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       ax[1].set_ylabel(L"$\omega/\Omega_{ci}$")
       ax[1].set_title(L"$k_\perp$ angle w.r.t. x = %$θ")
 
-      im2 = ax[2].pcolormesh((distances .+ coords[1,1])./Re, t, var')
+      im2 = ax[2].pcolormesh((distances .+ coords[1,1])./RE, t, var')
 
-      ax[2].plot((xwave[1] .+ coords[1,1])./Re, twave, ".--",
+      ax[2].plot((xwave[1] .+ coords[1,1])./RE, twave, ".--",
          color="#d62728", label=L"$V_{bulk}$")
-      ax[2].plot((xwave[2] .+ coords[1,1])./Re, twave, ".--",
+      ax[2].plot((xwave[2] .+ coords[1,1])./RE, twave, ".--",
          color="#9467bd",  label=L"$V_{bulk} + V_{fast}$")
-      ax[2].plot((xwave[3] .+ coords[1,1])./Re, twave, ".--",
+      ax[2].plot((xwave[3] .+ coords[1,1])./RE, twave, ".--",
          color="#ff7f0e", label=L"$V_{bulk} - V_{fast}$")
 
-      ax[2].plot((xwave2[1] .+ coords[1,1])./Re, twave2, ".--",
+      ax[2].plot((xwave2[1] .+ coords[1,1])./RE, twave2, ".--",
          color="#d62728")
-      ax[2].plot((xwave2[2] .+ coords[1,1])./Re, twave2, ".--",
+      ax[2].plot((xwave2[2] .+ coords[1,1])./RE, twave2, ".--",
          color="#9467bd")
-      ax[2].plot((xwave2[3] .+ coords[1,1])./Re, twave2, ".--",
+      ax[2].plot((xwave2[3] .+ coords[1,1])./RE, twave2, ".--",
          color="#ff7f0e")
 
       cb = colorbar(im2; ax=ax[2])
       cb.ax.tick_params(direction="in")
 
-      ax[2].set_xlim(coords[1,1]/Re, coords[1,end]/Re)
+      ax[2].set_xlim(coords[1,1]/RE, coords[1,end]/RE)
 
       ax[2].legend(loc="upper center", bbox_to_anchor=(0.5, -0.13),
          fancybox=true, shadow=true, ncol=3)
@@ -347,9 +351,9 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       cb.ax.set_ylabel(pArgs.cb_title)
       cb.ax.tick_params(direction="in")
 
-      @views ax[3].scatter(coords[1,:]./Re, coords[2,:]./Re; s=0.2, color="k")
+      @views ax[3].scatter(coords[1,:]./RE, coords[2,:]./RE; s=0.2, color="k")
 
-      xCoord = (distances .+ coords[1,1])./Re
+      xCoord = (distances .+ coords[1,1])./RE
       # meshgrid
       X = [x for _ in t, x in xCoord]
       Y = [y for y in t, _ in xCoord]
@@ -374,8 +378,8 @@ end
 const outdir = "../out/"
 const γ = 5 / 3
 
-xStart = [10.0, 0.0, 0.0].*Re
-xEnd   = [13.3, 0.0, 0.0].*Re
+xStart = [10.0, 0.0, 0.0].*RE
+xEnd   = [13.3, 0.0, 0.0].*RE
 
 varnames = ["proton/vg_rho", "vg_b_vol", "vg_e_vol", "vg_pressure"]
 varnames_print = ["rho", "b", "e", "p"]

@@ -31,7 +31,7 @@ function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
    if comp == :0
       data = datafull
    else
-      data = @view datafull[comp,:]
+      data = datafull[comp,:]
    end
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
@@ -42,18 +42,17 @@ function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
 end
 
 """
-    streamplot(meta, var, ax=nothing; comp="xy", axisunit=RE, kwargs...)
+    streamplot(meta, var, ax=nothing; comp="xy", axisunit=EARTH, kwargs...)
 
-Wrapper over Matplotlib's streamplot function. The `comp` option can take a subset of "xyz"
-in any order. `axisunit` can be chosen from `RE, SI`.
+Wrapper over Matplotlib's streamplot function.
 The keyword arguments can be any valid Matplotlib arguments into streamplot.
 
 # Optional arguments
 - `comp`: a subset of "xyz" in any order.
-- `axisunit`: chosen from RE and SI.
+- `axisunit`: chosen from `EARTH` and `SI`.
 """
 function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit=RE, kwargs...)
+   comp="xy", axisunit=EARTH, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -63,29 +62,26 @@ function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
 end
 
 """
-    quiver(meta, var, ax=nothing; comp="xy", axisunit=RE, stride=10, kwargs...)
+    quiver(meta, var, ax=nothing; comp="xy", axisunit=EARTH, stride=10, kwargs...)
 
 Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current active
-axes. The `comp` option can take a subset of "xyz" in any order. `axisunit` can be chosen
-from `RE, SI`.
+axes.
 The keyword arguments can be any valid Matplotlib arguments into quiver.
 
 # Optional arguments
 - `comp`: a subset of "xyz" in any order.
-- `axisunit`: chosen from RE and SI.
+- `axisunit`: chosen from `EARTH` and `SI`.
 - `stride::Integer`: arrow strides in number of cells.
 """
 function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit::AxisUnit=RE, stride::Integer=10, kwargs...)
+   comp="xy", axisunit::AxisUnit=EARTH, stride::Integer=10, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
    isnothing(ax) && (ax = plt.gca())
 
-   Xq  = @view X[1:stride:end, 1:stride:end]
-   Yq  = @view Y[1:stride:end, 1:stride:end]
-   v1q = @view v1[1:stride:end, 1:stride:end]
-   v2q = @view v2[1:stride:end, 1:stride:end]
+   Xq,  Yq  = X[1:stride:end, 1:stride:end],  Y[1:stride:end, 1:stride:end]
+   v1q, v2q = v1[1:stride:end, 1:stride:end], v2[1:stride:end, 1:stride:end]
 
    ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
 end
@@ -130,8 +126,8 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       comp=:mag, axisunit=RE, colorscale=Linear, vmin=-Inf, vmax=Inf, addcolorbar=true,
-       kwargs...)
+       comp=:mag, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
+       addcolorbar=true, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
 If `ax` is provided, then it will plot on that axes.
@@ -139,111 +135,66 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
 - `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
-- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
+- `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
+- `extent::Vector`: extent of axis ranges for plotting in the same unit as `axisunit`.
 
 `pcolormesh(meta, var)`
 
 `pcolormesh(meta, var, axisunit=SI)`
 
-`pcolormesh(data, func, colorscale=Log)`
+`pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])`
 """
-function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing; comp=:mag,
-   axisunit::AxisUnit=RE, colorscale::ColorScale=Linear, addcolorbar=true,
-   vmin=-Inf, vmax=Inf, kwargs...)
+function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
+   comp=:mag, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
+   vmin=-Inf32, vmax=Inf32, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
       normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
       origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
       kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
-      c = pcolormeshslice(meta, var, ax;
-         comp, axisunit, colorscale, addcolorbar, vmin, vmax, normal, origin, kwargs...)
-      return c
+
+      pArgs = set_args(meta, var, axisunit; normal, origin)
+      data = prep2dslice(meta, var, normal, comp, pArgs)'
+   else
+      pArgs = set_args(meta, var, axisunit)
+      data = prep2d(meta, var, comp)'
    end
 
-   pArgs = set_args(meta, var, axisunit)
-
-   x, y = get_axis(pArgs)
-   data = prep2d(meta, var, comp)'
+   x1, x2 = get_axis(pArgs)
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
-      rho_ = findfirst(endswith("rho"), meta.variable)
-      if !isnothing(rho_)
-         rho = readvariable(meta, meta.variable[rho_])
-         rho = reshape(rho, pArgs.sizes[1], pArgs.sizes[2])
-         mask = findall(==(0.0), rho')
-
-         if ndims(data) == 2
-            @inbounds data[mask] .= NaN
-         else
-            ind = CartesianIndices((pArgs.sizes[2], pArgs.sizes[1]))
-            for m in mask
-               @inbounds data[:, ind[m][1], ind[m][2]] .= NaN
-            end
-         end
-      end
+      _fillinnerBC!(data, data)
    end
 
    norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
 
+   range1, range2 =
+      if axisunit == EARTH
+         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
+         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+      else
+         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
+         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+      end
+
    isnothing(ax) && (ax = plt.gca())
 
    if colorscale != SymLog
-      c = ax.pcolormesh(x, y, data; norm, kwargs...)
+      c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
+         norm, kwargs...)
    else
-      c = ax.pcolormesh(x, y, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+      c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
+         norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
    end
 
    set_plot(c, ax, pArgs, ticks, addcolorbar)
 
    return c
-end
-
-"""
-    pcolormeshslice(meta, var, ax=nothing; kwargs...)
-
-Plot pseudocolor var on a 2D slice of 3D vlsv data.
-If `ax` is provided, then it will plot on that axes.
-It would be easier to call [`pcolormesh`](@ref), since it auto-detects dimension.
-
-# Optional arguments
-- `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
-- `origin::Float`: center of slice plane in the normal direction.
-- `normal::Symbol`: the normal direction of cut plane, chosen from `:x, :y, :z`.
-- `axisunit::AxisUnit`: the unit of axis ∈ `RE, SI`.
-- `colorscale::ColorScale`: color scale for data ∈ (`Linear`, `Log`, `SymLog`)
-- `vmin::Real`: minimum data range. Set to maximum of data if not specified.
-- `vmax::Real`: maximum data range. Set to minimum of data if not specified.
-- `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
-
-`pcolormeshslice(meta, var)`
-
-`pcolormeshslice(meta, var, comp=:z, origin=1.0, normal=:x)`
-
-`pcolormeshslice(data, func, colorscale=Log)`
-"""
-function pcolormeshslice(meta::MetaVLSV, var::AbstractString, ax=nothing; comp::Symbol=:mag,
-   origin=0.0, normal::Symbol=:y, axisunit::AxisUnit=RE, colorscale::ColorScale=Linear,
-   addcolorbar=true, vmin::Real=-Inf, vmax::Real=Inf, kwargs...)
-
-   pArgs = set_args(meta, var, axisunit; normal, origin)
-
-   data = prep2dslice(meta, var, normal, comp, pArgs)'
-   x, y = get_axis(pArgs)
-
-   norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
-
-   isnothing(ax) && (ax = plt.gca())
-
-   c = ax.pcolormesh(x, y, data; norm, kwargs...)
-
-   set_plot(c, ax, pArgs, ticks, addcolorbar)
-
-   c
 end
 
 """
@@ -261,8 +212,8 @@ julia> norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
 ```
 There are also various options for the ticks available in `matplotlib.ticker`.
 """
-function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0])
-   vmin, vmax = set_lim(v1, v2, data, colorscale)
+function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0f0])
+   vmin, vmax = set_lim(Float32(v1), Float32(v2), data, colorscale)
    if colorscale == Linear
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
       norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
@@ -318,7 +269,7 @@ end
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
 # Optional arguments
-- `unit::AxisUnit`: location unit in `SI`, `RE`.
+- `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
 - `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.
@@ -333,9 +284,10 @@ between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
 - `kwargs...`: any valid keyword argument for hist2d.
 """
-function vdfslice(meta::MetaVLSV, location, ax=nothing; limits=[-Inf, Inf, -Inf, Inf],
-   verbose=false, species="proton", vmin=-Inf, vmax=Inf, unit=SI, unitv="km/s",
-   slicetype=:nothing, vslicethick=0.0, center=:nothing, weight=:particle, flimit=-1.0,
+function vdfslice(meta::MetaVLSV, location, ax=nothing;
+   limits=[-Inf32, Inf32, -Inf32, Inf32], verbose=false, species="proton",
+   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:nothing, vslicethick=0.0,
+   center=:nothing, weight=:particle, flimit=-1.0,
    kwargs...)
 
    v1, v2, r1, r2, weights, strx, stry, str_title =

@@ -8,7 +8,7 @@ const c  = 299792458.       # speed of light, [m/s]
 const μ₀ = 4π*1e-7          # Vacuum permeability, [H/m]
 const ϵ₀ = 1/(c^2*μ₀)       # Vacuum permittivity, [F/m]
 const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)]
-const Re = 6.371e6          # Earth radius, [m]
+const RE = 6.371e6          # Earth radius, [m]
 
 # Define units, LaTeX markup names, and LaTeX markup units for intrinsic values
 const units_predefined = Dict(
@@ -74,6 +74,10 @@ const units_predefined = Dict(
    :Ppar => ("Pa", L"$P_\parallel$", "Pa"),
    :Pperp => ("Pa", L"$P_\perp$", "Pa"),
    :Beta => ("",L"$\beta$", "")
+   :Gyroperiod => ("s", L"$T_{gyro}$", "s"),
+   :Plasmaperiod => ("s", L"$T_{plasma}$", "s"),
+   :Gyrofrequency => ("/s", L"$\omega_{g}$", L"s^{-1}"),
+   :Omegap => ("/s", L"$\omega_{p}$", L"s^{-1}"),
 )
 
 # Define derived parameters
@@ -180,7 +184,7 @@ const variables_predefined = Dict(
       else
          b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
       end
-      [V[:,i] ⋅ b[:,i] for i in 1:size(V,2)]
+      [V[:,i] ⋅ b[:,i] for i in axes(V,2)]
    end,
    :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
       V = isempty(ids) ?
@@ -244,7 +248,7 @@ const variables_predefined = Dict(
       @assert isempty(ids) "Do not support current calculation for selected cells!"
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
-      J = curl(meta.dcoord, B) ./ μ₀
+      J = curl(B, meta.dcoord) ./ μ₀
       J = reshape(J, 3, :) # To be consistent with shape assumptions
    end,
    :Protated => function (meta, ids=UInt64[])
@@ -289,6 +293,39 @@ const variables_predefined = Dict(
       _fillinnerBC!(B², B²)
       mu2inv = 0.5/μ₀
       @. B² * mu2inv
+   end,
+   :Epar => function (meta, ids=UInt64[])
+      E, b =
+         if isempty(ids)
+            readvariable(meta, "vg_e_vol"),
+            readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+         else
+            readvariable(meta, "vg_e_vol", ids),
+            readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+         end
+      [E[:,i] ⋅ b[:,i] for i in axes(E,2)]
+   end,
+   :Eperp => function (meta, ids=UInt64[])
+      E, b =
+         if isempty(ids)
+            readvariable(meta, "vg_e_vol"),
+            readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
+         else
+            readvariable(meta, "vg_e_vol", ids),
+            readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+         end
+      Eperp = zeros(eltype(E), size(E, 2))
+
+      function _computeEperp!()
+         # Avoid sqrt of negative values, but does not guarantee orthogonality.
+         @inbounds for i in eachindex(Eperp)
+            Epar = E[:,i] ⋅ b[:,i] .* b[:,i]
+            Eperp[i] = norm(E[:,i] - Epar)
+         end
+      end
+
+      _computeEperp!()
+      Eperp
    end,
    :Poynting => function (meta, ids=UInt64[])
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
@@ -373,8 +410,8 @@ const variables_predefined = Dict(
    :IonInertial => function (meta, ids=UInt64[])
       n = readvariable(meta, "n", ids)
       Z = 1
-      ωi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
-      di = @. c / ωi
+      fi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ / 2π
+      di = @. c / fi
    end,
    :Larmor => function (meta, ids=UInt64[])
       Vth = readvariable(meta, "Vth", ids)
@@ -395,7 +432,7 @@ const variables_predefined = Dict(
    end,
    :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
       n = readvariable(meta, "n", ids)
-      ωₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
+      fₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
    :n => function (meta, ids=UInt64[])
       n = isempty(ids) ?

@@ -4,7 +4,7 @@ Here we demonstrate some basic usages of Vlasiator output processing. For more c
 
 ## Common physical constants
 
-A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: Re` or prepend the module name like `Vlasiator.Re`.
+A bunch of physical constants are predefined in Vlasiator.jl. To use them, you need to import explicitly, e.g. `using Vlasiator: RE` or prepend the module name like `Vlasiator.RE`.
 
 | Physical constant | Value | Meaning |
 |:---:|:--------------:|:-------------|
@@ -16,7 +16,7 @@ A bunch of physical constants are predefined in Vlasiator.jl. To use them, you n
 | μ₀ | 4π*1e-7         | Vacuum permeability, [H/m]       |
 | ϵ₀ | 1/(c^2*μ₀)      | Vacuum permittivity, [F/m]       |
 | kB | 1.38064852e-23  | Boltzmann constant, [m²kg/(s²K)] |
-| Re | 6.371e6         | Earth radius, [m]                |
+| RE | 6.371e6         | Earth radius, [m]                |
 
 ## Loading VLSV data
 
@@ -68,9 +68,9 @@ readvariable(meta, "proton/vg_rho", id)
 - Get variable along a line between two points
 
 ```
-using Vlasiator: Re # Earth radii
-point1 = [12Re, 0, 0]
-point2 = [15Re, 0, 0]
+using Vlasiator: RE # Earth radii
+point1 = [12RE, 0, 0]
+point2 = [15RE, 0, 0]
 cellids, distances, coords = getcellinline(meta, point1, point2)
 var_extract = readvariable(meta, "VA", cellids)
 ```
@@ -173,7 +173,7 @@ getvelocity(meta, vcellids, vcellf)
 getpressure(meta, f) # only support full VDF for now
 ```
 
-Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big( 1/(2n) \int |f - g| dv \big)``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density and scalar pressure as f.
+Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big[ 1/(2n) \int |f(v) - g(v)| dv \big]``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density, bulk velocity and scalar pressure as f.
 
 ```
 getmaxwellianity(meta, f)
@@ -183,11 +183,11 @@ The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at al
 
 ## Plotting
 
-Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting functionalities once the target plotting package is used.
+Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting recipes/wrappers once the target plotting package is used.
 
 Currently `PyPlot.jl` provides the most complete and fine-tuned plotting capabilities.
-`Plots.jl` is catching up, but it is still slower and lack of features.
-`Makie.jl` is supported experimentally. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend.
+`Plots.jl`, which is a collection of multiple plotting libraries with uniform frontend, is catching up, but it lacks many detailed supports, an easy-to-use manual, and suffers from compatibilty issues.
+`Makie.jl`, a native Julia plotting library, is also supported. Without generating an image from `PackageCompiler.jl`, it would take ~60s for the first plot. However, Makie has made nice progress in layouts, widgets, docs, demos and all the tiny things, which makes it a strong candidate for the suggested backend in the future.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
@@ -208,7 +208,7 @@ pcolormesh(meta, "rho")
 - Vector z component colored contour from 2D simulation in a manually set range
 
 ```
-pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=RE, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
 ```
 
 - Vz colored contour from 2D simulation with prescribed colormap
@@ -240,7 +240,7 @@ The `comp` option is used to specify the two vector components.
 !!! note
     Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
 
-You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=RE` etc.
+You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=EARTH` etc.
 
 - Mesh denoted by cell centers
 
@@ -392,49 +392,17 @@ timestamps, speed = readlog(file)
 
 See a live example at [demo_log.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples/demo_log.jl).
 
-## Calling from Python
-
-It is possible to call this package directly from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
-Following the installation steps described in the manual[^3], and then inside Python REPL:
-
-```
-# Handling initialization issue for Conda
-from julia.api import Julia
-jl = Julia(compiled_modules=False)
-
-from julia import Vlasiator
-file = "bulk1.0001000.vlsv"
-meta = Vlasiator.load(file)
-var = "proton/vg_rho"
-data = Vlasiator.readvariable(meta, var)
-```
-
-To run a Julia script in Python,
-
-```
-# Handling initialization issue for Conda
-from julia.api import Julia
-jl = Julia(compiled_modules=False)
-jl.eval('include("examples/demo_2dplot_pyplot.jl")')
-import matplotlib.pyplot as plt
-plt.show()
-```
-
-!!! note
-    This approach is for you to have a taste of the package with a Python frontend. The workaround shown above for handling the static python libraries makes it slow for regular use. An alternative solution would be creating system images, but as of Julia 1.6 the user experience is not smooth. For better integrated experience with its full power, it is recommended to use the package inside Julia.
-
-[^3]: For Debian-based Linux distributions, it gets a little bit tricky. Please refer to [Troubleshooting](https://pyjulia.readthedocs.io/en/latest/troubleshooting.html) for details.
-
 ## Examples
 
 There is a list of complete [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) about:
 
-* Plotting with PyPlot
-* Plotting with Plots
-* Variable extraction along a line
-* Field line tracing
-* Simulation log file tracking
-* Converting VLSV to VTK format
-* Parallel post-processing
+- Plotting with PyPlot
+- Plotting with Plots
+- Variable extraction along a line
+- Field line tracing
+- Simulation log file tracking
+- Converting VLSV to VTK format
+- Parallel post-processing
+- Finding X-point and O-point in 2D reconnection
 
 Feel free to check those out and try on your data!

@@ -1,17 +1,34 @@
-# Combined 1D/2D plots across multiple frames, multi-process version.
+# Combined 1D/2D plots across multiple frames, multi-processing version.
 #
 # To run on a single node,
-# julia -p $ncores demo_1d2d_parallel_pyplot.jl
+# julia -p $ncores demo_1d2d_mp_pyplot.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
-using Distributed, ParallelDataTransfer, Glob
+using Distributed, Glob
 @everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
-@everywhere using Vlasiator: set_args, prep2d, set_colorbar, set_plot
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
-@everywhere function init_figure(x1, x2)
+@everywhere struct Varminmax{T}
+   "Density, [amu/cc]"
+   ρmin::T
+   ρmax::T
+   "Velocity, [km/s]"
+   vmin::T
+   vmax::T
+   "Pressure, [nPa]"
+   pmin::T
+   pmax::T
+   "Magnetic field, [nT]"
+   bmin::T
+   bmax::T
+   "Electric field, [nT]"
+   emin::T
+   emax::T
+end
+
+@everywhere function init_figure(loc, norms, ticks, pArgs1, varminmax)
    fig = plt.figure(myid(), constrained_layout=true, figsize=(12, 7.2))
    subfigs = fig.subfigures(1, 2, wspace=0.01, width_ratios=[2,1])
 
@@ -19,7 +36,9 @@ using Distributed, ParallelDataTransfer, Glob
    axsR = subfigs[2].subplots(2, 1, sharex=true)
 
    # Set line plots' axes
-   axsL[end].set_xlim(x1, x2)
+   axsL[end].set_xlim(loc[1], loc[end])
+
+   (;ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax) = varminmax
 
    axsL[1].set_ylim(ρmin, ρmax)
    axsL[2].set_ylim(vmin, vmax)
@@ -56,7 +75,7 @@ using Distributed, ParallelDataTransfer, Glob
    ls = (l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12)
 
    axsL[2].legend(;loc="lower left",  ncol=3, frameon=false, fontsize=12)
-   axsL[3].legend(;loc="upper left",  ncol=2, frameon=false, fontsize=12)
+   axsL[3].legend(;loc="upper right", ncol=2, frameon=false, fontsize=12)
    axsL[4].legend(;loc="upper right", ncol=3, frameon=false, fontsize=12)
    axsL[5].legend(;loc="lower right", ncol=3, frameon=false, fontsize=12)
 
@@ -85,33 +104,33 @@ using Distributed, ParallelDataTransfer, Glob
       ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
       ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-      ax.set_ylabel(L"Y [$R_E$]"; fontsize=14)
+      ax.set_ylabel(pArgs1.stry; fontsize=14)
    end
 
-   axsR[2].set_xlabel(L"X [$R_E$]"; fontsize=14)
+   axsR[2].set_xlabel(pArgs1.strx; fontsize=14)
 
-   axsR[1].set_title("Alfven speed", fontsize=14)
+   axsR[1].set_title("Alfvén speed", fontsize=14)
    axsR[2].set_title("Sound speed", fontsize=14)
 
    x, y = Vlasiator.get_axis(pArgs1)
    fakedata = fill(NaN32, length(y), length(x))
 
-   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=cnorm1, cmap=cmap)
-   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap)
+   c1 = axsR[1].pcolormesh(x, y, fakedata, norm=norms[1], cmap=matplotlib.cm.turbo)
+   c2 = axsR[2].pcolormesh(x, y, fakedata, norm=norms[2], cmap=matplotlib.cm.turbo)
 
    rInner = 31.8e6 # [m]
-   circle1 = plt.Circle((0, 0), rInner/Vlasiator.Re, color="w")
-   circle2 = plt.Circle((0, 0), rInner/Vlasiator.Re, color="w")
+   circle1 = plt.Circle((0, 0), rInner/Vlasiator.RE, facecolor="w", edgecolor="tab:purple")
+   circle2 = plt.Circle((0, 0), rInner/Vlasiator.RE, facecolor="w", edgecolor="tab:purple")
    axsR[1].add_patch(circle1)
    axsR[2].add_patch(circle2)
 
-   cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04, extend="max")
+   cb1 = colorbar(c1; ax=axsR[1], ticks=ticks[1], fraction=0.046, pad=0.02, extend="max")
    cb1.ax.set_ylabel("[km/s]"; fontsize=14)
 
-   cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
+   cb2 = colorbar(c2; ax=axsR[2], ticks=ticks[2], fraction=0.046, pad=0.02, extend="max")
    cb2.ax.set_ylabel("[km/s]"; fontsize=14)
 
-   #fig.suptitle("Density Pulse Run", fontsize="xx-large")
+   fig.suptitle("Density Pulse Run", fontsize="x-large")
 
    cs = (c1, c2)
 
@@ -128,26 +147,26 @@ end
    h.set_segments(seg_new)
 end
 
-@everywhere function process(subfigs, ls, vlines, cs, file, cellids)
-   isfile("../out/"*file[end-8:end-5]*".png") && return
+@everywhere function update_plot!(subfigs, ls, vlines, cs, outdir, file, cellids, loc)
+   isfile(outdir*file[end-8:end-5]*".png") && return
 
    println("file = $(basename(file))")
    meta = load(file)
 
    rho = readvariable(meta, "proton/vg_rho", cellids) |> vec
    v = readvariable(meta, "proton/vg_v", cellids)
-   p = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
+   p = readvariable(meta, "vg_pressure", cellids) .* 1f9 |> vec # [nPa]
 
    vmag2 = sum(x -> x*x, v, dims=1) |> vec
-   pram = rho .* Vlasiator.mᵢ .* vmag2 .* 1e9 # [nPa]
+   pram = rho .* Vlasiator.mᵢ .* vmag2 .* 1f9 # [nPa]
 
-   b = readvariable(meta, "vg_b_vol", cellids) .* 1e9 #[nT]
-   e = readvariable(meta, "vg_e_vol", cellids) .* 1e3 #[mV/m]
+   b = readvariable(meta, "vg_b_vol", cellids) .* 1f9 #[nT]
+   e = readvariable(meta, "vg_e_vol", cellids) .* 1f3 #[mV/m]
 
-   ls[1][1].set_ydata(rho ./ 1e6)
-   ls[2][1].set_ydata(@views v[1,:] ./ 1e3)
-   ls[3][1].set_ydata(@views v[2,:] ./ 1e3)
-   ls[4][1].set_ydata(@views v[3,:] ./ 1e3)
+   ls[1][1].set_ydata(rho ./ 1f6)
+   ls[2][1].set_ydata(@views v[1,:] ./ 1f3)
+   ls[3][1].set_ydata(@views v[2,:] ./ 1f3)
+   ls[4][1].set_ydata(@views v[3,:] ./ 1f3)
    ls[5][1].set_ydata(pram)
    ls[6][1].set_ydata(p)
    ls[7][1].set_ydata(@view b[1,:])
@@ -163,15 +182,15 @@ end
    end
 
    str_title = @sprintf "Sun-Earth line, t= %4.1fs" meta.time
-   subfigs[1].suptitle(str_title, fontsize=14)
+   subfigs[1].suptitle(str_title, fontsize="x-large")
 
-   data = prep2d(meta, "VA", :z)'
-   cs[1].set_array(data ./ 1e3)
+   data = Vlasiator.prep2d(meta, "VA", :z)'
+   cs[1].set_array(data ./ 1f3)
 
-   data = prep2d(meta, "VS", :z)'
-   cs[2].set_array(data ./ 1e3)
+   data = Vlasiator.prep2d(meta, "VS", :z)'
+   cs[2].set_array(data ./ 1f3)
 
-   savefig("../out/"*file[end-8:end-5]*".png", bbox_inches="tight")
+   savefig(outdir*file[end-8:end-5]*".png", bbox_inches="tight")
    return
 end
 
@@ -181,11 +200,13 @@ function make_jobs(files)
    end
 end
 
-@everywhere function do_work(jobs, status)
-   fig, subfigs, ls, vlines, cs = init_figure(x1, x2)
+@everywhere function do_work(jobs, status,
+   outdir, loc, norms, ticks, pArgs1, cellids, varminmax)
+
+   fig, subfigs, ls, vlines, cs = init_figure(loc, norms, ticks, pArgs1, varminmax)
    while true
       file = take!(jobs)
-      process(subfigs, ls, vlines, cs, file, cellids)
+      update_plot!(subfigs, ls, vlines, cs, outdir, file, cellids, loc)
       put!(status, true)
    end
    close(fig)
@@ -193,41 +214,43 @@ end
 
 ############################################################################################
 files = glob("bulk*.vlsv", ".")
-const nfile = length(files)
-@passobj 1 workers() files
 
-@broadcast begin
-   # Set contour plots' axes and colorbars
-   const cmap = matplotlib.cm.turbo
-   axisunit = RE
-   # Upper/lower limits for each variable
-   const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
-   const vmin, vmax = -640.0, 100.0 # [km/s]
-   const pmin, pmax = 0.0, 1.82     # [nPa]
-   const bmin, bmax = -25.0, 60.0   # [nT]
-   const emin, emax = -5.0, 5.0     # [mV/m]
-   const vamin, vamax = 50.0, 350.0 # [km/s]
-   const vsmin, vsmax = 50.0, 350.0 # [km/s]
+nfile = length(files)
+# Set output directory
+outdir = "1d2d/"
 
-   meta = load(files[1])
+# Set contour plots' axes
+axisunit = EARTH
+# Upper/lower limits for each variable
+ρmin, ρmax = 0.0, 14.0     # [amu/cc]
+vmin, vmax = -620.0, 150.0 # [km/s]
+pmin, pmax = 0.0, 2.8      # [nPa]
+bmin, bmax = -60.0, 60.0   # [nT]
+emin, emax = -8.0, 8.0     # [mV/m]
+vamin, vamax = 50.0, 600.0 # [km/s]
+vsmin, vsmax = 50.0, 600.0 # [km/s]
 
-   const pArgs1 = set_args(meta, "VA", axisunit; normal=:none)
-   const cnorm1, cticks1 = set_colorbar(Linear, vamin, vamax)
-   const cnorm2, cticks2 = set_colorbar(Linear, vsmin, vsmax)
-end
+varminmax = Varminmax(ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax)
+
+meta = load(files[1])
+
+pArgs1 = Vlasiator.set_args(meta, "VA", axisunit; normal=:none)
+norm1, ticks1 = Vlasiator.set_colorbar(Linear, vamin, vamax)
+norm2, ticks2 = Vlasiator.set_colorbar(Linear, vsmin, vsmax)
+
+norms = (norm1, norm2)
+ticks = (ticks1, ticks2)
 
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
-x1, x2 = 7.0, 20.0 # Earth radii
-point1 = [x1, 0, 0] .* Vlasiator.Re
-point2 = [x2, 0, 0] .* Vlasiator.Re
+xmin, xmax = 7.0, 17.0 # Earth radii
+point1 = [xmin, 0, 0] .* Vlasiator.RE
+point2 = [xmax, 0, 0] .* Vlasiator.RE
 
 meta = load(files[1])
 cellids, _, _ = getcellinline(meta, point1, point2)
-
-passobj(1, workers(), [:x1, :x2, :cellids])
-@broadcast const loc = range(x1, x2, length=length(cellids))
+loc = range(xmin, xmax, length=length(cellids))
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")
@@ -235,7 +258,8 @@ println("Running with $(nworkers()) workers...")
 @async make_jobs(files) # Feed the jobs channel with all files to process.
 
 @sync for p in workers()
-   @async remote_do(do_work, p, jobs, status)
+   @async remote_do(do_work, p, jobs, status,
+      outdir, loc, norms, ticks, pArgs1, cellids, varminmax)
 end
 
 let n = nfile

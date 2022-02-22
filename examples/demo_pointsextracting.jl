@@ -3,14 +3,14 @@
 # Outputs are stored in binary format for sharing within Julia.
 #
 # Usage:
-#   julia -t nthreads demo_virtual_satellites.jl
+#   julia -t nthreads demo_pointsextracting.jl
 # or
-#   JULIA_NUM_THREADS=nthreads julia demo_virtual_satellites.jl
+#   JULIA_NUM_THREADS=nthreads julia demo_pointsextracting.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Glob, Vlasiator
-using Vlasiator: Re # Earth radius [m]
+using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
 function extract_vars(files, locations)
@@ -18,13 +18,11 @@ function extract_vars(files, locations)
    nlocs = length(locations)
    # variables to be extracted
    t   = zeros(Float32, nfiles)
-   rho = zeros(Float32, nfiles, nlocs)
-   vx  = zeros(Float32, nfiles, nlocs)
-   vy  = zeros(Float32, nfiles, nlocs)
-   p   = zeros(Float32, nfiles, nlocs)
-   bz  = zeros(Float32, nfiles, nlocs)
-   ex  = zeros(Float32, nfiles, nlocs)
-   ey  = zeros(Float32, nfiles, nlocs)
+   rho = zeros(Float32, nlocs, nfiles)
+   v   = zeros(Float32, 3, nlocs, nfiles)
+   p   = zeros(Float32, nlocs, nfiles)
+   b   = zeros(Float32, 3, nlocs, nfiles)
+   e   = zeros(Float32, 3, nlocs, nfiles)
 
    ids = Vector{UInt64}(undef, nlocs)
    let meta = load(files[1])
@@ -37,19 +35,15 @@ function extract_vars(files, locations)
    Threads.@threads for i = eachindex(files)
       meta = load(files[i])
       t[i] = meta.time
-      rho[i,:] = readvariable(meta, "proton/vg_rho", ids)
-      v = readvariable(meta, "proton/vg_v", ids)
-      vx[i,:] = v[1,:]
-      vy[i,:] = v[2,:]
-      p[i,:] = readvariable(meta, "vg_pressure", ids)
-      bz[i,:] = readvariable(meta, "vg_b_vol", ids)[3,:]
-      e = readvariable(meta, "vg_e_vol", ids)
-      ex[i,:] = e[1,:]
-      ey[i,:] = e[2,:]
+      rho[:,i] = readvariable(meta, "proton/vg_rho", ids)
+      v[:,:,i] = readvariable(meta, "proton/vg_v",   ids)
+      p[  :,i] = readvariable(meta, "vg_pressure",   ids)
+      b[:,:,i] = readvariable(meta, "vg_b_vol",      ids)
+      e[:,:,i] = readvariable(meta, "vg_e_vol",      ids)
    end
 
    # Save into binary file
-   jldsave("satellites.jld2"; locations, t, rho, vx, vy, p, bz, ex, ey)
+   jldsave("satellites.jld2"; locations, t, rho, v, p, b, e)
 end
 
 #####
@@ -57,8 +51,8 @@ end
 files = glob("bulk*.vlsv", "./")
 
 # virtual satellite locations
-locations = [[7Re, 0, 0], [9Re, 0, 0], [11Re, 0, 0], [12Re, 0, 0], [13Re, 0, 0],
-   [14Re, 0, 0], [15Re, 0, 0], [16Re, 0, 0], [17Re, 0, 0], [29.3Re, 0, 0]]
+locations = [[7RE, 0, 0], [9RE, 0, 0], [11RE, 0, 0], [12RE, 0, 0], [13RE, 0, 0],
+   [14RE, 0, 0], [15RE, 0, 0], [16RE, 0, 0], [17RE, 0, 0], [29.3RE, 0, 0]]
 
 println("Number of files: $(length(files))")
 println("Number of virtual satellites: $(length(locations))")

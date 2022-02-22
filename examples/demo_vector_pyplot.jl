@@ -6,7 +6,7 @@ using Vlasiator, PyPlot, LaTeXStrings, Printf
 
 file = "/wrk/group/spacephysics/vlasiator/2D/ABA/bulk/bulk.0001000.vlsv"
 
-axisunit = RE
+axisunit = EARTH
 colorscale = Linear
 cmap = matplotlib.cm.RdBu
 

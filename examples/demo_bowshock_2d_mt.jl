@@ -1,14 +1,14 @@
 # Extract the bow shock location from 2D equatorial run outputs and save into file.
 #
 # To run in multi-threading mode
-#   julia -t nthreads demo_bowshock_series.jl
+#   julia -t nthreads demo_bowshock_2d_mt.jl
 # or alternatively
-#   JULIA_NUM_THREADS=$nthreads ./julia demo_bowshock_series.jl
+#   JULIA_NUM_THREADS=$nthreads ./julia demo_bowshock_2d_mt.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
 using Vlasiator, Glob
-using Vlasiator: Re # Earth radius, [m]
+using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
 # Upstream solar wind temperature
@@ -26,9 +26,9 @@ function extract_bowshock_position(files; verbose=true)
 
    close(meta.fid)
 
-   # Only extract bow shock location near the front between y = ±20Re
-   ymin_ = findlast(<(-20Re), y)
-   ymax_ = findfirst(>(20Re), y)
+   # Only extract bow shock location near the front between y = ±20RE
+   ymin_ = findlast(<(-20RE), y)
+   ymax_ = findfirst(>(20RE), y)
 
    x_crossing = zeros(Float32, ymax_-ymin_+1, nfiles)
    y_crossing = y[ymin_:ymax_]

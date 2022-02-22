@@ -16,6 +16,9 @@ include("utility/rotation.jl")
 include("utility/log.jl")
 include("utility/vector.jl")
 include("utility/differential.jl")
+include("utility/monitor.jl")
+include("utility/array.jl")
+include("utility/fluxfunction.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
@@ -31,11 +34,17 @@ export
    getcellinline, getnearestcellwithvdf, getcellwithvdf,
    getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, write_vlsv, issame,
    # plot helper
-   SI, RE, Log, Linear, SymLog,
+   SI, EARTH, Log, Linear, SymLog,
    # log
    readlog,
+
    # differential
    fg_grad, fg_curl, fg_div, fg_matder, fg_curvature, fg_normalize, fg_kappac, fg_kappa
+   # physical parameter monitor
+   check_plasma_characteristics,
+   # fluxfunction
+   compute_flux_function, find_reconnection_points
+
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))

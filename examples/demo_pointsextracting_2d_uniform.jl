@@ -6,7 +6,6 @@
 
 using Glob, Vlasiator
 using JLD2: jldsave
-using Vlasiator: Re # Earth radius [m]
 
 "Select cells in 2D `meta` with uniform distance `dx`."
 function sample(meta, dx)
@@ -70,7 +69,7 @@ end
 
 files = glob("bulk*.vlsv", "./")
 
-dx = 5Re # uniform sampling distance [m]
+dx = 5RE # uniform sampling distance [m]
 
 println("Number of files: $(length(files))")
 println("Running with $(Threads.nthreads()) threads...")

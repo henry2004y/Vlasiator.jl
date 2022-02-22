@@ -1,4 +1,5 @@
 using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
+using Suppressor: @capture_out, @capture_err
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -105,7 +106,7 @@ end
             @test err isa Exception
          end
          # AMR ID finding
-         loc = [12*Vlasiator.Re, 0.0, 0.0]
+         loc = [12*Vlasiator.RE, 0.0, 0.0]
          @test getcell(metaAMR, loc) == 0x00000000000002d0
 
          # AMR level
@@ -158,6 +159,10 @@ end
 
          @test meta["Vperp"][1] == 40982.48f0
 
+         @test_throws ArgumentError meta["Epar"]
+
+         @test_throws ArgumentError meta["Eperp"]
+
          @test meta["T"][1] == 347619.9817319378
 
          @test meta["Pram"][1] == 8.204415428337215e-10
@@ -170,11 +175,13 @@ end
 
          @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         @test meta["IonInertial"][1] == 8.578087716535188e7
+         @test meta["IonInertial"][1] == 5.389771470423157e8
 
          @test readvariable(meta, "Larmor", UInt64[1])[1] == 322324.70603759587
 
          @test meta["Gyroperiod"][1] == 21.834297799454554
+
+         @test Vlasiator.getdata2d(meta, "Gyroperiod") |> ndims == 2
 
          @test meta["Gyrofrequency"][1] == 0.04579950356933307
 
@@ -215,18 +222,33 @@ end
          let dx = ones(Float32, 3)
             # 2D
             A = ones(Float32, 3,3,1,3)
-            @test sum(Vlasiator.curl(dx, A)) == 0.0
+            @test sum(Vlasiator.curl(A, dx)) == 0.0
             # 3D
             A = ones(Float32, 3,3,3,3)
-            @test sum(Vlasiator.curl(dx, A)) == 0.0
-            @test sum(Vlasiator.divergence(dx, A)) == 0.0
+            @test sum(Vlasiator.curl(A, dx)) == 0.0
+            @test sum(Vlasiator.divergence(A, dx)) == 0.0
          end
       end
       @testset "Gradient" begin
-         let dx = ones(Float32, 3)
-            A = ones(Float32, 3,3,3)
-            @test sum(Vlasiator.gradient(dx, A)) == 0.0
+         let A = ones(Float32, 3,3,3), dx = ones(Float32, 3)
+            @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
+         let A = ones(Float32, 3,3)
+            @test sum(Vlasiator.gradient(A)) == 0.0
+         end
+         let A = ones(Float32, 3)
+            @test sum(Vlasiator.gradient(A)) == 0.0
+         end
+      end
+      @testset "FluxFunction" begin
+         b = reshape(1:75, 3, 5, 5)
+         dx = [1,2]
+         flux = compute_flux_function(b, dx, 1)
+         @test flux[3,3] == 29
+         # saddle point test func
+         flux = [x^2 - y^2 for x in -10:1.0:10, y in -10:1.0:10]
+         xi_, oi_ = find_reconnection_points(flux)
+         @test xi_ == [11; 11;;]
       end
    end
 
@@ -251,6 +273,19 @@ end
          file = joinpath(rootpath, "logfile.txt")
          timestamps, speed = readlog(file)
          @test length(speed) == 50 && speed[end] == 631.2511f0
+      end
+   end
+
+   if group in (:monitor, :all)
+      @testset "Monitor" begin
+         output = @capture_out begin
+            n = 2e6    # [amu/m³]
+            v = 6e5    # [m/s]
+            T = 5e5    # [K]
+            B = 5e-9   # [T]
+            check_plasma_characteristics(n, v, T, B)
+         end
+         @test startswith(output, "---")
       end
    end
 
@@ -281,10 +316,20 @@ end
          @test var[786] == 238.24398578141802
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
 
+         output = @capture_err begin
+            vdfslice(meta, loc; verbose=true)
+         end
+         @test startswith(output, "[ Info:")
+
          # 2D
          meta = meta2
          var = pcolormesh(meta, "proton/vg_rho").get_array()
          @test var[end-2] == 999535.8f0 && length(var) == 6300
+         var = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
+         @test var[end] == 0.0 && length(var) == 6
+         var = pcolormesh(meta, "proton/vg_rho";
+            extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI, colorscale=Log).get_array()
+         @test var[end] == 1.00022675f6 && length(var) == 100
          var = pcolormesh(meta, "fg_b").get_array()
          @test var[1] == 3.0058909f-9
          var = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
@@ -313,7 +358,8 @@ end
          @test getfield(rec[1], 1)[:seriestype] == :line &&
             rec[1].args[1] isa LinRange
 
-         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), VDFSlice((meta,[0.0,0.0,0.0])))
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(),
+            VDFSlice((meta, [0.0,0.0,0.0])))
          @test getfield(rec[1], 1)[:seriestype] == :histogram2d
 
          # 2D

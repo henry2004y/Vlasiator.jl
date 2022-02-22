@@ -3,7 +3,7 @@
 
 ## PyPlot
 
-* Proton density in advection flow with points denoting cell centers
+* Proton density in a laminar flow with points denoting cell centers
 ![](figures/mesh.png)
 
 * Proton density of Earth's magnetosphere in the meridional plane from 3D simulation
@@ -18,7 +18,7 @@
 * Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation
 ![](figures/magnetosphere_earth_proton_density_3cuts.png)
 
-* Proton phase space distribution projected onto xz plane
+* Proton phase space distribution projected onto the X-Z plane
 ![](figures/phase_space_distribution.png)
 
 ## Makie
@@ -29,10 +29,13 @@
 * Interactive proton density slice from 3D AMR run
 ![](figures/slice_interactive.png)
 
-* Proton phase space distribution projected onto xz plane
+* Three orthogonal slices of proton density from 3D AMR run
+![](figures/3slices_makie.png)
+
+* Proton phase space distribution projected onto the X-Z plane
 ![](figures/VDF_slice.png)
 
-* Interactive proton phase space distribution projected onto three orthogonal planes
+* Interactive proton phase space distribution in the three orthogonal planes
 ![](figures/VDF_slices.png)
 
 * Proton phase space distribution
@@ -40,7 +43,7 @@
 
 ## ParaView
 
-* 2D slice contour of density in meriodional plane with streamlines
+* 2D slice contour of density in the meriodional plane with streamlines
 ![](figures/3D_paraview_slice.png)
 
 * 2D slices of density viewing from upstream
