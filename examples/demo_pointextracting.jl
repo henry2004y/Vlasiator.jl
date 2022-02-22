@@ -23,9 +23,8 @@ function extract_vars(files, loc)
    ex  = zeros(Float32, nfiles)
    ey  = zeros(Float32, nfiles)
 
-   local id
-   let meta = load(files[1])
-      id = getcell(meta, loc)
+   id = load(files[1]) do meta
+      getcell(meta, loc)
    end
 
    # Extract data from each frame
