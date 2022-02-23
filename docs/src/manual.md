@@ -268,6 +268,14 @@ loc = range(x1, x2, length=length(rho_extract))
 plot(loc, rho_extract)
 ```
 
+- Quick interactive variable selection
+
+```
+pui(meta)
+```
+
+Or pass filename directly like `pui(file)`. This is an experimental feature.
+
 For a full list available optional arguments, please refer to the [doc for each method](internal.md#Public-APIs)
 
 ### Plots Backend

@@ -4,7 +4,7 @@ using RecipesBase, Printf
 
 # Build a recipe which acts on a custom type.
 @recipe function f(meta::MetaVLSV, var::AbstractString;
-   comp=:mag, axisunit=Vlasiator.EARTH, normal=:y)
+   comp=0, axisunit=Vlasiator.EARTH, normal=:y)
 
    (;ncells, coordmin, coordmax) = meta
    if ndims(meta) == 1

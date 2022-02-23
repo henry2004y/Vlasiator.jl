@@ -1,5 +1,6 @@
 using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
-using Suppressor: @capture_out, @capture_err
+using Suppressor: @capture_out, @capture_err, @suppress_out
+using REPL.TerminalMenus
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -14,6 +15,21 @@ function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
       end
    end
    result
+end
+
+function simulateInput(keys...)
+
+   keydict = Dict(:up => "\e[A",
+                  :down => "\e[B",
+                  :enter => "\r")
+
+   for key in keys
+      if isa(key, Symbol)
+         write(Base.stdin.buffer, keydict[key])
+      else
+         write(Base.stdin.buffer, "$key")
+      end
+   end
 end
 
 @testset "Vlasiator.jl" begin
@@ -372,6 +388,17 @@ end
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
             rec[1].args[1] isa LinRange
+      end
+
+      @testset "Plot UI" begin
+         meta = meta1
+         simulateInput(:enter)
+         @suppress_out pui(meta; suppress_output=true)
+         @test true # if it reaches here, then pass
+         meta = meta2
+         simulateInput(fill(:down,5), :enter, :enter);
+         @suppress_out pui(meta; suppress_output=true)
+         @test true # if it reaches here, then pass
       end
    end
    for meta in (meta1, meta2, meta3)

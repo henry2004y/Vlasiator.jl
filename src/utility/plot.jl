@@ -109,22 +109,22 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
-    prep2d(meta, var, comp=:0) -> Array
+    prep2d(meta, var, comp=0) -> Array
 
 Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
 """
-function prep2d(meta::MetaVLSV, var, comp=:0)
+function prep2d(meta::MetaVLSV, var, comp=0)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    data =
       if ndims(dataRaw) == 3
-         if comp in (:x, :1)
+         if comp in (:x, 1)
             @view dataRaw[1,:,:]
-         elseif comp in (:y, :2)
+         elseif comp in (:y, 2)
             @view dataRaw[2,:,:]
-         elseif comp in (:z, :3)
+         elseif comp in (:z, 3)
             @view dataRaw[3,:,:]
-         elseif comp == :mag
+         elseif comp in (:mag, 0)
             @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
          end
       else
@@ -156,16 +156,16 @@ function prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
       elseif ndims(data3D) == 2
          data2D = data3D[:,indexlist]
 
-         if comp in (:x, :y, :z, :1, :2, :3)
-            if comp in (:x, :1)
+         if comp in (:x, :y, :z, 1, 2, 3)
+            if comp in (:x, 1)
                slice = @view data2D[1,:]
-            elseif comp in (:y, :2)
+            elseif comp in (:y, 2)
                slice = @view data2D[2,:]
-            elseif comp in (:z, :3)
+            elseif comp in (:z, 3)
                slice = @view data2D[3,:]
             end
             data = refineslice(meta, idlist, slice, normal)
-         elseif comp == :mag
+         elseif comp in (:mag, 0)
             datax = @views refineslice(meta, idlist, data2D[1,:], normal)
             datay = @views refineslice(meta, idlist, data2D[2,:], normal)
             dataz = @views refineslice(meta, idlist, data2D[3,:], normal)
