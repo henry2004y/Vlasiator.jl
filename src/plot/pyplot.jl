@@ -207,7 +207,7 @@ Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorsc
 Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
 linear, logarithmic and symmetric logarithmic, like centered, discrete, and two slope norm.
 For fine-grain control, it is suggested to use the norm methods from `matplotlib.colors`.
-For instance, 
+For instance,
 ```
 julia> norm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
 julia> norm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
@@ -392,9 +392,9 @@ function pui(meta::MetaVLSV)
       menu = RadioMenu(["x","y","z","mag"])
 
       comp = request("Choose vector component to plot:", menu)
-   
+
       comp == -1 && error("Vector component selection canceled.")
-   
+
       comp == 4 && (comp = 0)
    end
 
