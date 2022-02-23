@@ -20,17 +20,17 @@ matplotlib.rc("ytick", labelsize=10)
 
 
 """
-    plot(meta, var, ax=nothing; comp=:0, kwargs)
+    plot(meta, var, ax=nothing; comp=0, kwargs)
 
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
-The keyword `comp` in (`:0`, `:1`, `:2`, `:3`) is used to specify the component of a vector.
+The keyword `comp` in (0, 1, 2, 3) is used to specify the component of a vector.
 """
-function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
+function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=0, kwargs...)
    ndims(meta) == 1 || error("plot only accepts 1D data!")
 
    datafull = readvariable(meta, var)
 
-   if comp == :0
+   if comp == 0
       data = datafull
    else
       data = datafull[comp,:]
@@ -128,7 +128,7 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       comp=:mag, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
+       comp=0, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
        addcolorbar=true, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
@@ -136,7 +136,8 @@ If `ax` is provided, then it will plot on that axes.
 If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
-- `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
+- `comp::Tuple{Int64, Symbol}`: the component of a vector, chosen from
+`:mag, :x, :y, :z, 0, 1, 2, 3`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
@@ -151,7 +152,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 `pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])`
 """
 function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp=:mag, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
+   comp=0, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
    vmin=-Inf32, vmax=Inf32, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
