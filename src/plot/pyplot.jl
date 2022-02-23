@@ -1,8 +1,10 @@
 # Plotting functionalities from Matplotlib.
 
 using PyPlot
+using REPL.TerminalMenus # Command line UI
 
 export plot, pcolormesh, pcolormeshslice, vdfslice, streamplot, quiver, plotmesh
+export pui
 
 @static if matplotlib.__version__ ≥ "3.3"
    matplotlib.rc("image", cmap="turbo") # set default colormap
@@ -366,3 +368,43 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
    end
    s
 end
+
+"""
+    pui(meta::MetaVLSV)
+
+Quick plotting via command line interactive selections.
+"""
+function pui(meta::MetaVLSV)
+
+   menu = RadioMenu(meta.variable)
+
+   var_ = request("Choose variable to plot:", menu)
+
+   var_ == -1 && error("Variable selection canceled.")
+
+   comp = 0
+
+   if meta.variable[var_] in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") ||
+      endswith(meta.variable[var_], "vg_v") ||
+      occursin("vg_ptensor", meta.variable[var_])
+
+      menu = RadioMenu(["x","y","z","mag"])
+
+      comp = request("Choose vector component to plot:", menu)
+   
+      comp == -1 && error("Vector component selection canceled.")
+   
+      comp == 4 && (comp = 0)
+   end
+
+   if ndims(meta) != 1
+      pcolormesh(meta, meta.variable[var_]; comp)
+   else # 1D
+      plot(meta, meta.variable[var_]; comp)
+   end
+
+   return
+end
+
+"Direct file plotting."
+pui(file::AbstractString) = file |> load |> plot_ui
