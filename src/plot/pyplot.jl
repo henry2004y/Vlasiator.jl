@@ -375,11 +375,12 @@ end
 
 Quick plotting via command line interactive selections.
 """
-function pui(meta::MetaVLSV)
+function pui(meta::MetaVLSV; suppress_output=false)
 
-   menu = RadioMenu(meta.variable)
+   menu = RadioMenu(meta.variable; charset=:ascii)
 
-   var_ = request("Choose variable to plot:", menu)
+   println("Choose variable to plot:")
+   var_ = request(menu; suppress_output)
 
    var_ == -1 && error("Variable selection canceled.")
 
@@ -389,9 +390,9 @@ function pui(meta::MetaVLSV)
       endswith(meta.variable[var_], "vg_v") ||
       occursin("vg_ptensor", meta.variable[var_])
 
-      menu = RadioMenu(["x","y","z","mag"])
+      menu = RadioMenu(["x","y","z","mag"]; charset=:ascii)
 
-      comp = request("Choose vector component to plot:", menu)
+      comp = request("Choose vector component to plot:", menu; suppress_output)
 
       comp == -1 && error("Vector component selection canceled.")
 

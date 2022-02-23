@@ -1,5 +1,5 @@
 using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
-using Suppressor: @capture_out, @capture_err
+using Suppressor: @capture_out, @capture_err, @suppress_out
 using REPL.TerminalMenus
 using Test
 
@@ -391,12 +391,13 @@ end
       end
 
       @testset "Plot UI" begin
-         TerminalMenus.config(supress_output=true)
          meta = meta1
-         simulateInput(:enter); pui(meta)
+         simulateInput(:enter)
+         @suppress_out pui(meta; suppress_output=true)
          @test true # if it reaches here, then pass
          meta = meta2
-         simulateInput(fill(:down,5), :enter, :enter); pui(meta)
+         simulateInput(fill(:down,5), :enter, :enter);
+         @suppress_out pui(meta; suppress_output=true)
          @test true # if it reaches here, then pass
       end
    end
