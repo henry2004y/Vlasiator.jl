@@ -21,6 +21,10 @@ cellids, distances, coords =
    load(files[1]) do meta
       getcellinline(meta, point1, point2)
    end
+# WARNING: this may not be exact due to round-off errors in output time stamps!
+t = let tstart = load(files[1]).time, tend = load(files[end]).time
+   range(round(tstart,digits=1), round(tend, digits=1), length=nfile)
+end
 
 n = zeros(Float32, length(cellids), nfile)
 v = zeros(Float32, 3, length(cellids), nfile)
