@@ -39,7 +39,7 @@ export
    readlog,
 
    # differential
-   fg_grad, fg_curl, fg_div, fg_matder, fg_curvature, fg_normalize, fg_kappac, fg_kappa
+   fg_grad, fg_grad_component, fg_curl, fg_div, fg_matder, fg_curvature, fg_normalize, fg_kappac, fg_kappa
    # physical parameter monitor
    check_plasma_characteristics,
    # fluxfunction
