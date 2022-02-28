@@ -39,7 +39,7 @@ Find X-point and O-point indices in 2D magnetic field topology from flux functio
 `retol` determines the ratio w.r.t. |∇ψ|² to accept a gradient as 0. The current
 implementation does not work for the 2 layers near the boundary.
 """
-function find_reconnection_points(ψ, retol=1e-3)
+function find_reconnection_points(ψ, retol=1e-1)
    ∂ψ = gradient(ψ)
    ∂²ψ = gradient(view(∂ψ,1,:,:))
    # fill boundary layers
@@ -70,11 +70,56 @@ function find_reconnection_points(ψ, retol=1e-3)
       ∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 > retol*∂ψmean && continue
       # Hessian matrix det(H) < 0 => saddle point (x-point)
       if ∂²ψ∂x²[i,j] * ∂²ψ∂y²[i,j] - ∂²ψ∂x∂y[i,j]^2 < 0
+         check_saddle(@views ψ[i-1:i+1,j-1:j+1]) || continue
          indices_x = hcat(indices_x, [i,j])
       else # o-point
+         check_extrema(@views ψ[i-1:i+1,j-1:j+1]) || continue
          indices_o = hcat(indices_o, [i,j])
       end
    end
 
    return indices_x, indices_o
+end
+
+"Check if the center point in a 3x3 matrix `ψ` is a saddle point."
+function check_saddle(ψ)
+   nmax, nmin = 0, 0
+   minmax1 = extrema(@views ψ[:,2])
+   minmax2 = extrema(@views ψ[2,:])
+   minmax3 = extrema([ψ[1,1],ψ[2,2],ψ[3,3]])
+   minmax4 = extrema([ψ[1,3],ψ[2,2],ψ[3,1]])
+   if ψ[2,2] == minmax1[1]
+      nmin += 1
+   elseif ψ[2,2] == minmax1[2]
+      nmax += 1
+   end
+   if ψ[2,2] == minmax2[1]
+      nmin += 1
+   elseif ψ[2,2] == minmax2[2]
+      nmax += 1
+   end
+   if ψ[2,2] == minmax3[1]
+      nmin += 1
+   elseif ψ[2,2] == minmax3[2]
+      nmax += 1
+   end
+   if ψ[2,2] == minmax4[1]
+      nmin += 1
+   elseif ψ[2,2] == minmax4[2]
+      nmax += 1
+   end
+   if nmin > 0 && nmax > 0
+      return true
+   else
+      return false
+   end
+end
+
+"Check if the center point in a 3x3 matrix `ψ` is an extrema point."
+function check_extrema(ψ)
+   if ψ[2,2] == maximum(ψ) || ψ[2,2] == minimum(ψ)
+      return true
+   else
+      return false
+   end
 end

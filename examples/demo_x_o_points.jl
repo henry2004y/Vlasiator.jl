@@ -42,7 +42,7 @@ ax.plot_surface(X[xmin_:xmax_,zmin_:zmax_], Z[xmin_:xmax_,zmin_:zmax_],
    cmap=matplotlib.cm.turbo,
    linewidth=0, antialiased=false)
 
-indices_x, indices_o = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_], 5e-3)
+indices_x, indices_o = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_])
 
 fig, ax = subplots(figsize=(6,10), constrained_layout=true)
 
