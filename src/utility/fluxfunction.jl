@@ -66,7 +66,7 @@ function find_reconnection_points(ψ, retol=1e-1)
    ∂ψmag² = [∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 for j in axes(∂ψ,3), i in axes(∂ψ,2)]
    ∂ψmean = mean(∂ψmag²)
 
-   for j in axes(∂ψ,3)[2:end-1], i in axes(∂ψ,2)[2:end-1]
+   for j in axes(∂ψ,3)[3:end-2], i in axes(∂ψ,2)[3:end-2]
       ∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 > retol*∂ψmean && continue
       # Hessian matrix det(H) < 0 => saddle point (x-point)
       if ∂²ψ∂x²[i,j] * ∂²ψ∂y²[i,j] - ∂²ψ∂x∂y[i,j]^2 < 0
