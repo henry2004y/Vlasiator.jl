@@ -9,8 +9,6 @@ file = "bulk.0001657.vlsv"
 
 meta = load(file)
 
-nG = 2 # number of ghost cells
-
 ndims(meta) != 2 && @error "Flux function only works for 2D simulations!"
 
 if meta.ncells[3] == 1
@@ -30,19 +28,18 @@ zmin_ = searchsortedfirst(z, -5.0)
 zmax_ = searchsortedlast(z, 5.0)
 
 # meshgrid for plotting
-X = [a for a in x, _ in z]
-Z = [b for _ in x, b in z]
+X = [a for a in x[xmin_:xmax_], _ in z[zmin_:zmax_]]
+Z = [b for _ in x[xmin_:xmax_], b in z[zmin_:zmax_]]
 
-flux = compute_flux_function(b, dx, nG)
+flux = compute_flux_function(view(b,:,xmin_:xmax_,zmin_:zmax_), dx)
 
 fig, ax = plt.subplots(subplot_kw=Dict("projection"=>"3d"))
 
-ax.plot_surface(X[xmin_:xmax_,zmin_:zmax_], Z[xmin_:xmax_,zmin_:zmax_],
-   flux[xmin_:xmax_,zmin_:zmax_];
+ax.plot_surface(X, Z, flux;
    cmap=matplotlib.cm.turbo,
    linewidth=0, antialiased=false)
 
-indices_x, indices_o = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_])
+indices_x, indices_o = find_reconnection_points(flux)
 
 fig, ax = subplots(figsize=(6,10), constrained_layout=true)
 
