@@ -33,48 +33,62 @@ function compute_flux_function(b::AbstractArray{T,N}, Δ, nG=2) where {T,N}
 end
 
 """
-    find_reconnection_points(ψ, retol=1e-3) -> indices_x, indices_o
+    find_reconnection_points(ψ; retol=1e-1, method=1) -> indices_x, indices_o
 
 Find X-point and O-point indices in 2D magnetic field topology from flux function `ψ`.
-`retol` determines the ratio w.r.t. |∇ψ|² to accept a gradient as 0. The current
-implementation does not work for the 2 layers near the boundary.
+The current implementation does not work for the 3 layers near the boundary.
+
+# Optional arguments
+- `retol=1e-1`: determines the relative tolerance of the ratio w.r.t. |∇ψ|² to accept a
+gradient as 0.
+- `method=1`: method 1 compute the cell-centered 1st and 2nd order derivatives and check the
+Hessian matrix; method 2 check the flux function at each point against its 8 neighbors.
 """
-function find_reconnection_points(ψ, retol=1e-1)
-   ∂ψ = gradient(ψ)
-   ∂²ψ = gradient(view(∂ψ,1,:,:))
-   # fill boundary layers
-   ∂²ψ[:,2,:] = ∂²ψ[:,1,:]
-   ∂²ψ[:,end-1,:] = ∂²ψ[:,end,:]
-   ∂²ψ[:,:,2] = ∂²ψ[:,:,1]
-   ∂²ψ[:,:,end-1] = ∂²ψ[:,:,end]
-   # 2nd derivatives
-   ∂²ψ∂x² = ∂²ψ[1,:,:]
-   ∂²ψ∂x∂y = ∂²ψ[2,:,:] # == ∂²ψ∂y∂x = ∂²ψ[1,:,:]
-
-   ∂²ψ = gradient(view(∂ψ,2,:,:))
-   # fill boundary layers
-   ∂²ψ[:,2,:] = ∂²ψ[:,1,:]
-   ∂²ψ[:,end-1,:] = ∂²ψ[:,end,:]
-   ∂²ψ[:,:,2] = ∂²ψ[:,:,1]
-   ∂²ψ[:,:,end-1] = ∂²ψ[:,:,end]
-
-   ∂²ψ∂y² = ∂²ψ[2,:,:]
+function find_reconnection_points(ψ; retol=1e-4, method=1)
 
    indices_x = Matrix{Int64}(undef, 2, 0)
    indices_o = Matrix{Int64}(undef, 2, 0)
 
-   ∂ψmag² = [∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 for j in axes(∂ψ,3), i in axes(∂ψ,2)]
-   ∂ψmean = mean(∂ψmag²)
+   if method == 1
+      ∂ψ = gradient(ψ)
+      ∂²ψ = gradient(view(∂ψ,1,:,:))
+      # fill boundary layers
+      ∂²ψ[:,2,:] = ∂²ψ[:,1,:]
+      ∂²ψ[:,end-1,:] = ∂²ψ[:,end,:]
+      ∂²ψ[:,:,2] = ∂²ψ[:,:,1]
+      ∂²ψ[:,:,end-1] = ∂²ψ[:,:,end]
+      # 2nd derivatives
+      ∂²ψ∂x² = ∂²ψ[1,:,:]
+      ∂²ψ∂x∂y = ∂²ψ[2,:,:] # == ∂²ψ∂y∂x = ∂²ψ[1,:,:]
 
-   for j in axes(∂ψ,3)[3:end-2], i in axes(∂ψ,2)[3:end-2]
-      ∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 > retol*∂ψmean && continue
-      # Hessian matrix det(H) < 0 => saddle point (x-point)
-      if ∂²ψ∂x²[i,j] * ∂²ψ∂y²[i,j] - ∂²ψ∂x∂y[i,j]^2 < 0
-         check_saddle(@views ψ[i-1:i+1,j-1:j+1]) || continue
-         indices_x = hcat(indices_x, [i,j])
-      else # o-point
-         check_extrema(@views ψ[i-1:i+1,j-1:j+1]) || continue
-         indices_o = hcat(indices_o, [i,j])
+      ∂²ψ = gradient(view(∂ψ,2,:,:))
+      # fill boundary layers
+      ∂²ψ[:,2,:] = ∂²ψ[:,1,:]
+      ∂²ψ[:,end-1,:] = ∂²ψ[:,end,:]
+      ∂²ψ[:,:,2] = ∂²ψ[:,:,1]
+      ∂²ψ[:,:,end-1] = ∂²ψ[:,:,end]
+
+      ∂²ψ∂y² = ∂²ψ[2,:,:]
+
+      ∂ψmag² = [∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 for j in axes(∂ψ,3), i in axes(∂ψ,2)]
+      ∂ψmean = mean(∂ψmag²)
+
+      for j in axes(∂ψ,3)[4:end-3], i in axes(∂ψ,2)[4:end-3]
+         ∂ψ[1,i,j]^2 + ∂ψ[2,i,j]^2 > retol*∂ψmean && continue
+         # Hessian matrix det(H) < 0 => saddle point (X-point)
+         if ∂²ψ∂x²[i,j] * ∂²ψ∂y²[i,j] - ∂²ψ∂x∂y[i,j]^2 < 0
+            indices_x = hcat(indices_x, [i,j])
+         else # O-point
+            indices_o = hcat(indices_o, [i,j])
+         end
+      end
+   elseif method == 2
+      for j in axes(ψ,2)[4:end-3], i in axes(ψ,1)[4:end-3]
+         if issaddle(@views ψ[i-1:i+1,j-1:j+1])
+            indices_x = hcat(indices_x, [i,j])
+         elseif isextrema(@views ψ[i-1:i+1,j-1:j+1])
+            indices_o = hcat(indices_o, [i,j])
+         end
       end
    end
 
@@ -82,7 +96,7 @@ function find_reconnection_points(ψ, retol=1e-1)
 end
 
 "Check if the center point in a 3x3 matrix `ψ` is a saddle point."
-function check_saddle(ψ)
+function issaddle(ψ)
    nmax, nmin = 0, 0
    minmax1 = extrema(@views ψ[:,2])
    minmax2 = extrema(@views ψ[2,:])
@@ -116,7 +130,7 @@ function check_saddle(ψ)
 end
 
 "Check if the center point in a 3x3 matrix `ψ` is an extrema point."
-function check_extrema(ψ)
+function isextrema(ψ)
    if ψ[2,2] == maximum(ψ) || ψ[2,2] == minimum(ψ)
       return true
    else
