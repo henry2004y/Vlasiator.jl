@@ -172,6 +172,8 @@ end
 
          @test meta["VA"] |> nanmaximum == 2.3202628822256166e8
 
+         @test readvariable(meta, "VA", [1,2])[2] == 65507.75496283364
+
          @test meta["MA"][end] == 10.700530839822328
 
          @test meta["MS"][end] == 16.9375888861409

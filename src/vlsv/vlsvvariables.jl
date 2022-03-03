@@ -128,11 +128,11 @@ const variables_predefined = Dict(
       if hasvariable(meta, "vg_rhom")
          ρm = isempty(ids) ?
             readvariable(meta, "vg_rhom") :
-            readvariable(meta, "vg_rhom", ids)
+            readvariable(meta, "vg_rhom", ids) |> vec
       elseif hasvariable(meta, "proton/vg_rho")
          ρm = isempty(ids) ?
             readvariable(meta, "proton/vg_rho") .* mᵢ :
-            readvariable(meta, "proton/vg_rho", ids) .* mᵢ
+            readvariable(meta, "proton/vg_rho", ids) .* mᵢ |> vec
       end
       ρm
    end,
@@ -158,13 +158,13 @@ const variables_predefined = Dict(
       P = readvariable(meta, "P", ids)
       ρm = readvariable(meta, "Rhom", ids)
       _fillinnerBC!(ρm, ρm)
-      vs = @. √( (P*5.0f0/3.0f0) / ρm )
+      VS = @. √( (P*5.0f0/3.0f0) / ρm )
    end,
    :VA => function (meta, ids=UInt64[]) # Alfvén speed
       ρm = readvariable(meta, "Rhom", ids)
       _fillinnerBC!(ρm, ρm)
-      Bmag = readvariable(meta, "Bmag", ids)
-      VA = @. $vec(Bmag) / √(ρm*μ₀)
+      Bmag = readvariable(meta, "Bmag", ids) |> vec
+      VA = @. Bmag / √(ρm*μ₀)
    end,
    :MA => function (meta, ids=UInt64[]) # Alfvén Mach number
       V = readvariable(meta, "Vmag", ids)
