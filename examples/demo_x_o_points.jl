@@ -1,5 +1,10 @@
 # Finding X-points and O-points in a 2D magnetic reconnection configuration.
 # This example assumes X-Z meridional plane.
+# Note:
+# 1. The input B field domain matters for computing the flux function, but I'm entirely sure
+# why there are differences.
+# 2. In identifying the X-points and O-points, we currently provide two methods: method 1
+# needs to set the relative tolerance, while method 2 does not.
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
