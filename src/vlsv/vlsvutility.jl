@@ -843,8 +843,8 @@ function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, ver
 
    if isempty(vars[1])
       vars = meta.variable
-      index_cellID = findfirst(==("CellID"), vars)
-      if !isnothing(index_cellID) deleteat!(vars, index_cellID) end
+      cellid_ = findfirst(==("CellID"), vars)
+      if !isnothing(cellid_) deleteat!(vars, cellid_) end
    end
 
    data, vtkGhostType = fillmesh(meta, vars; verbose)
