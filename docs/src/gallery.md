@@ -32,6 +32,9 @@
 * Three orthogonal slices of proton density from 3D AMR run
 ![](figures/3slices_makie.png)
 
+* Isosurface of Bz = 0 from 3D AMR run
+![](figures/isosurface_bz=0_makie.png)
+
 * Proton phase space distribution projected onto the X-Z plane
 ![](figures/VDF_slice.png)
 
