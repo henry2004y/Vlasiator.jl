@@ -124,10 +124,13 @@ end
    axsR[1].add_patch(circle1)
    axsR[2].add_patch(circle2)
 
-   cb1 = colorbar(c1; ax=axsR[1], ticks=ticks[1], fraction=0.046, pad=0.02, extend="max")
+   im_ratio = length(y)/length(x)
+   fraction = 0.046 * im_ratio
+
+   cb1 = colorbar(c1; ax=axsR[1], ticks=ticks[1], fraction, pad=0.02, extend="max")
    cb1.ax.set_ylabel("[km/s]"; fontsize=14)
 
-   cb2 = colorbar(c2; ax=axsR[2], ticks=ticks[2], fraction=0.046, pad=0.02, extend="max")
+   cb2 = colorbar(c2; ax=axsR[2], ticks=ticks[2], fraction, pad=0.02, extend="max")
    cb2.ax.set_ylabel("[km/s]"; fontsize=14)
 
    fig.suptitle("Density Pulse Run", fontsize="x-large")
