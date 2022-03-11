@@ -359,25 +359,19 @@ Flatten vblock-organized VDFs into x-->y-->z ordered 3D VDFs. `vcellids` are loc
 of nonzero VDFs and `vcellf` are their corresponding values.
 """
 function flatten(vmesh::VMeshInfo, vcellids, vcellf)
-   vblock_size, vblocks = vmesh.vblock_size, vmesh.vblocks
+   (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
-   vsizex, vsizey = vblock_size[1] * vblocks[1], vblock_size[2] * vblocks[2]
+   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
    sliceCz = vblock_size[1]*vblock_size[2]
    # Reconstruct the full velocity space
-   VDFraw = zeros(Float32,
-      vmesh.vblock_size[1]*vmesh.vblocks[1],
-      vmesh.vblock_size[2]*vmesh.vblocks[2],
-      vmesh.vblock_size[3]*vmesh.vblocks[3])
+   VDFraw = zeros(Float32, vsize)
    # Fill nonzero values
    @inbounds @simd for i in eachindex(vcellids)
       VDFraw[vcellids[i]+1] = vcellf[i]
    end
 
-   VDF = zeros(Float32,
-      vmesh.vblock_size[1]*vmesh.vblocks[1],
-      vmesh.vblock_size[2]*vmesh.vblocks[2],
-      vmesh.vblock_size[3]*vmesh.vblocks[3])
+   VDF = zeros(Float32, vsize)
 
    @inbounds @simd for i in eachindex(VDF)
       iB = (i - 1) ÷ blocksize
@@ -391,7 +385,7 @@ function flatten(vmesh::VMeshInfo, vcellids, vcellf)
       iBCx = iBx*vblock_size[1] + iCx
       iBCy = iBy*vblock_size[2] + iCy
       iBCz = iBz*vblock_size[3] + iCz
-      iF = iBCz*vsizex*vsizey + iBCy*vsizex + iBCx + 1
+      iF = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx + 1
       VDF[iF] = VDFraw[i]
    end
    VDF
