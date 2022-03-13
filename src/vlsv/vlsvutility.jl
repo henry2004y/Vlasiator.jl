@@ -431,12 +431,12 @@ end
 end
 
 """
-    reorder(vmesh::VMeshInfo, vcellids, vcellf)
+    reorder(vmesh::VMeshInfo, vcellids) -> vcellids_origin
 
-Reorder vblock-organized VDFs into x-->y-->z ordered 3D VDFs. `vcellids` are local indices
-of nonzero VDFs and `vcellf` are their corresponding values.
+Reorder vblock-organized VDF indexes into x-->y-->z indexes. `vcellids` are raw indices
+of nonzero VDFs ordered by blocks.
 """
-function reorder(vmesh::VMeshInfo, vcellids, vcellf)
+function reorder(vmesh::VMeshInfo, vcellids)
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
@@ -456,8 +456,8 @@ end
 """
     reconstruct(vmesh::VMeshInfo, vcellids, vcellf)
 
-Reconstruct the full VDFs in 3D. `vcellids` are local indices of nonzero VDFs and `vcellf`
-are their corresponding values.
+Reconstruct the full VDFs in 3D. `vcellids` are raw indices of nonzero VDFs ordered by
+blocks, and `vcellf` are the corresponding values in each cell.
 """
 function reconstruct(vmesh::VMeshInfo, vcellids, vcellf)
    (;vblock_size, vblocks) = vmesh

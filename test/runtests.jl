@@ -96,7 +96,7 @@ end
          V = getvcellcoordinates(meta, vcellids; species="proton")
          @test V[end] == (2.45f0, 1.95f0, 1.95f0)
          @test_throws ArgumentError readvcells(meta, 2)
-         vcids = Vlasiator.reorder(meta.meshes["proton"], vcellids, vcellf)
+         vcids = Vlasiator.reorder(meta.meshes["proton"], vcellids)
          @test vcids[5] == 0x00000029
          f = Vlasiator.reconstruct(meta.meshes["proton"], vcellids, vcellf)
          @test f[CartesianIndex(26, 20, 20)] == 85.41775f0

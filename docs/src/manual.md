@@ -169,6 +169,12 @@ getvelocity(meta, vcellids, vcellf)
 getvelocity(meta, vcellids, vcellf)
 ```
 
+To obtain the original ordering of velocity cells,
+
+```
+vcellids_original = Vlasiator.reorder(meta.meshes["proton"], vcellids)
+```
+
 Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big[ 1/(2n) \int |f(v) - g(v)| dv \big]``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density, bulk velocity and scalar pressure as f.
 
 ```
