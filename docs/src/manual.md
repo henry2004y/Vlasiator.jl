@@ -161,25 +161,29 @@ We can also calculate the plasma moments from the saved VLSV velocity space dist
 ```
 # VDF cell indexes and values, with sparsity
 vcellids, vcellf = readvcells(meta, cellid; species="proton")
-# Recover the full VDF space
-f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
 
-getdensity(meta, f)
 getdensity(meta, vcellids, vcellf)
 
-getvelocity(meta, f)
 getvelocity(meta, vcellids, vcellf)
 
-getpressure(meta, f) # only support full VDF for now
+getvelocity(meta, vcellids, vcellf)
 ```
 
 Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big[ 1/(2n) \int |f(v) - g(v)| dv \big]``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density, bulk velocity and scalar pressure as f.
 
 ```
-getmaxwellianity(meta, f)
+getmaxwellianity(meta, vcellids, vcellf)
 ```
 
 The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at all, and +∞ a perfect Maxwellian distribution.
+
+Sometimes it may be useful to recover the full 3D array of VDFs:
+
+```
+f = Vlasiator.reconstruct(meta.meshes["proton"], vcellids, vcellf)
+```
+
+However, usually in practice there would be only about 1% nonzero values. The moments and maxwellianity calculations above all have an alternative form of using reconstructed VDFs as inputs.
 
 ## Plotting
 

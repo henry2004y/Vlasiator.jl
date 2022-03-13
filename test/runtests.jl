@@ -96,14 +96,18 @@ end
          V = getvcellcoordinates(meta, vcellids; species="proton")
          @test V[end] == (2.45f0, 1.95f0, 1.95f0)
          @test_throws ArgumentError readvcells(meta, 2)
-         f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
+         vcids = Vlasiator.reorder(meta.meshes["proton"], vcellids, vcellf)
+         @test vcids[5] == 0x00000029
+         f = Vlasiator.reconstruct(meta.meshes["proton"], vcellids, vcellf)
          @test f[CartesianIndex(26, 20, 20)] == 85.41775f0
          @test getdensity(meta, f) ≈ 1.8255334f0
          @test getdensity(meta, vcellids, vcellf) ≈ 1.8255334f0
          @test getvelocity(meta, f)[1] ≈ 1.0f0 rtol=3e-3
          @test getvelocity(meta, vcellids, vcellf)[1] ≈ 1.0f0 rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
+         @test getpressure(meta, vcellids, vcellf) ≈ zeros(Float32, 6) atol=1e-16
          @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
+         @test getmaxwellianity(meta, vcellids, vcellf) ≈ 5.741325243685855 rtol=1e-4
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3
