@@ -414,7 +414,7 @@ function getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton")
    (p.*factor)
 end
 
-"Get the original vcell index without blocks."
+"Get the original vcell index without blocks, 1-based."
 @inline function findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
    iB = (i - 1) ÷ blocksize
    iBx = iB % vblocks[1]
@@ -427,7 +427,7 @@ end
    iBCx = iBx*vblock_size[1] + iCx
    iBCy = iBy*vblock_size[2] + iCy
    iBCz = iBz*vblock_size[3] + iCz
-   iF = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx + 1
+   iOrigin = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx + 1
 end
 
 """
@@ -469,8 +469,8 @@ function reconstruct(vmesh::VMeshInfo, vcellids, vcellf)
    VDF = zeros(Float32, vsize)
    # Raw IDs are 0-based
    @inbounds @simd for i in eachindex(vcellids)
-      iF = findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
-      VDF[iF] = vcellf[i]
+      j = findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      VDF[j] = vcellf[i]
    end
 
    VDF
