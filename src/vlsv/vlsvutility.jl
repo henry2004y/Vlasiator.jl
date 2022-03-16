@@ -329,7 +329,7 @@ function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
    u = zeros(eltype(vcellf), 3)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(ic, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz) - 1
+      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
@@ -394,7 +394,7 @@ function getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton")
    p = zeros(eltype(vcellf), 6)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(ic, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz) - 1
+      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
@@ -414,20 +414,20 @@ function getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton")
    (p.*factor)
 end
 
-"Get the original vcell index without blocks, 1-based."
+"Get the original vcell index without blocks from raw vcell index `i` (0-based)."
 @inline function findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
-   iB = (i - 1) ÷ blocksize
+   iB = i ÷ blocksize
    iBx = iB % vblocks[1]
    iBy = iB % sliceBz ÷ vblocks[1]
    iBz = iB ÷ sliceBz
-   iCellInBlock = (i - 1) % blocksize
+   iCellInBlock = i % blocksize
    iCx = iCellInBlock % vblock_size[1]
    iCy = iCellInBlock % sliceCz ÷ vblock_size[1]
    iCz = iCellInBlock ÷ sliceCz
    iBCx = iBx*vblock_size[1] + iCx
    iBCy = iBy*vblock_size[2] + iCy
    iBCz = iBz*vblock_size[3] + iCz
-   iOrigin = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx + 1
+   iOrigin = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx
 end
 
 """
@@ -446,8 +446,8 @@ function reorder(vmesh::VMeshInfo, vcellids)
    vcellids_origin = similar(vcellids)
    # IDs are 0-based
    @inbounds @simd for i in eachindex(vcellids)
-      vcellids_origin[i] =
-         findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      vcellids_origin[i] = 1 +
+         findindex(vcellids[i], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
    end
 
    vcellids_origin
@@ -469,7 +469,8 @@ function reconstruct(vmesh::VMeshInfo, vcellids, vcellf)
    VDF = zeros(Float32, vsize)
    # Raw IDs are 0-based
    @inbounds @simd for i in eachindex(vcellids)
-      j = findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      j = 1 +
+         findindex(vcellids[i], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
       VDF[j] = vcellf[i]
    end
 
@@ -529,7 +530,7 @@ function getmaxwellianity(meta, vcellids, vcellf; species="proton")
    vth2Inv = mᵢ / (2kB*T)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(ic, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz) - 1
+      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
