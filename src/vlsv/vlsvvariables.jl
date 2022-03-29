@@ -447,6 +447,71 @@ const variables_predefined = Dict(
          vec(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
          vec(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
    end,
+   :MagneticTension => function (meta, ids=UInt64[])
+      B = readvariable(meta, "vg_b_vol")
+      B = reshape(B, 3, meta.ncells...)
+   
+      invdx = @. inv(2*meta.dcoord)
+      @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
+
+      tension = zeros(eltype(B), size(B))
+      if ndims(meta) == 3
+         # Warning: this works only for regular 3D B field
+         @inbounds for k in 2:size(B,4)-1, j in 2:size(B,3)-1, i in 2:size(B,2)-1
+            ∂Bx∂x = (-Bx[i-1,j  ,k  ] + Bx[i+1,j,  k  ]) * invdx[1]
+            ∂Bx∂y = (-Bx[i  ,j-1,k  ] + Bx[i,  j+1,k  ]) * invdx[2]
+            ∂Bx∂z = (-Bx[i  ,j  ,k-1] + Bx[i,  j,  k+1]) * invdx[3]
+
+            ∂By∂x = (-By[i-1,j  ,k  ] + By[i+1,j,  k  ]) * invdx[1]
+            ∂By∂y = (-By[i  ,j-1,k  ] + By[i,  j+1,k  ]) * invdx[2]
+            ∂By∂z = (-By[i  ,j  ,k-1] + By[i,  j,  k+1]) * invdx[3]
+
+            ∂Bz∂x = (-Bz[i-1,j  ,k  ] + Bz[i+1,j,  k  ]) * invdx[1]
+            ∂Bz∂y = (-Bz[i  ,j-1,k  ] + Bz[i,  j+1,k  ]) * invdx[2]
+            ∂Bz∂z = (-Bz[i  ,j  ,k-1] + Bz[i,  j,  k+1]) * invdx[3]
+
+            tension[1,i,j,k] = (Bx[i,j,k]*∂Bx∂x + By[i,j,k]*∂Bx∂y + Bz[i,j,k]*∂Bx∂z) / μ₀
+            tension[2,i,j,k] = (Bx[i,j,k]*∂By∂x + By[i,j,k]*∂By∂y + Bz[i,j,k]*∂By∂z) / μ₀
+            tension[3,i,j,k] = (Bx[i,j,k]*∂Bz∂x + By[i,j,k]*∂Bz∂y + Bz[i,j,k]*∂Bz∂z) / μ₀
+         end
+      elseif ndims(meta) == 2
+         if meta.ncells[3] == 1
+            @inbounds for j in 2:size(B,3)-1, i in 2:size(B,2)-1
+               ∂Bx∂x = (-Bx[i-1,j  ,1] + Bx[i+1,j,  1]) * invdx[1]
+               ∂Bx∂y = (-Bx[i  ,j-1,1] + Bx[i,  j+1,1]) * invdx[2]
+   
+               ∂By∂x = (-By[i-1,j  ,1] + By[i+1,j,  1]) * invdx[1]
+               ∂By∂y = (-By[i  ,j-1,1] + By[i,  j+1,1]) * invdx[2]
+   
+               ∂Bz∂x = (-Bz[i-1,j  ,1] + Bz[i+1,j,  1]) * invdx[1]
+               ∂Bz∂y = (-Bz[i  ,j-1,1] + Bz[i,  j+1,1]) * invdx[2]
+   
+               tension[1,i,j,1] = (Bx[i,j,1]*∂Bx∂x + By[i,j,1]*∂Bx∂y) / μ₀
+               tension[2,i,j,1] = (Bx[i,j,1]*∂By∂x + By[i,j,1]*∂By∂y) / μ₀
+               tension[3,i,j,1] = (Bx[i,j,1]*∂Bz∂x + By[i,j,1]*∂Bz∂y) / μ₀
+            end
+         elseif meta.ncells[2] == 1
+            @inbounds for k in 2:size(B,4)-1, i in 2:size(B,2)-1
+               ∂Bx∂x = (-Bx[i-1,1,k  ] + Bx[i+1,1,  k  ]) * invdx[1]
+               ∂Bx∂z = (-Bx[i  ,1,k-1] + Bx[i,  1,  k+1]) * invdx[3]
+   
+               ∂By∂x = (-By[i-1,1,k  ] + By[i+1,1,  k  ]) * invdx[1]
+               ∂By∂z = (-By[i  ,1,k-1] + By[i,  1,  k+1]) * invdx[3]
+   
+               ∂Bz∂x = (-Bz[i-1,1,k  ] + Bz[i+1,1,  k  ]) * invdx[1]
+               ∂Bz∂z = (-Bz[i  ,1,k-1] + Bz[i,  1,  k+1]) * invdx[3]
+   
+               tension[1,i,1,k] = (Bx[i,1,k]*∂Bx∂x + Bz[i,1,k]*∂Bx∂z) / μ₀
+               tension[2,i,1,k] = (Bx[i,1,k]*∂By∂x + Bz[i,1,k]*∂By∂z) / μ₀
+               tension[3,i,1,k] = (Bx[i,1,k]*∂Bz∂x + Bz[i,1,k]*∂Bz∂z) / μ₀
+            end
+         end
+      else
+         @error "Magnetic tension requires 2D/3D B field!"
+      end
+
+      tension
+   end,
 )
 
 

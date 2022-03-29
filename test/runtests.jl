@@ -217,6 +217,8 @@ end
          @test meta["Omegap"][1] == 209.5467447842415
 
          @test meta["Plasmaperiod"][1] == 0.0047722048893178645
+
+         @test meta["MagneticTension"][3, 40, 50] == -3.6856588f-19
       end
       @testset "VLSV writing" begin
          meta = meta1
