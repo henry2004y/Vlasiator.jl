@@ -61,7 +61,7 @@ e2 = [0.0 1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
 R = getRotationMatrix(e1, e2)
 ```
 """
-function getRotationMatrix(e1::Matrix, e2::Matrix)
+function getRotationMatrix(e1::AbstractMatrix, e2::AbstractMatrix)
    @views begin
       r11 = e1[:,1] ⋅ e2[:,1]
       r12 = e1[:,1] ⋅ e2[:,2]
