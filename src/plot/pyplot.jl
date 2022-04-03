@@ -275,8 +275,9 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 - `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
-- `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.
-- `center`: symbol for setting the reference frame from :bulk, :peak.
+- `slicetype`: symbol for choosing the slice type from `:xy`, `:xz`, `:yz`,
+`:bperp`, `:bpar1`, `:bpar2`.
+- `center`: symbol for setting the reference frame from `:bulk`, `:peak`.
 - `vslicethick`: setting the velocity space slice thickness in the normal direction. If set
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
