@@ -33,7 +33,7 @@ Reference: https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_ax
 using LinearAlgebra
 v = [-0.5, 1.0, 1.0]
 v̂ = v ./ norm(v) 
-angle = -74 / 180 * π
+angle = deg2rad(-74)
 R = getRotationMatrix(v̂, angle)
 ```
 """
