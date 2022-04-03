@@ -349,6 +349,10 @@ end
          var = vdfslice(meta, loc).get_array()
          @test var[786] == 238.24398578141802
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
+         output = @capture_err begin
+            var = vdfslice(meta, loc; slicetype=:bperp).get_array()
+         end
+         @test var[786] == 1.890920095674294e-5
 
          output = @capture_err begin
             vdfslice(meta, loc; verbose=true)

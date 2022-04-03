@@ -231,51 +231,84 @@ function prep_vdf(meta::MetaVLSV, location;
          end
    end
 
-   if slicetype == :xy
-      dir1, dir2, dir3 = 1, 2, 3
-      ŝ = @SVector [0., 0., 1.]
-   elseif slicetype == :xz
-      dir1, dir2, dir3 = 1, 3, 2
-      ŝ = @SVector [0., 1., 0.]
-   elseif slicetype == :yz
-      dir1, dir2, dir3 = 2, 3, 1
-      ŝ = @SVector [1., 0., 0.]
-   elseif slicetype in (:bperp, :bpar, :bpar1)
+   if slicetype in (:xy, :yz, :xz)
+      if slicetype == :xy
+         dir1, dir2, dir3 = 1, 2, 3
+         ŝ = @SVector [0., 0., 1.]
+      elseif slicetype == :xz
+         dir1, dir2, dir3 = 1, 3, 2
+         ŝ = @SVector [0., 1., 0.]
+      elseif slicetype == :yz
+         dir1, dir2, dir3 = 2, 3, 1
+         ŝ = @SVector [1., 0., 0.]
+      end
+      v1size = vmesh.vblocks[dir1] * vmesh.vblock_size[dir1]
+      v2size = vmesh.vblocks[dir2] * vmesh.vblock_size[dir2]
+   
+      v1min, v1max = vmesh.vmin[dir1], vmesh.vmax[dir1]
+      v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
+   elseif slicetype in (:bperp, :bpar1, :bpar2)
       if hasvariable(meta, "vg_b_vol")
-         B = readvariable(meta, "vg_b_vol", cidNearest)
+         B = readvariable(meta, "vg_b_vol", cidNearest) |> vec
       elseif hasvariable(meta, "B_vol")
          B = readvariable(meta, "B_vol", cidNearest)
       end
       if hasvariable(meta, "proton/vg_v")
-         V = readvariable(meta, "proton/vg_v", cidNearest)
+         V = readvariable(meta, "proton/vg_v", cidNearest) |> vec
       end
       b̂ = B ./ norm(B)
       v̂ = V ./ norm(V)
-      b̂xv̂ = b̂ × v̂
-      b̂xb̂xv̂ = b̂ × b̂xv̂
+      êperp1 = b̂ × v̂
+
+      if norm(êperp1) < 1f-3 # b̂ ∥ v̂
+         @warn "B is almost parallel to V!"
+         if abs(b̂[3] - 1) > 1f-3
+            êperp1 = b̂ × [0.0f0, 0.0f0, 1.0f0]
+            verbose && @info "use ẑ as reference"
+         else
+            êperp1 = b̂ × [0.0f0, 1.0f0, 0.0f0]
+            verbose && @info "use ŷ as reference"
+         end
+      end
+
+      êperp2 = b̂ × êperp1
+
       if slicetype == :bperp # slice in b_perp1/b_perp2
          ŝ = SVector{3}(b̂)
-         es = SMatrix{3,3}(hcat(b̂xv̂, b̂xb̂xv̂, b̂))
-      elseif slicetype == :bpar # slice in b_parallel/b_perp1 plane
-         ŝ = SVector{3}(b̂xb̂xv̂)
-         es = SMatrix{3,3}(hcat(b̂, b̂xv̂, b̂xb̂xv̂))
+         es = SMatrix{3,3}(hcat(êperp1, êperp2, b̂))
+      elseif slicetype == :bpar2 # slice in b_parallel/b_perp1 plane
+         ŝ = SVector{3}(êperp2)
+         es = SMatrix{3,3}(hcat(b̂, êperp1, êperp2))
       else # slice in b_parallel/b_perp2 plane
-         ŝ = SVector{3}(b̂xv̂)
-         es = SMatrix{3,3}(hcat(b̂xb̂xv̂, b̂, b̂xv̂))
+         ŝ = SVector{3}(êperp1)
+         es = SMatrix{3,3}(hcat(êperp2, b̂, êperp1))
       end
-      Rinv = let e = @SMatrix [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
+      Rinv = let e = @SMatrix Float32[1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
          getRotationMatrix(e, es)'
       end
+      # heuristic guess
+      v1size = vmesh.vblocks[1] * vmesh.vblock_size[1]
+      v2size = v1size
+      # Compute the ranges along the two perpendicular axis in the slice plane
+      r = zeros(Float32, 3,8)
+      r[:,1] = Rinv * Float32[vmesh.vmin[1], vmesh.vmin[2], vmesh.vmin[3]]
+      r[:,2] = Rinv * Float32[vmesh.vmin[1], vmesh.vmin[2], vmesh.vmax[3]]
+      r[:,3] = Rinv * Float32[vmesh.vmin[1], vmesh.vmax[2], vmesh.vmin[3]]
+      r[:,4] = Rinv * Float32[vmesh.vmin[1], vmesh.vmax[2], vmesh.vmax[3]]
+      r[:,5] = Rinv * Float32[vmesh.vmax[1], vmesh.vmin[2], vmesh.vmin[3]]
+      r[:,6] = Rinv * Float32[vmesh.vmax[1], vmesh.vmin[2], vmesh.vmax[3]]
+      r[:,7] = Rinv * Float32[vmesh.vmax[1], vmesh.vmax[2], vmesh.vmin[3]]
+      r[:,8] = Rinv * Float32[vmesh.vmax[1], vmesh.vmax[2], vmesh.vmax[3]]
+
+      v1min, v1max = @views extrema(r[1,:])
+      v2min, v2max = @views extrema(r[2,:])
    end
-
-   v1size = vmesh.vblocks[dir1] * vmesh.vblock_size[dir1]
-   v2size = vmesh.vblocks[dir2] * vmesh.vblock_size[dir2]
-
-   v1min, v1max = vmesh.vmin[dir1], vmesh.vmax[dir1]
-   v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
 
    @assert (v1max - v1min) / v1size ≈ (v2max - v2min) / v2size "Noncubic vgrid detected!"
    cellsize = (v1max - v1min) / v1size
+
+   r1 = LinRange(v1min, v1max, v1size+1) / unitvfactor
+   r2 = LinRange(v2min, v2max, v2size+1) / unitvfactor
 
    vcellids, vcellf = readvcells(meta, cidNearest; species)
 
@@ -326,9 +359,8 @@ function prep_vdf(meta::MetaVLSV, location;
       vnormal = [v[dir3] for v in Vselect]
 
       strx, stry = getindex(["vx", "vy", "vz"], [dir1, dir2])
-   elseif slicetype ∈ (:Bperp, :Bpar, :Bpar1)
-      #TODO: NOT working yet!
-      v1select = zeros(eltype(V), length(Vselect))
+   elseif slicetype ∈ (:bperp, :bpar1, :bpar2)
+      v1select = zeros(eltype(Vselect[1]), length(Vselect))
       v2select = similar(v1select)
       vnormal = similar(v1select)
 
@@ -339,7 +371,7 @@ function prep_vdf(meta::MetaVLSV, location;
       if slicetype == :bperp
          strx = L"$v_{B \times V}$"
          stry = L"$v_{B \times (B \times V)}$"
-      elseif slicetype == :bpar
+      elseif slicetype == :bpar2
          strx = L"$v_{B}$"
          stry = L"$v_{B \times V}$"
       elseif slicetype == :bpar1
@@ -376,9 +408,6 @@ function prep_vdf(meta::MetaVLSV, location;
 
    v1 ./= unitvfactor
    v2 ./= unitvfactor
-
-   r1 = LinRange(v1min, v1max, v1size+1) / unitvfactor
-   r2 = LinRange(v2min, v2max, v2size+1) / unitvfactor
 
    str_title = @sprintf "t = %4.1fs" meta.time
 
