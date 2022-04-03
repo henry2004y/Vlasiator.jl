@@ -263,43 +263,40 @@ end
 
 """
     getdensity(meta, VDF; species="proton")
-    getdensity(meta, vcellids, vcellf; species="proton")
+    getdensity(meta, vcellf; species="proton")
+    getdensity(vmesh::VMeshInfo, vcellf)
 
 Get density from `VDF` of `species` associated with `meta`, n = ∫ f(r,v) dV. Alternatively,
 one can directly pass `vcellids` as original indices of nonzero VDFs and `vcellf` as their
 corresponding values.
 """
-function getdensity(meta::MetaVLSV, VDF; species="proton")
-   (;dv) = meta.meshes[species]
-   n = zero(eltype(VDF))
+function getdensity(meta::MetaVLSV, VDF::Array{T};
+   species="proton") where T <: AbstractFloat
 
-   @inbounds @simd for f in VDF
-      n += f
-   end
-   n * convert(eltype(VDF), prod(dv))
+   (;dv) = meta.meshes[species]
+   n = sum(VDF) * convert(T, prod(dv))
 end
 
-function getdensity(meta::MetaVLSV, vcellids, vcellf; species="proton")
-   (;dv) = meta.meshes[species]
-
-   n = zero(eltype(vcellf))
-
-   @inbounds @simd for f in vcellf
-      n += f
-   end
-   n * convert(eltype(vcellf), prod(dv))
+function getdensity(vmesh::VMeshInfo, vcellf::Vector{T}) where T <: AbstractFloat
+   n = sum(vcellf) * convert(T, prod(vmesh.dv))
 end
+
+getdensity(meta::MetaVLSV, vcellf; species="proton") =
+   getdensity(meta.meshes[species], vcellf)
 
 """
     getvelocity(meta, VDF; species="proton")
     getvelocity(meta, vcellids, vcellf; species="proton")
+    getvelocity(vmesh::VMeshInfo, vcellids, vcellf)
 
 Get bulk velocity from `VDF` of `species`, u = ∫ v * f(r,v) dV / n. Alternatively, one can
 directly pass `vcellids`, `vcellf`, as in [`getdensity`](@ref).
 """
-function getvelocity(meta::MetaVLSV, VDF; species="proton")
+function getvelocity(meta::MetaVLSV, VDF::Array{T};
+   species="proton") where T <: AbstractFloat
+
    (;dv, vmin) = meta.meshes[species]
-   u = zeros(eltype(VDF), 3)
+   u = zeros(T, 3)
 
    @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
       vx = vmin[1] + (i - 0.5f0)*dv[1]
@@ -310,23 +307,22 @@ function getvelocity(meta::MetaVLSV, VDF; species="proton")
       u[3] += vz*VDF[i,j,k]
    end
 
-   n = zero(eltype(VDF))
-   @inbounds @simd for f in VDF
-      n += f
-   end
+   n = sum(VDF)
 
    u[1] / n, u[2] / n, u[3] / n
 end
 
-function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
-   (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
+function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
+   T <: AbstractFloat
+
+   (;vblock_size, vblocks, dv, vmin) = vmesh
    vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
    sliceCz = vblock_size[1]*vblock_size[2]
 
-   u = zeros(eltype(vcellf), 3)
+   u = zeros(T, 3)
 
    @inbounds @simd for ic in eachindex(vcellids)
       id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -342,25 +338,28 @@ function getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton")
       u[3] += vz*vcellf[ic]
    end
 
-   n = zero(eltype(vcellf))
-   @inbounds @simd for f in vcellf
-      n += f
-   end
+   n = sum(vcellf)
 
    u[1] / n, u[2] / n, u[3] / n
 end
 
+getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton") =
+   getvelocity(meta.meshes[species], vcellids, vcellf)
+
 """
     getpressure(meta, VDF; species="proton")
     getpressure(meta, vcellids, vcellf; species="proton")
+    getpressure(vmesh::VMeshInfo, vcellids, vcellf)
 
 Get pressure tensor (6 components) of `species` from `VDF` associated with `meta`,
 pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV. Alternatively, one can directly pass `vcellids`,
 `vcellf`, as in [`getdensity`](@ref).
 """
-function getpressure(meta::MetaVLSV, VDF; species="proton")
+function getpressure(meta::MetaVLSV, VDF::Array{T};
+   species="proton") where T <: AbstractFloat
+
    (;dv, vmin) = meta.meshes[species]
-   p = zeros(eltype(VDF), 6)
+   p = zeros(T, 6)
 
    u = getvelocity(meta, VDF; species)
 
@@ -377,21 +376,23 @@ function getpressure(meta::MetaVLSV, VDF; species="proton")
       p[6] += (vx - u[1])*(vy - u[2])*VDF[i,j,k]
    end
 
-   factor = mᵢ * convert(eltype(VDF), prod(dv))
+   factor = mᵢ * convert(T, prod(dv))
    (p.*factor)
 end
 
-function getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton")
-   (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
+function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
+   T <: AbstractFloat
+
+   (;vblock_size, vblocks, dv, vmin) = vmesh
    vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
    sliceCz = vblock_size[1]*vblock_size[2]
 
-   u = getvelocity(meta, vcellids, vcellf; species)
+   u = getvelocity(vmesh, vcellids, vcellf)
 
-   p = zeros(eltype(vcellf), 6)
+   p = zeros(T, 6)
 
    @inbounds @simd for ic in eachindex(vcellids)
       id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -410,9 +411,12 @@ function getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton")
       p[6] += (vx - u[1])*(vy - u[2])*vcellf[ic]
    end
 
-   factor = mᵢ * convert(eltype(vcellf), prod(dv))
+   factor = mᵢ * convert(T, prod(dv))
    (p.*factor)
 end
+
+getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton") =
+   getpressure(meta.meshes[species], vcellids, vcellf)
 
 "Get the original vcell index without blocks from raw vcell index `i` (0-based)."
 @inline function findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -520,7 +524,7 @@ function getmaxwellianity(meta, vcellids, vcellf; species="proton")
    sliceBz = vblocks[1]*vblocks[2]
    sliceCz = vblock_size[1]*vblock_size[2]
 
-   n = getdensity(meta, vcellids, vcellf)
+   n = getdensity(meta, vcellf)
    u = getvelocity(meta, vcellids, vcellf)
    P = getpressure(meta, vcellids, vcellf)
    p = (P[1] + P[2] + P[3]) / 3
