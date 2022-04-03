@@ -232,27 +232,38 @@ function prep_vdf(meta::MetaVLSV, location;
 
    if slicetype == :xy
       dir1, dir2, dir3 = 1, 2, 3
-      sliceNormal = [0., 0., 1.]
+      ŝ = @SVector [0., 0., 1.]
    elseif slicetype == :xz
       dir1, dir2, dir3 = 1, 3, 2
-      sliceNormal = [0., 1., 0.]
+      ŝ = @SVector [0., 1., 0.]
    elseif slicetype == :yz
       dir1, dir2, dir3 = 2, 3, 1
-      sliceNormal = [1., 0., 0.]
+      ŝ = @SVector [1., 0., 0.]
    elseif slicetype in (:bperp, :bpar, :bpar1)
-      if hasvariable(meta, "B_vol")
-         B = readvariable(meta, "B_vol", cidNearest)
-      elseif hasvariable(meta, "vg_b_vol")
+      if hasvariable(meta, "vg_b_vol")
          B = readvariable(meta, "vg_b_vol", cidNearest)
+      elseif hasvariable(meta, "B_vol")
+         B = readvariable(meta, "B_vol", cidNearest)
       end
-      BxV = B × Vbulk
+      if hasvariable(meta, "proton/vg_v")
+         V = readvariable(meta, "proton/vg_v", cidNearest)
+      end
+      b̂ = B ./ norm(B)
+      v̂ = V ./ norm(V)
+      b̂xv̂ = b̂ × v̂
+      b̂xb̂xv̂ = b̂ × b̂xv̂
       if slicetype == :bperp # slice in b_perp1/b_perp2
-         sliceNormal = B ./ norm(B)
-      elseif slicetype == :bpar1 # slice in b_parallel/b_perp1 plane
-         sliceNormal = B × BxV
-         sliceNormal ./= norm(sliceNormal)
+         ŝ = SVector{3}(b̂)
+         es = SMatrix{3,3}(hcat(b̂xv̂, b̂xb̂xv̂, b̂))
+      elseif slicetype == :bpar # slice in b_parallel/b_perp1 plane
+         ŝ = SVector{3}(b̂xb̂xv̂)
+         es = SMatrix{3,3}(hcat(b̂, b̂xv̂, b̂xb̂xv̂))
       else # slice in b_parallel/b_perp2 plane
-         sliceNormal = BxV ./ norm(BxV)
+         ŝ = SVector{3}(b̂xv̂)
+         es = SMatrix{3,3}(hcat(b̂xb̂xv̂, b̂, b̂xv̂))
+      end
+      Rinv = let e = @SMatrix [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
+         getRotationMatrix(e, es)'
       end
    end
 
@@ -271,11 +282,9 @@ function prep_vdf(meta::MetaVLSV, location;
 
    if center == :bulk # centered with bulk velocity
       Vbulk =
-         if hasvariable(meta, "moments")
-            # From a restart file
+         if hasvariable(meta, "moments") # From a restart file
             readvariable(meta, "restart_V", cidNearest)
-         elseif hasvariable(meta, species*"/vg_v")
-            # Vlasiator 5
+         elseif hasvariable(meta, species*"/vg_v") # Vlasiator 5
             readvariable(meta, species*"/vg_v", cidNearest)
          elseif hasvariable(meta, species*"/V")
             readvariable(meta, species*"/V", cidNearest)
@@ -318,24 +327,23 @@ function prep_vdf(meta::MetaVLSV, location;
       strx, stry = getindex(["vx", "vy", "vz"], [dir1, dir2])
    elseif slicetype ∈ (:Bperp, :Bpar, :Bpar1)
       #TODO: NOT working yet!
-      if slicetype == :Bperp
-         v1select = Vrot2[1,:] # the X axis of the slice is BcrossV=perp1
-         v2select = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-         vnormal = Vrot2[3,:] # the Z axis of the slice is B
+      v1select = zeros(eltype(V), length(Vselect))
+      v2select = similar(v1select)
+      vnormal = similar(v1select)
+
+      for iv in eachindex(Vselect)
+         v1select[iv], v2select[iv], vnormal[iv] = Rinv * Vselect[iv]
+      end
+
+      if slicetype == :bperp
          strx = L"$v_{B \times V}$"
          stry = L"$v_{B \times (B \times V)}$"
-      elseif slicetype == :Bpar
-         v1select = Vrot2[3,:] # the X axis of the slice is B
-         v2select = Vrot2[2,:] # the Y axis of the slice is Bcross(BcrossV)=perp2
-         vnormal = Vrot2[1,:] # the Z axis of the slice is -BcrossV=perp1
+      elseif slicetype == :bpar
          strx = L"$v_{B}$"
          stry = L"$v_{B \times V}$"
-      elseif slicetype == :Bpar1
-         v1select = Vrot2[3,:] # the X axis of the slice is B
-         v2select = Vrot2[1,:] # the Y axis of the slice is BcrossV=perp1
-         vnormal = Vrot2[2,:] # the Z axis of the slice is Bcross(BcrossV)=perp2
-         strx = L"$v_{B}$"
-         stry = L"$v_{B \times (B \times V)}$"
+      elseif slicetype == :bpar1
+         strx = L"$v_{B \times (B \times V)}$"
+         stry = L"$v_{B}$"
       end
    end
 
@@ -346,7 +354,7 @@ function prep_vdf(meta::MetaVLSV, location;
 
    if vslicethick < 0 # Set a proper thickness
       vslicethick =
-         if any(sliceNormal .== 1.0) # Assure that the slice cut through at least 1 vcell
+         if any(ŝ .== 1.0) # Assure that the slice cut through at least 1 vcell
             cellsize
          else # Assume cubic vspace grid, add extra space
             cellsize*(√3+0.05)

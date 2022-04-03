@@ -319,7 +319,7 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing;
    cb.ax.tick_params(which="both", direction="in")
    cb_title = cb.ax.set_ylabel("f(v)")
 
-   if slicetype in (:bperp, :bpar, :bpar1)
+   if slicetype in (:xy, :xz, :yz)
       # Draw vector of magnetic field direction
    end
 
