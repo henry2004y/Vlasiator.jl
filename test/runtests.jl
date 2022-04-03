@@ -281,7 +281,9 @@ end
          @test flux[3,3] == 29
          # saddle point test func
          flux = [x^2 - y^2 for x in -10:1.0:10, y in -10:1.0:10]
-         xi_, oi_ = find_reconnection_points(flux)
+         xi_, oi_ = find_reconnection_points(flux; method=1)
+         @test xi_ == [11; 11;;]
+         xi_, oi_ = find_reconnection_points(flux; method=2)
          @test xi_ == [11; 11;;]
       end
    end
