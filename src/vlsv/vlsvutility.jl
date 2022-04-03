@@ -224,7 +224,7 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getvcellcoordinates(meta, vcellids, species="proton")
+    getvcellcoordinates(meta, vcellids; species="proton")
 
 Return velocity cells' coordinates of `species` and `vcellids`.
 """
@@ -254,10 +254,11 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
       for cid in vcellblockids]
 
    # Get cell coordinates
-   cellCoords = [(0.0f0, 0.0f0, 0.0f0) for _ in vcellblockids]
+   cellCoords = [SVector(0.0f0, 0.0f0, 0.0f0) for _ in vcellblockids]
    @inbounds @simd for i in eachindex(vcellblockids)
-      cellCoords[i] = ntuple(j->blockCoord[i][j] + (cellidxyz[i][j] + 0.5) * dv[j], Val(3))
+      cellCoords[i] = [blockCoord[i][j] + (cellidxyz[i][j] + 0.5) * dv[j] for j in 1:3]
    end
+
    cellCoords
 end
 
