@@ -310,7 +310,8 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
 
    n = sum(VDF)
 
-   u[1] / n, u[2] / n, u[3] / n
+   u ./= n
+   SVector{3}(u)
 end
 
 function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
@@ -341,7 +342,8 @@ function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{
 
    n = sum(vcellf)
 
-   u[1] / n, u[2] / n, u[3] / n
+   u ./= n
+   SVector{3}(u)
 end
 
 getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton") =
@@ -378,7 +380,8 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
    end
 
    factor = mᵢ * convert(T, prod(dv))
-   (p.*factor)
+   p .*= factor
+   SVector{6}(p)
 end
 
 function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
@@ -413,7 +416,8 @@ function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{
    end
 
    factor = mᵢ * convert(T, prod(dv))
-   (p.*factor)
+   p .*= factor
+   SVector{6}(p)
 end
 
 getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton") =
