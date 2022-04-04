@@ -32,7 +32,7 @@ Reference: https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_ax
 ```julia
 using LinearAlgebra
 v = [-0.5, 1.0, 1.0]
-v̂ = v ./ norm(v) 
+v̂ = normalize(v)
 angle = deg2rad(-74)
 R = getRotationMatrix(v̂, angle)
 ```

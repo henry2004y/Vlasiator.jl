@@ -3,7 +3,7 @@ module Vlasiator
 using Requires
 using StaticArrays: SVector, @SVector, SMatrix, @SMatrix
 using Printf: @sprintf
-using LinearAlgebra: ×, dot, ⋅, norm, normalize!
+using LinearAlgebra: ×, dot, ⋅, norm, normalize, normalize!
 using Statistics: mean
 using EzXML
 using Mmap: mmap

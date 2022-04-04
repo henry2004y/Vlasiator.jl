@@ -61,7 +61,7 @@ end
 
 @userplot VDFSlice
 
-@recipe function f(h::VDFSlice; species="proton", unit=SI, unitv="km/s", slicetype=:nothing,
+@recipe function f(h::VDFSlice; species="proton", unit=SI, unitv="km/s", slicetype=:default,
    vslicethick=0.0, center=:nothing, fmin=-Inf, fmax=Inf, weight=:particle, flimit=-1.0,
    verbose=false)
 

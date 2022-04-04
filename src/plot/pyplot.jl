@@ -290,7 +290,7 @@ between `:particle` and `:flux`.
 """
 function vdfslice(meta::MetaVLSV, location, ax=nothing;
    limits=[-Inf32, Inf32, -Inf32, Inf32], verbose=false, species="proton",
-   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:nothing, vslicethick=0.0,
+   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:default, vslicethick=0.0,
    center=:nothing, weight=:particle, flimit=-1.0,
    kwargs...)
 

@@ -354,7 +354,7 @@ end
          output = @capture_err begin
             var = vdfslice(meta, loc; slicetype=:bperp).get_array()
          end
-         @test var[786] == 1.890920095674294e-5
+         @test var[786] == 4.02741885708042e-10
 
          output = @capture_err begin
             vdfslice(meta, loc; verbose=true)

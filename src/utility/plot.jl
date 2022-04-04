@@ -199,7 +199,7 @@ between `:particle` and `:flux`.
 - `verbose`: display the selection process.
 """
 function prep_vdf(meta::MetaVLSV, location;
-   species="proton", unit::AxisUnit=SI, unitv="km/s", slicetype=:nothing, vslicethick=0.0,
+   species="proton", unit::AxisUnit=SI, unitv="km/s", slicetype=:default, vslicethick=0.0,
    center=:nothing, weight=:particle, flimit=-1.0, verbose=false)
 
    ncells = meta.ncells
@@ -208,6 +208,10 @@ function prep_vdf(meta::MetaVLSV, location;
       vmesh = meta.meshes[species]
    else
       throw(ArgumentError("Unable to detect population $species"))
+   end
+
+   if slicetype ∉ (:default, :xy, :xz, :yz, :bperp, :bpar1, :bpar2)
+      throw(ArgumentError("Unknown type $slicetype"))
    end
 
    unit == EARTH && (location .*= RE)
@@ -220,7 +224,7 @@ function prep_vdf(meta::MetaVLSV, location;
    cidNearest = getnearestcellwithvdf(meta, cidReq)
 
    # Set normal direction
-   if slicetype == :nothing
+   if slicetype == :default
       slicetype =
          if ncells[2] == 1 && ncells[3] == 1 # 1D, select xz
             :xz
@@ -249,29 +253,20 @@ function prep_vdf(meta::MetaVLSV, location;
       v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
    elseif slicetype in (:bperp, :bpar1, :bpar2)
       if hasvariable(meta, "vg_b_vol")
-         B = readvariable(meta, "vg_b_vol", cidNearest) |> vec
+         b̂ = readvariable(meta, "vg_b_vol", cidNearest) |> vec |> normalize!
       elseif hasvariable(meta, "B_vol")
-         B = readvariable(meta, "B_vol", cidNearest)
+         b̂ = readvariable(meta, "B_vol", cidNearest) |> vec |> normalize!
       end
       if hasvariable(meta, "proton/vg_v")
-         V = readvariable(meta, "proton/vg_v", cidNearest) |> vec
-      end
-      b̂ = B ./ norm(B)
-      v̂ = V ./ norm(V)
-      êperp1 = b̂ × v̂
-
-      if norm(êperp1) < 1f-3 # b̂ ∥ v̂
-         @warn "B is almost parallel to V!"
-         if abs(b̂[3] - 1) > 1f-3
-            êperp1 = b̂ × [0.0f0, 0.0f0, 1.0f0]
-            verbose && @info "use ẑ as reference"
-         else
-            êperp1 = b̂ × [0.0f0, 1.0f0, 0.0f0]
-            verbose && @info "use ŷ as reference"
-         end
+         v̂ = readvariable(meta, "proton/vg_v", cidNearest) |> vec |> normalize!
       end
 
-      êperp2 = b̂ × êperp1
+      eperp1 = b̂ × v̂
+      êperp1 = normalize(eperp1)
+      # b̂ ∥ v̂
+      norm(eperp1) < 1f-1 && @warn "B is almost parallel to V!"
+
+      êperp2 = normalize(b̂ × êperp1)
 
       if slicetype == :bperp # slice in b_perp1/b_perp2
          ŝ = SVector{3}(b̂)
@@ -290,7 +285,7 @@ function prep_vdf(meta::MetaVLSV, location;
       v1size = vmesh.vblocks[1] * vmesh.vblock_size[1]
       v2size = v1size
       # Compute the ranges along the two perpendicular axis in the slice plane
-      r = zeros(Float32, 3,8)
+      r = zeros(Float32, 3, 8)
       r[:,1] = Rinv * Float32[vmesh.vmin[1], vmesh.vmin[2], vmesh.vmin[3]]
       r[:,2] = Rinv * Float32[vmesh.vmin[1], vmesh.vmin[2], vmesh.vmax[3]]
       r[:,3] = Rinv * Float32[vmesh.vmin[1], vmesh.vmax[2], vmesh.vmin[3]]
@@ -304,7 +299,9 @@ function prep_vdf(meta::MetaVLSV, location;
       v2min, v2max = @views extrema(r[2,:])
    end
 
-   @assert (v1max - v1min) / v1size ≈ (v2max - v2min) / v2size "Noncubic vgrid detected!"
+   if !isapprox((v1max - v1min) / v1size, (v2max - v2min) / v2size)
+      @warn "Noncubic vgrid applied!"
+   end
    cellsize = (v1max - v1min) / v1size
 
    r1 = LinRange(v1min, v1max, v1size+1) / unitvfactor
