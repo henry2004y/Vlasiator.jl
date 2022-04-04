@@ -11,7 +11,7 @@ in the X-Z plane and Y is the out-of-plane direction. This is strictly true if t
 field By is zero and B is divergence-free. However, numerically there will be errors.
 The current implementation calculates ψ by integrating along -z boundary first, and then
 going along z.
-Reference: https://doi.org/10.1063/1.3657424
+Reference: [Flux function](https://doi.org/10.1063/1.3657424)
 """
 function compute_flux_function(b::AbstractArray{T,N}, Δ, nG=2) where {T,N}
    dx, dz = Δ

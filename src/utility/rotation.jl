@@ -5,7 +5,7 @@
 
 Rotate `tensor` with a rotation matrix that aligns the 3rd direction with `vector`, which is
 equivalent to change the basis from (i,j,k) to (i′,j′,k′) where k′ ∥ vector.
-Reference: https://math.stackexchange.com/questions/2303869/tensor-rotation
+Reference: [Tensor rotation](https://math.stackexchange.com/questions/2303869/tensor-rotation)
 """
 function rotateTensorToVectorZ(tensor::AbstractMatrix{T}, v::AbstractVector{T}) where T
    k = SVector{3, T}(0.0, 0.0, 1.0)
@@ -25,7 +25,7 @@ end
 
 Create a rotation matrix for rotating a 3D vector around a unit `axis` by an `angle` in
 radians.
-Reference: https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
+Reference: [Rotation matrix from axis and angle](https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle)
 
 # Example
 
