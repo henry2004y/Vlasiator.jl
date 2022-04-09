@@ -144,6 +144,8 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 - `extent::Vector`: extent of axis ranges for plotting in the same unit as `axisunit`.
+- `normal::Symbol`: normal direction for slice of 3D data, `:x`, `:y`, `:z`.
+- `origin::Float`: origin of plane slice of 3D data.
 
 `pcolormesh(meta, var)`
 
