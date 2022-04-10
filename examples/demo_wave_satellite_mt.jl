@@ -1,9 +1,14 @@
 # Identification of EMIC and mirror modes in two frequency bands from single satellite data.
 #
 # EMIC: δB⟂ vs. δv_⟂
-# Mirror: δB∥ vs. δn 
+# Mirror: δB∥ vs. δn
 #
 # The moving box window size is decided empirically.
+#
+# Usage:
+#   julia -t 4 demo_wave_satellite_mt.jl
+# or
+#   JULIA_NUM_THREADS=4 julia demo_wave_satellite_mt.jl
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
@@ -12,6 +17,7 @@ using LinearAlgebra: ⋅, normalize!, norm
 using DSP, PyPlot, Glob
 using Vlasiator
 using Vlasiator: μ₀, mᵢ, RE
+using Polyester
 
 "Extract variables at `loc` from VLSV `files`."
 function extract_vars(files, loc)
@@ -28,7 +34,7 @@ function extract_vars(files, loc)
    end
 
    # Extract data from each frame
-   for i = eachindex(files)
+   @batch for i = eachindex(files)
       meta = load(files[i])
       t[i] = meta.time
       n[i] = readvariable(meta, "proton/vg_rho", id)[1]
@@ -41,11 +47,11 @@ function extract_vars(files, loc)
 end
 
 function moving_average(g::AbstractVector{<:AbstractFloat}, n::Int)
-   nbackward = div(n,2) 
+   nbackward = div(n,2)
    nforward = isodd(n) ? nbackward : nbackward - 1
    len = length(g)
    g_avg = similar(g)
-   @inbounds for i = 1:len
+   @inbounds @batch for i = 1:len
       lo = max(1, i - nbackward)
       hi = min(len, i + nforward)
       g_avg[i] = mean(@view g[lo:hi])
@@ -54,12 +60,12 @@ function moving_average(g::AbstractVector{<:AbstractFloat}, n::Int)
 end
 
 function moving_average(g::AbstractMatrix{<:AbstractFloat}, n::Int)
-   nbackward = div(n,2) 
+   nbackward = div(n,2)
    nforward = isodd(n) ? nbackward : nbackward - 1
    len = size(g,2)
    g_avg = similar(g)
    for icomp = axes(g,1)
-      @inbounds for i = 1:len
+      @inbounds @batch for i = 1:len
          lo = max(1, i - nbackward)
          hi = min(len, i + nforward)
          g_avg[icomp,i] = mean(@view g[icomp, lo:hi])
@@ -110,6 +116,7 @@ loc = [12Vlasiator.RE, 0, 0]
 nbox = 40 # moving box size, [# of indices]
 fs = 2.0 # sampling rate, [Hz]
 
+println("Running with $(Threads.nthreads()) threads...")
 println("Number of files: $(length(files))")
 println("Extracting location: $loc [m]")
 println("Sampling rate: $fs [Hz]")
