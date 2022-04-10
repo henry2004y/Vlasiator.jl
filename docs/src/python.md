@@ -25,6 +25,9 @@ plt.plot(x, rho)
 plt.show()
 ```
 
+!!! warn
+    For multithreading Python programs that call Julia, we need to make sure that PythonCall is installed in Julia. Otherwise the Python program will try to install PythonCall everytime!
+
 ## PyJulia
 
 Vlasiator.jl can also be called from Python with the aid of [PyJulia](https://pyjulia.readthedocs.io/en/latest/).
