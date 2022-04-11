@@ -26,7 +26,7 @@ plt.show()
 ```
 
 !!! warn
-    For multithreading Python programs that call Julia, we need to make sure that PythonCall is installed in Julia. Otherwise the Python program will try to install PythonCall everytime!
+    There seems to be issue that JuliaCall may decide to check pkg installation every time for a new session. We need to first make sure that PythonCall is installed in Julia; then either pip or conda should be set properly.
 
 ## PyJulia
 
