@@ -190,7 +190,7 @@ function isparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getcellcoordinates(meta, cid)
+    getcellcoordinates(meta, cid) -> NTuple{3, Float64}
 
 Return a given cell's spatial coordinates.
 """
