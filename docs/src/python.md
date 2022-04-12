@@ -26,7 +26,7 @@ plt.show()
 ```
 
 !!! warn
-    There seems to be issue that JuliaCall may decide to check pkg installation every time for a new session. We need to first make sure that PythonCall is installed in Julia; then either pip or conda should be set properly.
+    There seems to be issue that JuliaCall may decide to check pkg installation every time for a new session. We need to first make sure that PythonCall is installed in Julia; then make sure your `PYTHONPATH` is properly set. See this [issue](https://github.com/cjdoris/PythonCall.jl/issues/144) for more information.
 
 ## PyJulia
 
