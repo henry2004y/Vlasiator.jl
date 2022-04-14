@@ -33,6 +33,7 @@ export
    getchildren, getparent, isparent, getsiblings,
    getcellinline, getnearestcellwithvdf, getcellwithvdf,
    getdensity, getvelocity, getpressure, getmaxwellianity, write_vtk, write_vlsv, issame,
+   downsample_fg,read_variable_as_fg,read_fg_variable_as_volumetric,get_cell_fsgrid_slicemap,
    # plot helper
    SI, EARTH, Log, Linear, SymLog,
    # log
@@ -48,9 +49,6 @@ export
 
 precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))
-
-# oo, a typedef!
-realtype=Float64
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin

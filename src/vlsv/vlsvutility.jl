@@ -1173,7 +1173,7 @@ function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
 end
 
 """
-   downsamplefg(meta, array, ndims) -> vg array
+   downsample_fg(meta, array, ndims) -> vg array
 
 Downsamples a fg array (compatible with meta) of a variable with ndims components to SpatialGrid of the file meta.
 Returns the downsampled values in an array sized [length(meta.cellid), ndims].
@@ -1191,4 +1191,244 @@ function downsample_fg(meta, arr, ndims)
       end
    end
    vgout
+end
+
+function fsgrid_array_to_vg(reader, array)
+   array = [reader.downsample_fsgrid_subarray(cid, array) for cid in cellIds]
+end
+
+function downsample_fsgrid_subarray(meta, cellid, array)
+   fsarr = get_cell_fsgrid_subarray(meta, cellid, array)
+   n = length(fsarr)
+   if ndims(fsarr) == 4
+       n = n÷(size(fsarr)[1])
+   end
+   ncells = 8^(meta.maxamr-getlevel(meta, cellid))
+   if(n != ncells)
+       println("Warning: weird fs subarray size ", n, " for amrlevel ", getlevel(meta, cellid), "; expect ", ncells)
+   end
+   if ndims(fsarr) == 4
+       return dropdims(mean(fsarr,dims=[2,3,4]),dims=(2,3,4))
+   else
+       return [mean(fsarr)]
+   end
+end
+
+
+"""
+Convert spatial coordinates coords to an index array [xi, yi, zi] for fsgrid
+
+:returns 3-tuple of integers [xi, yi, zi] corresponding to fsgrid cell containing coords (low-inclusive)
+Example:
+ii = f.get_fsgrid_mesh_extent(coords)
+fsvar_at_coords = fsvar_array.item(ii)
+"""
+function get_fsgrid_indices(meta, coords)
+
+   lower = [i for i in meta.coordmin]
+   dx = get_fsgrid_cell_size(meta)
+   r0 = coords-lower
+   ri = Int.((r0.÷dx).+1)
+   sz = meta.fsgridcells
+   if any(i -> i < 1, ri) || any(i -> i[1] > i[2], zip(ri,sz))
+       println("get_fsgrid_indices: Resulting index out of bounds, returning missing")
+       println(ri)
+       println(r0)
+       println(sz)
+       println(coords)
+       println(lower)
+       return missing
+   end
+   return ri
+end
+
+"""
+   get_cell_fsgrid_subarray(meta, cellid, array)
+
+Returns a subarray of the fsgrid array, corresponding to the fsgrid
+covered by the SpatialGrid cellid.
+"""
+function get_cell_fsgrid_subarray(meta, cellid, array)
+
+   lowi, upi = get_cell_fsgrid_slicemap(meta, cellid)
+   li=lowi[1]
+   lj=lowi[2]
+   lk=lowi[3]
+   ui=upi[1]
+   uj=upi[2]
+   uk=upi[3]
+   if ndims(array) == 4
+       return array[:, li:ui, lj:uj, lk:uk]
+   else
+       return array[lowi[1]:upi[1], lowi[2]:upi[2], lowi[3]:upi[3]]
+   end
+end
+
+
+"""
+Returns a subarray of the fsgrid array, corresponding to the (low, up) bounding box.
+"""
+function get_bbox_fsgrid_subarray(meta, low, up, array)
+   lowi, upi = get_bbox_fsgrid_slicemap(meta, low,up)
+   #print('subarray:',lowi, upi)
+   if ndims(array) == 4
+       return array[:, lowi[0]:upi[0]+1, lowi[1]:upi[1]+1, lowi[2]:upi[2]+1]
+   else
+      return array[lowi[0]:upi[0]+1, lowi[1]:upi[1]+1, lowi[2]:upi[2]+1]
+   end
+end
+
+"""
+Returns a slice tuple of fsgrid indices that are contained in the SpatialGrid
+cell.
+"""
+function get_cell_fsgrid_slicemap(meta, cellid)
+   low, up = get_cell_bbox(meta, cellid)
+   lowi, upi = get_fsgrid_slice_indices(meta, low, up)
+   return lowi, upi
+end
+
+"""Returns the dx of a given cell defined by its cellid
+
+:param cellid:        The cell's cellid
+:returns:             The cell's size [dx, dy, dz]
+"""
+function get_cell_dx(meta, cellid)
+   return [i for i in meta.dcoord]./2^getlevel(meta, cellid)
+end
+"""
+Returns the bounding box of a given cell defined by its cellid
+
+:param cellid:        The cell's cellid
+:returns:             The cell's bbox [xmin,ymin,zmin],[xmax,ymax,zmax]
+"""
+function get_cell_bbox(self, cellid)
+   hdx = get_cell_dx(self, cellid)*0.5
+   mid = [i for i in getcellcoordinates(self, cellid)]
+   #println("halfdx:", hdx, "mid:", mid, "low:", mid-hdx, "hi:", mid+hdx, " cellid ", cellid, ", celldx ", hdx)
+   return mid-hdx, mid+hdx
+end
+
+
+"""
+Get indices for a subarray of an fsgrid variable, in the cuboid from lower to upper.
+This is meant for mapping a set of fsgrid cells to a given SpatialGrid cell.
+Shifts the corners (lower, upper) by dx_fsgrid*eps inward, if direct low-inclusive behaviour
+is required, set kword eps = 0.
+
+
+:returns two 3-tuples of integers.
+Example:
+ii = f.get_fsgrid_mesh_extent(coords)
+fsvar_at_coords = fsvar_array.item(ii)
+"""
+function get_fsgrid_slice_indices(meta, lower, upper, eps=1e-3)
+
+   dx = get_fsgrid_cell_size(meta)
+   eps = dx*eps
+   loweri = get_fsgrid_indices(meta, lower+eps)
+   upperi = get_fsgrid_indices(meta, upper-eps)
+   return loweri, upperi
+end
+
+"""
+Returns a slice tuple of fsgrid indices that are contained in the (low, up) bounding box.
+"""
+function get_bbox_fsgrid_slicemap(meta, low, up)
+
+   lowi, upi = get_fsgrid_slice_indices(meta, low, up)
+   return lowi, upi
+end
+
+""" Read fsgrid cell size
+
+:returns: Maximum and minimum coordinates of the mesh, [dx, dy, dz]
+"""
+function get_fsgrid_cell_size(meta)
+   ext = [i for i in meta.coordmax]-[i for i in meta.coordmin]
+   return ext./[i for i in meta.fsgridcells]
+end
+
+"""
+Set the elements of the fsgrid array to the value of corresponding SpatialGrid
+cellid. Mutator for array.
+"""
+function upsample_fsgrid_subarray!(meta, data, cellid, var, array)
+   lowi, upi = get_cell_fsgrid_slicemap(meta, cellid)
+   #println(cellid, lowi, upi)
+   #value = readvariable(meta, var, [cellid])
+   if ndims(array) == 4
+       dd = upi.-lowi.+1
+       array[:, lowi[1]:upi[1],lowi[2]:upi[2],lowi[3]:upi[3]] .= data[1:3]
+   else
+       array[lowi[1]:upi[1],lowi[2]:upi[2],lowi[3]:upi[3]] .= data
+   end
+end
+
+function read_variable_as_fg(meta, var)
+   sz = meta.fsgridcells
+   data = readvariable(meta, var)
+   if ndims(data) > 1
+       fgarr = zeros(typeof(data[1]), (size(data)[1], sz[1], sz[2], sz[3]))
+       for (i,c) in enumerate(readvariable(meta, "CellID"))
+           upsample_fsgrid_subarray!(meta, data[:,i], c, var, fgarr)
+       end
+   else
+       fgarr = zeros(typeof(data[1]), (sz[1], sz[2], sz[3]))
+       for (i,c) in enumerate(readvariable(meta, "CellID"))
+           upsample_fsgrid_subarray!(meta, data[i], c, var, fgarr)
+       end
+   end
+   
+
+   return fgarr
+end
+
+function read_fg_variable_as_volumetric(self, name, centering=missing)
+   fgdata = readvariable(self, name)
+
+   #assuming vector
+   fssize=size(fgdata)[2:end]
+   # how to do this in Julia?
+   if 1 in fssize 
+       println("Expanding a singleton dimension... maybe? Not yet implemented")
+       return missing
+   #   #expand to have a singleton dimension for a reduced dim - lets roll happen with ease
+   #   singletons = [i for (i, sz) in enumerate(fssize) if sz == 1]
+   #   for dim in singletons
+   #      fgdata=np.expand_dims(fgdata, dim)
+   #   end
+   end
+   celldata = zero(fgdata)
+   known_centerings = Dict("fg_b"=>"face", "fg_e"=>"edge")
+   if ismissing(centering)
+      try
+         centering = known_centerings[name]
+      catch KeyError
+         print("A variable ("*name*") with unknown centering! Aborting.")
+         return missing
+      end
+   end
+   #vector variable
+   if size(fgdata)[1] == 3
+      if centering=="face"
+         println("Face centering detected")
+         celldata[1,:,:,:] = (fgdata[1,:,:,:] + circshift(fgdata[1,:,:,:],(-1, 0, 0)))/2.0
+         celldata[2,:,:,:] = (fgdata[2,:,:,:] + circshift(fgdata[2,:,:,:],( 0,-1, 0)))/2.0
+         celldata[3,:,:,:] = (fgdata[3,:,:,:] + circshift(fgdata[3,:,:,:],( 0, 0,-1)))/2.0
+         # Use Leo's reconstuction for fg_b instead..
+      elseif centering=="edge"
+         celldata[1,:,:,:] = (fgdata[1,:,:,:] + circshift(fgdata[1, :,:,:],(0, -1, 0)) + circshift(fgdata[1,:,:,:], (0, 0, -1)) + circshift(fgdata[1,:,:,:], (0, -1, -1)))/4.0
+         celldata[2,:,:,:] = (fgdata[2,:,:,:] + circshift(fgdata[2, :,:,:],(-1, 0, 0)) + circshift(fgdata[2,:,:,:], (0, 0, -1)) + circshift(fgdata[2,:,:,:], (-1, 0, -1)))/4.0
+         celldata[3,:,:,:] = (fgdata[3,:,:,:] + circshift(fgdata[3, :,:,:],(-1, 0, 0)) + circshift(fgdata[3,:,:,:], (0, -1, 0)) + circshift(fgdata[3,:,:,:], (-1, -1, 0)))/4.0
+      else
+         println("Unknown centering ('" *centering* "')! Aborting.")
+         return missing
+      end
+   else
+      println("A scalar variable! I don't know what to do with this! Aborting.")
+      return false
+   end
+   #println("celldata size: ", size(celldata), ", celldata[:,10,10,10]: ", celldata[:,10,10,10])
+   return celldata
 end

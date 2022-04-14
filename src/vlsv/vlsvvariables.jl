@@ -73,11 +73,11 @@ const units_predefined = Dict(
    :MA => ("", L"$M_A$", ""),
    :Ppar => ("Pa", L"$P_\parallel$", "Pa"),
    :Pperp => ("Pa", L"$P_\perp$", "Pa"),
-   :Beta => ("",L"$\beta$", "")
-#   :Gyroperiod => ("s", L"$T_{gyro}$", "s"),
-#   :Plasmaperiod => ("s", L"$T_{plasma}$", "s"),
-#   :Gyrofrequency => ("/s", L"$\omega_{g}$", L"s^{-1}"),
-#   :Omegap => ("/s", L"$\omega_{p}$", L"s^{-1}"),
+   :Beta => ("",L"$\beta$", ""),
+   :Gyroperiod => ("s", L"$T_{gyro}$", "s"),
+   :Plasmaperiod => ("s", L"$T_{plasma}$", "s"),
+   :Gyrofrequency => ("/s", L"$\omega_{g}$", L"s^{-1}"),
+   :Omegap => ("/s", L"$\omega_{p}$", L"s^{-1}"),
 )
 
 # Define derived parameters
@@ -162,7 +162,7 @@ const variables_predefined = Dict(
       VS = @. √( (P*5.0f0/3.0f0) / ρm )
    end,
    :VA => function (meta, ids=UInt64[]) # Alfvén speed
-      ρm = readvariable(meta, :Rhom, ids)
+      ρm = readvariable(meta, "Rhom", ids)
       _fillinnerBC!(ρm, ρm)
       Bmag = readvariable(meta, "Bmag", ids) |> vec
       VA = @. Bmag / √(ρm*μ₀)

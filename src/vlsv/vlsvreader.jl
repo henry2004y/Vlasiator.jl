@@ -321,7 +321,9 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    (;fid, footer, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      data = variables_predefined[symvar](meta, sorted)
+      if sorted
+         @warn "The sorted keyword does nothing for predefined variables!"
+      data = variables_predefined[symvar](meta)
       return data
    end
 
