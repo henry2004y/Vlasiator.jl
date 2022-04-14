@@ -247,7 +247,7 @@ function set_plot(c, ax, pArgs::PlotArgs, ticks, addcolorbar)
    (;str_title, strx, stry, cb_title) = pArgs
 
    if addcolorbar
-      cb = colorbar(c; ax, ticks, fraction=0.04, pad=0.02)
+      cb = plt.colorbar(c; ax, ticks, fraction=0.04, pad=0.02)
       !isempty(cb_title) && cb.ax.set_ylabel(cb_title)
       cb.ax.tick_params(direction="in")
    end
@@ -259,8 +259,7 @@ function set_plot(c, ax, pArgs::PlotArgs, ticks, addcolorbar)
 
    # Set border line widths
    for loc in ("left", "bottom", "right", "top")
-      edge = get(ax.spines, loc, nothing)
-      edge.set_linewidth(2.0)
+      ax.spines[loc].set_linewidth(2.0)
    end
 
    ax.xaxis.set_tick_params(width=2.0, length=3)
@@ -318,7 +317,7 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing;
    ax.grid(color="grey", linestyle="-")
    ax.tick_params(direction="in")
 
-   cb = colorbar(h[4]; ax, fraction=0.04, pad=0.02)
+   cb = plt.colorbar(h[4]; ax, fraction=0.04, pad=0.02)
    cb.ax.tick_params(which="both", direction="in")
    cb_title = cb.ax.set_ylabel("f(v)")
 
