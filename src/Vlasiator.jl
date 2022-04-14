@@ -44,6 +44,9 @@ precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Bool))
 
 function __init__()
+   @require PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d" begin
+      include("plot/matplotlib.jl")
+   end
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
       include("plot/pyplot.jl")
    end
