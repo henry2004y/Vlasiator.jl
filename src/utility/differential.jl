@@ -11,12 +11,12 @@ function fg_grad(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
    invdx = inv.(dx*2)
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
-   if false && any(==(1), size(A)) # 2D
+   if any(==(1), size(A)) # 2D
       if size(A,4) == 1
          @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
             ∂A∂x = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[1]
-            ∂A∂y = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[2]
-            ∂A∂z = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[3]
+            ∂A∂y = (-A[i,j-1,1] + A[i,j+1,1]) * invdx[2]
+            ∂A∂z = 0
 
             Bx[i,j,1] = ∂A∂x
             By[i,j,1] = ∂A∂y
@@ -25,8 +25,8 @@ function fg_grad(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
       elseif size(A,3) == 1
          @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
             ∂A∂x = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[1]
-            ∂A∂y = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[2]
-            ∂A∂z = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[3]
+            ∂A∂y = 0
+            ∂A∂z = (-A[i,1,k-1] + A[i,1,k+1]) * invdx[3]
 
             Bx[i,1,k] = ∂A∂x
             By[i,1,k] = ∂A∂y
@@ -57,17 +57,17 @@ function fg_grad_component(dx::AbstractVector, Ain::AbstractArray{T,N}, c::Integ
    @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
 
    @views A = Ain[c,:,:,:]
-
+   #return fg_grad(dx, A) #?
    B = zeros(T, 3, size(A)[1], size(A)[2], size(A)[3])
    invdx = inv.(dx*2)
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
    
-   if false && any(==(1), size(A)) # 2D
+   if any(==(1), size(A)) # 2D
       if size(A,4) == 1
          @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
             ∂A∂x = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[1]
-            ∂A∂y = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[2]
-            ∂A∂z = (-A[i-1,j,1] + A[i+1,j,1]) * invdx[3]
+            ∂A∂y = (-A[i,j-1,1] + A[i,j+1,1]) * invdx[2]
+            ∂A∂z = 0
 
             Bx[i,j,1] = ∂A∂x
             By[i,j,1] = ∂A∂y
@@ -76,8 +76,8 @@ function fg_grad_component(dx::AbstractVector, Ain::AbstractArray{T,N}, c::Integ
       elseif size(A,3) == 1
          @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
             ∂A∂x = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[1]
-            ∂A∂y = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[2]
-            ∂A∂z = (-A[i-1,1,k] + A[i+1,1,k]) * invdx[3]
+            ∂A∂y = 0
+            ∂A∂z = (-A[i,1,k-1] + A[i,1,k+1]) * invdx[3]
 
             Bx[i,1,k] = ∂A∂x
             By[i,1,k] = ∂A∂y
@@ -119,10 +119,10 @@ function fg_curl(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
          @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
             ∂Ay∂x = (-Ay[i-1,j,1] + Ay[i+1,j,1]) * invdx[1]
             ∂Az∂x = (-Az[i-1,j,1] + Az[i+1,j,1]) * invdx[1]
-            ∂Ax∂y = (-Ax[i-1,j,1] + Ax[i+1,j,1]) * invdx[2]
-            ∂Az∂y = (-Az[i-1,j,1] + Az[i+1,j,1]) * invdx[2]
-            ∂Ax∂z = (-Ax[i-1,j,1] + Ax[i+1,j,1]) * invdx[3]
-            ∂Ay∂z = (-Ay[i-1,j,1] + Ay[i+1,j,1]) * invdx[3]
+            ∂Ax∂y = (-Ax[i,j-1,1] + Ax[i,j+1,1]) * invdx[2]
+            ∂Az∂y = (-Az[i,j-1,1] + Az[i,j+1,1]) * invdx[2]
+            ∂Ax∂z = 0
+            ∂Ay∂z = 0
 
             Bx[i,j,1] = ∂Az∂y - ∂Ay∂z
             By[i,j,1] = ∂Ax∂z - ∂Az∂x
@@ -132,10 +132,10 @@ function fg_curl(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
          @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
             ∂Ay∂x = (-Ay[i-1,1,k] + Ay[i+1,1,k]) * invdx[1]
             ∂Az∂x = (-Az[i-1,1,k] + Az[i+1,1,k]) * invdx[1]
-            ∂Ax∂y = (-Ax[i-1,1,k] + Ax[i+1,1,k]) * invdx[2]
-            ∂Az∂y = (-Az[i-1,1,k] + Az[i+1,1,k]) * invdx[2]
-            ∂Ax∂z = (-Ax[i-1,1,k] + Ax[i+1,1,k]) * invdx[3]
-            ∂Ay∂z = (-Ay[i-1,1,k] + Ay[i+1,1,k]) * invdx[3]
+            ∂Ax∂y = 0
+            ∂Az∂y = 0
+            ∂Ax∂z = (-Ax[i,1,k-1] + Ax[i,1,k+1]) * invdx[3]
+            ∂Ay∂z = (-Ay[i,1,k-1] + Ay[i,1,k+1]) * invdx[3]
 
             Bx[i,1,k] = ∂Az∂y - ∂Ay∂z
             By[i,1,k] = ∂Ax∂z - ∂Az∂x
@@ -180,10 +180,10 @@ function fg_div(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
          @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
             ∂Ay∂x = (-Ay[i-1,j,1] + Ay[i+1,j,1]) * invdx[1]
             ∂Az∂x = (-Az[i-1,j,1] + Az[i+1,j,1]) * invdx[1]
-            ∂Ax∂y = (-Ax[i-1,j,1] + Ax[i+1,j,1]) * invdx[2]
-            ∂Az∂y = (-Az[i-1,j,1] + Az[i+1,j,1]) * invdx[2]
-            ∂Ax∂z = (-Ax[i-1,j,1] + Ax[i+1,j,1]) * invdx[3]
-            ∂Ay∂z = (-Ay[i-1,j,1] + Ay[i+1,j,1]) * invdx[3]
+            ∂Ax∂y = (-Ax[i,j-1,1] + Ax[i,j+1,1]) * invdx[2]
+            ∂Az∂y = (-Az[i,j-1,1] + Az[i,j+1,1]) * invdx[2]
+            ∂Ax∂z = 0
+            ∂Ay∂z = 0
 
             Bx[i,j,1] = ∂Az∂y - ∂Ay∂z
             By[i,j,1] = ∂Ax∂z - ∂Az∂x
@@ -193,10 +193,10 @@ function fg_div(dx::AbstractVector, A::AbstractArray{T,N}) where {T,N}
          @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
             ∂Ay∂x = (-Ay[i-1,1,k] + Ay[i+1,1,k]) * invdx[1]
             ∂Az∂x = (-Az[i-1,1,k] + Az[i+1,1,k]) * invdx[1]
-            ∂Ax∂y = (-Ax[i-1,1,k] + Ax[i+1,1,k]) * invdx[2]
-            ∂Az∂y = (-Az[i-1,1,k] + Az[i+1,1,k]) * invdx[2]
-            ∂Ax∂z = (-Ax[i-1,1,k] + Ax[i+1,1,k]) * invdx[3]
-            ∂Ay∂z = (-Ay[i-1,1,k] + Ay[i+1,1,k]) * invdx[3]
+            ∂Ax∂y = 0
+            ∂Az∂y = 0
+            ∂Ax∂z = (-Ax[i,1,k-1] + Ax[i,1,k+1]) * invdx[3]
+            ∂Ay∂z = (-Ay[i,1,k-1] + Ay[i,1,k+1]) * invdx[3]
 
             Bx[i,1,k] = ∂Az∂y - ∂Ay∂z
             By[i,1,k] = ∂Ax∂z - ∂Az∂x
