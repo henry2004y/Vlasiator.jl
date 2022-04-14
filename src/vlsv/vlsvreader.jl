@@ -322,7 +322,8 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    (;fid, footer, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       if sorted
-         @warn "The sorted keyword does nothing for predefined variables!"
+         @warn "The sorted keyword does nothing for predefined variables ("*string(var)*")!"
+      end
       data = variables_predefined[symvar](meta)
       return data
    end
