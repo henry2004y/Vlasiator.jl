@@ -4,7 +4,7 @@ using RecipesBase, Printf
 
 # Build a recipe which acts on a custom type.
 @recipe function f(meta::MetaVLSV, var::AbstractString;
-   comp=:mag, axisunit=Vlasiator.EARTH, normal=:y)
+   comp=0, axisunit=Vlasiator.EARTH, normal=:y)
 
    (;ncells, coordmin, coordmax) = meta
    if ndims(meta) == 1
@@ -61,7 +61,7 @@ end
 
 @userplot VDFSlice
 
-@recipe function f(h::VDFSlice; species="proton", unit=SI, unitv="km/s", slicetype=:nothing,
+@recipe function f(h::VDFSlice; species="proton", unit=SI, unitv="km/s", slicetype=:default,
    vslicethick=0.0, center=:nothing, fmin=-Inf, fmax=Inf, weight=:particle, flimit=-1.0,
    verbose=false)
 

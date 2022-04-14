@@ -1,5 +1,5 @@
 # Finding X-points in a 2D magnetic reconnection configuration and saving the coordinates
-# from multiple outputs.
+# as well as extracted reconnection rate Ey from multiple outputs.
 # This example assumes X-Z meridional plane.
 #
 # Hongyang Zhou, hyzhou@umich.edu
@@ -31,11 +31,26 @@ x_points_z = similar(x_points_x)
    b = reshape(b, 3, meta.ncells[1], meta.ncells[3])
 
    flux = compute_flux_function(b, dx, nG)
-   indices_x, _ = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_], 1e-2)
+   indices_x, _ = find_reconnection_points(flux[xmin_:xmax_,zmin_:zmax_], 5e-3)
 
    push!(x_points_x, x[indices_x[1,:].+xmin_.-1])
    push!(x_points_z, z[indices_x[2,:].+zmin_.-1])
 end
 
+## Extract Ey at X-points
+
+ey = Vector{Vector{Float32}}(undef, 0)
+
+for it in eachindex(x_points_x)
+   meta = load(files[it])
+   ids = Vector{UInt64}(undef, length(x_points_x[it]))
+   for ip in eachindex(x_points_x[it])
+      loc = [x_points_x[it][ip], 0.0, x_points_z[it][ip]] .* Vlasiator.RE
+      ids[ip] = getcell(meta, loc)
+   end
+   ey_now = readvariable(meta, "vg_e_vol", ids)[2,:]
+   push!(ey, ey_now)
+end
+
 # save
-jldsave("x_point_locations.jld2"; x_points_x, x_points_z)
+jldsave("x_point_locations.jld2"; x_points_x, x_points_z, ey)

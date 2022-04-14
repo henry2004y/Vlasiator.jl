@@ -1,5 +1,6 @@
 using Vlasiator, LaTeXStrings, SHA, LazyArtifacts
-using Suppressor: @capture_out, @capture_err
+using Suppressor: @capture_out, @capture_err, @suppress_out
+using REPL.TerminalMenus
 using Test
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
@@ -14,6 +15,21 @@ function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
       end
    end
    result
+end
+
+function simulateInput(keys...)
+
+   keydict = Dict(:up => "\e[A",
+                  :down => "\e[B",
+                  :enter => "\r")
+
+   for key in keys
+      if isa(key, Symbol)
+         write(Base.stdin.buffer, keydict[key])
+      else
+         write(Base.stdin.buffer, "$key")
+      end
+   end
 end
 
 @testset "Vlasiator.jl" begin
@@ -78,16 +94,20 @@ end
          # velocity space reading
          vcellids, vcellf = readvcells(meta, 5; species="proton")
          V = getvcellcoordinates(meta, vcellids; species="proton")
-         @test V[end] == (2.45f0, 1.95f0, 1.95f0)
+         @test V[end] == [2.45f0, 1.95f0, 1.95f0]
          @test_throws ArgumentError readvcells(meta, 2)
-         f = Vlasiator.flatten(meta.meshes["proton"], vcellids, vcellf)
+         vcids = Vlasiator.reorder(meta.meshes["proton"], vcellids)
+         @test vcids[5] == 0x00000029
+         f = Vlasiator.reconstruct(meta.meshes["proton"], vcellids, vcellf)
          @test f[CartesianIndex(26, 20, 20)] == 85.41775f0
          @test getdensity(meta, f) ≈ 1.8255334f0
-         @test getdensity(meta, vcellids, vcellf) ≈ 1.8255334f0
+         @test getdensity(meta, vcellf) ≈ 1.8255334f0
          @test getvelocity(meta, f)[1] ≈ 1.0f0 rtol=3e-3
          @test getvelocity(meta, vcellids, vcellf)[1] ≈ 1.0f0 rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
+         @test getpressure(meta, vcellids, vcellf) ≈ zeros(Float32, 6) atol=1e-16
          @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
+         @test getmaxwellianity(meta, vcellids, vcellf) ≈ 5.741325243685855 rtol=1e-4
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3
@@ -156,6 +176,8 @@ end
 
          @test meta["VA"] |> nanmaximum == 2.3202628822256166e8
 
+         @test readvariable(meta, "VA", [1,2])[2] == 65507.75496283364
+
          @test meta["MA"][end] == 10.700530839822328
 
          @test meta["MS"][end] == 16.9375888861409
@@ -195,6 +217,8 @@ end
          @test meta["Omegap"][1] == 209.5467447842415
 
          @test meta["Plasmaperiod"][1] == 0.0047722048893178645
+
+         @test meta["MagneticTension"][3, 40, 50] == -3.6856588f-19
       end
       @testset "VLSV writing" begin
          meta = meta1
@@ -215,6 +239,11 @@ end
 
    if group in (:utility, :all)
       @testset "Rotation" begin
+         e1 = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
+         e2 = [0.0 1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
+         R = Vlasiator.getRotationMatrix(e1, e2)
+         @test R == e2
+
          v = fill(1/√3, 3)
          θ = π / 4
          R = Vlasiator.getRotationMatrix(v, θ)
@@ -252,7 +281,9 @@ end
          @test flux[3,3] == 29
          # saddle point test func
          flux = [x^2 - y^2 for x in -10:1.0:10, y in -10:1.0:10]
-         xi_, oi_ = find_reconnection_points(flux)
+         xi_, oi_ = find_reconnection_points(flux; method=1)
+         @test xi_ == [11; 11;;]
+         xi_, oi_ = find_reconnection_points(flux; method=2)
          @test xi_ == [11; 11;;]
       end
    end
@@ -320,6 +351,10 @@ end
          var = vdfslice(meta, loc).get_array()
          @test var[786] == 238.24398578141802
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
+         output = @capture_err begin
+            var = vdfslice(meta, loc; slicetype=:bperp).get_array()
+         end
+         @test var[786] == 4.02741885708042e-10
 
          output = @capture_err begin
             vdfslice(meta, loc; verbose=true)
@@ -372,6 +407,17 @@ end
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
             rec[1].args[1] isa LinRange
+      end
+
+      @testset "Plot UI" begin
+         meta = meta1
+         simulateInput(:enter)
+         @suppress_out pui(meta; suppress_output=true)
+         @test true # if it reaches here, then pass
+         meta = meta2
+         simulateInput(fill(:down,5), :enter, :enter);
+         @suppress_out pui(meta; suppress_output=true)
+         @test true # if it reaches here, then pass
       end
    end
    for meta in (meta1, meta2, meta3)

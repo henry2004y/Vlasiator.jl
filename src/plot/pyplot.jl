@@ -1,8 +1,10 @@
 # Plotting functionalities from Matplotlib.
 
 using PyPlot
+using REPL.TerminalMenus # Command line UI
 
 export plot, pcolormesh, pcolormeshslice, vdfslice, streamplot, quiver, plotmesh
+export pui
 
 @static if matplotlib.__version__ ≥ "3.3"
    matplotlib.rc("image", cmap="turbo") # set default colormap
@@ -18,17 +20,17 @@ matplotlib.rc("ytick", labelsize=10)
 
 
 """
-    plot(meta, var, ax=nothing; comp=:0, kwargs)
+    plot(meta, var, ax=nothing; comp=0, kwargs)
 
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
-The keyword `comp` in (`:0`, `:1`, `:2`, `:3`) is used to specify the component of a vector.
+The keyword `comp` in (0, 1, 2, 3) is used to specify the component of a vector.
 """
-function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=:0, kwargs...)
+function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=0, kwargs...)
    ndims(meta) == 1 || error("plot only accepts 1D data!")
 
    datafull = readvariable(meta, var)
 
-   if comp == :0
+   if comp == 0
       data = datafull
    else
       data = datafull[comp,:]
@@ -126,7 +128,7 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       comp=:mag, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
+       comp=0, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
        addcolorbar=true, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
@@ -134,13 +136,16 @@ If `ax` is provided, then it will plot on that axes.
 If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
-- `comp::Symbol`: the component of a vector, chosen from `:mag, :x, :y, :z, :1, :2, :3`.
+- `comp::Tuple{Int64, Symbol}`: the component of a vector, chosen from
+`:mag, :x, :y, :z, 0, 1, 2, 3`.
 - `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.
 - `vmax::Float`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
 - `extent::Vector`: extent of axis ranges for plotting in the same unit as `axisunit`.
+- `normal::Symbol`: normal direction for slice of 3D data, `:x`, `:y`, `:z`.
+- `origin::Float`: origin of plane slice of 3D data.
 
 `pcolormesh(meta, var)`
 
@@ -149,7 +154,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 `pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])`
 """
 function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp=:mag, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
+   comp=0, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
    vmin=-Inf32, vmax=Inf32, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
@@ -204,7 +209,7 @@ Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorsc
 Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
 linear, logarithmic and symmetric logarithmic, like centered, discrete, and two slope norm.
 For fine-grain control, it is suggested to use the norm methods from `matplotlib.colors`.
-For instance, 
+For instance,
 ```
 julia> norm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
 julia> norm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
@@ -272,8 +277,9 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 - `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
-- `slicetype`: symbol for choosing the slice type from :xy, :xz, :yz, :bperp, :bpar, :bpar1.
-- `center`: symbol for setting the reference frame from :bulk, :peak.
+- `slicetype`: symbol for choosing the slice type from `:xy`, `:xz`, `:yz`,
+`:bperp`, `:bpar1`, `:bpar2`.
+- `center`: symbol for setting the reference frame from `:bulk`, `:peak`.
 - `vslicethick`: setting the velocity space slice thickness in the normal direction. If set
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
@@ -286,7 +292,7 @@ between `:particle` and `:flux`.
 """
 function vdfslice(meta::MetaVLSV, location, ax=nothing;
    limits=[-Inf32, Inf32, -Inf32, Inf32], verbose=false, species="proton",
-   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:nothing, vslicethick=0.0,
+   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:default, vslicethick=0.0,
    center=:nothing, weight=:particle, flimit=-1.0,
    kwargs...)
 
@@ -316,7 +322,7 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing;
    cb.ax.tick_params(which="both", direction="in")
    cb_title = cb.ax.set_ylabel("f(v)")
 
-   if slicetype in (:bperp, :bpar, :bpar1)
+   if slicetype in (:xy, :xz, :yz)
       # Draw vector of magnetic field direction
    end
 
@@ -366,3 +372,44 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
    end
    s
 end
+
+"""
+    pui(meta::MetaVLSV)
+
+Quick plotting via command line interactive selections.
+"""
+function pui(meta::MetaVLSV; suppress_output=false)
+
+   menu = RadioMenu(meta.variable; charset=:ascii)
+
+   println("Choose variable to plot:")
+   var_ = request(menu; suppress_output)
+
+   var_ == -1 && error("Variable selection canceled.")
+
+   comp = 0
+
+   if meta.variable[var_] in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") ||
+      endswith(meta.variable[var_], "vg_v") ||
+      occursin("vg_ptensor", meta.variable[var_])
+
+      menu = RadioMenu(["x","y","z","mag"]; charset=:ascii)
+
+      comp = request("Choose vector component to plot:", menu; suppress_output)
+
+      comp == -1 && error("Vector component selection canceled.")
+
+      comp == 4 && (comp = 0)
+   end
+
+   if ndims(meta) != 1
+      pcolormesh(meta, meta.variable[var_]; comp)
+   else # 1D
+      plot(meta, meta.variable[var_]; comp)
+   end
+
+   return
+end
+
+"Direct file plotting."
+pui(file::AbstractString) = file |> load |> plot_ui
