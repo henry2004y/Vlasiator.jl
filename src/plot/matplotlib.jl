@@ -5,6 +5,7 @@ using REPL.TerminalMenus # Command line UI
 
 export plot, pcolormesh, pcolormeshslice, vdfslice, streamplot, quiver, plotmesh
 export pui
+export mpl, plt # common Python equivalent shorthand notations
 
 mpl = pyimport("matplotlib")
 mpl.use("tkagg") # enforce backend
