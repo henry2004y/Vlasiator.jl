@@ -15,7 +15,7 @@ using Dates
 include("utility/rotation.jl")
 include("utility/log.jl")
 include("utility/monitor.jl")
-include("utility/array.jl")
+include("utility/differential.jl")
 include("utility/fluxfunction.jl")
 include("vlsv/vlsvreader.jl")
 include("vlsv/vlsvutility.jl")
