@@ -27,5 +27,6 @@ function readlog(file)
 
    timediff = diff(timestamps) / 1000 # duration for each step in [s]
    speed = [timediff[i].value / stepsizes[i] for i in eachindex(timediff)]
+
    return @views timestamps[1:end-1], speed
 end

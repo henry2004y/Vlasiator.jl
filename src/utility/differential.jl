@@ -56,6 +56,7 @@ function curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
          Bz[i,j,k] = ∂Ay∂x - ∂Ax∂y
       end
    end
+
    B
 end
 
@@ -110,6 +111,7 @@ function gradient(A::AbstractArray{T,N}, dx=ones(T, N)) where {T,N}
          Bx[i] = ∂A∂x
       end     
    end
+
    B
 end
 
@@ -136,5 +138,6 @@ function divergence(A::AbstractArray{T,N}, dx=ones(T, 3)) where {T,N}
 
       B[i,j,k] = ∂Ax∂x + ∂Ay∂y + ∂Az∂z
    end
+
    B
 end

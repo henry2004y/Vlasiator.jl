@@ -249,7 +249,7 @@ function load(file::AbstractString)
       dcoord, species, meshes)
 end
 
-# Allow do ... end syntax.
+# Allow `do ... end` syntax.
 function load(f::Function, file::AbstractString)
    meta = load(file)
    try
@@ -266,6 +266,7 @@ function getmaxrefinement(cellid, cellindex, ncells)
       maxamr += 1
       cid += ncell*8^maxamr
    end
+
    maxamr
 end
 
@@ -346,6 +347,7 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
    else
       data = raw
    end
+
    return data
 end
 
@@ -381,6 +383,7 @@ function readvariable(meta::MetaVLSV, var, ids)
    if T == Float64
       v = Float32.(v)
    end
+
    return v
 end
 
@@ -417,6 +420,7 @@ function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
       end
       offsetnow = offsetnext
    end
+
    return
 end
 

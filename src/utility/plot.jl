@@ -130,6 +130,7 @@ function prep2d(meta::MetaVLSV, var, comp=0)
       else
          dataRaw
       end
+
    data
 end
 
@@ -173,6 +174,7 @@ function prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
          end
       end
    end
+
    data
 end
 

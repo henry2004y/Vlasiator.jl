@@ -52,6 +52,7 @@ function getlevel(meta::MetaVLSV, cid::Integer)
       ilevel += 1
       c -= 2^(3*ilevel)*ncell
    end
+
    ilevel
 end
 
@@ -90,6 +91,7 @@ function getparent(meta::MetaVLSV, cid::Integer)
       # get parent cellid (may not exist!!!)
       parentid = cid1st + izparent*xcell*ycell÷4 + iyparent*xcell÷2 + ixparent
    end
+
    parentid
 end
 
@@ -132,6 +134,7 @@ function getchildren(meta::MetaVLSV, cid::Integer)
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell*4 + i[2]*xcell*2 + i[1]
    end
+
    (cid)
 end
 
@@ -175,6 +178,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell + i[2]*xcell + i[1]
    end
+
    (cid)
 end
 
@@ -275,6 +279,7 @@ function getdensity(meta::MetaVLSV, VDF::Array{T};
    species="proton") where T <: AbstractFloat
 
    (;dv) = meta.meshes[species]
+
    n = sum(VDF) * convert(T, prod(dv))
 end
 
@@ -311,6 +316,7 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
    n = sum(VDF)
 
    u ./= n
+
    SVector{3}(u)
 end
 
@@ -343,6 +349,7 @@ function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{
    n = sum(vcellf)
 
    u ./= n
+
    SVector{3}(u)
 end
 
@@ -381,6 +388,7 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
 
    factor = mᵢ * convert(T, prod(dv))
    p .*= factor
+
    SVector{6}(p)
 end
 
@@ -417,6 +425,7 @@ function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{
 
    factor = mᵢ * convert(T, prod(dv))
    p .*= factor
+
    SVector{6}(p)
 end
 
@@ -436,6 +445,7 @@ getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton") =
    iBCx = iBx*vblock_size[1] + iCx
    iBCy = iBy*vblock_size[2] + iCy
    iBCz = iBz*vblock_size[3] + iCz
+
    iOrigin = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx
 end
 
@@ -795,6 +805,7 @@ function getnearestcellwithvdf(meta::MetaVLSV, id)
    end
    coords_orig = getcellcoordinates(meta, id)
    d2 = [sum((c .- coords_orig).^2) for c in coords]
+
    cells[argmin(d2)]
 end
 
@@ -1132,6 +1143,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
       end
       write(io, string(footer), '\n')
    end
+
    return
 end
 
@@ -1169,5 +1181,6 @@ function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
    verbose && isIdentical && println("$f1 and $f2 are identical under tolerance $tol.")
    close(meta1.fid)
    close(meta2.fid)
+
    return isIdentical
 end
