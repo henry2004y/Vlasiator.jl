@@ -72,7 +72,7 @@ function getparent(meta::MetaVLSV, cid::Integer)
       throw(ArgumentError("Cell ID $cid has no parent cell!"))
    else
       # get the first cellid on my level
-      cid1st = get1stcell(mylvl, ncell) + 1
+      cid1st = get1stcell(mylvl, ncell)
       # get row and column sequence on my level (starting with 0)
       xcell <<= mylvl
       ycell <<= mylvl
@@ -155,7 +155,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
    ycell = ycell << mylvl
 
    # 1st cellid on my level
-   cid1st = get1stcell(mylvl, ncell) + 1
+   cid1st = get1stcell(mylvl, ncell)
 
    # xyz sequences on my level (starting with 0)
    myseq = cid - cid1st
@@ -190,7 +190,7 @@ Check if `cid` is a parent cell.
 function isparent(meta::MetaVLSV, cid::Integer)
    ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
-   cid ∉ meta.cellid && 0 < cid ≤ ncell_accum
+   cid ∉ meta.cellid && 0 < cid < ncell_accum
 end
 
 """
@@ -822,18 +822,12 @@ function getcellwithvdf(meta::MetaVLSV)
    innerBCCells = findall(==(0), nblock_C)
 
    deleteat!(cellsWithVDF, innerBCCells)
+
    cellsWithVDF
 end
 
-
-"Return the first cellid - 1 on `mylevel` given `ncells` on this level."
-function get1stcell(mylevel, ncells)
-   cid1st = 0
-   for i = 0:mylevel-1
-      cid1st += ncells*8^i
-   end
-   cid1st
-end
+"Return the first cell ID on `mylevel` given `ncells` on this level."
+get1stcell(mylevel, ncells) = ncells * (8^mylevel - 1) ÷ 7 + 1
 
 fillmesh(meta::MetaVLSV, vars::AbstractString) = fillmesh(meta, [vars])
 
