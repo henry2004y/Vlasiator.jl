@@ -768,7 +768,8 @@ end
 
 "Compute every cell id's x, y and z indexes on the given refinement level (0-based)."
 @inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, ids)
-   slicesize = xcells*ycells*4^ilevel
+   ratio = 2^ilevel
+   slicesize = xcells*ycells*ratio^2
 
    iz = @. (ids - nCellUptoLowerLvl - 1) ÷ slicesize
    iy = similar(iz)
@@ -776,18 +777,21 @@ end
    @inbounds for i in eachindex(ids, iz)
       # number of ids up to the coordinate z in the refinement level ilevel
       idUpToZ = muladd(iz[i], slicesize, nCellUptoLowerLvl)
-      iy[i] = (ids[i] - idUpToZ - 1) ÷ (xcells*2^ilevel)
-      ix[i] = ids[i] - idUpToZ - iy[i]*xcells*2^ilevel - 1
+      iy[i] = (ids[i] - idUpToZ - 1) ÷ (xcells*ratio)
+      ix[i] = ids[i] - idUpToZ - iy[i]*xcells*ratio - 1
    end
+
    ix, iy, iz
 end
 
-@inline function getindexes(ilvl, xcells, ycells, nCellUptoLowerLvl, id::Integer)
-   slicesize = xcells*ycells*4^ilvl
+@inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, id::Integer)
+   ratio = 2^ilevel
+   slicesize = xcells*ycells*ratio^2
    iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
    idUpToZ = muladd(iz, slicesize, nCellUptoLowerLvl)
-   iy = (id - idUpToZ - 1) ÷ (xcells*2^ilvl)
-   ix = id - idUpToZ - iy*xcells*2^ilvl - 1
+   iy = (id - idUpToZ - 1) ÷ (xcells*ratio)
+   ix = id - idUpToZ - iy*xcells*ratio - 1
+
    ix, iy, iz
 end
 
