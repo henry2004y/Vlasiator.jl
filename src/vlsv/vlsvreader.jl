@@ -84,7 +84,7 @@ end
 
 
 "Return size and type information for the inquired parameter/data with `name`."
-function getObjInfo(footer, name, tag, attr)
+function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
    local arraysize, datasize, datatype, vectorsize, variable_offset
    isFound = false
 
@@ -115,7 +115,7 @@ function getObjInfo(footer, name, tag, attr)
 end
 
 "Return vector of `name` from the VLSV file with `footer` associated with stream `fid`."
-function readvector(fid::IOStream, footer, name, tag)
+function readvector(fid::IOStream, footer::EzXML.Node, name::String, tag::String)
    T, offset, asize, dsize, vsize = getObjInfo(footer, name, tag, "name")
 
    if Sys.total_memory() > 8*asize*vsize*dsize
@@ -259,7 +259,9 @@ function load(f::Function, file::AbstractString)
    end
 end
 
-function getmaxrefinement(cellid, cellindex, ncells)
+function getmaxrefinement(cellid::AbstractArray{UInt64, 1}, cellindex::Vector{Int64},
+   ncells::NTuple{3, UInt64})
+
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
    while @inbounds cid < cellid[cellindex[end]]
@@ -275,7 +277,7 @@ end
 
 Return VarInfo about `var` in the VLSV file associated with `meta`.
 """
-function readvariablemeta(meta::MetaVLSV, var)
+function readvariablemeta(meta::MetaVLSV, var::String)
 
    varSym = isa(var, AbstractString) ? Symbol(var) : var
 
@@ -299,7 +301,7 @@ function readvariablemeta(meta::MetaVLSV, var)
 end
 
 "Return mesh related variable."
-function readmesh(fid::IOStream, footer, typeMesh, varMesh)
+function readmesh(fid::IOStream, footer::EzXML.Node, typeMesh::String, varMesh::String)
    T, offset, arraysize, _, _ = getObjInfo(footer, typeMesh, varMesh, "mesh")
 
    w = Vector{T}(undef, arraysize)
@@ -310,12 +312,12 @@ function readmesh(fid::IOStream, footer, typeMesh, varMesh)
 end
 
 """
-    readvariable(meta::MetaVLSV, var, sorted::Bool=true) -> Array
+    readvariable(meta::MetaVLSV, var::String, sorted::Bool=true) -> Array
 
 Return variable value of `var` from the VLSV file associated with `meta`. By default
 `sorted=true`, which means that for DCCRG grid the variables are sorted by cell ID.
 """
-function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
+function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
    (;fid, footer, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta)
@@ -352,11 +354,11 @@ function readvariable(meta::MetaVLSV, var, sorted::Bool=true)
 end
 
 """
-    readvariable(meta::MetaVLSV, var, ids) -> Array
+    readvariable(meta::MetaVLSV, var::String, ids) -> Array
 
 Read variable `var` in a collection of cells `ids` associated with `meta`.
 """
-function readvariable(meta::MetaVLSV, var, ids)
+function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, cellid) = meta
 
@@ -386,6 +388,36 @@ function readvariable(meta::MetaVLSV, var, ids)
 
    return v
 end
+
+function readvariable(meta::MetaVLSV, var::String, cid::Integer)
+   startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
+   (;fid, footer, cellid) = meta
+
+   if (local symvar = Symbol(var)) in keys(variables_predefined)
+      data = variables_predefined[symvar](meta, cid)
+      return data
+   end
+
+   T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+
+   v = Vector{T}(undef, vsize)
+
+   w = let
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      reshape(reinterpret(T, a), vsize, asize)
+   end
+
+   id_ = findfirst(==(cid), cellid)
+
+   _fillv!(v, w, id_, vsize)
+
+   if T == Float64
+      v = Float32.(v)
+   end
+
+   return v
+end
+
 
 @inline function _fillv!(v, w, id_, vsize)
    for i in eachindex(id_), iv = 1:vsize
@@ -427,7 +459,7 @@ end
 @inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
 
 "Return 2d scalar/vector data. Nonpublic since it won't work with DCCRG AMR."
-function getdata2d(meta::MetaVLSV, var)
+function getdata2d(meta::MetaVLSV, var::String)
    ndims(meta) == 2 || @error "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
@@ -488,34 +520,34 @@ function calcLocalSize(globalCells, nprocs, lcells)
 end
 
 """
-    hasvariable(meta, var) -> Bool
+    hasvariable(meta, var::String) -> Bool
 
 Check if the VLSV file associated with `meta` contains a variable `var`.
 """
-hasvariable(meta::MetaVLSV, var) = hasname(meta.footer, "VARIABLE", var)
+hasvariable(meta::MetaVLSV, var::String) = hasname(meta.footer, "VARIABLE", var)
 
 """
-    readparameter(meta, param)
+    readparameter(meta, param::String)
 
 Return the parameter value from the VLSV file associated with `meta`.
 """
-readparameter(meta::MetaVLSV, param) = readparameter(meta.fid, meta.footer, param)
+readparameter(meta::MetaVLSV, param::String) = readparameter(meta.fid, meta.footer, param)
 
-function readparameter(fid::IOStream, footer, param)
+function readparameter(fid::IOStream, footer::EzXML.Node, param::String)
    T, offset, _, _, _ = getObjInfo(footer, param, "PARAMETER", "name")
    seek(fid, offset)
    p = read(fid, T)
 end
 
 """
-    hasparameter(meta, param) -> Bool
+    hasparameter(meta, param::String) -> Bool
 
 Check if the VLSV file contains a certain parameter `param`.
 """
-hasparameter(meta::MetaVLSV, param) = hasname(meta.footer, "PARAMETER", param)
+hasparameter(meta::MetaVLSV, param::String) = hasname(meta.footer, "PARAMETER", param)
 
 "Check if the XML `element` contains a `tag` with `name`."
-function hasname(element, tag, name)
+function hasname(element::EzXML.Node, tag::String, name::String)
    isFound = false
 
    for var in findall("//$tag", element)
@@ -539,7 +571,7 @@ Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 Read velocity cells of `species` from a spatial cell of ID `cid` associated with `meta`, and
 return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
-function readvcells(meta::MetaVLSV, cid; species="proton")
+function readvcells(meta::MetaVLSV, cid::Integer; species="proton")
    (;fid, footer) = meta
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)

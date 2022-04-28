@@ -1,12 +1,12 @@
 # Utility functions for processing VLSV data.
 
 """
-    getcell(meta, location) -> UInt
+    getcell(meta, location::AbstractVector) -> UInt
 
 Return cell ID containing the given spatial `location` in meter, excluding domain
 boundaries. Only accept 3D location.
 """
-function getcell(meta::MetaVLSV, loc)
+function getcell(meta::MetaVLSV, loc::AbstractVector)
    (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
 
    foreach( (i,comp) -> coordmin[i] < loc[i] < coordmax[i] ? nothing :
@@ -194,7 +194,7 @@ function isparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getcellcoordinates(meta, cid) -> NTuple{3, Float64}
+    getcellcoordinates(meta, cid) -> SVector{3,Float64}
 
 Return a given cell's spatial coordinates.
 """
@@ -220,9 +220,9 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
       cid ÷ ncells_refmax[1] % ncells_refmax[2],
       cid ÷ (ncells_refmax[1] * ncells_refmax[2]) )
 
-   coords = @inbounds ntuple( i ->
-      coordmin[i] + (indices[i] + 0.5) * (coordmax[i] - coordmin[i]) / ncells_refmax[i],
-      Val(3))
+   coords = @inbounds @SVector [
+      coordmin[i] + (indices[i] + 0.5) * (coordmax[i] - coordmin[i]) / ncells_refmax[i]
+      for i = 1:3]
 
    coords
 end
@@ -655,7 +655,7 @@ Find the cell IDs `idlist` which are needed to plot a 2d cut through of a 3d mes
 direction `idim` at `sliceoffset`, and the `indexlist`, which is a mapping from original
 order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaVLSV, sliceoffset, idim, minCoord, maxCoord)
+function getslicecell(meta::MetaVLSV, sliceoffset, idim::Integer, minCoord, maxCoord)
    idim ∉ (1,2,3) && @error "Unknown slice direction $idim"
    (;ncells, maxamr, cellid, cellindex) = meta
 
@@ -707,7 +707,9 @@ end
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
-function refineslice(meta::MetaVLSV, idlist, data, normal)
+function refineslice(meta::MetaVLSV,
+   idlist::Vector{UInt}, data::AbstractArray, normal::Symbol)
+
    (;ncells, maxamr) = meta
 
    dims = let ratio = 2^maxamr
@@ -767,7 +769,7 @@ function refineslice(meta::MetaVLSV, idlist, data, normal)
 end
 
 "Compute every cell id's x, y and z indexes on the given refinement level (0-based)."
-@inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, ids)
+@inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, ids::Vector{UInt})
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
 
@@ -796,14 +798,14 @@ end
 end
 
 """
-    getnearestcellwithvdf(meta, id) -> UInt
+    getnearestcellwithvdf(meta, id::Integer) -> UInt
 
 Find the nearest spatial cell with VDF saved of a given cell `id` associated with `meta`.
 """
-function getnearestcellwithvdf(meta::MetaVLSV, id)
+function getnearestcellwithvdf(meta::MetaVLSV, id::Integer)
    cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
-   coords = [(0.0f0, 0.0f0, 0.0f0) for _ in cells]
+   coords = [SVector(0.0f0, 0.0f0, 0.0f0) for _ in cells]
    @inbounds for i in eachindex(cells)
       coords[i] = getcellcoordinates(meta, cells[i])
    end
@@ -833,17 +835,17 @@ end
 "Return the first cell ID on `mylevel` given `ncells` on this level."
 get1stcell(mylevel, ncells) = ncells * (8^mylevel - 1) ÷ 7 + 1
 
-fillmesh(meta::MetaVLSV, vars::AbstractString) = fillmesh(meta, [vars])
+fillmesh(meta::MetaVLSV, vars::String) = fillmesh(meta, [vars])
 
 """
-    fillmesh(meta::MetaVLSV, vars; verbose=false) -> celldata, vtkGhostType
+    fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false) -> celldata, vtkGhostType
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
-function fillmesh(meta::MetaVLSV, vars; verbose=false)
+function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
    (;maxamr, fid, footer, ncells, cellid, cellindex) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
@@ -966,7 +968,9 @@ Convert VLSV file to VTK format.
 - `maxamronly=false`: generate image files on the highest refinement level only.
 - `verbose=false`: display logs during conversion.
 """
-function write_vtk(meta::MetaVLSV; vars=[""], ascii=false, maxamronly=false, verbose=false)
+function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii=false, maxamronly=false,
+   verbose=false)
+
    (;ncells, maxamr, dcoord, coordmin) = meta
 
    append = ascii ? false : true
@@ -1046,8 +1050,9 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `ascii=false`: save output in ASCII or binary format.
 - `append=true`: determines whether to append data at the end of file or do in-block writing.
 """
-function save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level, ascii=false,
-   append=true)
+function save_image(meta::MetaVLSV, file::String, vars::Vector{String}, data,
+   vtkGhostType::Array{UInt8}, level::Integer, ascii=false, append=true)
+
    (;coordmin, dcoord, ncells) = meta
    origin = (coordmin[1], coordmin[2], coordmin[3])
    ratio = 2^level

@@ -76,7 +76,7 @@ end
          loc = [2.0, 0.0, 0.0]
          id = getcell(meta, loc)
          coords = getcellcoordinates(meta, id)
-         @test coords == (3.0, 0.0, 0.0)
+         @test coords == [3.0, 0.0, 0.0]
          @test readvariable(meta, "proton/vg_rho", id)[1] == 1.2288102f0
          # ID in a line
          point1 = [-4.0, 0.0, 0.0]
@@ -116,7 +116,7 @@ end
             metaAMR.coordmin[2], metaAMR.coordmax[2])
 
          # ID finding (AMR)
-         loc = (2.5e6, 2.5e6, 2.5e6) # exact cell center
+         loc = [2.5e6, 2.5e6, 2.5e6] # exact cell center
          id = getcell(metaAMR, loc)
          @test getcellcoordinates(metaAMR, id) == loc
 

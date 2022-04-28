@@ -14,7 +14,7 @@ struct PlotArgs
    "plotting data range"
    plotrange::Tuple{Float64, Float64, Float64, Float64}
    "cell IDs in the cut plane"
-   idlist::Vector{Int}
+   idlist::Vector{UInt}
    "mapping from original cell order to cut plane"
    indexlist::Vector{Int}
    "title"
@@ -55,7 +55,7 @@ function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none,
    sizes = ncells[[seq...]] .<< meta.maxamr # data needs to be refined later
 
    if normal == :none
-      idlist, indexlist = Int[], Int[]
+      idlist, indexlist = UInt[], Int[]
    else
       idlist, indexlist = let sliceoffset = origin - coordmin[dir]
          getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])
