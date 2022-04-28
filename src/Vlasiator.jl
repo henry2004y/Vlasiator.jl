@@ -41,7 +41,13 @@ export
    compute_flux_function, find_reconnection_points
 
 precompile(load, (String,))
+precompile(readvariablemeta, (MetaVLSV, String))
 precompile(readvariable, (MetaVLSV, String, Bool))
+precompile(readvariable, (MetaVLSV, String, Vector{UInt64}))
+precompile(readvariable, (MetaVLSV, String, Int64))
+precompile(readvcells, (MetaVLSV, Int64))
+precompile(readvcells, (MetaVLSV, UInt64))
+precompile(getcell, (MetaVLSV, Vector{Float64}))
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
