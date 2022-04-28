@@ -136,7 +136,7 @@ function readvector(fid::IOStream, footer::EzXML.Node, name::String, tag::String
 end
 
 """
-    load(file) -> MetaVLSV
+    load(file::AbstractString)) -> MetaVLSV
 
 Generate a MetaVLSV object from `file` of VLSV format.
 """
@@ -456,7 +456,8 @@ function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
    return
 end
 
-@inline Base.getindex(meta::MetaVLSV, key::AbstractString) = readvariable(meta, key)
+@inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
+   readvariable(meta, key)
 
 "Return 2d scalar/vector data. Nonpublic since it won't work with DCCRG AMR."
 function getdata2d(meta::MetaVLSV, var::String)
@@ -571,7 +572,7 @@ Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 Read velocity cells of `species` from a spatial cell of ID `cid` associated with `meta`, and
 return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
-function readvcells(meta::MetaVLSV, cid::Integer; species="proton")
+function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    (;fid, footer) = meta
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)

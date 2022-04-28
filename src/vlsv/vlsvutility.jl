@@ -1,7 +1,7 @@
 # Utility functions for processing VLSV data.
 
 """
-    getcell(meta, location::AbstractVector) -> UInt
+    getcell(meta::MetaVLSV, location::AbstractVector) -> UInt
 
 Return cell ID containing the given spatial `location` in meter, excluding domain
 boundaries. Only accept 3D location.
@@ -37,7 +37,7 @@ function getcell(meta::MetaVLSV, loc::AbstractVector)
 end
 
 """
-    getlevel(meta, cid) -> Int
+    getlevel(meta::MetaVLSV, cid::Integer) -> Int
 
 Return the AMR level of a given cell ID `cid`.
 !!! warning
@@ -57,7 +57,7 @@ function getlevel(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getparent(meta, cid) -> Int
+    getparent(meta::MetaVLSV, cid::Integer) -> Int
 
 Return the parent cell ID of given child `cid`.
 """
@@ -96,7 +96,7 @@ function getparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getchildren(meta, cid) -> Vector{Int}
+    getchildren(meta::MetaVLSV, cid::Integer) -> Vector{Int}
 
 Return direct children of `cid`.
 """
@@ -139,7 +139,7 @@ function getchildren(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getsiblings(meta, cid) -> Vector{Int}
+    getsiblings(meta::MetaVLSV, cid::Integer) -> Vector{Int}
 
 Return sibling cells of a given `cid`, including itself.
 """
@@ -183,7 +183,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    isparent(meta, cid) -> Bool
+    isparent(meta::MetaVLSV, cid::Integer) -> Bool
 
 Check if `cid` is a parent cell.
 """
@@ -194,7 +194,7 @@ function isparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getcellcoordinates(meta, cid) -> SVector{3,Float64}
+    getcellcoordinates(meta::MetaVLSV, cid::Integer) -> SVector{3,Float64}
 
 Return a given cell's spatial coordinates.
 """
@@ -228,11 +228,11 @@ function getcellcoordinates(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getvcellcoordinates(meta, vcellids; species="proton")
+    getvcellcoordinates(meta::MetaVLSV, vcellids::Vector; species="proton")
 
 Return velocity cells' coordinates of `species` and `vcellids`.
 """
-function getvcellcoordinates(meta::MetaVLSV, vcellids; species="proton")
+function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector; species="proton")
    (;vblocks, vblock_size, dv, vmin) = meta.meshes[species]
 
    bsize = prod(vblock_size)
@@ -320,7 +320,7 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
    SVector{3}(u)
 end
 
-function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
+function getvelocity(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) where
    T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -392,7 +392,7 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
    SVector{6}(p)
 end
 
-function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
+function getpressure(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) where
    T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -455,7 +455,7 @@ end
 Reorder vblock-organized VDF indexes into x-->y-->z indexes. `vcellids` are raw indices
 of nonzero VDFs ordered by blocks.
 """
-function reorder(vmesh::VMeshInfo, vcellids)
+function reorder(vmesh::VMeshInfo, vcellids::Vector)
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
@@ -478,7 +478,7 @@ end
 Reconstruct the full VDFs in 3D. `vcellids` are raw indices of nonzero VDFs ordered by
 blocks, and `vcellf` are the corresponding values in each cell.
 """
-function reconstruct(vmesh::VMeshInfo, vcellids, vcellf)
+function reconstruct(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector)
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
@@ -506,7 +506,7 @@ density as `f`. The value ranges from [0, +∞], with 0 meaning not Maxwellian-d
 all, and +∞ a perfect Maxwellian distribution.
 Alternatively, one can pass original `vcellids` and `vcellf` directly.
 """
-function getmaxwellianity(meta, VDF; species="proton")
+function getmaxwellianity(meta::MetaVLSV, VDF::Array; species="proton")
    (;dv, vmin) = meta.meshes[species]
 
    n = getdensity(meta, VDF)
@@ -531,7 +531,9 @@ function getmaxwellianity(meta, VDF; species="proton")
    ϵₘ = -log(0.5 / n * convert(eltype(VDF), prod(dv)) * ϵₘ)
 end
 
-function getmaxwellianity(meta, vcellids, vcellf; species="proton")
+function getmaxwellianity(meta::MetaVLSV, vcellids::Vector, vcellf::Vector;
+   species="proton")
+
    (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
    vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
@@ -566,7 +568,7 @@ function getmaxwellianity(meta, vcellids, vcellf; species="proton")
    ϵₘ = -log(0.5 / n * convert(eltype(vcellf), prod(dv)) * ϵₘ)
 end
 
-function isInsideDomain(meta::MetaVLSV, point)
+function isInsideDomain(meta::MetaVLSV, point::Vector)
    (;coordmin, coordmax) = meta
 
    if coordmin[1] < point[1] ≤ coordmax[1] &&
@@ -579,7 +581,7 @@ function isInsideDomain(meta::MetaVLSV, point)
 end
 
 """
-    getcellinline(meta, point1, point2) -> cellids, distances, coords
+    getcellinline(meta, point1::Vector, point2::Vector) -> cellids, distances, coords
 
 Returns cell IDs, distances and coordinates for every cell in a line between two given
 points `point1` and `point2`. TODO: preallocation?

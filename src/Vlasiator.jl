@@ -41,7 +41,6 @@ export
    compute_flux_function, find_reconnection_points
 
 precompile(load, (String,))
-precompile(readvariablemeta, (MetaVLSV, String))
 precompile(readvariable, (MetaVLSV, String, Bool))
 precompile(readvariable, (MetaVLSV, String, Vector{UInt64}))
 precompile(readvariable, (MetaVLSV, String, Int64))
