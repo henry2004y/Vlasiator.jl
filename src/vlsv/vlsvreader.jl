@@ -356,7 +356,8 @@ end
 """
     readvariable(meta::MetaVLSV, var::String, ids::AbstractVector{<:Integer}) -> Array
 
-Read variable `var` in a collection of cells `ids` associated with `meta`.
+Read variable `var` in a collection of cells `ids` associated with `meta`. if `ids` is
+empty, return the whole array of `var`.
 """
 function readvariable(meta::MetaVLSV, var::String, ids::AbstractVector{<:Integer})
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
@@ -367,28 +368,38 @@ function readvariable(meta::MetaVLSV, var::String, ids::AbstractVector{<:Integer
       return data
    end
 
-   T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+   if isempty(ids)
+      data = readvariable(meta, var)
+      return data
+   else
+      T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
-   v = Array{T}(undef, vsize, length(ids))
+      v = Array{T}(undef, vsize, length(ids))
 
-   w = let
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      reshape(reinterpret(T, a), vsize, asize)
+      w = let
+         a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+         reshape(reinterpret(T, a), vsize, asize)
+      end
+
+      id_ = length(ids) < 1000 ?
+         [findfirst(==(id), cellid) for id in ids] :
+         indexin(ids, cellid)
+
+      _fillv!(v, w, id_, vsize)
+
+      if T == Float64
+         v = Float32.(v)
+      end
+
+      return v
    end
-
-   id_ = length(ids) < 1000 ?
-      [findfirst(==(id), cellid) for id in ids] :
-      indexin(ids, cellid)
-
-   _fillv!(v, w, id_, vsize)
-
-   if T == Float64
-      v = Float32.(v)
-   end
-
-   return v
 end
 
+"""
+    readvariable(meta::MetaVLSV, var::String, cid::Integer) -> Array
+
+Read variable `var` in cell `cid` associated with `meta`.
+"""
 function readvariable(meta::MetaVLSV, var::String, cid::Integer)
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, cellid) = meta

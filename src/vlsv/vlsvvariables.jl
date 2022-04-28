@@ -83,13 +83,9 @@ const units_predefined = Dict(
 const variables_predefined = Dict(
    :Bmag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
-      ρ = isempty(ids) ?
-         readvariable(meta, meta.variable[rho_]) :
-         readvariable(meta, meta.variable[rho_], ids)
+      ρ = readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_b_vol")
-         Bmag = isempty(ids) ?
-            sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
-            sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
+         Bmag = sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Bmag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_b"), dims=1))
@@ -99,13 +95,9 @@ const variables_predefined = Dict(
    end,
    :Emag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
-      ρ = isempty(ids) ?
-         readvariable(meta, meta.variable[rho_]) :
-         readvariable(meta, meta.variable[rho_], ids)
+      ρ = readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_e_vol")
-         Emag = isempty(ids) ?
-            sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol"), dims=1)) :
-            sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol", ids), dims=1))
+         Emag = sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol", ids), dims=1))
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
          Emag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_e"), dims=1))
@@ -115,41 +107,29 @@ const variables_predefined = Dict(
    end,
    :Vmag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
-      ρ = isempty(ids) ?
-         readvariable(meta, meta.variable[rho_]) :
-         readvariable(meta, meta.variable[rho_], ids)
-      Vmag = isempty(ids) ?
-         vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v"), dims=1))) :
-         vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v", ids), dims=1)))
+      ρ = readvariable(meta, meta.variable[rho_], ids)
+      Vmag = vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v", ids), dims=1)))
       _fillinnerBC!(Vmag, ρ)
       Vmag
    end,
    :Rhom => function (meta, ids=UInt64[])
       if hasvariable(meta, "vg_rhom")
-         ρm = isempty(ids) ?
-            readvariable(meta, "vg_rhom") :
-            readvariable(meta, "vg_rhom", ids) |> vec
+         ρm = readvariable(meta, "vg_rhom", ids) |> vec
       elseif hasvariable(meta, "proton/vg_rho")
-         ρm = isempty(ids) ?
-            readvariable(meta, "proton/vg_rho") .* mᵢ :
-            readvariable(meta, "proton/vg_rho", ids) .* mᵢ |> vec
+         ρm = readvariable(meta, "proton/vg_rho", ids) .* mᵢ |> vec
       end
       ρm
    end,
    :P => function (meta, ids=UInt64[]) # scalar pressure
       if hasvariable(meta, "vg_pressure")
-         P = isempty(ids) ?
-            readvariable(meta, "vg_pressure") :
-            readvariable(meta, "vg_pressure", ids)
+         P = readvariable(meta, "vg_pressure", ids)
       else
          if hasvariable(meta, "proton/vg_ptensor_diagonal")
             Pdiag_str = "proton/vg_ptensor_diagonal"
          else
             Pdiag_str = "PTensorDiagonal"
          end
-         Pdiag = isempty(ids) ?
-            readvariable(meta, Pdiag_str) :
-            readvariable(meta, Pdiag_str, ids)
+         Pdiag = readvariable(meta, Pdiag_str, ids)
          P = vec(mean(Pdiag, dims=1))
       end
       P
@@ -179,25 +159,13 @@ const variables_predefined = Dict(
       V ./ VS
    end,
    :Vpar => function (meta, ids=UInt64[]) # velocity ∥ B
-      V = isempty(ids) ?
-         readvariable(meta, "proton/vg_v") :
-         readvariable(meta, "proton/vg_v", ids)
-      if isempty(ids)
-         b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
-      else
-         b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
-      end
+      V = readvariable(meta, "proton/vg_v", ids)
+      b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
       [V[:,i] ⋅ b[:,i] for i in axes(V,2)]
    end,
    :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
-      V = isempty(ids) ?
-         readvariable(meta, "proton/vg_v") :
-         readvariable(meta, "proton/vg_v", ids)
-      if isempty(ids)
-         b = readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
-      else
-         b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
-      end
+      V = readvariable(meta, "proton/vg_v", ids)
+      b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
       Vperp = zeros(eltype(V), size(V, 2))
 
       function _computeVperp!()
@@ -256,15 +224,9 @@ const variables_predefined = Dict(
    end,
    :Protated => function (meta, ids=UInt64[])
       # Rotate the pressure tensor to align the 3rd direction with B
-      B = isempty(ids) ?
-         readvariable(meta, "vg_b_vol") :
-         readvariable(meta, "vg_b_vol", ids)
-      Pdiag = isempty(ids) ?
-         readvariable(meta, "proton/vg_ptensor_diagonal") :
-         readvariable(meta, "proton/vg_ptensor_diagonal", ids)
-      Podiag = isempty(ids) ?
-         readvariable(meta, "proton/vg_ptensor_offdiagonal") :
-         readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
+      B = readvariable(meta, "vg_b_vol", ids)
+      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal", ids)
+      Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
       P = zeros(Float32, 3, 3, size(Pdiag, 2))
 
       function rotate_tensor!()
@@ -298,25 +260,15 @@ const variables_predefined = Dict(
       @. B² * mu2inv
    end,
    :Epar => function (meta, ids=UInt64[])
-      E, b =
-         if isempty(ids)
-            readvariable(meta, "vg_e_vol"),
-            readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
-         else
-            readvariable(meta, "vg_e_vol", ids),
-            readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
-         end
+      E = readvariable(meta, "vg_e_vol", ids)
+      b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+
       [E[:,i] ⋅ b[:,i] for i in axes(E,2)]
    end,
    :Eperp => function (meta, ids=UInt64[])
-      E, b =
-         if isempty(ids)
-            readvariable(meta, "vg_e_vol"),
-            readvariable(meta, "vg_b_vol") ./ readvariable(meta, "Bmag")
-         else
-            readvariable(meta, "vg_e_vol", ids),
-            readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
-         end
+      E = readvariable(meta, "vg_e_vol", ids)
+      b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
+
       Eperp = zeros(eltype(E), size(E, 2))
 
       function _computeEperp!()
@@ -330,14 +282,10 @@ const variables_predefined = Dict(
       _computeEperp!()
       Eperp
    end,
-   :Poynting => function (meta, ids=UInt64[])
+   :Poynting => function (meta, ids=UInt64[]) #WARN: real Poynting flux needs perturbed vars
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
-         E = isempty(ids) ?
-            readvariable(meta, "vg_e_vol") :
-            readvariable(meta, "vg_e_vol", ids)
-         B = isempty(ids) ?
-            readvariable(meta, "vg_b_vol") :
-            readvariable(meta, "vg_b_vol", ids)
+         E = readvariable(meta, "vg_e_vol", ids)
+         B = (meta, "vg_b_vol", ids)
       elseif hasvariable(meta, "fg_e") && hasvariable(meta, "fg_b")
          @assert isempty(ids) "Do not support selecting cells in FSGrid!"
          E = readvariable(meta, "fg_e")
@@ -361,16 +309,12 @@ const variables_predefined = Dict(
    end,
    :Agyrotropy => function (meta, ids=UInt64[])
       # non-gyrotropy measure Q [Swisdak 2016]
-      # Original derivation for electrons. Here we do protons first.
-      if isempty(ids)
-         Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal")
-         Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal")
-         B = readvariable(meta, "vg_b_vol")
-      else
-         Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal", ids)
-         Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
-         B = readvariable(meta, "vg_b_vol", ids)
-      end
+      # Original version for electrons. Here we do protons first.
+
+      Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal", ids)
+      Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
+      B = readvariable(meta, "vg_b_vol", ids)
+
       Pxx = selectdim(Pdiag, 1, 1)
       Pyy = selectdim(Pdiag, 1, 2)
       Pzz = selectdim(Pdiag, 1, 3)
@@ -438,19 +382,15 @@ const variables_predefined = Dict(
       fₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
    end,
    :n => function (meta, ids=UInt64[])
-      n = isempty(ids) ?
-         readvariable(meta, "proton/vg_rho") :
-         readvariable(meta, "proton/vg_rho", ids) |> vec
+      n = readvariable(meta, "proton/vg_rho", ids) |> vec
    end,
    :B² => function (meta, ids=UInt64[])
-      B² = isempty(ids) ?
-         vec(sum(x -> x*x, readvariable(meta, "vg_b_vol"), dims=1)) :
-         vec(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
+      B² = vec(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
    end,
    :MagneticTension => function (meta, ids=UInt64[])
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
-   
+
       invdx = @. inv(2*meta.dcoord)
       @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
@@ -479,13 +419,13 @@ const variables_predefined = Dict(
             @inbounds for j in 2:size(B,3)-1, i in 2:size(B,2)-1
                ∂Bx∂x = (-Bx[i-1,j  ,1] + Bx[i+1,j,  1]) * invdx[1]
                ∂Bx∂y = (-Bx[i  ,j-1,1] + Bx[i,  j+1,1]) * invdx[2]
-   
+
                ∂By∂x = (-By[i-1,j  ,1] + By[i+1,j,  1]) * invdx[1]
                ∂By∂y = (-By[i  ,j-1,1] + By[i,  j+1,1]) * invdx[2]
-   
+
                ∂Bz∂x = (-Bz[i-1,j  ,1] + Bz[i+1,j,  1]) * invdx[1]
                ∂Bz∂y = (-Bz[i  ,j-1,1] + Bz[i,  j+1,1]) * invdx[2]
-   
+
                tension[1,i,j,1] = (Bx[i,j,1]*∂Bx∂x + By[i,j,1]*∂Bx∂y) / μ₀
                tension[2,i,j,1] = (Bx[i,j,1]*∂By∂x + By[i,j,1]*∂By∂y) / μ₀
                tension[3,i,j,1] = (Bx[i,j,1]*∂Bz∂x + By[i,j,1]*∂Bz∂y) / μ₀
@@ -494,13 +434,13 @@ const variables_predefined = Dict(
             @inbounds for k in 2:size(B,4)-1, i in 2:size(B,2)-1
                ∂Bx∂x = (-Bx[i-1,1,k  ] + Bx[i+1,1,  k  ]) * invdx[1]
                ∂Bx∂z = (-Bx[i  ,1,k-1] + Bx[i,  1,  k+1]) * invdx[3]
-   
+
                ∂By∂x = (-By[i-1,1,k  ] + By[i+1,1,  k  ]) * invdx[1]
                ∂By∂z = (-By[i  ,1,k-1] + By[i,  1,  k+1]) * invdx[3]
-   
+
                ∂Bz∂x = (-Bz[i-1,1,k  ] + Bz[i+1,1,  k  ]) * invdx[1]
                ∂Bz∂z = (-Bz[i  ,1,k-1] + Bz[i,  1,  k+1]) * invdx[3]
-   
+
                tension[1,i,1,k] = (Bx[i,1,k]*∂Bx∂x + Bz[i,1,k]*∂Bx∂z) / μ₀
                tension[2,i,1,k] = (Bx[i,1,k]*∂By∂x + Bz[i,1,k]*∂By∂z) / μ₀
                tension[3,i,1,k] = (Bx[i,1,k]*∂Bz∂x + Bz[i,1,k]*∂Bz∂z) / μ₀
