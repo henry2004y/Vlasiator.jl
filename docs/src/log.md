@@ -93,6 +93,10 @@ For post-processing and data analysis purposes, it makes less sense to stick to 
 
 * physical constants are defined in `Float64`, since single precision only resolve up to ±3.4E+38, and it may go out of bound in the middle of calculation (e.g. plasma frequency).
 
+## Int v.s. UInt
+
+We have not made a consensus on which integer to use for cell indexes. Be careful about potential bugs due to incorrect arithmetics especially for unsigned integers!
+
 ## Memory
 
 Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through `mmap` in Julia. With this mechanism you never need to worry about unable to process data with small free memory.
