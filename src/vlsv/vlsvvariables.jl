@@ -161,7 +161,7 @@ const variables_predefined = Dict(
    :Vpar => function (meta, ids=UInt64[]) # velocity ∥ B
       V = readvariable(meta, "proton/vg_v", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
-      [V[:,i] ⋅ b[:,i] for i in axes(V,2)]
+      @views [V[:,i] ⋅ b[:,i] for i in axes(V,2)]
    end,
    :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
       V = readvariable(meta, "proton/vg_v", ids)
@@ -170,13 +170,15 @@ const variables_predefined = Dict(
 
       function _computeVperp!()
          # Avoid sqrt of negative values, but does not guarantee orthogonality.
-         @inbounds for i in eachindex(Vperp)
-            Vpar = V[:,i] ⋅ b[:,i] .* b[:,i]
+         @inbounds @views for i in eachindex(Vperp)
+            vb = V[:,i] ⋅ b[:,i]
+            Vpar = SVector{3,eltype(V)}(vb*b[1,i], vb*b[2,i], vb*b[3,i])
             Vperp[i] = norm(V[:,i] - Vpar)
          end
       end
 
       _computeVperp!()
+
       Vperp
    end,
    :T => function (meta, ids=UInt64[]) # scalar temperature
@@ -207,7 +209,7 @@ const variables_predefined = Dict(
       P = readvariable(meta, "Protated", ids)
       n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
-      Pperp = [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
+      Pperp = @inbounds [0.5(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]
       @. Pperp / (n*kB)
    end,
    :Tanisotropy => function (meta, ids=UInt64[]) # T⟂ / T∥
@@ -263,7 +265,7 @@ const variables_predefined = Dict(
       E = readvariable(meta, "vg_e_vol", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
 
-      [E[:,i] ⋅ b[:,i] for i in axes(E,2)]
+      @views [E[:,i] ⋅ b[:,i] for i in axes(E,2)]
    end,
    :Eperp => function (meta, ids=UInt64[])
       E = readvariable(meta, "vg_e_vol", ids)
@@ -273,8 +275,9 @@ const variables_predefined = Dict(
 
       function _computeEperp!()
          # Avoid sqrt of negative values, but does not guarantee orthogonality.
-         @inbounds for i in eachindex(Eperp)
-            Epar = E[:,i] ⋅ b[:,i] .* b[:,i]
+         @inbounds @views for i in eachindex(Eperp)
+            eb = E[:,i] ⋅ b[:,i]
+            Epar = SVector{3,eltype(E)}(eb*b[1,i], eb*b[2,i], eb*b[3,i])
             Eperp[i] = norm(E[:,i] - Epar)
          end
       end
@@ -298,7 +301,7 @@ const variables_predefined = Dict(
 
       function computecross!()
          Rpost = CartesianIndices(size(E)[2:end])
-         @inbounds for i in Rpost
+         @inbounds @views for i in Rpost
             F[:,i] = E[:,i] × B[:,i] ./ μ₀
          end
       end
@@ -453,8 +456,6 @@ const variables_predefined = Dict(
       tension
    end,
 )
-
-
 
 function _fillinnerBC!(data, dataRef)
    @inbounds for i = eachindex(dataRef) # sparsity/inner boundary
