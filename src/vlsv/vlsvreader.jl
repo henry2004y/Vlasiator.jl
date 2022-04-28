@@ -354,11 +354,11 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
 end
 
 """
-    readvariable(meta::MetaVLSV, var::String, ids) -> Array
+    readvariable(meta::MetaVLSV, var::String, ids::AbstractVector{<:Integer}) -> Array
 
 Read variable `var` in a collection of cells `ids` associated with `meta`.
 """
-function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})
+function readvariable(meta::MetaVLSV, var::String, ids::AbstractVector{<:Integer})
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, cellid) = meta
 
