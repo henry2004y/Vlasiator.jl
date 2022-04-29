@@ -704,7 +704,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim::Integer, minCoord, maxC
 end
 
 """
-    refineslice(meta, idlist, data, normal) -> Array
+    refineslice(meta, idlist::Vector{UInt}, data::AbstractArray, normal::Symbol) -> Array
 
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
@@ -1048,7 +1048,7 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `vars::Vector{String}`: variable names to be saved.
 - `data::Vector{Vector}`: data for all the variables on each refinement level.
 - `vtkGhostType::Array{UInt8}`: array for visibility control.
-- `level::Int`: refinement level (0-based).
+- `level::Integer`: refinement level (0-based).
 - `ascii=false`: save output in ASCII or binary format.
 - `append=true`: determines whether to append data at the end of file or do in-block writing.
 """

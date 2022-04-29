@@ -1,7 +1,7 @@
 # Utility functions for common algebraic operations.
 
 """
-    rotateTensorToVectorZ(tensor, vector)
+    rotateTensorToVectorZ(tensor::AbstractMatrix, vector::AbstractVector) -> SMatrix{3,3}
 
 Rotate `tensor` with a rotation matrix that aligns the 3rd direction with `vector`, which is
 equivalent to change the basis from (i,j,k) to (i′,j′,k′) where k′ ∥ vector.
@@ -21,7 +21,7 @@ function rotateTensorToVectorZ(tensor::AbstractMatrix{T}, v::AbstractVector{T}) 
 end
 
 """
-    getRotationMatrix(axis::AbstractVector, angle) --> SMatrix{3,3}
+    getRotationMatrix(axis::AbstractVector, angle::Real) --> SMatrix{3,3}
 
 Create a rotation matrix for rotating a 3D vector around a unit `axis` by an `angle` in
 radians.
@@ -37,7 +37,7 @@ angle = deg2rad(-74)
 R = getRotationMatrix(v̂, angle)
 ```
 """
-function getRotationMatrix(v::AbstractVector{<:AbstractFloat}, θ)
+function getRotationMatrix(v::AbstractVector{<:AbstractFloat}, θ::Real)
    sinθ, cosθ = sincos(eltype(v)(θ))
    tmp = 1 - cosθ
    m =  @SMatrix [
@@ -47,7 +47,7 @@ function getRotationMatrix(v::AbstractVector{<:AbstractFloat}, θ)
 end
 
 """
-    getRotationMatrix(e1::Matrix, e2::Matrix) --> SMatrix{3,3}
+    getRotationMatrix(e1::Matrix, e2::Matrix) -> SMatrix{3,3}
 
 Obtain the rotation matrix from orthgonal base vectors `e1` to `e2`, such that a vector
 ``\\mathbf{u}_1`` in `e1` can be expressed as ``\\mathbf{u}_1 = M\\cdot \\mathbf{u}_2``,

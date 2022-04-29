@@ -268,7 +268,7 @@ function set_plot(c, ax, pArgs::PlotArgs, ticks, addcolorbar)
 end
 
 """
-    vdfslice(meta, location, ax=nothing; kwargs...)
+    vdfslice(meta::MetaVLSV, location::AbstractVector, ax=nothing; kwargs...)
 
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
@@ -329,7 +329,7 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing;
 end
 
 """
-    plotmesh(meta; projection="3d", origin=0.0, marker="+", kwargs...)
+    plotmesh(meta::MetaVLSV; projection="3d", origin=0.0, marker="+", kwargs...)
 
 Plot mesh cell centers from axis view `projection`. `projection` should be either "3d", "x",
 "y" or "z". `origin` is center of projection plane in the normal direction.
@@ -374,6 +374,7 @@ end
 
 """
     pui(meta::MetaVLSV)
+    pui(file::AbstractString)
 
 Quick plotting via command line interactive selections.
 """
@@ -410,5 +411,4 @@ function pui(meta::MetaVLSV; suppress_output=false)
    return
 end
 
-"Direct file plotting."
 pui(file::AbstractString) = file |> load |> plot_ui

@@ -12,7 +12,7 @@ struct PlotArgs
    "data array size"
    sizes::Tuple{Int64, Int64}
    "plotting data range"
-   plotrange::Tuple{Float64, Float64, Float64, Float64}
+   plotrange::NTuple{4, Float64}
    "cell IDs in the cut plane"
    idlist::Vector{UInt}
    "mapping from original cell order to cut plane"
@@ -28,12 +28,15 @@ struct PlotArgs
 end
 
 """
-    set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
+    set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit;
+       normal::Symbol=:none, origin=0.0)
 
 Set plot-related arguments of `var` in `axisunit`. `normal` and `origin` are used for 2D
 slices of 3D data, as specified in [`pcolormeshslice`](@ref).
 """
-function set_args(meta::MetaVLSV, var, axisunit::AxisUnit; normal::Symbol=:none, origin=0.0)
+function set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit; normal::Symbol=:none,
+   origin=0.0)
+
    (;ncells, coordmin, coordmax) = meta
 
    if normal == :x
@@ -94,8 +97,15 @@ function set_lim(vmin::T, vmax::T, data, colorscale::ColorScale=Linear) where T
    v1, v2
 end
 
-"Return x and y ranges for 2D."
-function get_axis(axisunit::AxisUnit, plotrange, sizes)
+"""
+    get_axis(axisunit::AxisUnit, plotrange::NTuple{4,<:Real}, sizes::NTuple{2,<:Integer})
+    get_axis(pArgs::PlotArgs)
+
+Return x and y ranges for 2D.
+"""
+function get_axis(axisunit::AxisUnit, plotrange::NTuple{4,<:Real},
+   sizes::NTuple{2,<:Integer})
+
    if axisunit == EARTH
       x = LinRange(plotrange[1], plotrange[2], sizes[1]) ./ RE
       y = LinRange(plotrange[3], plotrange[4], sizes[2]) ./ RE
@@ -109,11 +119,11 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
-    prep2d(meta, var, comp=0) -> Array
+    prep2d(meta::MetaVLSV, var::String, comp=0) -> Array
 
 Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
 """
-function prep2d(meta::MetaVLSV, var, comp=0)
+function prep2d(meta::MetaVLSV, var::String, comp=0)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    data =
@@ -135,13 +145,13 @@ function prep2d(meta::MetaVLSV, var, comp=0)
 end
 
 """
-    prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
+    prep2dslice(meta::MetaVLSV, var::String, normal, comp, pArgs::PlotArgs)
 
 Return `data` of `var` on a uniform 2D mesh on the finest AMR level. Use `normal` to select
 the plane orientation, and `comp` to select the component of a vector, same as in
 [`pcolormeshslice`](@ref).
 """
-function prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
+function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp, pArgs::PlotArgs)
    (;idlist, indexlist) = pArgs
 
    data3D = readvariable(meta, var)
@@ -179,7 +189,7 @@ function prep2dslice(meta::MetaVLSV, var, normal, comp, pArgs::PlotArgs)
 end
 
 """
-    prep_vdf(meta::MetaVLSV, location; kwargs...)
+    prep_vdf(meta::MetaVLSV, location::AbstractVector; kwargs...)
 
 Return the cell velocities `v1, v2`, bin ranges `r1, r2`, cell VDF values `fweight`,
 and strings of labels and titles for VDF plots.
@@ -200,7 +210,7 @@ between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
 - `verbose`: display the selection process.
 """
-function prep_vdf(meta::MetaVLSV, location;
+function prep_vdf(meta::MetaVLSV, location::AbstractVector;
    species="proton", unit::AxisUnit=SI, unitv="km/s", slicetype=:default, vslicethick=0.0,
    center=:nothing, weight=:particle, flimit=-1.0, verbose=false)
 

@@ -470,7 +470,11 @@ end
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
 
-"Return 2d scalar/vector data. Nonpublic since it won't work with DCCRG AMR."
+"""
+    getdata2d(meta::MetaVLSV, var::String)
+
+Return 2d scalar/vector data. Nonpublic since it won't work with DCCRG AMR.
+"""
 function getdata2d(meta::MetaVLSV, var::String)
    ndims(meta) == 2 || @error "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
@@ -532,14 +536,14 @@ function calcLocalSize(globalCells, nprocs, lcells)
 end
 
 """
-    hasvariable(meta, var::String) -> Bool
+    hasvariable(meta::MetaVLSV, var::String) -> Bool
 
 Check if the VLSV file associated with `meta` contains a variable `var`.
 """
 hasvariable(meta::MetaVLSV, var::String) = hasname(meta.footer, "VARIABLE", var)
 
 """
-    readparameter(meta, param::String)
+    readparameter(meta::MetaVLSV, param::String)
 
 Return the parameter value from the VLSV file associated with `meta`.
 """
@@ -552,7 +556,7 @@ function readparameter(fid::IOStream, footer::EzXML.Node, param::String)
 end
 
 """
-    hasparameter(meta, param::String) -> Bool
+    hasparameter(meta::MetaVLSV, param::String) -> Bool
 
 Check if the VLSV file contains a certain parameter `param`.
 """
@@ -571,14 +575,14 @@ function hasname(element::EzXML.Node, tag::String, name::String)
 end
 
 """
-    ndims(meta) -> Int
+    ndims(meta::MetaVLSV) -> Int
 
 Return the simulation spatial dimension of VLSV data.
 """
 Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 
 """
-    readvcells(meta, cid; species="proton") -> vcellids, vcellf
+    readvcells(meta::MetaVLSV, cid::Integer; species="proton") -> vcellids, vcellf
 
 Read velocity cells of `species` from a spatial cell of ID `cid` associated with `meta`, and
 return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.

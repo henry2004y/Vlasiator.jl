@@ -1,12 +1,12 @@
 # Runtime log file tracking.
 
 """
-    readlog(file)
+    readlog(file::AbstractString)
 
 Read the run log file, check the iteration status and return the timestamps (exluding the
 last) as well as the model running speed in physical seconds per simulated seconds.
 """
-function readlog(file)
+function readlog(file::AbstractString)
    isfile(file) || throw(ArgumentError("Cannot open \'$file\': not a file"))
 
    fid = open(file)
