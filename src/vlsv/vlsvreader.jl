@@ -382,7 +382,7 @@ function readvariable(meta::MetaVLSV, var::String, ids::AbstractVector{<:Integer
       end
 
       id_ = length(ids) < 1000 ?
-         [findfirst(==(id), cellid) for id in ids] :
+         Union{eltype(ids), Nothing}[findfirst(==(id), cellid) for id in ids] :
          indexin(ids, cellid)
 
       _fillv!(v, w, id_, vsize)
