@@ -333,9 +333,9 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
 
       dataOrdered =
          if ndims(raw) > 1
-            @inbounds zeros(Float32, size(raw,1), bbox[1], bbox[2], bbox[3])
+            @inbounds Array{Float32}(undef, size(raw,1), bbox[1], bbox[2], bbox[3])
          else
-            @inbounds zeros(Float32, bbox[1], bbox[2], bbox[3])
+            @inbounds Array{Float32}(undef, bbox[1], bbox[2], bbox[3])
          end
 
       @inbounds fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
@@ -641,8 +641,8 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    read!(fid, blockIDs)
 
    # Velocity cell IDs and distributions (ordered by blocks)
-   vcellids = zeros(UInt32, bsize*nblocks)
-   vcellf = zeros(Float32, bsize*nblocks)
+   vcellids = Vector{UInt32}(undef, bsize*nblocks)
+   vcellf = Vector{Float32}(undef, bsize*nblocks)
 
    vcellid_local = @inbounds [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
       for i in 0:vblock_size[1]-1, j in 0:vblock_size[2]-1, k in 0:vblock_size[3]-1]

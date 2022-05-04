@@ -166,7 +166,7 @@ const variables_predefined = Dict(
    :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
       V = readvariable(meta, "proton/vg_v", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
-      Vperp = zeros(eltype(V), size(V, 2))
+      Vperp = Vector{eltype(V)}(undef, size(V, 2))
 
       function _computeVperp!()
          # Avoid sqrt of negative values, but does not guarantee orthogonality.
@@ -229,10 +229,10 @@ const variables_predefined = Dict(
       B = readvariable(meta, "vg_b_vol", ids)
       Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal", ids)
       Podiag = readvariable(meta, "proton/vg_ptensor_offdiagonal", ids)
-      P = zeros(Float32, 3, 3, size(Pdiag, 2))
+      P = Array{Float32}(undef, 3, 3, size(Pdiag, 2))
 
       function rotate_tensor!()
-         @inbounds for i = 1:size(P, 3)
+         @inbounds for i in axes(P, 3)
             P[1,1,i] = Pdiag[1,i]
             P[2,2,i] = Pdiag[2,i]
             P[3,3,i] = Pdiag[3,i]
@@ -271,7 +271,7 @@ const variables_predefined = Dict(
       E = readvariable(meta, "vg_e_vol", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)
 
-      Eperp = zeros(eltype(E), size(E, 2))
+      Eperp = Vector{eltype(E)}(undef, size(E, 2))
 
       function _computeEperp!()
          # Avoid sqrt of negative values, but does not guarantee orthogonality.
@@ -397,7 +397,7 @@ const variables_predefined = Dict(
       invdx = @. inv(2*meta.dcoord)
       @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
-      tension = zeros(eltype(B), size(B))
+      tension = similar(B)
       if ndims(meta) == 3
          # Warning: this works only for regular 3D B field
          @inbounds for k in 2:size(B,4)-1, j in 2:size(B,3)-1, i in 2:size(B,2)-1

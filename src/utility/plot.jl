@@ -297,16 +297,16 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector;
       v1size = vmesh.vblocks[1] * vmesh.vblock_size[1]
       v2size = v1size
       # Compute the ranges along the two perpendicular axis in the slice plane
-      r = zeros(Float32, 3, 8)
-      r[:,1] = Rinv * Float32[vmesh.vmin[1], vmesh.vmin[2], vmesh.vmin[3]]
-      r[:,2] = Rinv * Float32[vmesh.vmin[1], vmesh.vmin[2], vmesh.vmax[3]]
-      r[:,3] = Rinv * Float32[vmesh.vmin[1], vmesh.vmax[2], vmesh.vmin[3]]
-      r[:,4] = Rinv * Float32[vmesh.vmin[1], vmesh.vmax[2], vmesh.vmax[3]]
-      r[:,5] = Rinv * Float32[vmesh.vmax[1], vmesh.vmin[2], vmesh.vmin[3]]
-      r[:,6] = Rinv * Float32[vmesh.vmax[1], vmesh.vmin[2], vmesh.vmax[3]]
-      r[:,7] = Rinv * Float32[vmesh.vmax[1], vmesh.vmax[2], vmesh.vmin[3]]
-      r[:,8] = Rinv * Float32[vmesh.vmax[1], vmesh.vmax[2], vmesh.vmax[3]]
-
+      r = SMatrix{3,8}(Rinv * Float32[
+         [vmesh.vmin[1], vmesh.vmin[2], vmesh.vmin[3]];;
+         [vmesh.vmin[1], vmesh.vmin[2], vmesh.vmax[3]];;
+         [vmesh.vmin[1], vmesh.vmax[2], vmesh.vmin[3]];;
+         [vmesh.vmin[1], vmesh.vmax[2], vmesh.vmax[3]];;
+         [vmesh.vmax[1], vmesh.vmin[2], vmesh.vmin[3]];;
+         [vmesh.vmax[1], vmesh.vmin[2], vmesh.vmax[3]];;
+         [vmesh.vmax[1], vmesh.vmax[2], vmesh.vmin[3]];;
+         [vmesh.vmax[1], vmesh.vmax[2], vmesh.vmax[3]]
+         ])
       v1min, v1max = @views extrema(r[1,:])
       v2min, v2max = @views extrema(r[2,:])
    end
@@ -369,7 +369,7 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector;
 
       strx, stry = getindex(["vx", "vy", "vz"], [dir1, dir2])
    elseif slicetype ∈ (:bperp, :bpar1, :bpar2)
-      v1select = zeros(eltype(Vselect[1]), length(Vselect))
+      v1select = Vector{eltype(Vselect[1])}(undef, length(Vselect))
       v2select = similar(v1select)
       vnormal = similar(v1select)
 

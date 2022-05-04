@@ -126,7 +126,7 @@ function getchildren(meta::MetaVLSV, cid::Integer)
    iz *= 2
 
    nchildren = 2^ndims(meta)
-   cid = zeros(Int, nchildren)
+   cid = Vector{Int}(undef, nchildren)
    # get the first cell ID on the finer level
    cid1st += ncell*8^mylvl
    ix_, iy_ = (ix, ix+1), (iy, iy+1)
@@ -172,7 +172,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
    iz, iz1 = minmax(iz, iz1)
 
    nsiblings = 2^ndims(meta)
-   cid = zeros(Int, nsiblings)
+   cid = Vector{Int}(undef, nsiblings)
    ix_, iy_ = (ix, ix1), (iy, iy1)
    iz_ = zcell != 1 ? (iz, iz1) : iz
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
@@ -302,22 +302,20 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
    species="proton") where T <: AbstractFloat
 
    (;dv, vmin) = meta.meshes[species]
-   u = zeros(T, 3)
+   u = @SVector zeros(T, 3)
 
    @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
       vx = vmin[1] + (i - 0.5f0)*dv[1]
       vy = vmin[2] + (j - 0.5f0)*dv[2]
       vz = vmin[3] + (k - 0.5f0)*dv[3]
-      u[1] += vx*VDF[i,j,k]
-      u[2] += vy*VDF[i,j,k]
-      u[3] += vz*VDF[i,j,k]
+      u += VDF[i,j,k] .* SVector(vx, vy, vz)
    end
 
    n = sum(VDF)
 
-   u ./= n
+   u /= n
 
-   SVector{3}(u)
+   u
 end
 
 function getvelocity(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) where
@@ -330,7 +328,7 @@ function getvelocity(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) wher
    sliceBz = vblocks[1]*vblocks[2]
    sliceCz = vblock_size[1]*vblock_size[2]
 
-   u = zeros(T, 3)
+   u = @SVector zeros(T, 3)
 
    @inbounds @simd for ic in eachindex(vcellids)
       id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -341,16 +339,14 @@ function getvelocity(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) wher
       vx = vmin[1] + (i + 0.5f0)*dv[1]
       vy = vmin[2] + (j + 0.5f0)*dv[2]
       vz = vmin[3] + (k + 0.5f0)*dv[3]
-      u[1] += vx*vcellf[ic]
-      u[2] += vy*vcellf[ic]
-      u[3] += vz*vcellf[ic]
+      u += vcellf[ic] .* SVector(vx, vy, vz)
    end
 
    n = sum(vcellf)
 
-   u ./= n
+   u /= n
 
-   SVector{3}(u)
+   u
 end
 
 getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton") =
@@ -369,7 +365,7 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
    species="proton") where T <: AbstractFloat
 
    (;dv, vmin) = meta.meshes[species]
-   p = zeros(T, 6)
+   p = @SVector zeros(T, 6)
 
    u = getvelocity(meta, VDF; species)
 
@@ -378,18 +374,19 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
       vy = vmin[2] + (j - 0.5f0)*dv[2]
       vz = vmin[3] + (k - 0.5f0)*dv[3]
 
-      p[1] += (vx - u[1])*(vx - u[1])*VDF[i,j,k]
-      p[2] += (vy - u[2])*(vy - u[2])*VDF[i,j,k]
-      p[3] += (vz - u[3])*(vz - u[3])*VDF[i,j,k]
-      p[4] += (vy - u[2])*(vz - u[3])*VDF[i,j,k]
-      p[5] += (vx - u[1])*(vz - u[3])*VDF[i,j,k]
-      p[6] += (vx - u[1])*(vy - u[2])*VDF[i,j,k]
+      p += VDF[i,j,k] .* SVector(
+         (vx - u[1])*(vx - u[1]),
+         (vy - u[2])*(vy - u[2]),
+         (vz - u[3])*(vz - u[3]),
+         (vy - u[2])*(vz - u[3]),
+         (vx - u[1])*(vz - u[3]),
+         (vx - u[1])*(vy - u[2]))
    end
 
    factor = mᵢ * convert(T, prod(dv))
-   p .*= factor
+   p *= factor
 
-   SVector{6}(p)
+   p
 end
 
 function getpressure(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) where
@@ -404,7 +401,7 @@ function getpressure(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) wher
 
    u = getvelocity(vmesh, vcellids, vcellf)
 
-   p = zeros(T, 6)
+   p = @SVector zeros(T, 6)
 
    @inbounds @simd for ic in eachindex(vcellids)
       id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -415,18 +412,19 @@ function getpressure(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) wher
       vx = vmin[1] + (i + 0.5f0)*dv[1]
       vy = vmin[2] + (j + 0.5f0)*dv[2]
       vz = vmin[3] + (k + 0.5f0)*dv[3]
-      p[1] += (vx - u[1])*(vx - u[1])*vcellf[ic]
-      p[2] += (vy - u[2])*(vy - u[2])*vcellf[ic]
-      p[3] += (vz - u[3])*(vz - u[3])*vcellf[ic]
-      p[4] += (vy - u[2])*(vz - u[3])*vcellf[ic]
-      p[5] += (vx - u[1])*(vz - u[3])*vcellf[ic]
-      p[6] += (vx - u[1])*(vy - u[2])*vcellf[ic]
+      p += vcellf[ic] .* SVector(
+         (vx - u[1])*(vx - u[1]),
+         (vy - u[2])*(vy - u[2]),
+         (vz - u[3])*(vz - u[3]),
+         (vy - u[2])*(vz - u[3]),
+         (vx - u[1])*(vz - u[3]),
+         (vx - u[1])*(vy - u[2]))
    end
 
    factor = mᵢ * convert(T, prod(dv))
-   p .*= factor
+   p *= factor
 
-   SVector{6}(p)
+   p
 end
 
 getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton") =
@@ -603,8 +601,8 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
    ϵ = eps(T)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = coords[1]
-   coef_min = zeros(T, 3)
-   coef_max = zeros(T, 3)
+   coef_min = Vector{T}(undef, 3)
+   coef_max = Vector{T}(undef, 3)
 
    @inbounds while true
       cid = getcell(meta, p)
@@ -853,9 +851,9 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
    T = Vector{DataType}(undef, nv)
-   offset = zeros(Int, nv)
-   arraysize = zeros(Int, nv)
-   vsize  = zeros(Int, nv)
+   offset = Vector{Int}(undef, nv)
+   arraysize = similar(offset)
+   vsize = similar(offset)
    @inbounds for i = 1:nv
       T[i], offset[i], arraysize[i], _, vsize[i] =
          getObjInfo(footer, vars[i], "VARIABLE", "name")
@@ -1091,7 +1089,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
    # Obtain the offset of the XML footer
    offset = read(fid, UInt64)
    # Store all non-footer part as raw data
-   raw_data = zeros(UInt8, offset)
+   raw_data = Vector{UInt8}(undef, offset)
 
    seekstart(fid)
    readbytes!(fid, raw_data, offset)
