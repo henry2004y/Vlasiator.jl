@@ -23,7 +23,7 @@ function getcell(meta::MetaVLSV, loc::AbstractVector)
    @inbounds for ilevel = 0:maxamr
       cid in cellid && break
 
-      ncells_lowerlevel += 2^(3*ilevel)*ncell
+      ncells_lowerlevel += (8^ilevel)*ncell
 
       ratio = 2^(ilevel+1)
 
@@ -50,7 +50,7 @@ function getlevel(meta::MetaVLSV, cid::Integer)
    c = Int(cid) - ncell
    while c > 0
       ilevel += 1
-      c -= 2^(3*ilevel)*ncell
+      c -= (8^ilevel)*ncell
    end
 
    ilevel
