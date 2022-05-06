@@ -256,10 +256,11 @@ const variables_predefined = Dict(
       @. ρm * V * V
    end,
    :Pb => function (meta, ids=UInt64[])
-      B² = readvariable(meta, "B²", ids)
-      _fillinnerBC!(B², B²)
       mu2inv = 0.5/μ₀
-      @. B² * mu2inv
+      B = readvariable(meta, "vg_b_vol", ids)
+      Pb = vec(@. $sum(x -> x*x*mu2inv, B, dims=1))
+      _fillinnerBC!(Pb, Pb)
+      Pb
    end,
    :Epar => function (meta, ids=UInt64[])
       E = readvariable(meta, "vg_e_vol", ids)
@@ -346,16 +347,26 @@ const variables_predefined = Dict(
    end,
    :Beta => function (meta, ids=UInt64[])
       P = readvariable(meta, "P", ids)
-      B² = readvariable(meta, "B²", ids)
-      _fillinnerBC!(B², B²)
-      @. 2 * μ₀ * P / B²
+      B = readvariable(meta, "vg_b_vol", ids)
+
+      Beta = Vector{Float64}(undef, size(P))
+      @inbounds for i in eachindex(Beta)
+         Bmag = B[1,i]^2 + B[2,i]^2 + B[3,i]^2
+         Beta[i] = (Bmag != 0) ? 2 * μ₀ * P[i] / Bmag : NaN
+      end
+      Beta
    end,
    :BetaStar => function (meta, ids=UInt64[])
       P = readvariable(meta, "P", ids)
       Pram = readvariable(meta, "Pram", ids)
-      B² = readvariable(meta, "B²", ids)
-      _fillinnerBC!(B², B²)
-      @. 2 * μ₀ * (P + Pram) / B²
+      B = readvariable(meta, "vg_b_vol", ids)
+
+      BetaStar = Vector{Float64}(undef, size(P))
+      @inbounds for i in eachindex(BetaStar)
+         Bmag = B[1,i]^2 + B[2,i]^2 + B[3,i]^2
+         BetaStar[i] = (Bmag != 0) ? 2 * μ₀ * (P[i] + Pram[i]) / Bmag : NaN
+      end
+      BetaStar
    end,
    :IonInertial => function (meta, ids=UInt64[])
       n = readvariable(meta, "n", ids)
@@ -386,9 +397,6 @@ const variables_predefined = Dict(
    end,
    :n => function (meta, ids=UInt64[])
       n = readvariable(meta, "proton/vg_rho", ids) |> vec
-   end,
-   :B² => function (meta, ids=UInt64[])
-      B² = vec(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
    end,
    :MagneticTension => function (meta, ids=UInt64[])
       B = readvariable(meta, "vg_b_vol")
@@ -459,6 +467,6 @@ const variables_predefined = Dict(
 
 function _fillinnerBC!(data, dataRef)
    @inbounds for i = eachindex(dataRef) # sparsity/inner boundary
-      dataRef[i] == 0.0 && (data[i] = NaN)
+      dataRef[i] == 0 && (data[i] = NaN)
    end
 end
