@@ -148,13 +148,11 @@ const variables_predefined = Dict(
    end,
    :MA => function (meta, ids=UInt64[]) # Alfvén Mach number
       V = readvariable(meta, "Vmag", ids)
-      _fillinnerBC!(V, V)
       VA = readvariable(meta, "VA", ids)
       V ./ VA
    end,
    :MS => function (meta, ids=UInt64[]) # Sonic Mach number
       V = readvariable(meta, "Vmag", ids)
-      _fillinnerBC!(V, V)
       VS = readvariable(meta, "VS", ids)
       V ./ VS
    end,
