@@ -142,6 +142,7 @@ Here is a full list of available quantities[^1]:
 | Plasmaperiod          | plasma oscillation period        | vg\_rho               |
 | Gyrofrequency         | proton gyro-frequency            | Bmag                  |
 | Omegap                | plasma frequency (proton)        | vg\_rho               |
+| MagneticTension       | [magnetic tension force](https://en.wikipedia.org/wiki/Magnetic_tension) | vg\_b\_vol |
 
 which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/vlsv/vlsvvariables.jl).
 
@@ -248,7 +249,7 @@ quiver(meta, "rho_v", comp="xy")
 The `comp` option is used to specify the two vector components.
 
 !!! note
-    Currently there is limited support for derived variables. This will be expanded and changed later for ease of use!
+    Currently there is limited support for derived variables. Submit an issue if something is not working!
 
 You can choose to use linear/log/symlog color scale by setting keyword `colorscale` to `Linear`, `Log`, or `SymLog`, plot vector components by setting keyword `op` to `:x`, `:1`, or `:mag`, and set unit via `axisunit=EARTH` etc.
 
