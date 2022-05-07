@@ -259,7 +259,9 @@ function set_plot(c, ax, pArgs::PlotArgs, ticks, addcolorbar)
 
    # Set border line widths
    for loc in ("left", "bottom", "right", "top")
-      getproperty(ax.spines, loc).set_linewidth(2.0)
+      @static matplotlib.__version__ < "3.4" ?
+         ax.spines[loc].set_linewidth(2.0) :
+         getproperty(ax.spines, loc).set_linewidth(2.0)
    end
 
    ax.xaxis.set_tick_params(width=2.0, length=3)
