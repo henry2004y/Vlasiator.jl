@@ -85,11 +85,13 @@ const variables_predefined = Dict(
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_b_vol")
-         Bmag = sqrt.(sum(x -> x*x, readvariable(meta, "vg_b_vol", ids), dims=1))
+         B = readvariable(meta, "vg_b_vol", ids)
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
-         Bmag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_b"), dims=1))
+         B = readvariable(meta, "fg_b")
       end
+      Bmag = sum(x -> x*x, B, dims=1)
+      @. Bmag = √(Bmag)
       _fillinnerBC!(Bmag, ρ)
       Bmag
    end,
@@ -97,18 +99,23 @@ const variables_predefined = Dict(
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_], ids)
       if hasvariable(meta, "vg_e_vol")
-         Emag = sqrt.(sum(x -> x*x, readvariable(meta, "vg_e_vol", ids), dims=1))
+         E = readvariable(meta, "vg_e_vol", ids)
       else
          @assert isempty(ids) "Do not support reading selected cells from FSGrid!"
-         Emag = sqrt.(sum(x -> x*x, readvariable(meta, "fg_e"), dims=1))
+         E = readvariable(meta, "fg_e")
       end
+      Emag = sum(x -> x*x, E, dims=1)
+      @. Emag = √(Emag)
       _fillinnerBC!(Emag, ρ)
       Emag
    end,
    :Vmag => function (meta, ids=UInt64[])
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_], ids)
-      Vmag = vec(sqrt.(sum(x -> x*x, readvariable(meta, "proton/vg_v", ids), dims=1)))
+      V = readvariable(meta, "proton/vg_v", ids)
+      Vmag = sum(x -> x*x, V, dims=1)
+      @. Vmag = √(Vmag)
+      Vmag = vec(Vmag)
       _fillinnerBC!(Vmag, ρ)
       Vmag
    end,
@@ -256,7 +263,7 @@ const variables_predefined = Dict(
    :Pb => function (meta, ids=UInt64[])
       mu2inv = 0.5/μ₀
       B = readvariable(meta, "vg_b_vol", ids)
-      Pb = vec(@. $sum(x -> x*x*mu2inv, B, dims=1))
+      Pb = sum(x -> x*x*mu2inv, B, dims=1) |> vec
       _fillinnerBC!(Pb, Pb)
       Pb
    end,
