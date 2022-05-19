@@ -40,8 +40,7 @@ export
    # fluxfunction
    compute_flux_function, find_reconnection_points
 
-precompile(load, (String,))
-precompile(readvariable, (MetaVLSV, String, Bool))
+# Methods leftout from PrecompileSignatures
 precompile(readvariable, (MetaVLSV, String, Vector{UInt64}))
 precompile(readvariable, (MetaVLSV, String, Int64))
 precompile(readvcells, (MetaVLSV, Int64))
@@ -56,5 +55,8 @@ function __init__()
       include("plot/plots.jl")
    end
 end
+
+using PrecompileSignatures: @precompile_signatures
+@precompile_signatures(Vlasiator)
 
 end

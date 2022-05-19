@@ -167,7 +167,7 @@ getdensity(meta, vcellids, vcellf)
 
 getvelocity(meta, vcellids, vcellf)
 
-getvelocity(meta, vcellids, vcellf)
+getpressure(meta, vcellids, vcellf)
 ```
 
 To obtain the original ordering of velocity cells,

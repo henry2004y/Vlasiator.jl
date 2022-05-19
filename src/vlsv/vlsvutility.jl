@@ -1,12 +1,12 @@
 # Utility functions for processing VLSV data.
 
 """
-    getcell(meta::MetaVLSV, location::AbstractVector) -> UInt
+    getcell(meta::MetaVLSV, location:::AbstractVector{<:AbstractFloat}) -> UInt
 
 Return cell ID containing the given spatial `location` in meter, excluding domain
 boundaries. Only accept 3D location.
 """
-function getcell(meta::MetaVLSV, loc::AbstractVector)
+function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
    (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
 
    foreach( (i,comp) -> coordmin[i] < loc[i] < coordmax[i] ? nothing :
