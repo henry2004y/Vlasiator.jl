@@ -962,14 +962,14 @@ end
     write_vtk(file; kwargs...)
 
 Convert VLSV file to VTK format.
-# Keyword arguments
-- `vars=[""]`: select which variables to convert.
-- `ascii=false`: output stored in ASCII or compressed binary format.
-- `maxamronly=false`: generate image files on the highest refinement level only.
-- `verbose=false`: display logs during conversion.
+# Keywords
+- `vars::Vector{String}=[""]`: select which variables to convert.
+- `ascii::Bool=false`: output stored in ASCII or compressed binary format.
+- `maxamronly::Bool=false`: generate image files on the highest refinement level only.
+- `verbose::Bool=false`: display logs during conversion.
 """
-function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii=false, maxamronly=false,
-   verbose=false)
+function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
+   maxamronly::Bool=false, verbose::Bool=false)
 
    (;ncells, maxamr, dcoord, coordmin) = meta
 
@@ -1047,11 +1047,12 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `data::Vector{Vector}`: data for all the variables on each refinement level.
 - `vtkGhostType::Array{UInt8}`: array for visibility control.
 - `level::Integer`: refinement level (0-based).
-- `ascii=false`: save output in ASCII or binary format.
-- `append=true`: determines whether to append data at the end of file or do in-block writing.
+- `ascii::Bool=false`: save output in ASCII or binary format.
+- `append::Bool=true`: determines whether to append data at the end of file or do in-block
+writing.
 """
 function save_image(meta::MetaVLSV, file::String, vars::Vector{String}, data,
-   vtkGhostType::Array{UInt8}, level::Integer, ascii=false, append=true)
+   vtkGhostType::Array{UInt8}, level::Integer, ascii::Bool=false, append::Bool=true)
 
    (;coordmin, dcoord, ncells) = meta
    origin = (coordmin[1], coordmin[2], coordmin[3])
@@ -1078,7 +1079,7 @@ Generate a new VLSV `fileout` based on `filein`, with `newvars` added.
 `force=true` overwrites the existing `fileout`.
 """
 function write_vlsv(filein::AbstractString, fileout::AbstractString,
-   newvars::Vector{Tuple{VecOrMat, String, VarInfo}}; force=false)
+   newvars::Vector{Tuple{VecOrMat, String, VarInfo}}; force::Bool=false)
 
    if isfile(fileout) && !force
       error("Output target $fileout exists!")
@@ -1157,7 +1158,7 @@ end
 Check if two VLSV files `file1` and `file2` are approximately identical, under relative
 tolerance `tol`.
 """
-function issame(f1, f2, tol::AbstractFloat=1e-4; verbose=false)
+function issame(f1, f2, tol::AbstractFloat=1e-4; verbose::Bool=false)
    # 1st sanity check: minimal filesize difference
    if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
       verbose && println("The sizes of files are already quite different!")
