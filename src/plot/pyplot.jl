@@ -24,6 +24,7 @@ matplotlib.rc("ytick", labelsize=10)
 
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
 The keyword `comp` in (0, 1, 2, 3) is used to specify the component of a vector.
+Any valid keyword argument for `plt.plot` is accepted.
 """
 function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=0, kwargs...)
    ndims(meta) == 1 || error("plot only accepts 1D data!")
@@ -47,14 +48,15 @@ end
     streamplot(meta, var, ax=nothing; comp="xy", axisunit=EARTH, kwargs...)
 
 Wrapper over Matplotlib's streamplot function.
-The keyword arguments can be any valid Matplotlib arguments into streamplot.
 
-# Optional arguments
-- `comp`: a subset of "xyz" in any order.
-- `axisunit`: chosen from `EARTH` and `SI`.
+# Keywords
+- `comp::String`: a subset of "xyz" in any order.
+- `axisunit::AxisUnit`: chosen from `EARTH` and `SI`.
+
+Any valid keyword argument for `plt.streamplot` is accepted.
 """
 function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit=EARTH, kwargs...)
+   comp="xy", axisunit::AxisUnit=EARTH, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -68,12 +70,13 @@ end
 
 Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current active
 axes.
-The keyword arguments can be any valid Matplotlib arguments into quiver.
 
-# Optional arguments
-- `comp`: a subset of "xyz" in any order.
-- `axisunit`: chosen from `EARTH` and `SI`.
+# Keywords
+- `comp::String`: a subset of "xyz" in any order.
+- `axisunit::AxisUnit`: chosen from `EARTH` and `SI`.
 - `stride::Integer`: arrow strides in number of cells.
+
+Any valid keyword argument for `plt.quiver` is accepted.
 """
 function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
    comp="xy", axisunit::AxisUnit=EARTH, stride::Integer=10, kwargs...)
@@ -146,6 +149,10 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 - `extent::Vector`: extent of axis ranges for plotting in the same unit as `axisunit`.
 - `normal::Symbol`: normal direction for slice of 3D data, `:x`, `:y`, `:z`.
 - `origin::Float`: origin of plane slice of 3D data.
+
+# Keywords
+
+Any valid keyword argument for `plt.pcolormesh`.
 
 `pcolormesh(meta, var)`
 
@@ -274,7 +281,9 @@ end
 
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
+
 # Optional arguments
+
 - `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
@@ -289,7 +298,10 @@ velocity is selected!
 - `weight::Symbol`: choosing distribution weights from phase space density or particle flux
 between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
-- `kwargs...`: any valid keyword argument for hist2d.
+
+# Keywords
+
+Any valid keyword argument for `hist2d`.
 """
 function vdfslice(meta::MetaVLSV, location, ax=nothing;
    limits=[-Inf32, Inf32, -Inf32, Inf32], verbose=false, species="proton",
