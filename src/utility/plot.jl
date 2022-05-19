@@ -244,6 +244,8 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector;
             :xz
          elseif ncells[3] == 1 # ecliptic
             :xy
+         else
+            :xy
          end
    end
 
