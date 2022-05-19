@@ -1079,6 +1079,7 @@ Generate a new VLSV `fileout` based on `filein`, with `newvars` added.
 """
 function write_vlsv(filein::AbstractString, fileout::AbstractString,
    newvars::Vector{Tuple{VecOrMat, String, VarInfo}}; force=false)
+
    if isfile(fileout) && !force
       error("Output target $fileout exists!")
    end

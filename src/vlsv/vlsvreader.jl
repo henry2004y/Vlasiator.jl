@@ -278,7 +278,6 @@ end
 Return VarInfo about `var` in the VLSV file associated with `meta`.
 """
 function readvariablemeta(meta::MetaVLSV, var::String)
-
    varSym = isa(var, AbstractString) ? Symbol(var) : var
 
    unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
@@ -437,7 +436,6 @@ end
 end
 
 function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
-
    offsetnow = 1
 
    @inbounds @views for i = 1:nIORanks
@@ -487,8 +485,12 @@ end
 "File size in bytes."
 @inline Base.size(meta::MetaVLSV) = filesize(joinpath(meta.dir, meta.name))
 
-# Optimize decomposition of this grid over the given number of processors.
-# Reference: fsgrid.hpp
+"""
+    getDomainDecomposition(globalsize, nprocs)
+
+Obtain decomposition of this grid over the given number of processors.
+Reference: fsgrid.hpp
+"""
 function getDomainDecomposition(globalsize, nprocs)
    domainDecomp = (1, 1, 1)
    minValue = typemax(Int)
