@@ -45,6 +45,7 @@ end
          @test_throws ArgumentError load("data")
          meta = meta1
          @test ndims(meta) == 1
+         @test isopen(meta)
          @test startswith(repr(meta), "File: bulk.1d.vlsv")
          @test size(meta) == 529201
          # Variable strings reading

@@ -583,6 +583,9 @@ Return the simulation spatial dimension of VLSV data.
 """
 Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 
+"Determine whether `meta` is not yet closed."
+Base.isopen(meta::MetaVLSV) = isopen(meta.fid)
+
 """
     readvcells(meta::MetaVLSV, cid::Integer; species="proton") -> vcellids, vcellf
 
