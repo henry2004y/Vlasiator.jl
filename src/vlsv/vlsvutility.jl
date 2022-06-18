@@ -775,8 +775,10 @@ function refineslice(meta::MetaVLSV,
    dpoints
 end
 
-"Compute every cell id's x, y and z indexes on the given refinement level (0-based)."
-@inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, ids::Vector{UInt})
+"Compute x, y and z indexes of all cell `ids` on the given refinement level (0-based)."
+@inline function getindexes(ilevel::Int, xcells::Int, ycells::Int, nCellUptoLowerLvl::Int,
+   ids::AbstractVector{UInt})
+
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
 
@@ -793,7 +795,10 @@ end
    ix, iy, iz
 end
 
-@inline function getindexes(ilevel, xcells, ycells, nCellUptoLowerLvl, id::Integer)
+"Compute x, y and z index of cell `id` on a given refinement level `ilevel`(0-based)."
+@inline function getindexes(ilevel::Int, xcells::Int, ycells::Int, nCellUptoLowerLvl::Int,
+   id::Integer)
+
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
    iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
