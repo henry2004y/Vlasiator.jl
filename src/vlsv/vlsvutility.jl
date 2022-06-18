@@ -850,14 +850,15 @@ get1stcell(mylevel, ncells) = ncells * (8^mylevel - 1) ÷ 7 + 1
 fillmesh(meta::MetaVLSV, vars::String) = fillmesh(meta, [vars])
 
 """
-    fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false) -> celldata, vtkGhostType
+    fillmesh(meta::MetaVLSV, vars::Vector{String};
+       skipghosttype=true, verbose=false) -> celldata, vtkGhostType
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return arguments
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
-function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
+function fillmesh(meta::MetaVLSV, vars::Vector{String}; skipghosttype=true, verbose=false)
    (;maxamr, fid, footer, ncells, cellid, cellindex) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
@@ -903,11 +904,13 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
 
       ids = cellidsorted[idfirst_:idlast_]
 
-      # Mark non-existing cells due to refinement
-      @simd for id in nLow+1:nHigh
-         if isempty(searchsorted(ids, id)) # TODO: how to remove allocations?
-            ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
-            vtkGhostType[ilvl+1][ix,iy,iz] = 8
+      if !skipghosttype
+         # Mark non-existing cells due to refinement
+         @simd for id in nLow+1:nHigh
+            if isempty(searchsorted(ids, id)) # TODO: how to remove allocations?
+               ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
+               vtkGhostType[ilvl+1][ix,iy,iz] = 8
+            end
          end
       end
 
@@ -981,7 +984,7 @@ Convert VLSV file to VTK format.
 - `verbose::Bool=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
-   maxamronly::Bool=false, verbose::Bool=false)
+   maxamronly::Bool=false, skipghosttype::Bool=false, verbose::Bool=false)
 
    (;ncells, maxamr, dcoord, coordmin) = meta
 
@@ -998,7 +1001,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       if !isnothing(cellid_) deleteat!(vars, cellid_) end
    end
 
-   data, vtkGhostType = fillmesh(meta, vars; verbose)
+   data, vtkGhostType = fillmesh(meta, vars; skipghosttype, verbose)
 
    if maxamronly
       save_image(meta, meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end], maxamr,
