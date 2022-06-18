@@ -676,7 +676,11 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim::Integer, minCoord, maxC
 
    @inbounds for ilvl = 0:maxamr
       nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
-      ids = cellidsorted[nLow .< cellidsorted .≤ nHigh]
+      idfirst_ = searchsortedfirst(cellidsorted, nLow+1)
+      idlast_  = searchsortedlast(cellidsorted, nHigh)
+
+      ids = @view cellidsorted[idfirst_:idlast_]
+
       ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 
       coords =
@@ -730,8 +734,11 @@ function refineslice(meta::MetaVLSV,
    nHigh, nLow = ncell, 0
 
    @inbounds for i = 0:maxamr
-      ids = idlist[nLow .< idlist .≤ nHigh]
-      d = data[nLow .< idlist .≤ nHigh]
+      idfirst_ = searchsortedfirst(idlist, nLow+1)
+      idlast_  = searchsortedlast(idlist, nHigh)
+
+      ids = @view idlist[idfirst_:idlast_]
+      d = @view data[idfirst_:idlast_]
 
       ix, iy, iz = getindexes(i, ncells[1], ncells[2], nLow, ids)
 
