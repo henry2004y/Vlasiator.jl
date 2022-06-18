@@ -903,15 +903,17 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
 
       ids = cellidsorted[idfirst_:idlast_]
 
-      # indicate the condition of non-existing cells
-      idrefined = setdiff(nLow+1:nHigh, ids)
-
-      @simd for id in idrefined
-         ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
-         vtkGhostType[ilvl+1][ix,iy,iz] = 8
+      # Mark non-existing cells due to refinement
+      @simd for id in nLow+1:nHigh
+         if isempty(searchsorted(ids, id)) # TODO: how to remove allocations?
+            ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
+            vtkGhostType[ilvl+1][ix,iy,iz] = 8
+         end
       end
 
       rOffsetsRaw = indexin(ids, cellid)
+
+      ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 
       if ilvl != maxamr
          for iv in nvarvg
@@ -920,7 +922,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
             data = @view dataRaw[:,rOffsetsRaw]
 
-            fillcell!(ilvl, ids, ncells, maxamr, nLow, celldata[iv], data)
+            fillcell!(ilvl, maxamr, ids, ix, iy, iz, celldata[iv], data)
          end
       else # max refinement level
          for (iv, var) = enumerate(vars)
@@ -933,7 +935,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
                data = @view dataRaw[:,rOffsetsRaw]
 
-               fillcell!(ids, ncells, maxamr, nLow, celldata[iv][end], data)
+               fillcell!(ids, ix, iy, iz, celldata[iv][end], data)
             end
          end
       end
@@ -944,22 +946,20 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String}; verbose=false)
    celldata, vtkGhostType
 end
 
-function fillcell!(ilvl, ids, ncells, maxamr, nLow, dataout, datain)
+function fillcell!(ilvl, maxamr, ids, ix, iy, iz, dataout, datain)
    @inbounds for ilvlup = ilvl:maxamr
       r = 2^(ilvlup-ilvl) # ratio on refined level
       for c in eachindex(ids)
-         ixr, iyr, izr = getindexes(ilvl, ncells[1], ncells[2], nLow, ids[c]) .* r
          for k = 1:r, j = 1:r, i = 1:r
-            _fillcelldata!(dataout[ilvlup+1], datain, ixr+i, iyr+j, izr+k, c)
+            _fillcelldata!(dataout[ilvlup+1], datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
          end
       end
    end
 end
 
-function fillcell!(ids, ncells, maxamr, nLow, dataout, datain)
-   @inbounds for i in eachindex(ids)
-      ix, iy, iz = getindexes(maxamr, ncells[1], ncells[2], nLow, ids[i]) .+ 1
-      _fillcelldata!(dataout, datain, ix, iy, iz, i)
+function fillcell!(ids, ix, iy, iz, dataout, datain)
+   @inbounds for c in eachindex(ids)
+      _fillcelldata!(dataout, datain, ix[c]+1, iy[c]+1, iz[c]+1, c)
    end
 end
 
