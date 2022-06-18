@@ -358,7 +358,9 @@ end
 Read variable `var` in a collection of cells `ids` associated with `meta`. if `ids` is
 empty, return the whole array of `var`.
 """
-function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})
+function readvariable(meta::MetaVLSV, var::String,
+   ids::Union{Vector{<:Integer}, UnitRange{Int64}})
+
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, cellid) = meta
 
