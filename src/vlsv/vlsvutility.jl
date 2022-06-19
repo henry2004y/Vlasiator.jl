@@ -858,7 +858,9 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 - `celldata::Vector{Vector{Array}}`: data for each variable on each AMR level.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
-function fillmesh(meta::MetaVLSV, vars::Vector{String}; skipghosttype=true, verbose=false)
+function fillmesh(meta::MetaVLSV, vars::Vector{String};
+   skipghosttype::Bool=true, verbose::Bool=false)
+
    (;maxamr, fid, footer, ncells, cellid, cellindex) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
