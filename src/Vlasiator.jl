@@ -40,12 +40,36 @@ export
    # fluxfunction
    compute_flux_function, find_reconnection_points
 
-# Methods leftout from PrecompileSignatures
+precompile(load, (String,))
 precompile(readvariable, (MetaVLSV, String, Vector{UInt64}))
 precompile(readvariable, (MetaVLSV, String, Int64))
+precompile(readvariable, (MetaVLSV, String))
+precompile(readvariable, (MetaVLSV, String, UnitRange{Int64}))
+precompile(readvariable, (MetaVLSV, String, Bool))
 precompile(readvcells, (MetaVLSV, Int64))
 precompile(readvcells, (MetaVLSV, UInt64))
+precompile(readlog, (String,))
+precompile(readmesh, (IOStream, EzXML.Node, String, String))
+precompile(readparameter, (MetaVLSV, String))
+precompile(readparameter, (IOStream, EzXML.Node, String))
+precompile(readvariablemeta, (MetaVLSV, String))
+precompile(readvector, (IOStream, EzXML.Node, String, String))
 precompile(getcell, (MetaVLSV, Vector{Float64}))
+precompile(getObjInfo, (EzXML.Node, String, String, String))
+precompile(get_axis, (Vlasiator.PlotArgs,))
+precompile(getcellwithvdf, (MetaVLSV,))
+precompile(getdata2d, (MetaVLSV, String))
+precompile(getfooter, (IOStream,))
+precompile(hasname, (EzXML.Node, String, String))
+precompile(hasparameter, (MetaVLSV, String))
+precompile(hasvariable, (MetaVLSV, String))
+precompile(prep2d, (MetaVLSV, String))
+precompile(fillmesh, (MetaVLSV, String))
+precompile(fillmesh, (MetaVLSV, Vector{String}))
+precompile(set_args, (MetaVLSV, String, Vlasiator.AxisUnit))
+precompile(write_vlsv, (String, String, Vector{Tuple{VecOrMat, String, VarInfo}}))
+precompile(write_vtk, (MetaVLSV,))
+precompile(searchsorted, (Vector{UInt64}, Int64))
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
@@ -55,8 +79,5 @@ function __init__()
       include("plot/plots.jl")
    end
 end
-
-using PrecompileSignatures: @precompile_signatures
-@precompile_signatures(Vlasiator)
 
 end
