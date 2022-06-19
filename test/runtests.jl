@@ -300,7 +300,15 @@ end
          sha_str = bytes2hex(open(sha1, "bulk.amr_3.vti"))
          @test sha_str == "8a2bb0a15c5dcc329f88821036df840a86eef9d5"
 
-         filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti"]
+         # Selected region
+         write_vtk(meta, vars=["proton/vg_rho"], box=
+            [meta.coordmin[1], meta.coordmax[1], 0, meta.coordmax[2], 0, meta.coordmax[3]],
+            maxamronly=true)
+         sha_str = bytes2hex(open(sha1, "bulk.amr.vti"))
+         @test sha_str == "50e01f51ec7e16a1a57e794eab8545eeeda4e2b6"
+
+         filesaved = ["bulk.amr.vthb", "bulk.amr_1.vti", "bulk.amr_2.vti", "bulk.amr_3.vti",
+            "bulk.amr.vti"]
          rm.(filesaved, force=true)
       end
    end

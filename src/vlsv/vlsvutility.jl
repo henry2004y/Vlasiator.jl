@@ -986,7 +986,8 @@ Convert VLSV file to VTK format.
 - `verbose::Bool=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
-   maxamronly::Bool=false, skipghosttype::Bool=false, verbose::Bool=false)
+   maxamronly::Bool=false, skipghosttype::Bool=false, verbose::Bool=false,
+   box=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
 
    (;ncells, maxamr, dcoord, coordmin) = meta
 
@@ -1007,7 +1008,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
 
    if maxamronly
       save_image(meta, meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end], maxamr,
-         append)
+         append; box)
    else
       # Generate image file on each refinement level
       @inbounds for i in eachindex(vtkGhostType, filedata)
@@ -1055,7 +1056,7 @@ write_vtk(file; kwargs...) = write_vtk(load(file); kwargs...)
 
 """
     save_image(meta::MetaVLSV, file, vars, data, vtkGhostType, level,
-       ascii=false, append=true)
+       ascii=false, append=true, box=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
 
 Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 # Arguments
@@ -1067,23 +1068,50 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `ascii::Bool=false`: save output in ASCII or binary format.
 - `append::Bool=true`: determines whether to append data at the end of file or do in-block
 writing.
+- `box::Vector`: selected box range in 3D. 
 """
 function save_image(meta::MetaVLSV, file::String, vars::Vector{String}, data,
-   vtkGhostType::Array{UInt8}, level::Integer, ascii::Bool=false, append::Bool=true)
+   vtkGhostType::Array{UInt8}, level::Integer, ascii::Bool=false, append::Bool=true;
+   box=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
 
-   (;coordmin, dcoord, ncells) = meta
-   origin = (coordmin[1], coordmin[2], coordmin[3])
+   (;coordmin, coordmax, dcoord, ncells) = meta
    ratio = 2^level
    spacing = (dcoord[1] / ratio, dcoord[2] / ratio, dcoord[3] / ratio)
 
-   vtk = vtk_grid(file, ncells[1]*ratio+1, ncells[2]*ratio+1, ncells[3]*ratio+1;
-      origin, spacing, append, ascii)
+   if all(isinf.(box)) # full domain
+      origin = (coordmin[1], coordmin[2], coordmin[3])
 
-   @inbounds for (iv, var) in enumerate(vars)
-      vtk[var, VTKCellData()] = data[iv][level+1]
+      vtk = vtk_grid(file, ncells[1]*ratio+1, ncells[2]*ratio+1, ncells[3]*ratio+1;
+         origin, spacing, append, ascii)
+
+      @inbounds for (iv, var) in enumerate(vars)
+         vtk[var, VTKCellData()] = data[iv][level+1]
+      end
+
+      vtk["vtkGhostType", VTKCellData()] = vtkGhostType
+   else # selected box region
+      xrange = box[1]:spacing[1]:box[2]
+      yrange = box[3]:spacing[2]:box[4]
+      zrange = box[5]:spacing[3]:box[6]
+      vtk = vtk_grid(file, xrange, yrange, zrange; append, ascii)
+
+      if box[1] < coordmin[1] || box[3] < coordmin[2] || box[5] < coordmin[3] ||
+         box[2] > coordmax[1] || box[4] > coordmax[2] || box[6] > coordmax[3]
+         throw(ArgumentError("Selected box range $box out of bound!"))
+      end
+
+      imin = Int((box[1] - coordmin[1]) ÷ spacing[1]) + 1
+      imax = imin + length(xrange) - 2
+      jmin = Int((box[3] - coordmin[2]) ÷ spacing[2]) + 1
+      jmax = jmin + length(yrange) - 2
+      kmin = Int((box[5] - coordmin[3]) ÷ spacing[3]) + 1
+      kmax = kmin + length(zrange) - 2
+
+      @inbounds for (iv, var) in enumerate(vars)
+         vtk[var, VTKCellData()] = data[iv][level+1][:,imin:imax,jmin:jmax,kmin:kmax]
+      end
+      vtk["vtkGhostType", VTKCellData()] = vtkGhostType[imin:imax,jmin:jmax,kmin:kmax]
    end
-
-   vtk["vtkGhostType", VTKCellData()] = vtkGhostType
 
    vtk_save(vtk)
 end
