@@ -909,7 +909,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
       if !skipghosttype
          # Mark non-existing cells due to refinement
          @simd for id in nLow+1:nHigh
-            if isempty(searchsorted(ids, id)) # TODO: how to remove allocations?
+            if isempty(searchsorted(ids, id))
                ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, id) .+ 1
                vtkGhostType[ilvl+1][ix,iy,iz] = 8
             end
