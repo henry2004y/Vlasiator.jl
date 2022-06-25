@@ -197,11 +197,19 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
    isnothing(ax) && (ax = plt.gca())
 
    if colorscale != SymLog
-      c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
-         norm, kwargs...)
+      if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
+         c = ax.pcolormesh(x1, x2, data; norm, kwargs...)
+      else
+         c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
+            norm, kwargs...)
+      end
    else
-      c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
-         norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+      if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
+         c = ax.pcolormesh(x1, x2, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+      else
+         c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
+            norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+      end
    end
 
    set_plot(c, ax, pArgs, ticks, addcolorbar)
