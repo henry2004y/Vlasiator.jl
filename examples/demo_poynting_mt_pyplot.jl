@@ -182,15 +182,15 @@ function plot_poynting(de_filtered, db_filtered, b̄, x1, x2, frequency_range)
    cb2 = colorbar(c2; ax=axs[2], extend="max")
    cb2.ax.set_ylabel(L"[W/m^2]"; fontsize="large")
 
-   q = axs[1].quiver(x1[1:stride:end], x2[1:stride:end],
-      (s[1,:,:] ./ sqrt.(s[1,:,:].^2 .+ s[3,:,:].^2))[1:stride:end, 1:stride:end]',
-      (s[3,:,:] ./ sqrt.(s[1,:,:].^2 .+ s[3,:,:].^2))[1:stride:end, 1:stride:end]';
-      color="k")
+   s1 = @views (s[1,:,:] ./ hypot.(s[1,:,:], s[3,:,:]))[1:stride:end, 1:stride:end]'
+   s2 = @views (s[3,:,:] ./ hypot.(s[1,:,:], s[3,:,:]))[1:stride:end, 1:stride:end]'
 
-   qb = axs[1].quiver(x1[1:stride:end], x2[1:stride:end],
-      (b̄[1,:,:,1] ./ sqrt.(b̄[1,:,:,1].^2 .+ b̄[3,:,:,1].^2))[1:stride:end, 1:stride:end]',
-      (b̄[3,:,:,1] ./ sqrt.(b̄[1,:,:,1].^2 .+ b̄[3,:,:,1].^2))[1:stride:end, 1:stride:end]';
-      color="tab:purple")
+   q = axs[1].quiver(x1[1:stride:end], x2[1:stride:end], s1, s2; color="k")
+
+   b1 = @views (b̄[1,:,:,1] ./ hypot.(b̄[1,:,:,1], b̄[3,:,:,1]))[1:stride:end, 1:stride:end]'
+   b2 = @views (b̄[3,:,:,1] ./ hypot.(b̄[1,:,:,1], b̄[3,:,:,1]))[1:stride:end, 1:stride:end]'
+
+   qb = axs[1].quiver(x1[1:stride:end], x2[1:stride:end], b1, b2; color="tab:purple")
 
    if frequency_range == "high"
       fig.suptitle("t = $(t[1]) s, [0.1, 1.0] Hz";
@@ -210,13 +210,13 @@ function plot_poynting(de_filtered, db_filtered, b̄, x1, x2, frequency_range)
       c1.set_array(s_par')
       c2.set_array(s_perp')
 
-      ŝx = @. s[1,:,:] / sqrt(s[1,:,:]^2 + s[3,:,:]^2)
-      ŝz = @. s[3,:,:] / sqrt(s[1,:,:]^2 + s[3,:,:]^2)
+      ŝx = @views @. s[1,:,:] / hypot(s[1,:,:], s[3,:,:])
+      ŝz = @views @. s[3,:,:] / hypot(s[1,:,:], s[3,:,:])
 
       q.set_UVC(ŝx[1:stride:end, 1:stride:end]', ŝz[1:stride:end, 1:stride:end]')
 
-      b̂x = @. b̄[1,:,:,it] / sqrt(b̄[1,:,:,it]^2 + b̄[3,:,:,it]^2)
-      b̂z = @. b̄[3,:,:,it] / sqrt(b̄[1,:,:,it]^2 + b̄[3,:,:,it]^2)
+      b̂x = @views @. b̄[1,:,:,it] / hypot(b̄[1,:,:,it], b̄[3,:,:,it])
+      b̂z = @views @. b̄[3,:,:,it] / hypot(b̄[1,:,:,it], b̄[3,:,:,it])
 
       qb.set_UVC(b̂x[1:stride:end, 1:stride:end]', b̂z[1:stride:end, 1:stride:end]')
 

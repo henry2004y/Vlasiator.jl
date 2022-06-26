@@ -124,7 +124,7 @@ println("Moving box window size: $(nbox / fs) [s]")
 
 t, n, v, e, b = extract_vars(files, loc)
 
-bmag = [sqrt(b[1,i]^2 + b[2,i]^2 + b[3,i]^2) for i in eachindex(n)]
+bmag = [hypot(b[1,i], b[2,i], b[3,i]) for i in eachindex(n)]
 
 # Detrend before filtering to remove the lowest frequency changes
 dn = detrend(n; nbox)
