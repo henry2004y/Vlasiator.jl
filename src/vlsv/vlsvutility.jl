@@ -983,11 +983,13 @@ Convert VLSV file to VTK format.
 - `vars::Vector{String}=[""]`: select which variables to convert.
 - `ascii::Bool=false`: output stored in ASCII or compressed binary format.
 - `maxamronly::Bool=false`: generate image files on the highest refinement level only.
+- `box::Vector`: selected box range in 3D.
+- `outdir::String=""`: output directory. 
 - `verbose::Bool=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
    maxamronly::Bool=false, skipghosttype::Bool=false, verbose::Bool=false,
-   box=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
+   box=[-Inf, Inf, -Inf, Inf, -Inf, Inf], outdir="")
 
    (;ncells, maxamr, dcoord, coordmin) = meta
 
@@ -995,7 +997,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
 
    filedata = Vector{String}(undef, maxamr+1)
    @inbounds for i in 1:maxamr+1
-      filedata[i] = meta.name[1:end-5]*"_$i.vti"
+      filedata[i] = outdir*meta.name[1:end-5]*"_$i.vti"
    end
 
    if isempty(vars[1])
@@ -1007,8 +1009,8 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
    data, vtkGhostType = fillmesh(meta, vars; skipghosttype, verbose)
 
    if maxamronly
-      save_image(meta, meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end], maxamr,
-         append; box)
+      save_image(meta, outdir*meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end],
+         maxamr, append; box)
    else
       # Generate image file on each refinement level
       @inbounds for i in eachindex(vtkGhostType, filedata)
@@ -1017,7 +1019,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       end
 
       # Generate vthb file
-      filemeta = meta.name[1:end-4]*"vthb"
+      filemeta = outdir*meta.name[1:end-4]*"vthb"
       doc = XMLDocument()
       elm = ElementNode("VTKFile")
       setroot!(doc, elm)
