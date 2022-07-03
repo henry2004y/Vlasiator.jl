@@ -7,21 +7,20 @@ Return cell ID containing the given spatial `location` in meter, excluding domai
 boundaries. Only accept 3D location.
 """
 function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
-   (;coordmin, coordmax, dcoord, ncells, cellid, maxamr) = meta
+   (;coordmin, coordmax, dcoord, ncells, celldict, maxamr) = meta
 
    foreach( (i,comp) -> coordmin[i] < loc[i] < coordmax[i] ? nothing :
       error("$comp coordinate out of bound!"), 1:3, 'x':'z')
 
-   # Get cell indices
    indices = @inbounds ntuple(i -> round(UInt, (loc[i] - coordmin[i]) ÷ dcoord[i]), Val(3))
-   # Get cell id
+
    cid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
    ncells_lowerlevel = UInt(0)
    ncell = prod(ncells)
 
    @inbounds for ilevel = 0:maxamr
-      cid in cellid && break
+      haskey(celldict, cid) && break
 
       ncells_lowerlevel += (8^ilevel)*ncell
 
@@ -71,7 +70,7 @@ function getparent(meta::MetaVLSV, cid::Integer)
    if parentlvl < 0
       throw(ArgumentError("Cell ID $cid has no parent cell!"))
    else
-      # get the first cellid on my level
+      # get the first cell ID on my level
       cid1st = get1stcell(mylvl, ncell)
       # get row and column sequence on my level (starting with 0)
       xcell <<= mylvl
@@ -86,9 +85,9 @@ function getparent(meta::MetaVLSV, cid::Integer)
       iyparent = iy ÷ 2
       izparent = iz ÷ 2
 
-      # get the first cellid on parent level
+      # get the first cell ID on parent level
       cid1st -= ncell*8^parentlvl
-      # get parent cellid (may not exist!!!)
+      # get parent cell ID (may not exist!!!)
       parentid = cid1st + izparent*xcell*ycell÷4 + iyparent*xcell÷2 + ixparent
    end
 
@@ -154,7 +153,7 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
    xcell = xcell << mylvl
    ycell = ycell << mylvl
 
-   # 1st cellid on my level
+   # 1st cell ID on my level
    cid1st = get1stcell(mylvl, ncell)
 
    # xyz sequences on my level (starting with 0)
@@ -190,7 +189,7 @@ Check if `cid` is a parent cell.
 function isparent(meta::MetaVLSV, cid::Integer)
    ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
-   cid ∉ meta.cellid && 0 < cid < ncell_accum
+   !haskey(meta.celldict, cid) && 0 < cid < ncell_accum
 end
 
 """
@@ -657,7 +656,7 @@ order to the cut plane and can be used to select data onto the plane.
 """
 function getslicecell(meta::MetaVLSV, sliceoffset, idim::Integer, minCoord, maxCoord)
    idim ∉ (1,2,3) && @error "Unknown slice direction $idim"
-   (;ncells, maxamr, cellid, cellindex) = meta
+   (;ncells, maxamr, celldict) = meta
 
    nsize = ncells[idim]
    sliceratio = sliceoffset / (maxCoord - minCoord)
@@ -672,7 +671,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset, idim::Integer, minCoord, maxC
    indexlist = Int[]
    idlist = UInt[]
 
-   cellidsorted = cellid[cellindex]
+   cellidsorted = sort(collect(keys(celldict)))
 
    @inbounds for ilvl = 0:maxamr
       nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
@@ -861,7 +860,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 function fillmesh(meta::MetaVLSV, vars::Vector{String};
    skipghosttype::Bool=true, verbose::Bool=false)
 
-   (;maxamr, fid, footer, ncells, cellid, cellindex) = meta
+   (;maxamr, fid, footer, ncells, celldict) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
@@ -896,7 +895,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    # Find the ids
    ncell = prod(ncells)
    nLow, nHigh = 0, ncell
-   cellidsorted = cellid[cellindex]
+   cellidsorted = sort(collect(keys(celldict)))
 
    @inbounds for ilvl = 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
@@ -916,7 +915,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
          end
       end
 
-      rOffsetsRaw = indexin(ids, cellid)
+      rOffsetsRaw = [celldict[id] for id in ids]
 
       ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 

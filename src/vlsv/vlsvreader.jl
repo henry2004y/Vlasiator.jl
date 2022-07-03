@@ -31,8 +31,8 @@ struct MetaVLSV
    fid::IOStream
    footer::EzXML.Node
    variable::Vector{String}
-   "unsorted cell IDs"
-   cellid::Vector{UInt64}
+   "mapping of unsorted cell ID to ordering"
+   celldict::Dict{UInt64, Int64}
    "ordered sequence indexes of raw cell IDs"
    cellindex::Vector{Int64}
    time::Float64
@@ -231,8 +231,10 @@ function load(file::AbstractString)
       timesim = Inf
    end
 
+   celldict = Dict(cellid[i] => i for i in eachindex(cellid))
+
    # Obtain maximum refinement level
-   maxamr = getmaxrefinement(cellid, cellindex, ncells)
+   maxamr = getmaxrefinement(cellid, ncells)
 
    varinfo = findall("//VARIABLE", footer)
    vars = [info["name"] for info in varinfo]
@@ -244,8 +246,8 @@ function load(file::AbstractString)
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, cellid,
-      cellindex, timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
+   meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, celldict, cellindex, 
+      timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
       dcoord, species, meshes)
 end
 
@@ -259,12 +261,11 @@ function load(f::Function, file::AbstractString)
    end
 end
 
-function getmaxrefinement(cellid::AbstractArray{UInt64, 1}, cellindex::Vector{Int64},
-   ncells::NTuple{3, UInt64})
+function getmaxrefinement(cellid::AbstractArray{UInt64, 1}, ncells::NTuple{3, UInt64})
 
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
-   while @inbounds cid < cellid[cellindex[end]]
+   while @inbounds cid < maximum(cellid)
       maxamr += 1
       cid += ncell*8^maxamr
    end
@@ -343,8 +344,8 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
 
       data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      @inbounds d = ndims(raw) == 1 ? raw[cellindex] : raw[:,cellindex]
-      data = eltype(raw) == Float64 ? Float32.(d) : d
+      @inbounds data = ndims(raw) == 1 ? raw[cellindex] : raw[:,cellindex]
+      if eltype(data) == Float64; data = Float32.(data); end
    else
       data = raw
    end
@@ -356,13 +357,13 @@ end
     readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer}) -> Array
 
 Read variable `var` in a collection of cells `ids` associated with `meta`. if `ids` is
-empty, return the whole array of `var`.
+empty, return the whole sorted array of `var`.
 """
 function readvariable(meta::MetaVLSV, var::String,
    ids::Union{Vector{<:Integer}, UnitRange{Int64}})
 
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, footer, cellid) = meta
+   (;fid, footer, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta, ids)
@@ -382,9 +383,7 @@ function readvariable(meta::MetaVLSV, var::String,
          reshape(reinterpret(T, a), vsize, asize)
       end
 
-      id_ = length(ids) < 1000 ?
-         Union{eltype(ids), Nothing}[findfirst(==(id), cellid) for id in ids] :
-         indexin(ids, cellid)
+      id_ = [celldict[id] for id in ids]
 
       _fillv!(v, w, id_, vsize)
 
@@ -403,25 +402,18 @@ Read variable `var` in cell `cid` associated with `meta`.
 """
 function readvariable(meta::MetaVLSV, var::String, cid::Integer)
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, footer, cellid) = meta
+   (;fid, footer, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       data = variables_predefined[symvar](meta, cid)
       return data
    end
 
-   T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+   T, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
-   v = Vector{T}(undef, vsize)
-
-   w = let
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      reshape(reinterpret(T, a), vsize, asize)
-   end
-
-   id_ = findfirst(==(cid), cellid)
-
-   _fillv!(v, w, id_, vsize)
+   v = vsize == 1 ? Vector{T}(undef, 1) : Array{T,2}(undef, vsize, 1)
+   seek(fid, offset + (celldict[cid]-1)*vsize*dsize)
+   read!(fid, v)
 
    if T == Float64
       v = Float32.(v)

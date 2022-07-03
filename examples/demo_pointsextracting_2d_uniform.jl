@@ -11,7 +11,7 @@ using JLD2: jldsave
 function sample(meta, dx)
    dcell = floor(Int, dx ÷ meta.dcoord[1])
 
-   cellid = meta.cellid[meta.cellindex]
+   cellid = sort(collect(keys(meta.celldict)))
    cellid = reshape(cellid, meta.ncells[1], meta.ncells[2])
    cellid_select = cellid[1+dcell:dcell:end-dcell, 1+dcell:dcell:end-dcell]
 end

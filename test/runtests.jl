@@ -224,8 +224,9 @@ end
       @testset "VLSV writing" begin
          meta = meta1
          # Obtain unsorted derived variables, workaround #59
-         vmag = readvariable(meta, "Vmag", meta.cellid)
-         pa = readvariable(meta, "Panisotropy", meta.cellid)
+         cellid = readvariable(meta, "CellID", false)
+         vmag = readvariable(meta, "Vmag", cellid)
+         pa = readvariable(meta, "Panisotropy", cellid)
          vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
          push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
          push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))

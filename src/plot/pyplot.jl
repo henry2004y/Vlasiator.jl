@@ -358,7 +358,7 @@ Plot mesh cell centers from axis view `projection`. `projection` should be eithe
 """
 function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marker="+",
    kwargs...)
-   (;coordmin, coordmax, cellid) = meta
+   (;coordmin, coordmax) = meta
    if projection in ("x", "y", "z")
       dirp, dir1, dir2 =
          if projection == "x"
@@ -371,7 +371,7 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
       sliceoffset = origin - coordmin[dirp]
       ids, _ = getslicecell(meta, sliceoffset, dirp, coordmin[dirp], coordmax[dirp])
    else # 3D
-      ids = cellid
+      ids = readvariable(meta, "CellID", false)
    end
 
    centers = [zeros(SVector{3, Float32}) for _ in ids]
