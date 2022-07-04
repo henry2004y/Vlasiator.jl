@@ -44,32 +44,31 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 ### Benchmarks
 
 !!! note
-    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.8.26 running Python 3.6.9 and Julia 1.6.3. The timings are performed on a i5-10210U @ 1.6GHz if not specified. Keep in mind that when we are comparing against Python, we are mostly likely comparing with the underlying C libraries with a Python wrapper.
+    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.9.22 running Python 3.6.9 and Julia 1.7.3. The timings are performed on a i5-10210U @ 1.6GHz if not specified. Keep in mind that when we are comparing against Python, we are mostly likely comparing with the underlying C libraries with a Python wrapper.
 
 * Reading DCCRG grid variables
-| Variable[^1] | 80KB Float32 | 900KB Float64 | 32MB Float64 |
+| Variable | 80KB Float32 | 900KB Float64 | 32MB Float64 |
 |:------|:----------:|:-------|:----------:|
-| Julia  [ms] | 0.2 | 5.9 | 303[^2] |
-| Python [ms] | 2.2 | 10  | 295 |
+| Julia  [ms] | 0.02 | 0.4 | 12.5[^1] |
+| Python [ms] | 0.14 | 8.7  | 295 |
 
-[^1]: The size here represents the actual size of the variable, not the total file size. The larger the data sizes, the less meaningful in these comparisons since the time is dominant by low level I/O, where in Python it's written in C.
-[^2]: Julia is slower for this test because there is a conversion from Float64 to Float32. See [Precision](#precision).
+[^1]: Julia can be even faster if there is no conversion from Float64 to Float32. See [Precision](#precision).
 
-* Reading field solver grid variables[^3]
+* Reading field solver grid variables[^2]
 | 13 GB  | tmean [s] |
 |:-------|:---------:|
 | Julia  | 8   |
 | Python | 61  |
 
-[^3]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once. It will go out of memory for the second time in Analysator, but not in Vlasiator.jl --- see [Memory](#memory). This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
+[^2]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once. It will go out of memory for the second time in Analysator, but not in Vlasiator.jl --- see [Memory](#memory). This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
 
-* From starting Julia/Python to the first plot of 2D density contour[^4]
+* From starting Julia/Python to the first plot of 2D density contour[^3]
 | 28 MB  | tmean [s] |
 |:-------|:---------:|
-| Julia 1.6  | 11.6  |
-| Python 3.6 | 9.4   |
+| Julia 1.7  | 11.0  |
+| Python 3.6 | 9.5   |
 
-[^4]: This inefficieny of Julia is a famous problem in the community known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
+[^3]: This inefficieny of Julia is a famous problem in the community known as "time to first plot". On the Python side, however, I don't know why using Analysator is slower (2.3GB file, 4.8s) than directly calling matplotlib functions (2.3GB file, 0.5s).
 
 * Reading and plotting one 2d slice of proton density out of 3D AMR data
 
@@ -78,14 +77,14 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 | Julia  | 0.35  |
 | Python | 1.7   |
 
-* Virtual satellite tracking from 200 frames of 3D AMR data (26G per frame, 32 MB Cell IDs) on a cluster
+* Static virtual satellite tracking from 200 frames of 3D AMR data (26G per frame, 32 MB Cell IDs) on a cluster
 
-| 1 core | tmean [s][^5] |
+| 1 core | tmean [s][^4] |
 |:-------|:---------:|
-| Julia  | 239   |
-| Python | 376   |
+| Julia  | 173   |
+| Python | 316   |
 
-[^5]: The timings include importing the libraries, extracting the data and saving to text files using a single CPU on Vorna, a local cluster at University of Helsinki with Intel Xeon E5-2697 @ 2.70GHz. With multithreading, the Julia timings can scale linearly on a node with the number of cores used.
+[^4]: A single CPU core is used on Vorna, a local cluster at University of Helsinki with Intel Xeon E5-2697 @ 2.70GHz. With multithreading, the Julia timings can scale linearly on a node with the number of cores used.
 
 ## Precision
 

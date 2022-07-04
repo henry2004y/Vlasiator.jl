@@ -29,5 +29,5 @@ cell_sorted = np.argsort(cellID)
 rho = f.read_variable(var)[cell_sorted]
 """
 
-print(timeit.timeit(stmt=s1, setup=p1, number=10) / 10 * 1e6) # [μs]
-print(timeit.timeit(stmt=s2, setup=p2, number=10) / 10 * 1e6) # [μs]
+print(timeit.timeit(stmt=s1, setup=p1, number=10) / 10 * 1e3) # [ms]
+print(timeit.timeit(stmt=s2, setup=p2, number=10) / 10 * 1e3) # [ms]
