@@ -23,18 +23,22 @@ matplotlib.rc("ytick", labelsize=10)
     plot(meta, var, ax=nothing; comp=0, kwargs)
 
 Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
-The keyword `comp` in (0, 1, 2, 3) is used to specify the component of a vector.
-Any valid keyword argument for `plt.plot` is accepted.
+The keyword `comp` is used to specify the component index of a vector, with 0 being the
+magnitude. Any valid keyword argument for `plt.plot` is accepted.
 """
 function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=0, kwargs...)
    ndims(meta) == 1 || error("plot only accepts 1D data!")
 
    datafull = readvariable(meta, var)
 
-   if comp == 0
+   if ndims(datafull) == 1
       data = datafull
    else
-      data = datafull[comp,:]
+      if comp == 0
+         data = sqrt.(sum(x->x^2, datafull, dims=1)) |> vec
+      else
+         data = datafull[comp,:]
+      end
    end
 
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
@@ -140,7 +144,7 @@ If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
 # Optional arguments
 - `comp::Tuple{Int64, Symbol}`: the component of a vector, chosen from
-`:mag, :x, :y, :z, 0, 1, 2, 3`.
+`:mag, :x, :y, :z, 0` or valid integers for indexing.
 - `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
 - `vmin::Float`: minimum data range. Set to maximum of data if not specified.

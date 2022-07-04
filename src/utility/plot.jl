@@ -136,6 +136,8 @@ function prep2d(meta::MetaVLSV, var::String, comp=0)
             @view dataRaw[3,:,:]
          elseif comp in (:mag, 0)
             @views hypot.(dataRaw[1,:,:], dataRaw[2,:,:], dataRaw[3,:,:])
+         else
+            @view dataRaw[comp,:,:]
          end
       else
          dataRaw
@@ -181,6 +183,9 @@ function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp, pArgs::P
             datay = @views refineslice(meta, idlist, data2D[2,:], normal)
             dataz = @views refineslice(meta, idlist, data2D[3,:], normal)
             data = hypot.(datax, datay, dataz)
+         else
+            slice = @view data2D[comp,:]
+            data = refineslice(meta, idlist, slice, normal)
          end
       end
    end
@@ -262,7 +267,7 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector;
       end
       v1size = vmesh.vblocks[dir1] * vmesh.vblock_size[dir1]
       v2size = vmesh.vblocks[dir2] * vmesh.vblock_size[dir2]
-   
+
       v1min, v1max = vmesh.vmin[dir1], vmesh.vmax[dir1]
       v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
    elseif slicetype in (:bperp, :bpar1, :bpar2)
