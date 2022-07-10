@@ -22,7 +22,7 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 [compat]
 EzXML = "1.1"
 LaTeXStrings = "1.2"
-LazyGrids = "0.2, 0.3"
+LazyGrids = "0.2, 0.3, 0.4"
 PyPlot = "2.9"
 RecipesBase = "1.1"
 Requires = "1.1"
