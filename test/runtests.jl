@@ -17,19 +17,22 @@ function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
    result
 end
 
-function simulateInput(keys...)
-
+function simulate_input(keys...)
    keydict = Dict(:up => "\e[A",
                   :down => "\e[B",
                   :enter => "\r")
 
+   new_stdin = Base.BufferStream()
    for key in keys
       if isa(key, Symbol)
-         write(Base.stdin.buffer, keydict[key])
+         write(new_stdin, keydict[key])
       else
-         write(Base.stdin.buffer, "$key")
+         write(new_stdin, "$key")
       end
    end
+   TerminalMenus.terminal.in_stream = new_stdin
+
+   return
 end
 
 @testset "Vlasiator.jl" begin
@@ -349,10 +352,10 @@ end
          @test size(points) == (10, 2)
          fig = plt.figure()
          ax = fig.add_subplot(projection="3d")
-         centers = plotmesh(meta, projection="3d")
+         centers = plotmesh(meta, ax; projection="3d")
          points = centers.get_offsets() # only 2D from 3D coords, might be improved
          @test size(points) == (10, 2)
-         close(fig)
+         plt.clf()
 
          @test_throws ArgumentError pcolormesh(meta, "proton/vg_rho")
 
@@ -420,11 +423,11 @@ end
 
       @testset "Plot UI" begin
          meta = meta1
-         simulateInput(:enter)
+         simulate_input(:enter)
          @suppress_out pui(meta; suppress_output=true)
          @test true # if it reaches here, then pass
          meta = meta2
-         simulateInput(fill(:down,5), :enter, :enter);
+         simulate_input(fill(:down,5), :enter, :enter)
          @suppress_out pui(meta; suppress_output=true)
          @test true # if it reaches here, then pass
       end
