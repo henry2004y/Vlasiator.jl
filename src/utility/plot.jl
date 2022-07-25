@@ -13,6 +13,8 @@ struct PlotArgs
    sizes::Tuple{Int64, Int64}
    "plotting data range"
    plotrange::NTuple{4, Float64}
+   "cut plane origin"
+   origin::Float64
    "cell IDs in the cut plane"
    idlist::Vector{UInt}
    "mapping from original cell order to cut plane"
@@ -76,7 +78,8 @@ function set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit; normal::Symbo
    cb_title = !isempty(datainfo.variableLaTeX) ?
       datainfo.variableLaTeX * " ["*datainfo.unitLaTeX*"]" : ""
 
-   PlotArgs(axisunit, sizes, plotrange, idlist, indexlist, str_title, strx, stry, cb_title)
+   PlotArgs(axisunit, sizes, plotrange, origin, idlist, indexlist,
+      str_title, strx, stry, cb_title)
 end
 
 """
@@ -154,12 +157,36 @@ the plane orientation, and `comp` to select the component of a vector, same as i
 [`pcolormeshslice`](@ref).
 """
 function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp, pArgs::PlotArgs)
-   (;idlist, indexlist) = pArgs
+   (;origin, idlist, indexlist) = pArgs
 
    data3D = readvariable(meta, var)
 
    if startswith(var, "fg_") # field quantities, fsgrid
-      throw(ArgumentError("FS grid variable $var plotting in cut currently not supported!"))
+      ncells = meta.ncells .* 2^meta.maxamr
+      if normal == :x
+         dir = 1
+      elseif normal == :y
+         dir = 2
+      elseif normal == :z
+         dir = 3
+      else
+         @error "Unknown normal direction $normal"
+      end
+
+      sliceratio = (origin - meta.coordmin[dir]) / (meta.coordmax[dir] - meta.coordmin[dir])
+      0.0 ≤ sliceratio ≤ 1.0 || error("slice plane index out of bound!")
+      # Find the cut plane index for each refinement level
+      icut = floor(Int, sliceratio*ncells[dir]) + 1
+      if typeof(comp) == Symbol
+         comp = comp == :x ? 1 : comp == :y ? 2 : comp == :z ? 3 : 0
+      end
+      if normal == :x
+         data = data3D[comp,icut,:,:]
+      elseif normal == :y
+         data = data3D[comp,:,icut,:]
+      elseif normal == :z
+         data = data3D[comp,:,:,icut]
+      end
    else # moments, dccrg grid
       # vlasov grid, AMR
       if ndims(data3D) == 1

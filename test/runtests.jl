@@ -360,13 +360,13 @@ end
          @test_throws ArgumentError pcolormesh(meta, "proton/vg_rho")
 
          loc = [2.0, 0.0, 0.0]
-         var = vdfslice(meta, loc).get_array()
-         @test var[786] == 238.24398578141802
+         v = vdfslice(meta, loc).get_array()
+         @test v[786] == 238.24398578141802
          @test_throws ArgumentError vdfslice(meta, loc, species="helium")
          output = @capture_err begin
-            var = vdfslice(meta, loc; slicetype=:bperp).get_array()
+            v = vdfslice(meta, loc; slicetype=:bperp).get_array()
          end
-         @test var[786] == 4.02741885708042e-10
+         @test v[786] == 4.02741885708042e-10
 
          output = @capture_err begin
             vdfslice(meta, loc; verbose=true)
@@ -375,29 +375,31 @@ end
 
          # 2D
          meta = meta2
-         var = pcolormesh(meta, "proton/vg_rho").get_array()
-         @test var[end-2] == 999535.8f0 && length(var) == 6300
-         var = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
-         @test var[end] == 0.0 && length(var) == 6
-         var = pcolormesh(meta, "proton/vg_rho";
+         v = pcolormesh(meta, "proton/vg_rho").get_array()
+         @test v[end-2] == 999535.8f0 && length(v) == 6300
+         v = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
+         @test v[end] == 0.0 && length(v) == 6
+         v = pcolormesh(meta, "proton/vg_rho";
             extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI, colorscale=Log).get_array()
-         @test var[end] == 1.00022675f6 && length(var) == 100
-         var = pcolormesh(meta, "fg_b").get_array()
-         @test var[1] == 3.0058909f-9
-         var = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
-         @test var[2] == -699935.2f0
+         @test v[end] == 1.00022675f6 && length(v) == 100
+         v = pcolormesh(meta, "fg_b").get_array()
+         @test v[1] == 3.0058909f-9
+         v = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
+         @test v[2] == -699935.2f0
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
-         var = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
-         @test size(var) == (6300, 2)
+         v = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
+         @test size(v) == (6300, 2)
 
          # 3D AMR
          meta = meta3
-         var = pcolormesh(meta, "proton/vg_rho").get_array()
-         @test var[255] == 1.0483886f6 && length(var) == 512
-         var = pcolormesh(meta, "proton/vg_v").get_array()
-         @test var[255] == 99992.586f0
-         @test_throws ArgumentError pcolormesh(meta, "fg_b")
+         v = pcolormesh(meta, "proton/vg_rho").get_array()
+         @test v[255] == 1.0483886f6 && length(v) == 512
+         v = pcolormesh(meta, "proton/vg_v").get_array()
+         @test v[255] == 99992.586f0
+         pArgs = Vlasiator.set_args(meta, "fg_e", EARTH; normal=:y, origin=0.0)
+         v = Vlasiator.prep2dslice(meta, "fg_e", :y, 2, pArgs)
+         @test v[16,8] == 0.00032270234f0
       end
 
       @testset "Plots" begin
