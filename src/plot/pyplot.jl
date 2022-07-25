@@ -393,7 +393,12 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
       x1 = getindex.(centers, 1)
       x2 = getindex.(centers, 2)
       x3 = getindex.(centers, 3)
-      s = ax.scatter(x1, x2, x3; marker, kwargs...)
+
+      if ax.name == "3d"
+         s = ax.scatter(x1, x2, x3; marker, kwargs...)
+      else
+         @error "Keyword projection set to \"3d\". Please use 3d projection axis!"
+      end
    end
    s
 end
@@ -405,7 +410,6 @@ end
 Quick plotting via command line interactive selections.
 """
 function pui(meta::MetaVLSV; suppress_output=false)
-
    menu = RadioMenu(meta.variable; charset=:ascii)
 
    println("Choose variable to plot:")
