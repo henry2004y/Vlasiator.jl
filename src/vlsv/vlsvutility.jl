@@ -592,7 +592,7 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
       throw(DomainError(point2, "point location outside simulation domain!"))
    end
 
-   cell_lengths = @inbounds ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
+   dcell = @inbounds ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
    distances = [zero(T)]
    cellids = [getcell(meta, point1)]
@@ -608,8 +608,9 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
       amrlvl = getlevel(meta, cid)
 
       # Get the max and min cell boundaries
-      min_bounds = getcellcoordinates(meta, cid) .- 0.5.*cell_lengths.*0.5.^amrlvl
-      max_bounds = min_bounds .+ cell_lengths
+      Δ = dcell.*0.5.^amrlvl
+      min_bounds = getcellcoordinates(meta, cid) .- 0.5.*Δ
+      max_bounds = min_bounds .+ Δ
 
       # Check which face we hit first
       @. coef_min = (min_bounds - p) / unit_vector
