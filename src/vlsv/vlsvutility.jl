@@ -513,7 +513,7 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array; species="proton")
    T = p / (n *kB) # temperature from scalar pressure
 
    ϵₘ = zero(eltype(VDF))
-   vth2Inv = mᵢ / (2kB*T)
+   vth2⁻¹ = mᵢ / (2kB*T)
 
    @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
       vx = vmin[1] + (i - 0.5f0)*dv[1]
@@ -521,7 +521,7 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array; species="proton")
       vz = vmin[3] + (k - 0.5f0)*dv[3]
       dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
 
-      g = n * sqrt(vth2Inv/π) * (vth2Inv / π) * exp(-vth2Inv*dv2)
+      g = n * √(vth2⁻¹/π) * (vth2⁻¹/π) * ℯ^(-vth2⁻¹*dv2)
       ϵₘ += abs(VDF[i,j,k] - g)
    end
 
@@ -545,7 +545,7 @@ function getmaxwellianity(meta::MetaVLSV, vcellids::Vector, vcellf::Vector;
    T = p / (n *kB) # temperature from scalar pressure
 
    ϵₘ = zero(eltype(vcellf))
-   vth2Inv = mᵢ / (2kB*T)
+   vth2⁻¹ = mᵢ / (2kB*T)
 
    @inbounds @simd for ic in eachindex(vcellids)
       id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -558,7 +558,7 @@ function getmaxwellianity(meta::MetaVLSV, vcellids::Vector, vcellf::Vector;
       vz = vmin[3] + (k + 0.5f0)*dv[3]
       dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
 
-      g = n * sqrt(vth2Inv/π) * (vth2Inv / π) * exp(-vth2Inv*dv2)
+      g = n * √(vth2⁻¹/π) * (vth2⁻¹/π) * ℯ^(-vth2⁻¹*dv2)
       ϵₘ += abs(vcellf[ic] - g)
    end
 

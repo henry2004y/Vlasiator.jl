@@ -18,15 +18,15 @@ function curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
    B = zeros(T, size(A))
    @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
-   invdx = @. inv(2*dx)
+   dx2⁻¹ = @. inv(2*dx)
 
    if any(==(1), size(A)) # 2D
       if size(A,4) == 1
          @inbounds for j in 2:size(A,3)-1, i in 2:size(A,2)-1
-            ∂Ay∂x = δxᶜᵃᵃ(i, j, 1, Ay) * invdx[1]
-            ∂Az∂x = δxᶜᵃᵃ(i, j, 1, Az) * invdx[1]
-            ∂Ax∂y = δyᵃᶜᵃ(i, j, 1, Ax) * invdx[2]
-            ∂Az∂y = δyᵃᶜᵃ(i, j, 1, Az) * invdx[2]
+            ∂Ay∂x = δxᶜᵃᵃ(i, j, 1, Ay) * dx2⁻¹[1]
+            ∂Az∂x = δxᶜᵃᵃ(i, j, 1, Az) * dx2⁻¹[1]
+            ∂Ax∂y = δyᵃᶜᵃ(i, j, 1, Ax) * dx2⁻¹[2]
+            ∂Az∂y = δyᵃᶜᵃ(i, j, 1, Az) * dx2⁻¹[2]
 
             Bx[i,j,1] = ∂Az∂y
             By[i,j,1] = -∂Az∂x
@@ -34,10 +34,10 @@ function curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
          end
       elseif size(A,3) == 1
          @inbounds for k in 2:size(A,4)-1, i in 2:size(A,2)-1
-            ∂Ay∂x = δxᶜᵃᵃ(i, 1, k, Ay) * invdx[1]
-            ∂Az∂x = δxᶜᵃᵃ(i, 1, k, Az) * invdx[1]
-            ∂Ax∂z = δzᵃᵃᶜ(i, 1, k, Ax) * invdx[3]
-            ∂Ay∂z = δzᵃᵃᶜ(i, 1, k, Ay) * invdx[3]
+            ∂Ay∂x = δxᶜᵃᵃ(i, 1, k, Ay) * dx2⁻¹[1]
+            ∂Az∂x = δxᶜᵃᵃ(i, 1, k, Az) * dx2⁻¹[1]
+            ∂Ax∂z = δzᵃᵃᶜ(i, 1, k, Ax) * dx2⁻¹[3]
+            ∂Ay∂z = δzᵃᵃᶜ(i, 1, k, Ay) * dx2⁻¹[3]
 
             Bx[i,1,k] = -∂Ay∂z
             By[i,1,k] = ∂Ax∂z - ∂Az∂x
@@ -46,12 +46,12 @@ function curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
       end
    else # 3D
       @inbounds for k in 2:size(A,4)-1, j in 2:size(A,3)-1, i in 2:size(A,2)-1
-         ∂Ay∂x = δxᶜᵃᵃ(i, j, k, Ay) * invdx[1]
-         ∂Az∂x = δxᶜᵃᵃ(i, j, k, Az) * invdx[1]
-         ∂Ax∂y = δyᵃᶜᵃ(i, j, k, Ax) * invdx[2]
-         ∂Az∂y = δyᵃᶜᵃ(i, j, k, Az) * invdx[2]
-         ∂Ax∂z = δzᵃᵃᶜ(i, j, k, Ax) * invdx[3]
-         ∂Ay∂z = δzᵃᵃᶜ(i, j, k, Ay) * invdx[3]
+         ∂Ay∂x = δxᶜᵃᵃ(i, j, k, Ay) * dx2⁻¹[1]
+         ∂Az∂x = δxᶜᵃᵃ(i, j, k, Az) * dx2⁻¹[1]
+         ∂Ax∂y = δyᵃᶜᵃ(i, j, k, Ax) * dx2⁻¹[2]
+         ∂Az∂y = δyᵃᶜᵃ(i, j, k, Az) * dx2⁻¹[2]
+         ∂Ax∂z = δzᵃᵃᶜ(i, j, k, Ax) * dx2⁻¹[3]
+         ∂Ay∂z = δzᵃᵃᶜ(i, j, k, Ay) * dx2⁻¹[3]
 
          Bx[i,j,k] = ∂Az∂y - ∂Ay∂z
          By[i,j,k] = ∂Ax∂z - ∂Az∂x
@@ -78,13 +78,13 @@ function gradient(A::AbstractArray{T,N}, dx=ones(T, N)) where {T,N}
 
    if N == 3 # 3D
       B = zeros(T, 3, size(A)[1], size(A)[2], size(A)[3])
-      invdx = @. inv(2*dx)
+      dx2⁻¹ = @. inv(2*dx)
       @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
 
       @inbounds for k in 2:size(A,3)-1, j in 2:size(A,2)-1, i in 2:size(A,1)-1
-         ∂A∂x = δxᶜᵃᵃ(i, j, k, A) * invdx[1]
-         ∂A∂y = δyᵃᶜᵃ(i, j, k, A) * invdx[2]
-         ∂A∂z = δzᵃᵃᶜ(i, j, k, A) * invdx[3]
+         ∂A∂x = δxᶜᵃᵃ(i, j, k, A) * dx2⁻¹[1]
+         ∂A∂y = δyᵃᶜᵃ(i, j, k, A) * dx2⁻¹[2]
+         ∂A∂z = δzᵃᵃᶜ(i, j, k, A) * dx2⁻¹[3]
 
          Bx[i,j,k] = ∂A∂x
          By[i,j,k] = ∂A∂y
@@ -92,23 +92,23 @@ function gradient(A::AbstractArray{T,N}, dx=ones(T, N)) where {T,N}
       end
    elseif N == 2 # 2D
       B = zeros(T, 2, size(A)[1], size(A)[2])
-      invdx = @. inv(2*dx)
+      dx2⁻¹ = @. inv(2*dx)
       @views Bx, By = B[1,:,:], B[2,:,:]
 
       @inbounds for j in 2:size(A,2)-1, i in 2:size(A,1)-1
-         ∂A∂x = (-A[i-1,j  ] + A[i+1,j  ]) * invdx[1]
-         ∂A∂y = (-A[i  ,j-1] + A[i  ,j+1]) * invdx[2]
+         ∂A∂x = (-A[i-1,j  ] + A[i+1,j  ]) * dx2⁻¹[1]
+         ∂A∂y = (-A[i  ,j-1] + A[i  ,j+1]) * dx2⁻¹[2]
 
          Bx[i,j] = ∂A∂x
          By[i,j] = ∂A∂y
       end
    else # 1D
       B = zeros(T, size(A)[1])
-      invdx = @. inv(2*dx)
+      dx2⁻¹ = @. inv(2*dx)
       @views Bx = B[:]
 
       @inbounds for i in 2:size(A,1)-1
-         ∂A∂x = (-A[i-1] + A[i+1]) * invdx[1]
+         ∂A∂x = (-A[i-1] + A[i+1]) * dx2⁻¹[1]
 
          Bx[i] = ∂A∂x
       end
@@ -131,12 +131,12 @@ function divergence(A::AbstractArray{T,N}, dx=ones(T, 3)) where {T,N}
 
    B = zeros(T, size(A)[2:end])
 
-   invdx = @. inv(2*dx)
+   dx2⁻¹ = @. inv(2*dx)
 
    @inbounds for k in 2:size(A,4)-1, j in 2:size(A,3)-1, i in 2:size(A,2)-1
-      ∂Ax∂x = δxᶜᵃᵃ(i, j, k, Ax) * invdx[1]
-      ∂Ay∂y = δyᵃᶜᵃ(i, j, k, Ay) * invdx[2]
-      ∂Az∂z = δzᵃᵃᶜ(i, j, k, Az) * invdx[3]
+      ∂Ax∂x = δxᶜᵃᵃ(i, j, k, Ax) * dx2⁻¹[1]
+      ∂Ay∂y = δyᵃᶜᵃ(i, j, k, Ay) * dx2⁻¹[2]
+      ∂Az∂z = δzᵃᵃᶜ(i, j, k, Az) * dx2⁻¹[3]
 
       B[i,j,k] = ∂Ax∂x + ∂Ay∂y + ∂Az∂z
    end
