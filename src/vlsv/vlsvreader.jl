@@ -487,24 +487,24 @@ Reference: fsgrid.hpp
 """
 function getDomainDecomposition(globalsize, nprocs)
    domainDecomp = (1, 1, 1)
-   minValue = typemax(Int)
+   minValue = typemax(Float64)
 
    @inbounds for i = 1:min(nprocs, globalsize[1])
-      iBox = max(globalsize[1]/i, 1)
+      iBox = max(globalsize[1]/i, 1.0)
 
       for j = 1:min(nprocs, globalsize[2])
          i * j > nprocs && break
 
-         jBox = max(globalsize[2]/j, 1)
+         jBox = max(globalsize[2]/j, 1.0)
 
          for k = 1:min(nprocs, globalsize[2])
             i * j * k > nprocs && continue
 
-            kBox = max(globalsize[3]/k, 1)
+            kBox = max(globalsize[3]/k, 1.0)
 
-            nyz = ifelse(i > 1, jBox * kBox, 0)
-            nzx = ifelse(j > 1, kBox * iBox, 0)
-            nxy = ifelse(k > 1, iBox * jBox, 0)
+            nyz = ifelse(i > 1, jBox * kBox, 0.0)
+            nzx = ifelse(j > 1, kBox * iBox, 0.0)
+            nxy = ifelse(k > 1, iBox * jBox, 0.0)
 
             v = 10*iBox*jBox*kBox + nyz + nzx + nxy
 
