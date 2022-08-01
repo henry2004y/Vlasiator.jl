@@ -18,7 +18,7 @@ bibliography: paper.bib
 # Summary
 
 `Vlasiator.jl` is a Julia package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model Vlasiator [@vlasiator5.1].
-This lightweight package is built upon its sister package in Python `Analysator` [@analysator] and is carefully designed for performance, capability and ease of use.
+This lightweight package is built upon its sister package in Python `Analysator` [@analysator] and carefully designed for performance, capability and ease of use.
 It can be easily integrated with other open source packages in the community like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) for tracing along the field lines and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) for embedded test particle simulations.
 
 `Vlasiator.jl` contains the following main features:
