@@ -47,8 +47,7 @@ Due to the multi-dimensional approach at ion scales, Vlasiator's computational c
 The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes
 beyond 10 GB, which needs efficient numerical tools for processing the data.
 
-`Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools implemented in C++ and Python.
-For instance, the [benchmarks](https://henry2004y.github.io/Vlasiator.jl/dev/log/#Benchmarks) show that `Vlasiator.jl` can be ~20 times faster than its Python equivalent `Analysator` in basic data accessing, which facilitates more efficient downstream processing tasks and in-depth exploration of large simulation datasets.
+`Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python. It satisfies the current requirements of Vlasiator simulation data processing and unifies the implementation in a single language base, which facilitates more efficient downstream processing tasks and in-depth exploration of large datasets.
 
 # Acknowledgements
 
