@@ -19,7 +19,7 @@ bibliography: paper.bib
 
 `Vlasiator.jl` is a Julia package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model Vlasiator [@vlasiator5.1].
 This lightweight package is built upon its sister package in Python `Analysator` [@analysator] and is carefully designed for performance, capability and ease of use.
-It can be easily integrated with other open source packages in the community like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) for tracing along the field lines and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) for test particle simulations.
+It can be easily integrated with other open source packages in the community like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) for tracing along the field lines and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) for embedded test particle simulations.
 
 `Vlasiator.jl` contains the following main features:
 
@@ -28,14 +28,14 @@ It can be easily integrated with other open source packages in the community lik
 - Extracting quantities at a given point/line/plane/box.
 - Visualizing 1D curves/2D cuts/3D volumes of saved/derived variables and phase space distributions via multiple visualization libraries such as `Matplotlib` [@matplotlib], `Plots.jl` [@plots], and `Makie.jl` [@makie].
 - Analyzing the velocity distribution functions reconstructed from sparsity storage.
-- Converting the selected part or whole data from VLSV into VTK format for post-processing and 3D rendering in e.g. ParaView and VisIt.
+- Converting the selected part or whole data from VLSV into VTK format for post-processing and 3D rendering in ParaView and VisIt.
 
-`Vlasiator.jl` is targeted at space physics researchers who want to visualize and analyze Vlasiator simulation outputs in an efficient manner.
+`Vlasiator.jl` is targeted at space plasma physics researchers who want to visualize and analyze Vlasiator simulation outputs in an efficient manner.
 It achieves optimal serial performance for single file processing and can be directly applied to parallel batch jobs using both multithreads and multiprocesses.
 The interoperability with Python can be easily achieved via two community packages `JuliaCall` [@juliacall] and `PyJulia` [@pyjulia].
 It has preliminarily been used in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
 
-The performance and ease-of-use of `Vlasiator.jl` will enable exciting scientific explorations of forthcoming data from the exascale simulation in a reproducible manner.
+The performance and ease-of-use of `Vlasiator.jl` will enable exciting reproducible scientific exploration of forthcoming data from the exascale simulations.
 
 # Statement of need
 
@@ -47,11 +47,8 @@ Due to the multi-dimensional approach at ion scales, Vlasiator's computational c
 The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes
 beyond 10 GB, which needs efficient numerical tools for processing the data.
 
-`Vlasiator.jl` tackles the post-procesing challenges by taking advantage of novel techniques shared in the open source community, which is built from ground up to leverage the power of Julia and successful applications implemented in
-other languages like C++ and Python.
-The [benchmarks](https://henry2004y.github.io/Vlasiator.jl/dev/log/#Benchmarks) show that `Vlasiator.jl` can be ~20 times faster than its Python equivalent `Analysator`.
-The analysis of high-dimensional (>3) simulation data will new insights into plasma physics with the aid of advanced
-tools like `Vlasiator.jl`.
+`Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools implemented in C++ and Python.
+For instance, the [benchmarks](https://henry2004y.github.io/Vlasiator.jl/dev/log/#Benchmarks) show that `Vlasiator.jl` can be ~20 times faster than its Python equivalent `Analysator` in basic data accessing, which facilitates more efficient downstream processing tasks and in-depth exploration of large simulation datasets.
 
 # Acknowledgements
 
