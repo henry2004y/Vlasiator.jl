@@ -12,11 +12,11 @@ Vlasiator.jl contains the following features:
 
 - Reading [VLSV](https://github.com/fmihpc/vlsv) format data.
 - Calculating derived quantities from raw VLSV outputs.
-- Appending [DCCRG](https://github.com/fmihpc/dccrg) arrays to VLSV files.
-- Extracting quantities at a given point/line/plane.
-- Plotting 1D curves/2D cuts of saved/derived variables, and phase space distributions.
+- Extracting quantities at a given point/line/plane/box.
+- Plotting 1D curves/2D cuts of saved/derived variables and phase space distributions.
 - Analyzing velocity distribution functions.
-- Converting VLSV into VTK format for postprocessing in e.g. ParaView and VisIt.
+- Appending [DCCRG](https://github.com/fmihpc/dccrg) arrays to VLSV files.
+- Converting selected domain and variables from VLSV into VTK format for data analysis and visualization in ParaView and VisIt.
 - Monitoring Vlasiator run log files.
 
 !!! warning
@@ -26,19 +26,20 @@ Vlasiator.jl contains the following features:
 
 To install,
 
-```
+```julia
+julia> ]
 pkg> add Vlasiator
 ```
 
-You can then get started with
+You can then use the package via
 
-```
+```julia
 julia> using Vlasiator
 ```
 
-If you want to use Plots.jl for visualization, add it also through the pkg manager; if you aim at using Matplotlib, besides adding `PyPlot`, you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
+If you want to use [Plots.jl](https://docs.juliaplots.org/stable/) or [Makie.jl](https://makie.juliaplots.org/stable/) for visualization, add them through the pkg manager; if you aim at using Matplotlib, besides adding [`PyPlot`](https://github.com/JuliaPy/PyPlot.jl), you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
 
-```
+```julia
 ENV["PYTHON"]="your python executable"
 Pkg.build("PyCall")
 ```

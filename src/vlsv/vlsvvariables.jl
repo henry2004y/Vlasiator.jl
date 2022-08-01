@@ -1,4 +1,4 @@
-# Predefined quantities
+# Predefined physical constants
 
 const qₑ = -1.60217662e-19  # electron charge, [C]
 const mₑ = 9.10938356e-31   # electron mass, [kg]
@@ -74,7 +74,7 @@ const units_predefined = Dict(
    :Ppar => ("Pa", L"$P_\parallel$", "Pa"),
    :Pperp => ("Pa", L"$P_\perp$", "Pa"),
    :Gyroperiod => ("s", L"$T_{gyro}$", "s"),
-   :Plasmaperiod => ("s", L"$T_{plasma}$", "s"),
+   :PlasmaPeriod => ("s", L"$T_{plasma}$", "s"),
    :Gyrofrequency => ("/s", L"$\omega_{g}$", L"s^{-1}"),
    :Omegap => ("/s", L"$\omega_{p}$", L"s^{-1}"),
 )
@@ -392,7 +392,7 @@ const variables_predefined = Dict(
       B = readvariable(meta, "Bmag", ids)
       f = @. qᵢ * B / (mᵢ * 2π)
    end,
-   :Plasmaperiod => function (meta, ids=UInt64[])
+   :PlasmaPeriod => function (meta, ids=UInt64[])
       n = readvariable(meta, "n", ids)
       T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
    end,

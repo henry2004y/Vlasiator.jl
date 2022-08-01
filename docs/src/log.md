@@ -4,7 +4,7 @@
 
 If you don't have VLSV data at hand, Vlasiator.jl provides some test data for you to begin with.
 
-```
+```julia
 using LazyArtifacts
 
 rootpath = artifact"testdata"
@@ -22,20 +22,20 @@ The VLSV loader inherits the basic structure from [Analysator](https://github.co
 
 For development, it is recommended to use [PkgBenchmark.jl](https://github.com/JuliaCI/PkgBenchmark.jl) to run the test suite:
 
-```
+```julia
 using PkgBenchmark, Vlasiator
 results = benchmarkpkg(Vlasiator)
 ```
 
 or if you want to compare the current status of the package against a different git version
 
-```
+```julia
 judge(Vlasiator, "97e3dca6b2474d7bdc5b62b5bf98ecf070516e5e")
 ```
 
 To export results to markdown format,
 
-```
+```julia
 export_markdown("testresult", results)
 ```
 
