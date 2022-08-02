@@ -75,6 +75,12 @@ cellids, distances, coords = getcellinline(meta, point1, point2)
 var_extract = readvariable(meta, "VA", cellids)
 ```
 
+- Extract variable at a static cell ID from a sequence of files under the same grid
+
+```julia
+extractsat(files, var, id)
+```
+
 - Compare VLSV files
 
 One may want to check if two vlsv files are identical. This is tricky because

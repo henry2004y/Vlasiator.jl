@@ -45,7 +45,7 @@ end
 
    if group in (:read, :all)
       @testset "Reading files" begin
-         @test_throws ArgumentError load("data")
+         @test_throws EOFError load("data")
          meta = meta1
          @test ndims(meta) == 1
          @test isopen(meta)
@@ -91,6 +91,8 @@ end
          @test_throws DomainError getcellinline(meta, point1, point2)
          point2 = [10.1, 0.0, 0.0]
          @test_throws DomainError getcellinline(meta, point1, point2)
+         # Static ID extracting across multiple frames
+         @test extractsat([files[1]], "proton/vg_rho", 1) == [1.000000103604807;;]
 
          # Nearest ID with VDF stored
          @test getnearestcellwithvdf(meta, id) == 5

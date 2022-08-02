@@ -26,8 +26,8 @@ end
 
 "VLSV meta data."
 struct MetaVLSV
-   name::String
    dir::String
+   name::String
    fid::IOStream
    footer::EzXML.Node
    variable::Vector{String}
@@ -72,7 +72,7 @@ function Base.show(io::IO, vmesh::VMeshInfo)
 end
 
 "Return the XML footer of opened VLSV file."
-function getfooter(fid::IOStream)
+@inline function getfooter(fid::IOStream)
    # First 8 bytes indicate big-endian or else
    endian_offset = 8
    seek(fid, endian_offset)
@@ -141,17 +141,11 @@ end
 Generate a MetaVLSV object from `file` of VLSV format.
 """
 function load(file::AbstractString)
-   isfile(file) || throw(ArgumentError("Cannot open \'$file\': not a file"))
    fid = open(file, "r")
 
    footer = getfooter(fid)
 
-   local cellid
-   let
-      _, offset, asize, dsize, _ = getObjInfo(footer, "CellID", "VARIABLE", "name")
-      a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
-      cellid = reinterpret(UInt64, a)
-   end
+   cellid = getcellid(fid, footer)
 
    cellindex = sortperm(cellid)
 
@@ -250,7 +244,7 @@ function load(file::AbstractString)
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(basename(file), dirname(file), fid, footer, vars, celldict, cellindex, 
+   meta = MetaVLSV(splitdir(file)..., fid, footer, vars, celldict, cellindex,
       timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
       dcoord, species, meshes)
 end
@@ -465,6 +459,38 @@ end
 
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
+
+@inline function getcellid(fid::IOStream, footer::EzXML.Node)
+   _, offset, asize, _, _ = getObjInfo(footer, "CellID", "VARIABLE", "name")
+   a = mmap(fid, Vector{UInt8}, 8*asize, offset)
+   cellid = reinterpret(UInt64, a)
+end
+
+"""
+    extractsat(files::Vector{String}, var::String, cid::Integer)
+
+Extract `var` at a fixed cell ID `cid` from `files`. This assumes that `files` come from the
+same grid structure.
+"""
+function extractsat(files::Vector{String}, var::String, cid::Integer)
+   v = open(files[1], "r") do fid
+      footer = getfooter(fid)
+      T, _, _, _, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      Array{T,2}(undef, vsize, length(files))
+   end
+
+   for i in eachindex(files)
+      fid = open(files[i], "r")
+      footer = getfooter(fid)
+      cellid = getcellid(fid, footer)
+      c_ = findfirst(isequal(cid), cellid)
+      _, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      seek(fid, offset + (c_ - 1)*vsize*dsize)
+      @views read!(fid, v[:,i])
+   end
+
+   v
+end
 
 """
     getdata2d(meta::MetaVLSV, var::String)

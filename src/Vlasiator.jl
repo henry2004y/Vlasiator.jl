@@ -24,7 +24,7 @@ include("utility/plot.jl")
 export
    # vlsvreader
    MetaVLSV, VarInfo,
-   load, readvariable, readparameter, readvariablemeta, readvcells,
+   load, readvariable, readparameter, readvariablemeta, readvcells, extractsat,
    hasvariable, hasparameter, hasname,
    # vlsvutility
    getcell, getslicecell, getlevel, refineslice, getcellcoordinates, getvcellcoordinates,
