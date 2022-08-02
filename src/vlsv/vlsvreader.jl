@@ -467,12 +467,12 @@ end
 end
 
 """
-    extractsat(files::Vector{String}, var::String, cid::Integer)
+    extractsat(files::AbstractVectorVector{String}, var::String, cid::Integer)
 
 Extract `var` at a fixed cell ID `cid` from `files`. This assumes that `files` come from the
 same grid structure.
 """
-function extractsat(files::Vector{String}, var::String, cid::Integer)
+function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
    v = open(files[1], "r") do fid
       footer = getfooter(fid)
       T, _, _, _, vsize = getObjInfo(footer, var, "VARIABLE", "name")
