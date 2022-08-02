@@ -467,7 +467,7 @@ end
 end
 
 """
-    extractsat(files::AbstractVectorVector{String}, var::String, cid::Integer)
+    extractsat(files::AbstractVector{String}, var::String, cid::Integer)
 
 Extract `var` at a fixed cell ID `cid` from `files`. This assumes that `files` come from the
 same grid structure.
