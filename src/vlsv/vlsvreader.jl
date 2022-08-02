@@ -148,23 +148,23 @@ function load(file::AbstractString)
 
    local cellid
    let
-      T, offset, asize, dsize, vsize = getObjInfo(footer, "CellID", "VARIABLE", "name")
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      cellid = reinterpret(T, a)
+      _, offset, asize, dsize, _ = getObjInfo(footer, "CellID", "VARIABLE", "name")
+      a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
+      cellid = reinterpret(UInt64, a)
    end
 
    cellindex = sortperm(cellid)
 
    bbox = readmesh(fid, footer, "SpatialGrid", "MESH_BBOX")::Vector{UInt}
 
-   nodeCoordsX = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_X")::Vector{Float64}
-   nodeCoordsY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")::Vector{Float64}
-   nodeCoordsZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")::Vector{Float64}
+   nodeX = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_X")::Vector{Float64}
+   nodeY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")::Vector{Float64}
+   nodeZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")::Vector{Float64}
 
    @inbounds ncells = (bbox[1], bbox[2], bbox[3])
    @inbounds block_size = (bbox[4], bbox[5], bbox[6])
-   @inbounds coordmin = (nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
-   @inbounds coordmax = (nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
+   @inbounds coordmin = (nodeX[begin], nodeY[begin], nodeZ[begin])
+   @inbounds coordmax = (nodeX[end], nodeY[end], nodeZ[end])
 
    dcoord = ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
@@ -173,42 +173,41 @@ function load(file::AbstractString)
    # Find all species by the BLOCKIDS tag
    species = String[]
 
+   vblocks = [0, 0, 0]
+   vblock_size = [4, 4, 4]
+   vmin = [0.0, 0.0, 0.0]
+   vmax = [1.0, 1.0, 1.0]
+
    for varinfo in findall("//BLOCKIDS", footer)
 
       if haskey(varinfo, "name")
          # VLSV 5.0 file with bounding box
          popname = varinfo["name"]
 
-         bbox = readmesh(fid, footer, popname, "MESH_BBOX")::Vector{UInt}
+         vbox = readmesh(fid, footer, popname, "MESH_BBOX")::Vector{UInt}
+         nodeX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
+         nodeY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
+         nodeZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
 
-         nodeCoordsX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
-         nodeCoordsY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
-         nodeCoordsZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
-         vblocks = (bbox[1], bbox[2], bbox[3])
-         vblock_size = (bbox[4], bbox[5], bbox[6])
-         vmin = (nodeCoordsX[begin], nodeCoordsY[begin], nodeCoordsZ[begin])
-         vmax = (nodeCoordsX[end], nodeCoordsY[end], nodeCoordsZ[end])
+         vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
+         vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
+         vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
+         vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
          dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
       else
          popname = "avgs"
-
+         # In VLSV before 5.0 the mesh is defined with parameters.
          if "vxblocks_ini" in getindex.(findall("//PARAMETER", footer), "name")
-            # In VLSV before 5.0 the mesh is defined with parameters.
             vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
             vmin_str = ("vxmin", "vymin", "vzmin")
             vmax_str = ("vxmax", "vymax", "vzmax")
-            vblocks = ntuple(i -> readparameter(fid, footer, vblocks_str[i]), Val(3))
-            vblock_size = (4, 4, 4)
-            vmin = ntuple(i -> readparameter(fid, footer, vmin_str[i]), Val(3))
-            vmax = ntuple(i -> readparameter(fid, footer, vmax_str[i]), Val(3))
+            vblocks .= [readparameter(fid, footer, vblocks_str[i]) for i in 1:3]
+            vmin .= [readparameter(fid, footer, vmin_str[i]) for i in 1:3]
+            vmax .= [readparameter(fid, footer, vmax_str[i]) for i in 1:3]
             dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
          else
             # No velocity space info, e.g., file not written by Vlasiator
-            vblocks = (0, 0, 0)
-            vblock_size = (4, 4, 4)
-            vmin = (0, 0, 0)
-            vmax = (0, 0, 0)
-            dv = (1, 1, 1)
+            dv = (1.0, 1.0, 1.0)
          end
       end
 
@@ -218,7 +217,12 @@ function load(file::AbstractString)
       end
 
       # Create a new object for this population
-      popVMesh = VMeshInfo(vblocks, vblock_size, vmin, vmax, dv)
+      popVMesh = VMeshInfo(
+         (vblocks[1], vblocks[2], vblocks[3]),
+         (vblock_size[1], vblock_size[2], vblock_size[3]),
+         (vmin[1], vmin[2], vmin[3]),
+         (vmax[1], vmax[2], vmax[3]),
+         dv)
 
       meshes[popname] = popVMesh
    end
@@ -320,8 +324,8 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
    (;fid, footer, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      data = variables_predefined[symvar](meta)
-      return data
+      v = variables_predefined[symvar](meta)::Array
+      return v
    end
 
    raw = readvector(fid, footer, var, "VARIABLE")
@@ -342,15 +346,15 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
 
       _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
 
-      data = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
+      v = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      @inbounds data = ndims(raw) == 1 ? raw[cellindex] : raw[:,cellindex]
-      if eltype(data) == Float64; data = Float32.(data); end
+      @inbounds v = ndims(raw) == 1 ? raw[cellindex] : raw[:,cellindex]
+      if eltype(v) == Float64; v = Float32.(v); end
    else
-      data = raw
+      v = raw
    end
 
-   return data
+   return v::Array
 end
 
 """
@@ -366,13 +370,13 @@ function readvariable(meta::MetaVLSV, var::String,
    (;fid, footer, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      data = variables_predefined[symvar](meta, ids)
-      return data
+      v = variables_predefined[symvar](meta, ids)
+      return v::Array
    end
 
    if isempty(ids)
-      data = readvariable(meta, var)
-      return data
+      v = readvariable(meta, var)
+      return v::Array
    else
       T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
@@ -391,7 +395,7 @@ function readvariable(meta::MetaVLSV, var::String,
          v = Float32.(v)
       end
 
-      return v
+      return v::Array
    end
 end
 
@@ -405,8 +409,8 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)
    (;fid, footer, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      data = variables_predefined[symvar](meta, cid)
-      return data
+      v = variables_predefined[symvar](meta, cid)::Array
+      return v
    end
 
    T, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
@@ -419,7 +423,7 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)
       v = Float32.(v)
    end
 
-   return v
+   return v::Array
 end
 
 
