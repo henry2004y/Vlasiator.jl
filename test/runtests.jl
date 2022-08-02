@@ -45,7 +45,7 @@ end
 
    if group in (:read, :all)
       @testset "Reading files" begin
-         @test_throws EOFError load("data")
+         @test_throws SystemError load("nonsense")
          meta = meta1
          @test ndims(meta) == 1
          @test isopen(meta)
