@@ -18,10 +18,10 @@ meta = load(file)
 SUITE["read"]["meta"] = @benchmarkable load($file)
 SUITE["read"]["DCCRG"] = @benchmarkable readvariable($meta, "proton/vg_rho")
 SUITE["read"]["DCCRG_derived"] = @benchmarkable readvariable($meta, "Vperp")
-ids = 100:110
+ids = collect(100:110)
 SUITE["read"]["DCCRG_select_small"] =
    @benchmarkable readvariable($meta, "proton/vg_rho", $ids)
-ids = 3000:6300
+ids = collect(3000:6300)
 SUITE["read"]["DCCRG_select_large"] =
    @benchmarkable readvariable($meta, "proton/vg_rho", $ids)
 SUITE["read"]["FG"] = @benchmarkable readvariable($meta, "fg_b")

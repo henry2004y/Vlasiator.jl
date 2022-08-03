@@ -315,10 +315,10 @@ end
 Return variable value of `var` from the VLSV file associated with `meta`. By default
 `sorted=true`, which means that for DCCRG grid the variables are sorted by cell ID.
 """
-function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
+function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)::Array
    (;fid, footer, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      v = variables_predefined[symvar](meta)::Array
+      v = variables_predefined[symvar](meta)
       return v
    end
 
@@ -348,7 +348,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)
       v = raw
    end
 
-   return v::Array
+   return v
 end
 
 """
@@ -357,20 +357,19 @@ end
 Read variable `var` in a collection of cells `ids` associated with `meta`. if `ids` is
 empty, return the whole sorted array of `var`.
 """
-function readvariable(meta::MetaVLSV, var::String,
-   ids::Union{Vector{<:Integer}, UnitRange{Int64}})
+function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Array
 
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta, ids)
-      return v::Array
+      return v
    end
 
    if isempty(ids)
       v = readvariable(meta, var)
-      return v::Array
+      return v
    else
       T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
@@ -381,15 +380,13 @@ function readvariable(meta::MetaVLSV, var::String,
          reshape(reinterpret(T, a), vsize, asize)
       end
 
-      id_ = [celldict[id] for id in ids]
-
-      _fillv!(v, w, id_, vsize)
+      _fillv!(v, w, celldict, ids, vsize)
 
       if T == Float64
          v = Float32.(v)
       end
 
-      return v::Array
+      return v
    end
 end
 
@@ -398,12 +395,12 @@ end
 
 Read variable `var` in cell `cid` associated with `meta`.
 """
-function readvariable(meta::MetaVLSV, var::String, cid::Integer)
+function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      v = variables_predefined[symvar](meta, cid)::Array
+      v = variables_predefined[symvar](meta, cid)
       return v
    end
 
@@ -417,14 +414,15 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)
       v = Float32.(v)
    end
 
-   return v::Array
+   return v
 end
 
+@inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt64, Int64},
+   ids::Vector{<:Integer}, vsize::Int)
 
-@inline function _fillv!(v, w, id_, vsize)
-   for i in eachindex(id_), iv = 1:vsize
-      @inbounds v[iv,i] = w[iv,id_[i]]
-   end
+   for i in eachindex(ids), iv = 1:vsize
+      @inbounds v[iv,i] = w[iv,celldict[ids[i]]]
+   end 
 end
 
 function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
