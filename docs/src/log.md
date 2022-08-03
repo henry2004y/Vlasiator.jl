@@ -62,14 +62,19 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 
 [^2]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once. It will go out of memory for the second time in Analysator, but not in Vlasiator.jl --- see [Memory](#memory). This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
 
-* Plotting 2D density contours[^3]
-|        | tmean [s] |
+* Plotting 2D density contours on a uniform mesh[^3]
+| 28MB | tmean [s] |
 |:-------|:---------:|
-| 28MB uniform mesh, Julia 1.8, 1st time | 2.4  |
-| 28MB uniform mesh, Julia 1.8, 2nd time | 0.5  |
-| 28MB uniform mesh, Python 3.6 | 4.7   |
-| 32MB AMR mesh, Julia 1.8, 1st time | 2.7  |
-| 32MB AMR mesh, Julia 1.8, 2nd time | 0.5  |
+| Julia 1.8, 1st time | 2.4  |
+| Julia 1.8, 2nd time | 0.5  |
+| Python 3.6 | 4.7   |
+
+* Plotting 2D density slices from an 3D AMR mesh
+| 32MB | tmean [s] |
+|:-------|:---------:|
+| Julia 1.8, 1st time | 2.7  |
+| Julia 1.8, 2nd time | 0.5  |
+| Python 3.6 | 5.0  |
 
 [^3]: The inefficieny of JIT for the first time execution is a famous problem in the Julia community known as "Time-To-First-X".
 
