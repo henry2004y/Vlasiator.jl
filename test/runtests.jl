@@ -274,11 +274,11 @@ end
          let A = ones(Float32, 3,3,3), dx = ones(Float32, 3)
             @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
-         let A = ones(Float32, 3,3)
-            @test sum(Vlasiator.gradient(A)) == 0.0
+         let A = ones(Float32, 3,3), dx = ones(Float32, 2)
+            @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
-         let A = ones(Float32, 3)
-            @test sum(Vlasiator.gradient(A)) == 0.0
+         let A = ones(Float32, 3), dx = ones(Float32, 1)
+            @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
       end
       @testset "FluxFunction" begin
@@ -347,7 +347,7 @@ end
          meta = meta1
          line = plot(meta, "proton/vg_rho")[1]
          @test line.get_ydata() == meta["proton/vg_rho"]
-         line = plot(meta, "proton/vg_v", comp=:3)[1]
+         line = plot(meta, "proton/vg_v", comp=3)[1]
          @test line.get_ydata() == meta["proton/vg_v"][3,:]
          centers = plotmesh(meta, projection="y")
          points = centers.get_offsets()
@@ -379,7 +379,7 @@ end
          meta = meta2
          v = pcolormesh(meta, "proton/vg_rho").get_array()
          @test v[end-2] == 999535.8f0 && length(v) == 6300
-         v = pcolormesh(meta, "proton/vg_rho", extent=[0,1,0,2]).get_array()
+         v = pcolormesh(meta, "proton/vg_rho", extent=[0.,1.,0.,2.]).get_array()
          @test v[end] == 0.0 && length(v) == 6
          v = pcolormesh(meta, "proton/vg_rho";
             extent=[-2e7, 2e7, -2e7, 2e7], axisunit=SI, colorscale=Log).get_array()

@@ -1,7 +1,7 @@
 # 2D magnetic flux function.
 
 """
-    compute_flux_function(b, Δ, nG=2)
+    compute_flux_function(b::AbstractArray{T,N}, Δ::Vector{T}, nG::Int=2) where {T,N}
 
 Calculate the 2D magnetic flux function ψ from the magnetic field `b` and discrete steps
 `Δ`. `nG` is the number of ghost cells along each dimension in the vector field.
@@ -13,7 +13,7 @@ The current implementation calculates ψ by integrating along -z boundary first,
 going along z.
 Reference: [Flux function](https://doi.org/10.1063/1.3657424)
 """
-function compute_flux_function(b::AbstractArray{T,N}, Δ, nG=2) where {T,N}
+function compute_flux_function(b::AbstractArray{T,N}, Δ::Vector{T}, nG::Int=2) where {T,N}
    dx, dz = Δ
    flux = zeros(T, size(b,2), size(b,3))
 
@@ -33,7 +33,8 @@ function compute_flux_function(b::AbstractArray{T,N}, Δ, nG=2) where {T,N}
 end
 
 """
-    find_reconnection_points(ψ; retol=1e-1, method=1) -> indices_x, indices_o
+    find_reconnection_points(ψ::Array{T,2}; retol::Float64=1e-4,
+       method::Int=1) -> indices_x, indices_o
 
 Find X-point and O-point indices in 2D magnetic field topology from flux function `ψ`.
 The current implementation does not work for the 3 layers near the boundary.
@@ -45,13 +46,14 @@ gradient as 0.
 Hessian matrix; method 2 check the flux function at each point against its 8 neighbors,
 which is more deterministic.
 """
-function find_reconnection_points(ψ; retol=1e-4, method=1)
+function find_reconnection_points(ψ::Array{T,2}; retol::Float64=1e-4, method::Int=1) where T
    indices_x = Matrix{Int64}(undef, 2, 0)
    indices_o = Matrix{Int64}(undef, 2, 0)
 
    if method == 1
-      ∂ψ = gradient(ψ)
-      ∂²ψ = gradient(view(∂ψ,1,:,:))
+      dx = ones(eltype(ψ), 2)
+      ∂ψ = gradient(ψ, dx)
+      ∂²ψ = gradient(view(∂ψ,1,:,:), dx)
       # fill boundary layers
       ∂²ψ[:,2,:] = ∂²ψ[:,1,:]
       ∂²ψ[:,end-1,:] = ∂²ψ[:,end,:]
@@ -61,7 +63,7 @@ function find_reconnection_points(ψ; retol=1e-4, method=1)
       ∂²ψ∂x² = ∂²ψ[1,:,:]
       ∂²ψ∂x∂y = ∂²ψ[2,:,:] # == ∂²ψ∂y∂x = ∂²ψ[1,:,:]
 
-      ∂²ψ = gradient(view(∂ψ,2,:,:))
+      ∂²ψ = gradient(view(∂ψ,2,:,:), dx)
       # fill boundary layers
       ∂²ψ[:,2,:] = ∂²ψ[:,1,:]
       ∂²ψ[:,end-1,:] = ∂²ψ[:,end,:]

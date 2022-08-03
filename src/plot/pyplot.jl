@@ -1,6 +1,7 @@
 # Plotting functionalities from Matplotlib.
 
 using PyPlot
+import PyPlot.PyCall: PyObject
 using REPL.TerminalMenus # Command line UI
 
 export plot, pcolormesh, pcolormeshslice, vdfslice, streamplot, quiver, plotmesh
@@ -20,13 +21,17 @@ matplotlib.rc("ytick", labelsize=10)
 
 
 """
-    plot(meta, var, ax=nothing; comp=0, kwargs)
+    plot(meta::MetaVLSV, var::String, ax=nothing; comp=0, kwargs...)
 
-Plot `var` from `meta` of 1D VLSV data. If `ax===nothing`, plot on the current active axes.
+Plot 1D `var` from data linked to VLSV `meta`. If `ax===nothing`, plot on the current axes.
 The keyword `comp` is used to specify the component index of a vector, with 0 being the
 magnitude. Any valid keyword argument for `plt.plot` is accepted.
+
+# Keywords
+- `comp::Int`: the component of a vector, chosen from any valid integers.
 """
-function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=0, kwargs...)
+function PyPlot.plot(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
+   comp::Int=0, kwargs...)
    ndims(meta) == 1 || error("plot only accepts 1D data!")
 
    datafull = readvariable(meta, var)
@@ -49,7 +54,8 @@ function PyPlot.plot(meta::MetaVLSV, var, ax=nothing; comp=0, kwargs...)
 end
 
 """
-    streamplot(meta, var, ax=nothing; comp="xy", axisunit=EARTH, kwargs...)
+    streamplot(meta::MetaVLSV, var::String, ax=nothing; comp::String="xy", axisunit=EARTH,
+       kwargs...)
 
 Wrapper over Matplotlib's streamplot function.
 
@@ -59,8 +65,8 @@ Wrapper over Matplotlib's streamplot function.
 
 Any valid keyword argument for `plt.streamplot` is accepted.
 """
-function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit::AxisUnit=EARTH, kwargs...)
+function PyPlot.streamplot(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
+   comp::String="xy", axisunit::AxisUnit=EARTH, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -70,20 +76,20 @@ function PyPlot.streamplot(meta::MetaVLSV, var::AbstractString, ax=nothing;
 end
 
 """
-    quiver(meta, var, ax=nothing; comp="xy", axisunit=EARTH, stride=10, kwargs...)
+    quiver(meta::MetaVLSV, var::String, ax=nothing; comp="xy", axisunit=EARTH, stride=10,
+       kwargs...)
 
-Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current active
-axes.
+Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the current axes.
 
 # Keywords
 - `comp::String`: a subset of "xyz" in any order.
 - `axisunit::AxisUnit`: chosen from `EARTH` and `SI`.
-- `stride::Integer`: arrow strides in number of cells.
+- `stride::Int`: arrow strides in number of cells.
 
 Any valid keyword argument for `plt.quiver` is accepted.
 """
-function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp="xy", axisunit::AxisUnit=EARTH, stride::Integer=10, kwargs...)
+function PyPlot.quiver(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
+   comp::String="xy", axisunit::AxisUnit=EARTH, stride::Int=10, kwargs...)
 
    X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
@@ -95,7 +101,7 @@ function PyPlot.quiver(meta::MetaVLSV, var::AbstractString, ax=nothing;
    ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
 end
 
-function set_vector(meta::MetaVLSV, var, comp, axisunit::AxisUnit)
+function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUnit)
    (;ncells, coordmin, coordmax) = meta
    if occursin("x", comp)
       v1_ = 1
@@ -135,24 +141,24 @@ end
 
 """
     pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-       comp=0, axisunit=EARTH, colorscale=Linear, vmin=-Inf32, vmax=Inf32,
-       addcolorbar=true, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
+       comp=0, axisunit=EARTH, colorscale=Linear, vmin=-Inf, vmax=Inf,
+       addcolorbar=true, extent=[-Inf, Inf, -Inf, Inf], kwargs...)
 
 Plot a variable using pseudocolor from 2D VLSV data.
 If `ax` is provided, then it will plot on that axes.
 If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
-# Optional arguments
-- `comp::Tuple{Int64, Symbol}`: the component of a vector, chosen from
-`:mag, :x, :y, :z, 0` or valid integers for indexing.
+# Keyword arguments
+- `comp::Union{Int, Symbol}`: the component of a vector, chosen from `:mag, :x, :y, :z, 0`
+or valid integers for indexing.
 - `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
 - `colorscale::ColorScale`: `Linear`, `Log`, or `SymLog`.
-- `vmin::Float`: minimum data range. Set to maximum of data if not specified.
-- `vmax::Float`: maximum data range. Set to minimum of data if not specified.
+- `vmin::Float64`: minimum data range. Set to maximum of data if not specified.
+- `vmax::Float64`: maximum data range. Set to minimum of data if not specified.
 - `addcolorbar::Bool`: whether to add a colorbar to the colormesh.
-- `extent::Vector`: extent of axis ranges for plotting in the same unit as `axisunit`.
+- `extent::Vector{Float64}`: extent of axis ranges in the same unit as `axisunit`.
 - `normal::Symbol`: normal direction for slice of 3D data, `:x`, `:y`, `:z`.
-- `origin::Float`: origin of plane slice of 3D data.
+- `origin::Float64`: origin of plane slice of 3D data.
 
 # Keywords
 
@@ -164,9 +170,11 @@ Any valid keyword argument for `plt.pcolormesh`.
 
 `pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])`
 """
-function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
-   comp=0, axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar=true,
-   vmin=-Inf32, vmax=Inf32, extent=[-Inf32, Inf32, -Inf32, Inf32], kwargs...)
+function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString,
+   ax::Union{PyObject,Nothing}=nothing; comp::Union{Int, Symbol}=0,
+   axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar::Bool=true,
+   vmin::Float64=-Inf, vmax::Float64=Inf, extent::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
+   kwargs...)
 
    if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
@@ -222,7 +230,7 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
 end
 
 """
-    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0]) -> norm, ticks
+    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0;;]) -> norm, ticks
 
 Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorscale`.
 Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
@@ -236,7 +244,8 @@ julia> norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
 ```
 There are also various options for the ticks available in `matplotlib.ticker`.
 """
-function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0f0])
+function set_colorbar(colorscale::ColorScale, v1::Float64, v2::Float64,
+   data::AbstractArray{<:Real, 2}=[1.0;;])
    vmin, vmax = set_lim(Float32(v1), Float32(v2), data, colorscale)
    if colorscale == Linear
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
@@ -262,7 +271,7 @@ function set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0f0])
 end
 
 "Configure customized plot."
-function set_plot(c, ax, pArgs::PlotArgs, ticks, addcolorbar)
+function set_plot(c::PyObject, ax::PyObject, pArgs::PlotArgs, ticks, addcolorbar::Bool)
    (;str_title, strx, stry, cb_title) = pArgs
 
    if addcolorbar
@@ -299,27 +308,27 @@ range `limits`. If `ax===nothing`, plot on the current active axes.
 - `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].
-- `slicetype`: symbol for choosing the slice type from `:xy`, `:xz`, `:yz`,
-`:bperp`, `:bpar1`, `:bpar2`.
-- `center`: symbol for setting the reference frame from `:bulk`, `:peak`.
+- `slicetype::Symbol`: slice type from `:xy`, `:xz`, `:yz`, `:bperp`, `:bpar1`, `:bpar2`.
+- `center::Symbol`: setting the reference frame from `:bulk`, `:peak`.
 - `vslicethick`: setting the velocity space slice thickness in the normal direction. If set
 to 0, the whole distribution along the normal direction is projected onto a plane. Currently
 this is only meaningful when `center` is set such that a range near the bulk/peak normal
 velocity is selected!
-- `vmin, vmax`: minimum and maximum VDF values for plotting.
+- `vmin, vmax::AbstractFloat`: minimum and maximum VDF values for plotting.
 - `weight::Symbol`: choosing distribution weights from phase space density or particle flux
 between `:particle` and `:flux`.
-- `flimit`: minimum VDF threshold for plotting.
+- `flimit::AbstractFloat`: minimum VDF threshold for plotting.
 
 # Keywords
 
 Any valid keyword argument for `hist2d`.
 """
-function vdfslice(meta::MetaVLSV, location, ax=nothing;
-   limits=[-Inf32, Inf32, -Inf32, Inf32], verbose=false, species="proton",
-   vmin=-Inf32, vmax=Inf32, unit=SI, unitv="km/s", slicetype=:default, vslicethick=0.0,
-   center=:nothing, weight=:particle, flimit=-1.0,
-   kwargs...)
+function vdfslice(meta::MetaVLSV, location::AbstractVector,
+   ax::Union{PyObject,Nothing}=nothing; limits::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
+   verbose::Bool=false, species::String="proton", unit::AxisUnit=SI, unitv::String="km/s",
+   vmin::AbstractFloat=-Inf, vmax::AbstractFloat=Inf, slicetype::Symbol=:default,
+   vslicethick::AbstractFloat=0.0, center::Symbol=:nothing, weight::Symbol=:particle,
+   flimit::AbstractFloat=-1.0, kwargs...)
 
    v1, v2, r1, r2, weights, strx, stry, str_title =
       prep_vdf(meta, location;
@@ -355,13 +364,14 @@ function vdfslice(meta::MetaVLSV, location, ax=nothing;
 end
 
 """
-    plotmesh(meta::MetaVLSV; projection="3d", origin=0.0, marker="+", kwargs...)
+    plotmesh(meta::MetaVLSV; projection::String="3d", origin::AbstractFloat=0.0,
+       marker::String="+", kwargs...)
 
 Plot mesh cell centers from axis view `projection`. `projection` should be either "3d", "x",
 "y" or "z". `origin` is center of projection plane in the normal direction.
 """
-function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marker="+",
-   kwargs...)
+function plotmesh(meta::MetaVLSV, ax::Union{PyObject,Nothing}=nothing;
+   projection::String="3d", origin::AbstractFloat=0.0, marker::String="+", kwargs...)
    (;coordmin, coordmax) = meta
    if projection in ("x", "y", "z")
       dirp, dir1, dir2 =
@@ -404,12 +414,12 @@ function plotmesh(meta::MetaVLSV, ax=nothing; projection="3d", origin=0.0, marke
 end
 
 """
-    pui(meta::MetaVLSV)
+    pui(meta::MetaVLSV; suppress_output=false)
     pui(file::AbstractString)
 
 Quick plotting via command line interactive selections.
 """
-function pui(meta::MetaVLSV; suppress_output=false)
+function pui(meta::MetaVLSV; suppress_output::Bool=false)
    menu = RadioMenu(meta.variable; charset=:ascii)
 
    println("Choose variable to plot:")

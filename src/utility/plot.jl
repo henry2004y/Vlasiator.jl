@@ -37,7 +37,7 @@ Set plot-related arguments of `var` in `axisunit`. `normal` and `origin` are use
 slices of 3D data, as specified in [`pcolormeshslice`](@ref).
 """
 function set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit; normal::Symbol=:none,
-   origin=0.0)
+   origin::AbstractFloat=0.0)
 
    (;ncells, coordmin, coordmax) = meta
 
@@ -122,11 +122,11 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
-    prep2d(meta::MetaVLSV, var::String, comp=0) -> Array
+    prep2d(meta::MetaVLSV, var::String, comp::Union{Symbol, Int}Int=0) -> Array
 
 Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
 """
-function prep2d(meta::MetaVLSV, var::String, comp=0)
+function prep2d(meta::MetaVLSV, var::String, comp::Union{Symbol, Int}=0)
    dataRaw = Vlasiator.getdata2d(meta, var)
 
    data =
@@ -156,7 +156,8 @@ Return `data` of `var` on a uniform 2D mesh on the finest AMR level. Use `normal
 the plane orientation, and `comp` to select the component of a vector, same as in
 [`pcolormeshslice`](@ref).
 """
-function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp, pArgs::PlotArgs)
+function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{Int, Symbol},
+   pArgs::PlotArgs)
    (;origin, idlist, indexlist) = pArgs
 
    data3D = readvariable(meta, var)
@@ -242,9 +243,10 @@ between `:particle` and `:flux`.
 - `flimit`: minimum VDF threshold for plotting.
 - `verbose`: display the selection process.
 """
-function prep_vdf(meta::MetaVLSV, location::AbstractVector;
-   species="proton", unit::AxisUnit=SI, unitv="km/s", slicetype=:default, vslicethick=0.0,
-   center=:nothing, weight=:particle, flimit=-1.0, verbose=false)
+function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="proton",
+   unit::AxisUnit=SI, unitv::String="km/s", slicetype::Symbol=:default,
+   vslicethick::AbstractFloat=0.0, center::Symbol=:nothing, weight::Symbol=:particle,
+   flimit::AbstractFloat=-1.0, verbose::Bool=false)
 
    ncells = meta.ncells
 

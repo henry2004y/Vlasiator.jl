@@ -231,7 +231,7 @@ end
 
 Return velocity cells' coordinates of `species` and `vcellids`.
 """
-function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector; species="proton")
+function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector; species::String="proton")
    (;vblocks, vblock_size, dv, vmin) = meta.meshes[species]
 
    bsize = prod(vblock_size)
@@ -275,7 +275,7 @@ one can directly pass `vcellids` as original indices of nonzero VDFs and `vcellf
 corresponding values.
 """
 function getdensity(meta::MetaVLSV, VDF::Array{T};
-   species="proton") where T <: AbstractFloat
+   species::String="proton") where T <: AbstractFloat
 
    (;dv) = meta.meshes[species]
 
@@ -286,7 +286,7 @@ function getdensity(vmesh::VMeshInfo, vcellf::Vector{T}) where T <: AbstractFloa
    n = sum(vcellf) * convert(T, prod(vmesh.dv))
 end
 
-getdensity(meta::MetaVLSV, vcellf; species="proton") =
+getdensity(meta::MetaVLSV, vcellf::Vector{<:AbstractFloat}; species::String="proton") =
    getdensity(meta.meshes[species], vcellf)
 
 """
@@ -298,7 +298,7 @@ Get bulk velocity from `VDF` of `species`, u = ∫ v * f(r,v) dV / n. Alternativ
 directly pass `vcellids`, `vcellf`, as in [`getdensity`](@ref).
 """
 function getvelocity(meta::MetaVLSV, VDF::Array{T};
-   species="proton") where T <: AbstractFloat
+   species::String="proton") where T <: AbstractFloat
 
    (;dv, vmin) = meta.meshes[species]
    u = @SVector zeros(T, 3)
@@ -317,7 +317,7 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
    u
 end
 
-function getvelocity(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) where
+function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
    T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -348,7 +348,8 @@ function getvelocity(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) wher
    u
 end
 
-getvelocity(meta::MetaVLSV, vcellids, vcellf; species="proton") =
+getvelocity(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{T};
+   species::String="proton") where T <: AbstractFloat =
    getvelocity(meta.meshes[species], vcellids, vcellf)
 
 """
@@ -361,7 +362,7 @@ pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV. Alternatively, one can dir
 `vcellf`, as in [`getdensity`](@ref).
 """
 function getpressure(meta::MetaVLSV, VDF::Array{T};
-   species="proton") where T <: AbstractFloat
+   species::String="proton") where T <: AbstractFloat
 
    (;dv, vmin) = meta.meshes[species]
    p = @SVector zeros(T, 6)
@@ -388,7 +389,7 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
    p
 end
 
-function getpressure(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) where
+function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
    T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -426,11 +427,13 @@ function getpressure(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector{T}) wher
    p
 end
 
-getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton") =
+getpressure(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat};
+   species::String="proton") =
    getpressure(meta.meshes[species], vcellids, vcellf)
 
 "Get the original vcell index without blocks from raw vcell index `i` (0-based)."
-@inline function findindex(i, vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+@inline function findindex(i::UInt32, vblocks::NTuple{3, Int}, vblock_size::NTuple{3, Int},
+   blocksize::Int, vsize::NTuple{3, Int}, sliceBz::Int, sliceCz::Int)
    iB = i ÷ blocksize
    iBx = iB % vblocks[1]
    iBy = iB % sliceBz ÷ vblocks[1]
@@ -447,12 +450,12 @@ getpressure(meta::MetaVLSV, vcellids, vcellf; species="proton") =
 end
 
 """
-    reorder(vmesh::VMeshInfo, vcellids) -> vcellids_origin
+    reorder(vmesh::VMeshInfo, vcellids::Vector{UInt32}) -> vcellids_origin
 
 Reorder vblock-organized VDF indexes into x-->y-->z indexes. `vcellids` are raw indices
 of nonzero VDFs ordered by blocks.
 """
-function reorder(vmesh::VMeshInfo, vcellids::Vector)
+function reorder(vmesh::VMeshInfo, vcellids::Vector{UInt32})
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
@@ -470,12 +473,13 @@ function reorder(vmesh::VMeshInfo, vcellids::Vector)
 end
 
 """
-    reconstruct(vmesh::VMeshInfo, vcellids, vcellf)
+    reconstruct(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat})
 
 Reconstruct the full VDFs in 3D. `vcellids` are raw indices of nonzero VDFs ordered by
 blocks, and `vcellf` are the corresponding values in each cell.
 """
-function reconstruct(vmesh::VMeshInfo, vcellids::Vector, vcellf::Vector)
+function reconstruct(vmesh::VMeshInfo, vcellids::Vector{UInt32},
+   vcellf::Vector{<:AbstractFloat})
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
@@ -503,7 +507,8 @@ density as `f`. The value ranges from [0, +∞], with 0 meaning not Maxwellian-d
 all, and +∞ a perfect Maxwellian distribution.
 Alternatively, one can pass original `vcellids` and `vcellf` directly.
 """
-function getmaxwellianity(meta::MetaVLSV, VDF::Array; species="proton")
+function getmaxwellianity(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
+   species::String="proton")
    (;dv, vmin) = meta.meshes[species]
 
    n = getdensity(meta, VDF)
@@ -528,8 +533,8 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array; species="proton")
    ϵₘ = -log(0.5 / n * convert(eltype(VDF), prod(dv)) * ϵₘ)
 end
 
-function getmaxwellianity(meta::MetaVLSV, vcellids::Vector, vcellf::Vector;
-   species="proton")
+function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{UInt32},
+   vcellf::Vector{<:AbstractFloat}; species::String="proton")
 
    (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
    vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
@@ -565,7 +570,7 @@ function getmaxwellianity(meta::MetaVLSV, vcellids::Vector, vcellf::Vector;
    ϵₘ = -log(0.5 / n * convert(eltype(vcellf), prod(dv)) * ϵₘ)
 end
 
-function isInsideDomain(meta::MetaVLSV, point::Vector)
+function isInsideDomain(meta::MetaVLSV, point::Vector{<:Real})
    (;coordmin, coordmax) = meta
 
    if coordmin[1] < point[1] ≤ coordmax[1] &&
@@ -655,7 +660,8 @@ Find the cell IDs `idlist` which are needed to plot a 2d cut through of a 3d mes
 direction `idim` at `sliceoffset`, and the `indexlist`, which is a mapping from original
 order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaVLSV, sliceoffset, idim::Integer, minCoord, maxCoord)
+function getslicecell(meta::MetaVLSV, sliceoffset::Float64, idim::Int,
+   minCoord::Float64, maxCoord::Float64)
    idim ∉ (1,2,3) && @error "Unknown slice direction $idim"
    (;ncells, maxamr, celldict) = meta
 
@@ -927,7 +933,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
             data = @view dataRaw[:,rOffsetsRaw]
 
-            fillcell!(ilvl, maxamr, ids, ix, iy, iz, celldata[iv], data)
+            _fillcell!(ilvl, maxamr, ids, ix, iy, iz, celldata[iv], data)
          end
       else # max refinement level
          for (iv, var) = enumerate(vars)
@@ -940,7 +946,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
                data = @view dataRaw[:,rOffsetsRaw]
 
-               fillcell!(ids, ix, iy, iz, celldata[iv][end], data)
+               _fillcell!(ids, ix, iy, iz, celldata[iv][end], data)
             end
          end
       end
@@ -951,7 +957,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    celldata, vtkGhostType
 end
 
-function fillcell!(ilvl, maxamr, ids, ix, iy, iz, dataout, datain)
+function _fillcell!(ilvl, maxamr, ids, ix, iy, iz, dataout, datain)
    @inbounds for ilvlup = ilvl:maxamr
       r = 2^(ilvlup-ilvl) # ratio on refined level
       for c in eachindex(ids)
@@ -962,7 +968,7 @@ function fillcell!(ilvl, maxamr, ids, ix, iy, iz, dataout, datain)
    end
 end
 
-function fillcell!(ids, ix, iy, iz, dataout, datain)
+function _fillcell!(ids, ix, iy, iz, dataout, datain)
    @inbounds for c in eachindex(ids)
       _fillcelldata!(dataout, datain, ix[c]+1, iy[c]+1, iz[c]+1, c)
    end
@@ -976,7 +982,7 @@ end
 
 """
     write_vtk(meta::MetaVLSV; kwargs...)
-    write_vtk(file; kwargs...)
+    write_vtk(file::AbstractString; kwargs...)
 
 Convert VLSV file to VTK format.
 # Keywords
@@ -984,12 +990,12 @@ Convert VLSV file to VTK format.
 - `ascii::Bool=false`: output stored in ASCII or compressed binary format.
 - `maxamronly::Bool=false`: generate image files on the highest refinement level only.
 - `box::Vector`: selected box range in 3D.
-- `outdir::String=""`: output directory. 
+- `outdir::String=""`: output directory.
 - `verbose::Bool=false`: display logs during conversion.
 """
 function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
    maxamronly::Bool=false, skipghosttype::Bool=false, verbose::Bool=false,
-   box=[-Inf, Inf, -Inf, Inf, -Inf, Inf], outdir="")
+   box::Vector{Float64}=[-Inf, Inf, -Inf, Inf, -Inf, Inf], outdir::AbstractString="")
 
    (;ncells, maxamr, dcoord, coordmin) = meta
 
@@ -1064,17 +1070,17 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 # Arguments
 - `file::String`: output file name.
 - `vars::Vector{String}`: variable names to be saved.
-- `data::Vector{Vector}`: data for all the variables on each refinement level.
+- `data::Vector{Vector{Array}}`: data for all the variables on each refinement level.
 - `vtkGhostType::Array{UInt8}`: array for visibility control.
 - `level::Integer`: refinement level (0-based).
 - `ascii::Bool=false`: save output in ASCII or binary format.
 - `append::Bool=true`: determines whether to append data at the end of file or do in-block
 writing.
-- `box::Vector`: selected box range in 3D. 
+- `box::Vector`: selected box range in 3D.
 """
-function save_image(meta::MetaVLSV, file::String, vars::Vector{String}, data,
-   vtkGhostType::Array{UInt8}, level::Integer, ascii::Bool=false, append::Bool=true;
-   box=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
+function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
+   data, vtkGhostType::Array{UInt8}, level::Integer, ascii::Bool=false, append::Bool=true;
+   box::Vector{<:AbstractFloat}=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
 
    (;coordmin, coordmax, dcoord, ncells) = meta
    ratio = 2^level
@@ -1205,7 +1211,8 @@ end
 Check if two VLSV files `file1` and `file2` are approximately identical, under relative
 tolerance `tol`.
 """
-function issame(f1, f2, tol::AbstractFloat=1e-4; verbose::Bool=false)
+function issame(f1::AbstractString, f2::AbstractString, tol::AbstractFloat=1e-4;
+   verbose::Bool=false)
    # 1st sanity check: minimal filesize difference
    if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
       verbose && println("The sizes of files are already quite different!")

@@ -5,13 +5,14 @@
 @inline δzᵃᵃᶜ(i, j, k, A) = @inbounds A[i, j, k+1] - A[i, j, k-1]
 
 """
-    curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
+    curl(A::AbstractArray{T,N}, dx:Union{Vector{U}, NTuple{3,U}}) where {T,N,U}
 
 Calculate 2nd order cell-centered ∇×A where `A` is a 4D array of size (3, nx, ny, nz) and
 `dx` is a vector of grid intervals in each dimension.
 """
-function curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
+function curl(A::AbstractArray{T,N}, dx::Union{Vector{U}, NTuple{3,U}}) where {T,N,U}
    @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
+   dx = convert.(T, dx)
 
    @views Ax, Ay, Az = A[1,:,:,:], A[2,:,:,:], A[3,:,:,:]
 
@@ -63,7 +64,7 @@ function curl(A::AbstractArray{T,N}, dx=ones(T,3)) where {T,N}
 end
 
 """
-    gradient(A::AbstractArray{T,N}, dx=ones(T, 3)) where {T,N}
+    gradient(A::AbstractArray{T,N}, dx::Vector{U}) where {T,N,U}
 
 Calculate 2nd order cell-centered ∇A where `A` is a scalar array and `dx` is a vector of
 grid intervals in each dimension.
@@ -71,10 +72,11 @@ grid intervals in each dimension.
     The current implementation has issues at the boundary if gradient is taken multiple
     times.
 """
-function gradient(A::AbstractArray{T,N}, dx=ones(T, N)) where {T,N}
+function gradient(A::AbstractArray{T,N}, dx::Vector{U}) where {T,N,U}
    @assert N < 4 "$N dimension array A detected!"
    @assert N == length(dx) "The array A shall have the same dimension as dx!"
    @assert all(!=(1), size(A)) "No singular dimension is allowed!"
+   dx = convert.(T, dx)
 
    if N == 3 # 3D
       B = zeros(T, 3, size(A)[1], size(A)[2], size(A)[3])
@@ -118,14 +120,15 @@ function gradient(A::AbstractArray{T,N}, dx=ones(T, N)) where {T,N}
 end
 
 """
-    divergence(A::AbstractArray{T,N}, dx=ones(T, 3)) where {T,N}
+    divergence(A::AbstractArray{T,N}, dx::Vector{U}=ones(T, 3)) where {T,N,U}
 
 Calculate 2nd order cell-centered ∇⋅A where `A` is a 4D array of size (3, nx, ny, nz) and
 `dx` is a vector of grid intervals in each dimension.
 """
-function divergence(A::AbstractArray{T,N}, dx=ones(T, 3)) where {T,N}
+function divergence(A::AbstractArray{T,N}, dx::Vector{U}=ones(T, 3)) where {T,N,U}
    @assert N == 4 && length(dx) == 3 "Input vector shall be indexed in 3D!"
    @assert all(!=(1), size(A)) "Input vector must be from 3D data!"
+   dx = convert.(T, dx)
 
    @views Ax, Ay, Az = A[1,:,:,:], A[2,:,:,:], A[3,:,:,:]
 
