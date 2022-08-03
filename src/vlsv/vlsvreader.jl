@@ -358,7 +358,6 @@ Read variable `var` in a collection of cells `ids` associated with `meta`. if `i
 empty, return the whole sorted array of `var`.
 """
 function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Array
-
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
    (;fid, footer, celldict) = meta
 
@@ -367,13 +366,12 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
       return v
    end
 
-   if isempty(ids)
+   if (local nid = length(ids)) == 0
       v = readvariable(meta, var)
-      return v
    else
       T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
-      v = Array{T}(undef, vsize, length(ids))
+      v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
 
       w = let
          a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
@@ -385,9 +383,9 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
       if T == Float64
          v = Float32.(v)
       end
-
-      return v
    end
+
+   return v
 end
 
 """
@@ -415,6 +413,14 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
    end
 
    return v
+end
+
+@inline function _fillv!(v::Vector, w::AbstractArray, celldict::Dict{UInt64, Int64},
+   ids::Vector{<:Integer}, vsize::Int)
+
+   for i in eachindex(ids)
+      @inbounds v[i] = w[celldict[ids[i]]]
+   end 
 end
 
 @inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt64, Int64},
