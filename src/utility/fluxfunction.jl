@@ -39,7 +39,7 @@ end
 Find X-point and O-point indices in 2D magnetic field topology from flux function `ψ`.
 The current implementation does not work for the 3 layers near the boundary.
 
-# Optional arguments
+# Keywords
 - `retol=1e-1`: determines the relative tolerance of the ratio w.r.t. |∇ψ|² to accept a
 gradient as 0.
 - `method=1`: method 1 compute the cell-centered 1st and 2nd order derivatives and check the

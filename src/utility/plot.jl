@@ -227,7 +227,7 @@ end
 Return the cell velocities `v1, v2`, bin ranges `r1, r2`, cell VDF values `fweight`,
 and strings of labels and titles for VDF plots.
 
-# Optional arguments
+# Keywords
 - `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
 - `limits::Vector{Real}`: velocity space range given in [xmin, xmax, ymin, ymax].

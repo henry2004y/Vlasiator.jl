@@ -307,7 +307,7 @@ end
 Plot the 2D slice cut of phase space distribution function at `location` within velocity
 range `limits`. If `ax===nothing`, plot on the current active axes.
 
-# Optional arguments
+# Keywords
 
 - `unit::AxisUnit`: location unit in `SI`, `EARTH`.
 - `unitv::String`: velocity unit in ("km/s", "m/s").
@@ -323,9 +323,7 @@ velocity is selected!
 between `:particle` and `:flux`.
 - `flimit::AbstractFloat`: minimum VDF threshold for plotting.
 
-# Keywords
-
-Any valid keyword argument for `hist2d`.
+Any valid keyword argument for `hist2d` is supported.
 """
 function vdfslice(meta::MetaVLSV, location::AbstractVector,
    ax::Union{PyObject,Nothing}=nothing; limits::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
