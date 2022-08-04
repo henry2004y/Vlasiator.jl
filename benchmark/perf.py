@@ -57,7 +57,17 @@ for (i,fname) in enumerate(filenames[0:200]):
 print(timeit.timeit(stmt=s1, setup=p1, number=10) / 10 * 1e3) # [ms]
 print(timeit.timeit(stmt=s2, setup=p2, number=10) / 10 * 1e3) # [ms]
 
-print(timeit.timeit(stmt=s3, setup=p0, number=10) / 10) # [s]
-print(timeit.timeit(stmt=s4, setup=p0, number=10) / 10) # [s]
+t1 = timeit.timeit(stmt=s1, setup=p1, number=10) / 10
+print(f"Finished plotting in {t1:0.4f} ms")
 
-print(timeit.timeit(stmt=s5, setup=p3, number=10) / 10) # [s]
+t2 = timeit.timeit(stmt=s2, setup=p2, number=10) / 10
+print(f"Finished plotting in {t2:0.4f} ms")
+
+t3 = timeit.timeit(stmt=s3, setup=p0, number=3) / 3
+print(f"Finished plotting in {t3:0.4f} s")
+
+t4 = timeit.timeit(stmt=s4, setup=p0, number=3) / 3
+print(f"Finished plotting in {t4:0.4f} s")
+
+t5 = timeit.timeit(stmt=s5, setup=p3, number=1) / 1
+print(f"Finished plotting in {t5:0.4f} s")

@@ -15,11 +15,11 @@ meta = load(file);
 
 var = "proton/vg_rho";
 
-@time rho = meta[var]
-@time rho = meta[var]
+@time rho = meta[var];
+@time rho = meta[var];
 
-@time rho_unsorted = readvariable($meta, $var, false)
-@time rho_unsorted = readvariable($meta, $var, false)
+@time rho_unsorted = readvariable($meta, $var, false);
+@time rho_unsorted = readvariable($meta, $var, false);
 
 ## Static location extracting
 
@@ -35,7 +35,7 @@ id = let
    getcell(meta, loc)
 end
 
-@time data_series = extractsat(filenames, var, id)
+@time data_series = extractsat(filenames, var, id);
 
 ## Plotting with PyPlot
 
