@@ -11,15 +11,14 @@ authors:
 affiliations:
  - name: University of Helsinki
    index: 1
-date: 1 August 2022
+date: 4 August 2022
 bibliography: paper.bib
 ---
 
 # Summary
 
 `Vlasiator.jl` is a Julia package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model Vlasiator [@vlasiator5.1].
-This lightweight package is built upon its sister package in Python `Analysator` [@analysator] and carefully designed for performance, capability and ease of use.
-It can be easily integrated with other open source packages in the community like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) for tracing along the field lines and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) for embedded test particle simulations.
+This lightweight package is built upon its sister Python package `Analysator` [@analysator] and carefully designed for performance, capability and ease of use.
 
 `Vlasiator.jl` contains the following main features:
 
@@ -30,12 +29,10 @@ It can be easily integrated with other open source packages in the community lik
 - Analyzing the velocity distribution functions reconstructed from sparsity storage.
 - Converting the selected part or whole data from VLSV into VTK format for post-processing and 3D rendering in ParaView and VisIt.
 
-`Vlasiator.jl` is targeted at space plasma physics researchers who want to visualize and analyze Vlasiator simulation outputs in an efficient manner.
-It achieves optimal serial performance for single file processing and can be directly applied to parallel batch jobs using both multithreads and multiprocesses.
+`Vlasiator.jl` achieves optimal serial performance for single file processing and can be directly applied to parallel batch jobs using both multithreads and multiprocesses.
 The interoperability with Python can be easily achieved via two community packages `JuliaCall` [@juliacall] and `PyJulia` [@pyjulia].
-It has preliminarily been used in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
-
-The performance and ease-of-use of `Vlasiator.jl` will enable exciting reproducible scientific exploration of forthcoming data from the exascale simulations.
+It can also be easily integrated with other packages in the community like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) for tracing along the field lines and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) for embedded test particle simulations.
+The performance and ease-of-use of `Vlasiator.jl` will enable exciting reproducible scientific exploration of forthcoming data from exascale simulations.
 
 # Statement of need
 
@@ -45,13 +42,16 @@ Vast majority of space in the solar system is filled with charged particles, i.e
 
 Due to the multi-dimensional approach at ion scales, Vlasiator's computational challenges are immense.
 The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes
-beyond 10 GB, which needs efficient numerical tools for processing the data.
+beyond ~10 GB, which needs efficient numerical tools for processing the data.
 
-`Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python. It satisfies the current requirements of Vlasiator simulation data processing and unifies the implementation in a single language base, which facilitates more efficient downstream processing tasks and in-depth exploration of large datasets.
+`Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python.
+It is targeted at space plasma physics researchers who want to visualize and analyze Vlasiator simulation outputs in an efficient manner.
+This package satisfies the current requirements of simulation data processing and unifies the implementation in a single language base, which facilitates more efficient downstream processing tasks and in-depth exploration of large datasets.
+It has preliminarily been used in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
 
 # Acknowledgements
 
-We acknowledge support from Lucile Turc during the genesis of this project.
-Funding for this work is provided by the Academy of Finland.
+We acknowledge the support from Lucile Turc during the genesis of this project.
+Funding for this work is provided by the University of Helsinki (three-year research grant 2020-2022) and the Academy of Finland (grant numbers 322544 and 328893).
 
 # References
