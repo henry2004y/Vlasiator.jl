@@ -17,8 +17,9 @@ These are also used in the standard test. These will be automatically downloaded
 
 The VLSV loader inherits the basic structure from [Analysator](https://github.com/fmihpc/analysator) and is redesigned for performance.
 
-* Besides the language difference in speed, one of the key decisions in boosting performance is to avoid the usage of dictionary with integer keys as much as possible.
-* It is generally faster to read a bunch of cell IDs together than to read each cell one-by-one.
+* For general data reading, a dictionary is constructed for cell IDs and orderings for O(1) timings.
+* It is faster to read a bunch of cell IDs together, if possible, than to read each cell one-by-one.
+* Specific methods are provided for targeted tasks that are much faster than the generic approaches. For instance, `extractsat` for multi-frame static satellite extraction can be more than 10x faster than first reading the metadata and then extracting variables for each frame.
 
 For development, it is recommended to use [PkgBenchmark.jl](https://github.com/JuliaCI/PkgBenchmark.jl) to run the test suite:
 
@@ -33,7 +34,7 @@ or if you want to compare the current status of the package against a different 
 judge(Vlasiator, "97e3dca6b2474d7bdc5b62b5bf98ecf070516e5e")
 ```
 
-To export results to markdown format,
+To export results to Markdown,
 
 ```julia
 export_markdown("testresult", results)
@@ -89,9 +90,9 @@ See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/
 
 ## Precision
 
-For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we mostly use `Float32` in Vlasiator.jl. Several exceptions are:
+For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we mostly use `Float32` in Vlasiator.jl for numerical arrays. Several exceptions are:
 
-* physical constants are defined in `Float64`, since single precision only resolve up to ±3.4E+38, and it may go out of bound in the middle of calculation (e.g. plasma frequency).
+* physical constants are defined in `Float64`, since single precision only resolves up to ±3.4E+38, and it may go out of bound in the middle of calculation (e.g. plasma frequency).
 
 ## Int v.s. UInt
 
@@ -99,18 +100,18 @@ We have not made a consensus on which integer to use for cell indexes. Be carefu
 
 ## Memory
 
-Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through `mmap` in Julia. With this mechanism you never need to worry about unable to process data with small free memory.
+Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through [`mmap`](https://docs.julialang.org/en/v1/stdlib/Mmap/) in Julia. With this mechanism you never need to worry about unable to process data with small free memory.
 
 ## Parallelism
 
-The current design choice is to achieve optimal serial performance per file, and apply parallel processing across individual files. In most common cases, the time it takes for post-processing one snapshot is reasonably short, but the number of snapshots are large. Julia's built-in support for all kinds of parallelism paradigm (multithreads, multiprocess, channel) and external support from packages (MPI.jl, Polyester.jl) can be relatively easily incorported to make the whole workflow parallel.
-
-In the [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples), you can find the usages of
+The current design choice is to achieve optimal serial performance per file, and apply parallel processing across individual files. In most common cases, the time it takes for post-processing one snapshot is reasonably short, but the number of snapshots are large. Julia's built-in support for all kinds of parallelism paradigm (multithreading, multiprocessing, channel) and external support from packages (MPI.jl, Polyester.jl) can be relatively easily incorported to make the whole workflow parallel.
 
 * multi-threading with `@threads` (recommended when working within one node)
 * multi-processing with `pmap` 
 * multi-processing with `RemoteChannel`
 * `ClusterManagers` for multi-node jobs
+
+See more in the [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples).
 
 ## VTK
 
