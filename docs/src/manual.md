@@ -4,7 +4,7 @@ Here we demonstrate some basic usages of Vlasiator output processing. For comple
 
 ## Common physical constants
 
-A bunch of physical constants are predefined in [Vlasiator.jl][vlsvvariables]. To use them, you need to import explicitly, e.g. `using Vlasiator: RE` or prepend the module name like `Vlasiator.RE`.
+A bunch of physical constants are predefined in [Vlasiator.jl](https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl). To use them, you need to import explicitly, e.g. `using Vlasiator: RE` or prepend the module name like `Vlasiator.RE`.
 
 | Physical constant | Value | Meaning |
 |:---:|:--------------:|:-------------|
@@ -149,13 +149,13 @@ Here is a full list of available quantities[^1]:
 | Omegap                | plasma frequency (proton)        | vg\_rho               |
 | MagneticTension       | [magnetic tension force](https://en.wikipedia.org/wiki/Magnetic_tension) | vg\_b\_vol |
 
-which can also be found as keys of dictionary in [vlsvvariables.jl][vlsvvariables].
+which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl).
 
 [^1]: For species specific variables, you need to add the species name at the front, separated by a slash. For example, the proton bulk velocity is a string `proton/vg_v`.
 [^2]: If a required variable exists in the VLSV file, we try to use it directly instead of calculating from other variables. The interpolated FS grid variables onto DCCRG grid are preferred over original FS grid variables.
 
 !!! note
-    In Vlasiator, the cells inside the inner boundary (which is usually a sphere/circle) are filled with zero density values. This is then used to identify the inner boundary for all other quantities. Therefore, if you are manipulating directly on data, make sure that the nonsense values inside the inner boundary are excluded. One way to do this can be found in [vlsvvariables.jl][vlsvvariables].
+    In Vlasiator, the cells inside the inner boundary (which is usually a sphere/circle) are filled with zero density values. This is then used to identify the inner boundary for all other quantities. Therefore, if you are manipulating directly on data, make sure that the nonsense values inside the inner boundary are excluded. One way to do this can be found in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl).
 
 !!! warning
     This part has not been carefully tested so it might not work or just generate wrong results. Contributions from users are warmly welcomed!
@@ -203,7 +203,7 @@ Vlasiator.jl does not include any plotting library as explicit dependency, but i
 
 Currently `PyPlot.jl` provides the most complete and fine-tuned plotting capabilities.
 `Plots.jl` is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
-`Makie.jl`, a native Julia plotting library, is also supported via [VlasiatorMakie.jl][vlasiatormakie]. Without generating an system image from `PackageCompiler.jl`, it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
+`Makie.jl`, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from `PackageCompiler.jl`, it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
@@ -320,7 +320,7 @@ The keyword arguments are the same as in the PyPlot shown in the [API](internal.
 
 ### Makie Backend
 
-A standalone package [VlasiatorMakie.jl][vlasiatormakie] is designed for plotting with Makie. To trigger Makie plotting with OpenGL, `using VlasiatorMakie, GLMakie`.
+A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie. To trigger Makie plotting with OpenGL, `using VlasiatorMakie, GLMakie`.
 You can either use intrinsic Makie plotting methods like
 
 ```julia
@@ -429,6 +429,3 @@ More [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples)
 - Finding X-points and O-points in 2D reconnection
 
 Feel free to check those out and try on your data!
-
-[vlsvvariables]: https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl
-[vlasiatormakie]: https://github.com/henry2004y/VlasiatorMakie.jl
