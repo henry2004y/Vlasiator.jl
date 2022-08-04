@@ -140,7 +140,7 @@ function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUni
 end
 
 """
-    pcolormesh(meta::MetaVLSV, var::AbstractString, ax=nothing;
+    pcolormesh(meta::MetaVLSV, var::String, ax=nothing;
        comp=0, axisunit=EARTH, colorscale=Linear, vmin=-Inf, vmax=Inf,
        addcolorbar=true, extent=[-Inf, Inf, -Inf, Inf], kwargs...)
 
@@ -148,7 +148,7 @@ Plot a variable using pseudocolor from 2D VLSV data.
 If `ax` is provided, then it will plot on that axes.
 If 3D or AMR grid detected, it will pass arguments to [`pcolormeshslice`](@ref).
 
-# Keyword arguments
+# Keywords
 - `comp::Union{Int, Symbol}`: the component of a vector, chosen from `:mag, :x, :y, :z, 0`
 or valid integers for indexing.
 - `axisunit::AxisUnit`: the unit of axis ∈ `EARTH, SI`.
@@ -160,17 +160,19 @@ or valid integers for indexing.
 - `normal::Symbol`: normal direction for slice of 3D data, `:x`, `:y`, `:z`.
 - `origin::Float64`: origin of plane slice of 3D data.
 
-# Keywords
+Any valid keyword argument for `plt.pcolormesh` is supported.
 
-Any valid keyword argument for `plt.pcolormesh`.
+# Example
 
-`pcolormesh(meta, var)`
+```julia
+pcolormesh(meta, var)
 
-`pcolormesh(meta, var, axisunit=SI)`
+pcolormesh(meta, var, axisunit=SI)
 
-`pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])`
+pcolormesh(data, var, colorscale=Log, extent=[0,1,0,2])
+```
 """
-function PyPlot.pcolormesh(meta::MetaVLSV, var::AbstractString,
+function PyPlot.pcolormesh(meta::MetaVLSV, var::String,
    ax::Union{PyObject,Nothing}=nothing; comp::Union{Int, Symbol}=0,
    axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar::Bool=true,
    vmin::Float64=-Inf, vmax::Float64=Inf, extent::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
@@ -236,11 +238,13 @@ Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorsc
 Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
 linear, logarithmic and symmetric logarithmic, like centered, discrete, and two slope norm.
 For fine-grain control, it is suggested to use the norm methods from `matplotlib.colors`.
-For instance,
-```
-julia> norm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
-julia> norm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
-julia> norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
+
+# Example
+
+```julia
+norm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
+norm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
+norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
 ```
 There are also various options for the ticks available in `matplotlib.ticker`.
 """
