@@ -39,14 +39,13 @@ The performance and ease-of-use of `Vlasiator.jl` will enable exciting reproduci
 Space weather is used to describe the environmental effects in the solar system caused by the solar wind, a stream of charged particles carrying the solar electromagnetic field.
 Vast majority of space in the solar system is filled with charged particles, i.e. plasma.  Plasma can carry electromagnetic field and interacts with astronomical object's magnetic field to create a magnetosphere near the object.
 `Vlasiator` [@palmroth2018vlasov] is a numerical model for collisionless ion-kinetic plasma physics, aiming at studying space weather in the global magnetosphere.
-
 Due to the multi-dimensional approach at ion scales, Vlasiator's computational challenges are immense.
 The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes
-beyond ~10 GB, which needs efficient numerical tools for processing the data.
+beyond ~10 GB, which necessitates the development of high performance programs for processing the data.
 
 `Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python.
-It is targeted at space plasma physics researchers who want to visualize and analyze Vlasiator simulation outputs in an efficient manner.
-This package satisfies the current requirements of simulation data processing and unifies the implementation in a single language base, which facilitates more efficient downstream processing tasks and in-depth exploration of large datasets.
+It is targeted at space plasma physics researchers who want to analyze and visualize Vlasiator simulation outputs in an efficient manner.
+This package satisfies the current requirements of simulation data processing, unifies the implementation in a single language base, and facilitates more fluent downstream processing tasks and in-depth exploration of large datasets.
 It has preliminarily been used in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
 
 # Acknowledgements
