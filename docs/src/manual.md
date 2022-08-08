@@ -168,7 +168,7 @@ We can also calculate plasma moments from the saved VLSV velocity space distribu
 # VDF cell indexes and values, with sparsity
 vcellids, vcellf = readvcells(meta, cellid; species="proton")
 
-getdensity(meta, vcellids, vcellf)
+getdensity(meta, vcellf)
 
 getvelocity(meta, vcellids, vcellf)
 
