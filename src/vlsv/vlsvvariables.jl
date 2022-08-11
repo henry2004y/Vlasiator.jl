@@ -83,7 +83,7 @@ const units_predefined = Dict(
 
 # Define derived parameters
 const variables_predefined = Dict(
-   :Bmag => function (meta, ids=UInt64[])
+   :Bmag => function (meta, ids=UInt[])
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_], ids)
       B = readvariable(meta, "vg_b_vol", ids)
@@ -92,7 +92,7 @@ const variables_predefined = Dict(
       _fillinnerBC!(Bmag, ρ)
       Bmag::Vector{Float32}
    end,
-   :Emag => function (meta, ids=UInt64[])
+   :Emag => function (meta, ids=UInt[])
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_], ids)
       E = readvariable(meta, "vg_e_vol", ids)
@@ -101,7 +101,7 @@ const variables_predefined = Dict(
       _fillinnerBC!(Emag, ρ)
       Emag::Vector{Float32}
    end,
-   :Vmag => function (meta, ids=UInt64[])
+   :Vmag => function (meta, ids=UInt[])
       rho_ = findfirst(endswith("rho"), meta.variable)
       ρ = readvariable(meta, meta.variable[rho_], ids)
       V = readvariable(meta, "proton/vg_v", ids)
@@ -110,7 +110,7 @@ const variables_predefined = Dict(
       _fillinnerBC!(Vmag, ρ)
       Vmag::Vector{Float32}
    end,
-   :Rhom => function (meta, ids=UInt64[])
+   :Rhom => function (meta, ids=UInt[])
       if hasvariable(meta, "vg_rhom")
          ρm = readvariable(meta, "vg_rhom", ids)
       elseif hasvariable(meta, "proton/vg_rho")
@@ -118,7 +118,7 @@ const variables_predefined = Dict(
       end
       ρm::Union{Vector{Float32}, Vector{Float64}}
    end,
-   :P => function (meta, ids=UInt64[]) # scalar pressure
+   :P => function (meta, ids=UInt[]) # scalar pressure
       if hasvariable(meta, "vg_pressure")
          P = readvariable(meta, "vg_pressure", ids)
       else
@@ -132,38 +132,38 @@ const variables_predefined = Dict(
       end
       P::Vector{Float32}
    end,
-   :VS => function (meta, ids=UInt64[]) # sound speed
+   :VS => function (meta, ids=UInt[]) # sound speed
       P = readvariable(meta, "P", ids)
       ρm = readvariable(meta, "Rhom", ids)
       _fillinnerBC!(ρm, ρm)
       VS = @. √( (P*5.0f0/3.0f0) / ρm )
       VS::Union{Vector{Float32}, Vector{Float64}}
    end,
-   :VA => function (meta, ids=UInt64[]) # Alfvén speed
+   :VA => function (meta, ids=UInt[]) # Alfvén speed
       ρm = readvariable(meta, "Rhom", ids)
       _fillinnerBC!(ρm, ρm)
       Bmag = readvariable(meta, "Bmag", ids)
       VA = @. Bmag / √(ρm*μ₀)
       VA::Union{Vector{Float32}, Vector{Float64}}
    end,
-   :MA => function (meta, ids=UInt64[]) # Alfvén Mach number
+   :MA => function (meta, ids=UInt[]) # Alfvén Mach number
       V = readvariable(meta, "Vmag", ids)
       VA = readvariable(meta, "VA", ids)
       MA = V ./ VA
       MA::Union{Vector{Float32}, Vector{Float64}}
    end,
-   :MS => function (meta, ids=UInt64[]) # Sonic Mach number
+   :MS => function (meta, ids=UInt[]) # Sonic Mach number
       V = readvariable(meta, "Vmag", ids)
       VS = readvariable(meta, "VS", ids)
       MS = V ./ VS
       MS::Union{Vector{Float32}, Vector{Float64}}
    end,
-   :Vpar => function (meta, ids=UInt64[]) # velocity ∥ B
+   :Vpar => function (meta, ids=UInt[]) # velocity ∥ B
       V = readvariable(meta, "proton/vg_v", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)'
       Vpar = @views [V[:,i] ⋅ b[:,i] for i in axes(V,2)]::Vector{Float32}
    end,
-   :Vperp => function (meta, ids=UInt64[]) # velocity ⟂ B
+   :Vperp => function (meta, ids=UInt[]) # velocity ⟂ B
       V = readvariable(meta, "proton/vg_v", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)'
       Vperp = Vector{Float32}(undef, size(V, 2))
@@ -181,34 +181,34 @@ const variables_predefined = Dict(
 
       Vperp
    end,
-   :T => function (meta, ids=UInt64[]) # scalar temperature
+   :T => function (meta, ids=UInt[]) # scalar temperature
       P = readvariable(meta, "P", ids)
       n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       T = @. P / (n*kB)
       T::Vector{Float64}
    end,
-   :Vth => function (meta, ids=UInt64[]) # thermal velocity
+   :Vth => function (meta, ids=UInt[]) # thermal velocity
       T = readvariable(meta, "T", ids)
       Vth = @. √(3 * kB * T / mᵢ) # assume proton
       Vth::Vector{Float64}
    end,
-   :Ppar => function (meta, ids=UInt64[]) # P component ∥ B
+   :Ppar => function (meta, ids=UInt[]) # P component ∥ B
       P = readvariable(meta, "Protated", ids)
       Ppar = P[3,3,:]::Vector{Float32}
    end,
-   :Pperp => function (meta, ids=UInt64[]) # P component ⟂ B
+   :Pperp => function (meta, ids=UInt[]) # P component ⟂ B
       P = readvariable(meta, "Protated", ids)
       Pperp = [0.5f0(P[1,1,i] + P[2,2,i]) for i in 1:size(P,3)]::Vector{Float32}
    end,
-   :Tpar => function (meta, ids=UInt64[]) # T component ∥ B
+   :Tpar => function (meta, ids=UInt[]) # T component ∥ B
       P = readvariable(meta, "Protated", ids)
       n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
       Tpar = @. P[3,3,:] / (n*kB)
       Tpar::Vector{Float64}
    end,
-   :Tperp => function (meta, ids=UInt64[]) # scalar T component ⟂ B
+   :Tperp => function (meta, ids=UInt[]) # scalar T component ⟂ B
       P = readvariable(meta, "Protated", ids)
       n = readvariable(meta, "n", ids)
       _fillinnerBC!(n, n)
@@ -216,20 +216,20 @@ const variables_predefined = Dict(
       Tperp = @. Pperp / (n*kB)
       Tperp::Vector{Float64}
    end,
-   :Tanisotropy => function (meta, ids=UInt64[]) # T⟂ / T∥
+   :Tanisotropy => function (meta, ids=UInt[]) # T⟂ / T∥
       Tperp = readvariable(meta, "Tperp", ids)
       Tpar = readvariable(meta, "Tpar", ids)
       Taniso = @. Tperp / Tpar
       Taniso::Vector{Float64}
    end,
-   :J => function (meta, ids=UInt64[])
+   :J => function (meta, ids=UInt[])
       @assert isempty(ids) "Do not support current calculation for selected cells!"
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
       J = curl(B, meta.dcoord) ./ μ₀
       J = reshape(J, 3, :)::Array{Float64, 2}
    end,
-   :Protated => function (meta, ids=UInt64[])
+   :Protated => function (meta, ids=UInt[])
       # Rotate the pressure tensor to align the 3rd direction with B
       B = readvariable(meta, "vg_b_vol", ids)
       Pdiag = readvariable(meta, "proton/vg_ptensor_diagonal", ids)
@@ -251,31 +251,31 @@ const variables_predefined = Dict(
       rotate_tensor!()
       P
    end,
-   :Panisotropy => function (meta, ids=UInt64[]) # P⟂ / P∥
+   :Panisotropy => function (meta, ids=UInt[]) # P⟂ / P∥
       PR = readvariable(meta, "Protated", ids)
       Paniso = @. 0.5f0*(PR[1,1,:] + PR[2,2,:]) / PR[3,3,:]
       Paniso::Vector{Float32}
    end,
-   :Pram => function (meta, ids=UInt64[])
+   :Pram => function (meta, ids=UInt[])
       V = readvariable(meta, "Vmag", ids)
       ρm = readvariable(meta, "Rhom", ids)
       Pram = @. ρm * V * V
       Pram::Union{Vector{Float32}, Vector{Float64}}
    end,
-   :Pb => function (meta, ids=UInt64[])
+   :Pb => function (meta, ids=UInt[])
       μ2⁻¹ = 0.5/μ₀
       B = readvariable(meta, "vg_b_vol", ids)
       Pb = sum(x -> x*x*μ2⁻¹, B, dims=1) |> vec
       _fillinnerBC!(Pb, Pb)
       Pb::Vector{Float64}
    end,
-   :Epar => function (meta, ids=UInt64[])
+   :Epar => function (meta, ids=UInt[])
       E = readvariable(meta, "vg_e_vol", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)'
 
       @views [E[:,i] ⋅ b[:,i] for i in axes(E,2)]::Vector{Float32}
    end,
-   :Eperp => function (meta, ids=UInt64[])
+   :Eperp => function (meta, ids=UInt[])
       E = readvariable(meta, "vg_e_vol", ids)
       b = readvariable(meta, "vg_b_vol", ids) ./ readvariable(meta, "Bmag", ids)'
 
@@ -293,7 +293,7 @@ const variables_predefined = Dict(
       _computeEperp!()
       Eperp
    end,
-   :Poynting => function (meta, ids=UInt64[]) #WARN: real Poynting flux needs perturbed vars
+   :Poynting => function (meta, ids=UInt[]) #WARN: real Poynting flux needs perturbed vars
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
          E = readvariable(meta, "vg_e_vol", ids)
          B = (meta, "vg_b_vol", ids)
@@ -318,7 +318,7 @@ const variables_predefined = Dict(
 
       F
    end,
-   :Agyrotropy => function (meta, ids=UInt64[])
+   :Agyrotropy => function (meta, ids=UInt[])
       # non-gyrotropy measure Q [Swisdak 2016]
       # Original version for electrons. Here we do protons first.
 
@@ -352,7 +352,7 @@ const variables_predefined = Dict(
       end
       Qsqr
    end,
-   :Beta => function (meta, ids=UInt64[])
+   :Beta => function (meta, ids=UInt[])
       P = readvariable(meta, "P", ids)
       B = readvariable(meta, "vg_b_vol", ids)
 
@@ -363,7 +363,7 @@ const variables_predefined = Dict(
       end
       Beta
    end,
-   :BetaStar => function (meta, ids=UInt64[])
+   :BetaStar => function (meta, ids=UInt[])
       P = readvariable(meta, "P", ids)
       Pram = readvariable(meta, "Pram", ids)
       B = readvariable(meta, "vg_b_vol", ids)
@@ -375,44 +375,44 @@ const variables_predefined = Dict(
       end
       βstar
    end,
-   :IonInertial => function (meta, ids=UInt64[])
+   :IonInertial => function (meta, ids=UInt[])
       n = readvariable(meta, "n", ids)
       Z = 1
       fi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ / 2π
       di = @. c / fi
       di::Vector{Float64}
    end,
-   :Larmor => function (meta, ids=UInt64[])
+   :Larmor => function (meta, ids=UInt[])
       Vth = readvariable(meta, "Vth", ids)
       B = readvariable(meta, "Bmag", ids)
       rg = @. mᵢ * Vth / (qᵢ * B)
       rg::Vector{Float64}
    end,
-   :Gyroperiod => function (meta, ids=UInt64[])
+   :Gyroperiod => function (meta, ids=UInt[])
       B = readvariable(meta, "Bmag", ids)
       T = @. 2π * mᵢ / (qᵢ * B)
       T::Vector{Float64}
    end,
-   :Gyrofrequency => function (meta, ids=UInt64[]) # [1/s]
+   :Gyrofrequency => function (meta, ids=UInt[]) # [1/s]
       B = readvariable(meta, "Bmag", ids)
       f = @. qᵢ * B / (mᵢ * 2π)
       f::Vector{Float64}
    end,
-   :PlasmaPeriod => function (meta, ids=UInt64[])
+   :PlasmaPeriod => function (meta, ids=UInt[])
       n = readvariable(meta, "n", ids)
       T = @. 2π / (qᵢ * √(n  / (mᵢ * ϵ₀)))
       T::Vector{Float64}
    end,
-   :Omegap => function (meta, ids=UInt64[]) # plasma frequency, [1/s]
+   :Omegap => function (meta, ids=UInt[]) # plasma frequency, [1/s]
       n = readvariable(meta, "n", ids)
       fₚ = @. qᵢ * √(n  / (mᵢ * ϵ₀)) / 2π
       fₚ::Vector{Float64}
    end,
-   :n => function (meta, ids=UInt64[])
+   :n => function (meta, ids=UInt[])
       n = readvariable(meta, "proton/vg_rho", ids)
       n::Vector{Float32}
    end,
-   :MagneticTension => function (meta, ids=UInt64[])
+   :MagneticTension => function (meta, ids=UInt[])
       B = readvariable(meta, "vg_b_vol")
       B = reshape(B, 3, meta.ncells...)
 

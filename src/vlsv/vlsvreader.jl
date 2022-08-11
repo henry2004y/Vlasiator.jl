@@ -5,8 +5,8 @@ include("vlsvvariables.jl")
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
-   vblocks::NTuple{3, Int64}
-   vblock_size::NTuple{3, Int64}
+   vblocks::NTuple{3, Int}
+   vblock_size::NTuple{3, Int}
    vmin::NTuple{3, Float64}
    vmax::NTuple{3, Float64}
    dv::NTuple{3, Float64}
@@ -38,8 +38,8 @@ struct MetaVLSV
    time::Float64
    maxamr::Int
    hasvdf::Bool
-   ncells::NTuple{3, Int64}
-   block_size::NTuple{3, Int64}
+   ncells::NTuple{3, Int}
+   block_size::NTuple{3, Int}
    coordmin::NTuple{3, Float64}
    coordmax::NTuple{3, Float64}
    dcoord::NTuple{3, Float64}
@@ -77,7 +77,7 @@ end
    endian_offset = 8
    seek(fid, endian_offset)
    # Obtain the offset of the XML footer
-   offset = read(fid, UInt64)
+   offset = read(fid, UInt)
    seek(fid, offset)
    footer = read(fid, String) |> parsexml |> root
 end
@@ -106,9 +106,9 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
       if datatype == "float"
          datasize == 4 ? Float32 : Float64
       elseif datatype == "int"
-         datasize == 4 ? Int32 : Int64
+         datasize == 4 ? Int32 : Int
       elseif datatype == "uint"
-         datasize == 4 ? UInt32 : UInt64
+         datasize == 4 ? UInt32 : UInt
       end
 
    T, variable_offset, arraysize, datasize, vectorsize
@@ -259,7 +259,7 @@ function load(f::Function, file::AbstractString)
    end
 end
 
-function getmaxrefinement(cellid::AbstractArray{UInt64, 1}, ncells::NTuple{3, UInt64})
+function getmaxrefinement(cellid::AbstractArray{UInt, 1}, ncells::NTuple{3, UInt})
 
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
@@ -480,7 +480,7 @@ end
 @inline function getcellid(fid::IOStream, footer::EzXML.Node)
    _, offset, asize, _, _ = getObjInfo(footer, "CellID", "VARIABLE", "name")
    a = mmap(fid, Vector{UInt8}, 8*asize, offset)
-   cellid = reinterpret(UInt64, a)
+   cellid = reinterpret(UInt, a)
 end
 
 """
@@ -680,7 +680,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
       variable_offset = parse(Int, nodecontent(varinfo))
    end
 
-   blockIDs = let T = datasize == 4 ? UInt32 : UInt64
+   blockIDs = let T = datasize == 4 ? UInt32 : UInt
       Vector{T}(undef, nblocks)
    end
    seek(fid, offset * datasize + variable_offset)

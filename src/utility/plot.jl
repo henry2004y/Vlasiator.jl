@@ -10,7 +10,7 @@ struct PlotArgs
    "Unit of spatial axis"
    axisunit::AxisUnit
    "data array size"
-   sizes::Tuple{Int64, Int64}
+   sizes::Tuple{Int, Int}
    "plotting data range"
    plotrange::NTuple{4, Float64}
    "cut plane origin"

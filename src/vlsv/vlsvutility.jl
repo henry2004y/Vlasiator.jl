@@ -1142,7 +1142,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
    endian_offset = 8 # First 8 bytes indicate big-endian or else
    seek(fid, endian_offset)
    # Obtain the offset of the XML footer
-   offset = read(fid, UInt64)
+   offset = read(fid, UInt)
    # Store all non-footer part as raw data
    raw_data = Vector{UInt8}(undef, offset)
 

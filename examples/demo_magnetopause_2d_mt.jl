@@ -33,7 +33,7 @@ function extract_magnetopause_var(files; zmin=-4RE, zmax=4RE, verbose=true)
    x_crossing = zeros(Float32, length(z_range))
    z_crossing = z[z_range]
 
-   cellids = Vector{UInt64}(undef, length(z_range))
+   cellids = Vector{UInt}(undef, length(z_range))
 
    x_crossings = zeros(length(z_range), nfiles)
    v = zeros(3, length(z_range), nfiles)

@@ -47,8 +47,8 @@ Hessian matrix; method 2 check the flux function at each point against its 8 nei
 which is more deterministic.
 """
 function find_reconnection_points(ψ::Array{T,2}; retol::Float64=1e-4, method::Int=1) where T
-   indices_x = Matrix{Int64}(undef, 2, 0)
-   indices_o = Matrix{Int64}(undef, 2, 0)
+   indices_x = Matrix{Int}(undef, 2, 0)
+   indices_o = Matrix{Int}(undef, 2, 0)
 
    if method == 1
       dx = ones(eltype(ψ), 2)
