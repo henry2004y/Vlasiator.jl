@@ -32,11 +32,11 @@ struct MetaVLSV
    footer::EzXML.Node
    variable::Vector{String}
    "mapping of unsorted cell ID to ordering"
-   celldict::Dict{UInt64, Int64}
+   celldict::Dict{UInt, Int}
    "ordered sequence indexes of raw cell IDs"
-   cellindex::Vector{Int64}
+   cellindex::Vector{Int}
    time::Float64
-   maxamr::Int64
+   maxamr::Int
    hasvdf::Bool
    ncells::NTuple{3, Int64}
    block_size::NTuple{3, Int64}
@@ -371,16 +371,9 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
    else
       T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
-      v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
+      v = _readcells(T, fid, celldict, ids, nid, offset, asize, dsize, vsize)
 
-      w = let
-         a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-         reshape(reinterpret(T, a), vsize, asize)
-      end
-
-      _fillv!(v, w, celldict, ids, vsize)
-
-      if T == Float64
+      if T === Float64
          v = Float32.(v)
       end
    end
@@ -404,29 +397,49 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
 
    T, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
 
-   v = vsize == 1 ? Vector{T}(undef, 1) : Array{T,2}(undef, vsize, 1)
-   seek(fid, offset + (celldict[cid]-1)*vsize*dsize)
-   read!(fid, v)
+   v = _readcell(T, fid, celldict, cid, offset, dsize, vsize)
 
-   if T == Float64
+   if T === Float64
       v = Float32.(v)
    end
 
    return v
 end
 
-@inline function _fillv!(v::Vector, w::AbstractArray, celldict::Dict{UInt64, Int64},
-   ids::Vector{<:Integer}, vsize::Int)
+@inline function _readcells(::Type{T}, fid::IOStream,
+   celldict::Dict{UInt, Int}, ids::Vector{<:Integer},
+   nid::Int, offset::Int, asize::Int, dsize::Int, vsize::Int)::Array{T} where T
+   v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
+
+   w = let
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      reshape(reinterpret(T, a), vsize, asize)
+   end
+
+   _fillv!(v, w, celldict, ids)
+
+   v
+end
+
+@inline function _readcell(::Type{T}, fid::IOStream, celldict::Dict{UInt, Int},
+   cid::Integer, offset::Int, dsize::Int, vsize::Int)::Array{T} where T
+   v = vsize == 1 ? Vector{T}(undef, 1) : Array{T,2}(undef, vsize, 1)
+   seek(fid, offset + (celldict[cid]-1)*vsize*dsize)
+   read!(fid, v)
+end
+
+@inline function _fillv!(v::Vector, w::AbstractArray, celldict::Dict{UInt, Int},
+   ids::Vector{<:Integer})
 
    for i in eachindex(ids)
       @inbounds v[i] = w[celldict[ids[i]]]
    end 
 end
 
-@inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt64, Int64},
-   ids::Vector{<:Integer}, vsize::Int)
+@inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt, Int},
+   ids::Vector{<:Integer})
 
-   for i in eachindex(ids), iv = 1:vsize
+   for i in eachindex(ids), iv in axes(v,1)
       @inbounds v[iv,i] = w[iv,celldict[ids[i]]]
    end 
 end

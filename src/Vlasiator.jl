@@ -41,13 +41,13 @@ export
    compute_flux_function, find_reconnection_points
 
 precompile(load, (String,))
-precompile(readvariable, (MetaVLSV, String, Vector{UInt64}))
-precompile(readvariable, (MetaVLSV, String, Int64))
+precompile(readvariable, (MetaVLSV, String, Vector{UInt}))
+precompile(readvariable, (MetaVLSV, String, Int))
 precompile(readvariable, (MetaVLSV, String))
-precompile(readvariable, (MetaVLSV, String, UnitRange{Int64}))
+precompile(readvariable, (MetaVLSV, String, UnitRange{Int}))
 precompile(readvariable, (MetaVLSV, String, Bool))
-precompile(readvcells, (MetaVLSV, Int64))
-precompile(readvcells, (MetaVLSV, UInt64))
+precompile(readvcells, (MetaVLSV, Int))
+precompile(readvcells, (MetaVLSV, UInt))
 precompile(readlog, (String,))
 precompile(readmesh, (IOStream, EzXML.Node, String, String))
 precompile(readparameter, (MetaVLSV, String))
@@ -65,7 +65,7 @@ precompile(hasparameter, (MetaVLSV, String))
 precompile(hasvariable, (MetaVLSV, String))
 precompile(prep2d, (MetaVLSV, String))
 precompile(set_args, (MetaVLSV, String, Vlasiator.AxisUnit))
-precompile(searchsorted, (Vector{UInt64}, Int64))
+precompile(searchsorted, (Vector{UInt}, Int))
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
