@@ -5,7 +5,6 @@ using StaticArrays: SVector, @SVector, SMatrix, @SMatrix
 using Printf: @sprintf
 using LinearAlgebra: ×, dot, ⋅, norm, normalize, normalize!
 using Statistics: mean
-using EzXML
 using Mmap: mmap
 using WriteVTK
 using LazyGrids: ndgrid
@@ -49,18 +48,13 @@ precompile(readvariable, (MetaVLSV, String, Bool))
 precompile(readvcells, (MetaVLSV, Int))
 precompile(readvcells, (MetaVLSV, UInt))
 precompile(readlog, (String,))
-precompile(readmesh, (IOStream, EzXML.Node, String, String))
 precompile(readparameter, (MetaVLSV, String))
-precompile(readparameter, (IOStream, EzXML.Node, String))
 precompile(readvariablemeta, (MetaVLSV, String))
-precompile(readvector, (IOStream, EzXML.Node, String, String))
 precompile(getcell, (MetaVLSV, Vector{Float64}))
-precompile(getObjInfo, (EzXML.Node, String, String, String))
 precompile(get_axis, (Vlasiator.PlotArgs,))
 precompile(getcellwithvdf, (MetaVLSV,))
 precompile(getdata2d, (MetaVLSV, String))
 precompile(getfooter, (IOStream,))
-precompile(hasname, (EzXML.Node, String, String))
 precompile(hasparameter, (MetaVLSV, String))
 precompile(hasvariable, (MetaVLSV, String))
 precompile(prep2d, (MetaVLSV, String))

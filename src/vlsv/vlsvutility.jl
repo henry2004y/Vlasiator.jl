@@ -876,8 +876,11 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    arraysize = similar(offset)
    vsize = similar(offset)
    @inbounds for i = 1:nv
-      T[i], offset[i], arraysize[i], _, vsize[i] =
-         getObjInfo(footer, vars[i], "VARIABLE", "name")
+      pattern = Regex("<VARIABLE\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*name=\"$(vars[i])\".*vectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</VARIABLE>")
+      m = match(pattern, footer)
+      offset[i] = parse(Int, m[:offset])
+      vsize[i] = parse(Int, m[:vsize])
+      T[i] = gettype(m)
    end
 
    Tout = copy(T)

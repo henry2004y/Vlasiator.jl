@@ -29,7 +29,7 @@ struct MetaVLSV
    dir::String
    name::String
    fid::IOStream
-   footer::EzXML.Node
+   footer::String
    variable::Vector{String}
    "mapping of unsorted cell ID to ordering"
    celldict::Dict{UInt, Int}
@@ -79,61 +79,9 @@ end
    # Obtain the offset of the XML footer
    offset = read(fid, UInt)
    seek(fid, offset)
-   footer = read(fid, String) |> parsexml |> root
+   footer = read(fid, String)
 end
 
-
-"Return size and type information for the inquired parameter/data with `name`."
-function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
-   local arraysize, datasize, datatype, vectorsize, variable_offset
-   isFound = false
-
-   for var in findall("//$tag", footer)
-      if var[attr] == String(name)
-         arraysize = parse(Int, var["arraysize"])
-         datasize = parse(Int, var["datasize"])
-         datatype = var["datatype"]
-         vectorsize = parse(Int, var["vectorsize"])
-         variable_offset = parse(Int, nodecontent(var))
-         isFound = true
-         break
-      end
-   end
-
-   isFound || throw(ArgumentError("unknown variable $name"))
-
-   T::Type =
-      if datatype == "float"
-         datasize == 4 ? Float32 : Float64
-      elseif datatype == "int"
-         datasize == 4 ? Int32 : Int
-      elseif datatype == "uint"
-         datasize == 4 ? UInt32 : UInt
-      end
-
-   T, variable_offset, arraysize, datasize, vectorsize
-end
-
-"Return vector of `name` from the VLSV file with `footer` associated with stream `fid`."
-function readvector(fid::IOStream, footer::EzXML.Node, name::String, tag::String)
-   T, offset, asize, dsize, vsize = getObjInfo(footer, name, tag, "name")
-
-   if Sys.total_memory() > 8*asize*vsize*dsize
-      w = vsize == 1 ?
-         Vector{T}(undef, asize) :
-         Array{T,2}(undef, vsize, asize)
-      seek(fid, offset)
-      read!(fid, w)
-   else
-      @warn "Large array detected. Using memory-mapped I/O!" maxlog=1
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      w = vsize == 1 ?
-         reinterpret(T, a) :
-         reshape(reinterpret(T, a), vsize, asize)
-   end
-
-   w
-end
 
 """
     load(file::AbstractString)) -> MetaVLSV
@@ -172,38 +120,23 @@ function load(file::AbstractString)
    vmin = [0.0, 0.0, 0.0]
    vmax = [1.0, 1.0, 1.0]
 
-   for varinfo in findall("//BLOCKIDS", footer)
+   # Only support VLSV 5.0+ file
+   pattern = r"<BLOCKIDS.*name=\"(?<name>.*?)\".*</BLOCKIDS>"
+   ms = eachmatch(pattern, footer)
 
-      if haskey(varinfo, "name")
-         # VLSV 5.0 file with bounding box
-         popname = varinfo["name"]
+   for m in ms
+      popname = m[:name]
 
-         vbox = readmesh(fid, footer, popname, "MESH_BBOX")::Vector{UInt}
-         nodeX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
-         nodeY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
-         nodeZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
+      vbox = readmesh(fid, footer, popname, "MESH_BBOX")::Vector{UInt}
+      nodeX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
+      nodeY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
+      nodeZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
 
-         vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
-         vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
-         vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
-         vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
-         dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
-      else
-         popname = "avgs"
-         # In VLSV before 5.0 the mesh is defined with parameters.
-         if "vxblocks_ini" in getindex.(findall("//PARAMETER", footer), "name")
-            vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
-            vmin_str = ("vxmin", "vymin", "vzmin")
-            vmax_str = ("vxmax", "vymax", "vzmax")
-            vblocks .= [readparameter(fid, footer, vblocks_str[i]) for i in 1:3]
-            vmin .= [readparameter(fid, footer, vmin_str[i]) for i in 1:3]
-            vmax .= [readparameter(fid, footer, vmax_str[i]) for i in 1:3]
-            dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
-         else
-            # No velocity space info, e.g., file not written by Vlasiator
-            dv = (1.0, 1.0, 1.0)
-         end
-      end
+      vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
+      vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
+      vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
+      vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
+      dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
 
       # Update list of active species
       if popname ∉ species
@@ -221,6 +154,7 @@ function load(file::AbstractString)
       meshes[popname] = popVMesh
    end
 
+
    if hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
       timesim = readparameter(fid, footer, "time")::Float64
    elseif hasname(footer, "PARAMETER", "t")
@@ -234,8 +168,9 @@ function load(file::AbstractString)
    # Obtain maximum refinement level
    maxamr = getmaxrefinement(cellid, ncells)
 
-   varinfo = findall("//VARIABLE", footer)
-   vars = [info["name"] for info in varinfo]
+   pattern = r"<VARIABLE.*name=\"(?<name>.*?)\".*</VARIABLE>"
+   m = eachmatch(pattern, footer)
+   vars = [mi[:name] for mi in m]
 
    hasvdf = let
       vcells = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
@@ -271,42 +206,97 @@ function getmaxrefinement(cellid::AbstractArray{UInt, 1}, ncells::NTuple{3, UInt
    maxamr
 end
 
+function gettype(m::RegexMatch)
+   T::Type =
+      if m[:dtype] == "float"
+         m[:dsize] == "4" ? Float32 : Float64
+      elseif m[:dtype] == "int"
+         m[:dsize] == "4" ? Int32 : Int
+      elseif m[:dtype] == "uint"
+         m[:dsize] == "4" ? UInt32 : UInt
+      end
+end
+
+function readparameter(fid::IOStream, footer::String, name::String)
+   pattern = Regex("<PARAMETER\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*)\"\\sname=\"$name\"\\svectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</PARAMETER>")
+
+   m = match(pattern, footer)
+   offset = parse(Int, m[:offset])
+
+   T = gettype(m)
+
+   seek(fid, offset)
+   p = read(fid, T)
+end
+
+"Return vector of `name` from the VLSV file with `footer` associated with stream `fid`."
+function readvector(fid::IOStream, footer::String, name::String, tag::String)
+   pattern = Regex("<$tag\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*name=\"$name\".*vectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</$tag>")
+
+   m = match(pattern, footer)
+   offset = parse(Int, m[:offset])
+   asize = parse(Int, m[:asize])
+   vsize = parse(Int, m[:vsize])
+   dsize = parse(Int, m[:dsize])
+   T = gettype(m)
+
+   if Sys.total_memory() > 8*asize*vsize*dsize
+      w = vsize == 1 ?
+         Vector{T}(undef, asize) :
+         Array{T,2}(undef, vsize, asize)
+      seek(fid, offset)
+      read!(fid, w)
+   else
+      @warn "Large array detected. Using memory-mapped I/O!" maxlog=1
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      w = vsize == 1 ?
+         reinterpret(T, a) :
+         reshape(reinterpret(T, a), vsize, asize)
+   end
+
+   w
+end
+
+"Return mesh related variable."
+function readmesh(fid::IOStream, footer::String, name::AbstractString, tag::String)
+   pattern = Regex("<$tag\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*mesh=\"$name\".*?>(?<offset>\\d*)</$tag>")
+
+   m = match(pattern, footer)
+   offset = parse(Int, m[:offset])
+   asize = parse(Int, m[:asize])
+   T = gettype(m)
+
+   w = Vector{T}(undef, asize)
+   seek(fid, offset)
+   read!(fid, w)
+
+   w
+end
+
 """
     readvariablemeta(meta, var) -> VarInfo
 
 Return VarInfo about `var` in the VLSV file associated with `meta`.
 """
-function readvariablemeta(meta::MetaVLSV, var::String)
-   varSym = isa(var, AbstractString) ? Symbol(var) : var
+function readvariablemeta(meta::MetaVLSV, name::String)
+   varSym = isa(name, AbstractString) ? Symbol(var) : var
 
    unit, unitLaTeX, variableLaTeX, unitConversion = "", "", "", ""
 
    if varSym in keys(units_predefined)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
    elseif hasvariable(meta, var) # For Vlasiator 5 files, MetaVLSV is included
-      for varinfo in findall("//VARIABLE", meta.footer)
-         if varinfo["name"] == var
-            haskey(varinfo, "unit") || break
-            unit = varinfo["unit"]
-            unitLaTeX = varinfo["unitLaTeX"]
-            variableLaTeX = varinfo["variableLaTeX"]
-            unitConversion = varinfo["unitConversion"]
-         end
+      pattern = Regex("<VARIABLE.*name=\"$name\"\\sunit=\"(?<unit>.*)\"\\sunitConversion=\"(?<unitConversion>.*)\"\\sunitLaTeX=\"(?<unitLaTeX>.*)\"\\svariableLaTeX=\"(?<variableLaTeX>.*)\".*>(?<offset>\\d*)</VARIABLE>")
+      m = match(pattern, meta.footer)
+      if !isnothing(m)
+         unit = m[:unit]
+         unitLaTeX = m[:unitLaTeX]
+         variableLaTeX = m[:variableLaTeX]
+         unitConversion = m[:unitConversion]
       end
    end
 
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
-end
-
-"Return mesh related variable."
-function readmesh(fid::IOStream, footer::EzXML.Node, typeMesh::String, varMesh::String)
-   T, offset, arraysize, _, _ = getObjInfo(footer, typeMesh, varMesh, "mesh")
-
-   w = Vector{T}(undef, arraysize)
-   seek(fid, offset)
-   read!(fid, w)
-
-   w
 end
 
 """
@@ -369,7 +359,13 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
    if (local nid = length(ids)) == 0
       v = readvariable(meta, var)
    else
-      T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      pattern = Regex("<VARIABLE\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*name=\"$var\".*vectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</VARIABLE>")
+      m = match(pattern, footer)
+      offset = parse(Int, m[:offset])
+      asize = parse(Int, m[:asize])
+      vsize = parse(Int, m[:vsize])
+      dsize = parse(Int, m[:dsize])
+      T = gettype(m)
 
       v = _readcells(T, fid, celldict, ids, nid, offset, asize, dsize, vsize)
 
@@ -395,7 +391,12 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
       return v
    end
 
-   T, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+   pattern = Regex("<VARIABLE.*datasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*name=\"$var\".*vectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</VARIABLE>")
+   m = match(pattern, footer)
+   offset = parse(Int, m[:offset])
+   vsize = parse(Int, m[:vsize])
+   dsize = parse(Int, m[:dsize])
+   T = gettype(m)
 
    v = _readcell(T, fid, celldict, cid, offset, dsize, vsize)
 
@@ -433,7 +434,7 @@ end
 
    for i in eachindex(ids)
       @inbounds v[i] = w[celldict[ids[i]]]
-   end 
+   end
 end
 
 @inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt, Int},
@@ -441,7 +442,7 @@ end
 
    for i in eachindex(ids), iv in axes(v,1)
       @inbounds v[iv,i] = w[iv,celldict[ids[i]]]
-   end 
+   end
 end
 
 function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
@@ -477,8 +478,13 @@ end
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
 
-@inline function getcellid(fid::IOStream, footer::EzXML.Node)
-   _, offset, asize, _, _ = getObjInfo(footer, "CellID", "VARIABLE", "name")
+@inline function getcellid(fid::IOStream, footer::String)
+   pattern = r"<VARIABLE\sarraysize=\"(?<asize>.*?)\".*name=\"CellID\".*?>(?<offset>\d*)</VARIABLE>"
+
+   m = match(pattern, footer)
+   offset = parse(Int, m[:offset])
+   asize = parse(Int, m[:asize])
+
    a = mmap(fid, Vector{UInt8}, 8*asize, offset)
    cellid = reinterpret(UInt, a)
 end
@@ -492,7 +498,10 @@ same grid structure.
 function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
    v = open(files[1], "r") do fid
       footer = getfooter(fid)
-      T, _, _, _, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      pattern = Regex("<VARIABLE\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*name=\"$var\".*vectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</VARIABLE>")
+      m = match(pattern, footer)
+      vsize = parse(Int, m[:vsize])
+      T = gettype(m)
       Array{T,2}(undef, vsize, length(files))
    end
 
@@ -501,7 +510,11 @@ function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
       footer = getfooter(fid)
       cellid = getcellid(fid, footer)
       c_ = findfirst(isequal(cid), cellid)
-      _, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      pattern = Regex("<VARIABLE\\sarraysize=\"(?<asize>.*)\"\\sdatasize=\"(?<dsize>.*)\"\\sdatatype=\"(?<dtype>.*?)\".*name=\"$var\".*vectorsize=\"(?<vsize>.*)\".*>(?<offset>\\d*)</VARIABLE>")
+      m = match(pattern, footer)
+      offset = parse(Int, m[:offset])
+      vsize = parse(Int, m[:vsize])
+      dsize = parse(Int, m[:dsize])
       seek(fid, offset + (c_ - 1)*vsize*dsize)
       @views read!(fid, v[:,i])
    end
@@ -592,12 +605,6 @@ Return the parameter value from the VLSV file associated with `meta`.
 """
 readparameter(meta::MetaVLSV, param::String) = readparameter(meta.fid, meta.footer, param)
 
-function readparameter(fid::IOStream, footer::EzXML.Node, param::String)
-   T, offset, _, _, _ = getObjInfo(footer, param, "PARAMETER", "name")
-   seek(fid, offset)
-   p = read(fid, T)
-end
-
 """
     hasparameter(meta::MetaVLSV, param::String) -> Bool
 
@@ -606,15 +613,12 @@ Check if the VLSV file contains a certain parameter `param`.
 hasparameter(meta::MetaVLSV, param::String) = hasname(meta.footer, "PARAMETER", param)
 
 "Check if the XML `element` contains a `tag` with `name`."
-function hasname(element::EzXML.Node, tag::String, name::String)
-   isFound = false
+function hasname(footer::String, tag::String, name::String)
+   pattern = Regex("<$tag.*name=\"$name\".*</$tag>")
 
-   for var in findall("//$tag", element)
-      var["name"] == name && (isFound = true)
-      isFound && break
-   end
+   m = match(pattern, footer)
 
-   isFound
+   !isnothing(m)
 end
 
 """
