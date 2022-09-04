@@ -839,11 +839,11 @@ end
 Get all the cell IDs with VDF saved associated with `meta`.
 """
 function getcellwithvdf(meta::MetaVLSV, species::String="proton")
-   (; fid, nodecellwithVDF, nodecellblocks) = meta
+   (; fid, nodeVLSV) = meta
 
    local cellsWithVDF::Vector{UInt}, nblock_C::Vector{UInt32}
 
-   for node in nodecellwithVDF
+   for node in nodeVLSV.cellwithVDF
       if node["name"] == species
          asize = parse(Int, node["arraysize"])
          cellsWithVDF = Vector{UInt}(undef, asize)
@@ -854,7 +854,7 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
       end
    end
 
-   for node in nodecellblocks
+   for node in nodeVLSV.cellblocks
       if node["name"] == species
          asize = parse(Int, node["arraysize"])
          dsize = parse(Int, node["datasize"])
@@ -891,7 +891,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 function fillmesh(meta::MetaVLSV, vars::Vector{String};
    skipghosttype::Bool=true, verbose::Bool=false)
 
-   (;maxamr, fid, nodevar, ncells, celldict) = meta
+   (;maxamr, fid, nodeVLSV, ncells, celldict) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
@@ -900,7 +900,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    arraysize = similar(offset)
    vsize = similar(offset)
    @inbounds for i = 1:nv
-      T[i], offset[i], arraysize[i], _, vsize[i] = getvarinfo(nodevar, vars[i])
+      T[i], offset[i], arraysize[i], _, vsize[i] = getvarinfo(nodeVLSV.var, vars[i])
    end
 
    Tout = copy(T)

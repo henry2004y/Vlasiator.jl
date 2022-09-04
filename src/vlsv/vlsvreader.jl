@@ -24,17 +24,21 @@ struct VarInfo
    unitConversion::String
 end
 
+struct NodeVLSV
+   var::Vector{EzXML.Node}
+   param::Vector{EzXML.Node}
+   cellwithVDF::Vector{EzXML.Node}
+   cellblocks::Vector{EzXML.Node}
+   blockvar::Vector{EzXML.Node}
+   blockid::Vector{EzXML.Node}
+end
+
 "VLSV meta data."
 struct MetaVLSV
    dir::String
    name::String
    fid::IOStream
-   nodevar::Vector{EzXML.Node}
-   nodeparam::Vector{EzXML.Node}
-   nodecellwithVDF::Vector{EzXML.Node}
-   nodecellblocks::Vector{EzXML.Node}
-   nodeblockvar::Vector{EzXML.Node}
-   nodeblockid::Vector{EzXML.Node}
+   nodeVLSV::NodeVLSV
    variable::Vector{String}
    "mapping of unsorted cell ID to ordering"
    celldict::Dict{UInt, Int}
@@ -207,7 +211,10 @@ function load(file::AbstractString)
    nodeblockvar = findall("//BLOCKVARIABLE", footer)
    nodeblockid = findall("//BLOCKIDS", footer)
 
-   cellid = getcellid(fid, nodevar)
+   n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
+      nodeblockid)
+
+   cellid = getcellid(fid, n.var)
 
    cellindex = sortperm(cellid)
 
@@ -225,7 +232,7 @@ function load(file::AbstractString)
    vmin = [0.0, 0.0, 0.0]
    vmax = [1.0, 1.0, 1.0]
 
-   for node in nodeblockid
+   for node in n.blockid
       if haskey(node, "name")
          # VLSV 5.0 file with bounding box
          popname = node["name"]
@@ -240,13 +247,13 @@ function load(file::AbstractString)
       else
          popname = "avgs"
          # In VLSV before 5.0 the mesh is defined with parameters.
-         if "vxblocks_ini" in getindex.(nodeparam, "name")
+         if "vxblocks_ini" in getindex.(n.param, "name")
             vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
             vmin_str = ("vxmin", "vymin", "vzmin")
             vmax_str = ("vxmax", "vymax", "vzmax")
-            vblocks .= [readparameter(fid, nodeparam, vblocks_str[i]) for i in 1:3]
-            vmin .= [readparameter(fid, nodeparam, vmin_str[i]) for i in 1:3]
-            vmax .= [readparameter(fid, nodeparam, vmax_str[i]) for i in 1:3]
+            vblocks .= [readparameter(fid, n.param, vblocks_str[i]) for i in 1:3]
+            vmin .= [readparameter(fid, n.param, vmin_str[i]) for i in 1:3]
+            vmax .= [readparameter(fid, n.param, vmax_str[i]) for i in 1:3]
             dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
          else
             error("File not written by Vlasiator!")
@@ -269,10 +276,10 @@ function load(file::AbstractString)
       meshes[popname] = popVMesh
    end
 
-   if hasname(nodeparam, "time") # Vlasiator 5.0+
-      timesim = readparameter(fid, nodeparam, "time")::Float64
-   elseif hasname(nodeparam, "t")
-      timesim = readparameter(fid, nodeparam, "t")::Float64
+   if hasname(n.param, "time") # Vlasiator 5.0+
+      timesim = readparameter(fid, n.param, "time")::Float64
+   elseif hasname(n.param, "t")
+      timesim = readparameter(fid, n.param, "t")::Float64
    else
       timesim = Inf
    end
@@ -282,16 +289,15 @@ function load(file::AbstractString)
    # Obtain maximum refinement level
    maxamr = getmaxrefinement(cellid, ncells)
 
-   vars = [node["name"] for node in nodevar]
+   vars = [node["name"] for node in n.var]
 
    hasvdf = let
-      nodecellwithVDF[1]["arraysize"] != "0"
+      n.cellwithVDF[1]["arraysize"] != "0"
    end
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(splitdir(file)..., fid, nodevar, nodeparam, nodecellwithVDF,
-      nodecellblocks, nodeblockvar, nodeblockid, vars, celldict, cellindex,
+   meta = MetaVLSV(splitdir(file)..., fid, n, vars, celldict, cellindex,
       timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
       dcoord, species, meshes)
 end
@@ -330,7 +336,7 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    if varSym in keys(units_predefined)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
    elseif hasvariable(meta, var) # For Vlasiator 5 files, MetaVLSV is included
-      for node in meta.nodevar
+      for node in meta.nodeVLSV.var
          if node["name"] == var
             haskey(node, "unit") || break
             unit = node["unit"]
@@ -428,13 +434,13 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 `sorted=true`, which means that for DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)::Array
-   (;fid, cellindex) = meta
+   (; cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta)
       return v
    end
 
-   raw = readvector(fid, meta.nodevar, var)
+   raw = readvector(meta.fid, meta.nodeVLSV.var, var)
 
    if startswith(var, "fg_") # fsgrid
       bbox = @. meta.ncells * 2^meta.maxamr
@@ -471,7 +477,6 @@ empty, return the whole sorted array of `var`.
 """
 function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, nodevar, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta, ids)
@@ -481,9 +486,9 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
    if (local nid = length(ids)) == 0
       v = readvariable(meta, var)
    else
-      T, offset, asize, dsize, vsize = getvarinfo(nodevar, var)
+      T, offset, asize, dsize, vsize = getvarinfo(meta.nodeVLSV.var, var)
 
-      v = _readcells(T, fid, celldict, ids, nid, offset, asize, dsize, vsize)
+      v = _readcells(T, meta.fid, meta.celldict, ids, nid, offset, asize, dsize, vsize)
 
       if T === Float64
          v = Float32.(v)
@@ -500,16 +505,15 @@ Read variable `var` in cell `cid` associated with `meta`.
 """
 function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, nodevar, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta, cid)
       return v
    end
 
-   T, offset, _, dsize, vsize = getvarinfo(nodevar, var)
+   T, offset, _, dsize, vsize = getvarinfo(meta.nodeVLSV.var, var)
 
-   v = _readcell(T, fid, celldict, cid, offset, dsize, vsize)
+   v = _readcell(T, meta.fid, meta.celldict, cid, offset, dsize, vsize)
 
    if T === Float64
       v = Float32.(v)
@@ -545,7 +549,7 @@ end
 
    for i in eachindex(ids)
       @inbounds v[i] = w[celldict[ids[i]]]
-   end 
+   end
 end
 
 @inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt, Int},
@@ -553,7 +557,7 @@ end
 
    for i in eachindex(ids), iv in axes(v,1)
       @inbounds v[iv,i] = w[iv,celldict[ids[i]]]
-   end 
+   end
 end
 
 function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
@@ -698,7 +702,8 @@ end
 
 Return the parameter value from the VLSV file associated with `meta`.
 """
-readparameter(meta::MetaVLSV, param::String) = readparameter(meta.fid, meta.nodeparam, param)
+readparameter(meta::MetaVLSV, param::String) =
+   readparameter(meta.fid, meta.nodeVLSV.param, param)
 
 function readparameter(fid::IOStream, nodeparam::Vector{EzXML.Node}, name::String)
    T, offset = getparaminfo(nodeparam, name)
@@ -711,14 +716,14 @@ end
 
 Check if the VLSV file contains a certain parameter `param`.
 """
-hasparameter(meta::MetaVLSV, param::String) = hasname(meta.nodeparam, param)
+hasparameter(meta::MetaVLSV, param::String) = hasname(meta.nodeVLSV.param, param)
 
 """
     hasvariable(meta::MetaVLSV, var::String) -> Bool
 
 Check if the VLSV file associated with `meta` contains a variable `var`.
 """
-hasvariable(meta::MetaVLSV, var::String) = hasname(meta.nodevar, var)
+hasvariable(meta::MetaVLSV, var::String) = hasname(meta.nodeVLSV.var, var)
 
 "Check if the XML `nodes` contain a node with `name`."
 function hasname(nodes::Vector{EzXML.Node}, name::String)
@@ -742,14 +747,14 @@ Read velocity cells of `species` from a spatial cell of ID `cid` associated with
 return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
 function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
-   (;fid, nodecellwithVDF, nodecellblocks, nodeblockvar, nodeblockid) = meta
+   (;fid, nodeVLSV) = meta
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)
 
    local offset_v::Int, nblocks::Int
 
    let cellsWithVDF, nblock_C
-      for node in nodecellwithVDF
+      for node in nodeVLSV.cellwithVDF
          if node["name"] == species
             asize = parse(Int, node["arraysize"])
             offset = parse(Int, nodecontent(node))
@@ -760,7 +765,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
          end
       end
 
-      for node in nodecellblocks
+      for node in nodeVLSV.cellblocks
          if node["name"] == species
             asize = parse(Int, node["arraysize"])
             dsize = parse(Int, node["datasize"])
@@ -788,7 +793,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
 
    local dsize, vsize, offset
    # Read in avgs
-   for node in nodeblockvar
+   for node in nodeVLSV.blockvar
       if node["name"] == species
          dsize = parse(Int, node["datasize"])
          vsize = parse(Int, node["vectorsize"])
@@ -804,7 +809,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    end
 
    # Read in block IDs
-   for node in nodeblockid
+   for node in nodeVLSV.blockid
       if node["name"] == species
          dsize = parse(Int, node["datasize"])
          offset = parse(Int, nodecontent(node))
