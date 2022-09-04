@@ -124,7 +124,7 @@ function getvarinfo(nodevar::Vector{EzXML.Node}, name::String)
    T, offset, arraysize, datasize, vectorsize
 end
 
-function getparameterinfo(nodeparam::Vector{EzXML.Node}, name::String)
+@inline function getparaminfo(nodeparam::Vector{EzXML.Node}, name::String)
    local datasize, datatype, offset
    isFound = false
 
@@ -701,7 +701,7 @@ Return the parameter value from the VLSV file associated with `meta`.
 readparameter(meta::MetaVLSV, param::String) = readparameter(meta.fid, meta.nodeparam, param)
 
 function readparameter(fid::IOStream, nodeparam::Vector{EzXML.Node}, name::String)
-   T, offset = getparameterinfo(nodeparam, name)
+   T, offset = getparaminfo(nodeparam, name)
    seek(fid, offset)
    p = read(fid, T)
 end
