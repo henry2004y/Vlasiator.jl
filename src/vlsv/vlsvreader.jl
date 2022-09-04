@@ -2,6 +2,9 @@
 
 include("vlsvvariables.jl")
 
+const NodeVector = SubArray{EzXML.Node, 1, Vector{EzXML.Node}, Tuple{UnitRange{Int64}},
+   true}
+
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
@@ -25,12 +28,12 @@ struct VarInfo
 end
 
 struct NodeVLSV
-   var::Vector{EzXML.Node}
-   param::Vector{EzXML.Node}
-   cellwithVDF::Vector{EzXML.Node}
-   cellblocks::Vector{EzXML.Node}
-   blockvar::Vector{EzXML.Node}
-   blockid::Vector{EzXML.Node}
+   var::NodeVector
+   param::NodeVector
+   cellwithVDF::NodeVector
+   cellblocks::NodeVector
+   blockvar::NodeVector
+   blockid::NodeVector
 end
 
 "VLSV meta data."
@@ -105,7 +108,7 @@ end
       end
 end
 
-function getvarinfo(nodevar::Vector{EzXML.Node}, name::String)
+function getvarinfo(nodevar::AbstractVector{EzXML.Node}, name::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
@@ -128,7 +131,7 @@ function getvarinfo(nodevar::Vector{EzXML.Node}, name::String)
    T, offset, arraysize, datasize, vectorsize
 end
 
-@inline function getparaminfo(nodeparam::Vector{EzXML.Node}, name::String)
+@inline function getparaminfo(nodeparam::NodeVector, name::String)
    local datasize, datatype, offset
    isFound = false
 
@@ -174,7 +177,7 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
 end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
-function readvector(fid::IOStream, nodevar::Vector{EzXML.Node}, name::String)
+function readvector(fid::IOStream, nodevar::NodeVector, name::String)
    T, offset, asize, dsize, vsize = getvarinfo(nodevar, name)
 
    if Sys.total_memory() > 8*asize*vsize*dsize
@@ -204,12 +207,49 @@ function load(file::AbstractString)
 
    footer = getfooter(fid)
 
-   nodevar = findall("//VARIABLE", footer)
-   nodeparam = findall("//PARAMETER", footer)
-   nodecellwithVDF = findall("//CELLSWITHBLOCKS", footer)
-   nodecellblocks = findall("//BLOCKSPERCELL", footer)
-   nodeblockvar = findall("//BLOCKVARIABLE", footer)
-   nodeblockid = findall("//BLOCKIDS", footer)
+   nodes = elements(footer)
+
+   ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
+   for i in eachindex(nodes)
+      if nodes[i].name == "VARIABLE"
+         if ibegin_[1] == 0 ibegin_[1] = i end
+      elseif nodes[i].name == "PARAMETER"
+         if ibegin_[2] == 0 ibegin_[2] = i end
+      elseif nodes[i].name == "CELLSWITHBLOCKS"
+         if ibegin_[3] == 0 ibegin_[3] = i end
+      elseif nodes[i].name == "BLOCKSPERCELL"
+         if ibegin_[4] == 0 ibegin_[4] = i end
+      elseif nodes[i].name == "BLOCKVARIABLE"
+         if ibegin_[5] == 0 ibegin_[5] = i end
+      elseif nodes[i].name == "BLOCKIDS"
+         if ibegin_[6] == 0 ibegin_[6] = i end
+      end
+   end
+
+   for i in Iterators.reverse(eachindex(nodes))
+      if nodes[i].name == "VARIABLE"
+         if iend_[1] == 0 iend_[1] = i end
+      elseif nodes[i].name == "PARAMETER"
+         if iend_[2] == 0 iend_[2] = i end
+      elseif nodes[i].name == "CELLSWITHBLOCKS"
+         if iend_[3] == 0 iend_[3] = i end
+      elseif nodes[i].name == "BLOCKSPERCELL"
+         if iend_[4] == 0 iend_[4] = i end
+      elseif nodes[i].name == "BLOCKVARIABLE"
+         if iend_[5] == 0 iend_[5] = i end
+      elseif nodes[i].name == "BLOCKIDS"
+         if iend_[6] == 0 iend_[6] = i end
+      end
+   end
+
+   @views begin 
+      nodevar = nodes[ibegin_[1]:iend_[1]]
+      nodeparam = nodes[ibegin_[2]:iend_[2]]
+      nodecellwithVDF = nodes[ibegin_[3]:iend_[3]]
+      nodecellblocks = nodes[ibegin_[4]:iend_[4]]
+      nodeblockvar = nodes[ibegin_[5]:iend_[5]]
+      nodeblockid = nodes[ibegin_[6]:iend_[6]]
+   end
 
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
       nodeblockid)
@@ -593,7 +633,7 @@ end
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
 
-@inline function getcellid(fid::IOStream, nodevar::Vector{EzXML.Node})
+@inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
    a = mmap(fid, Vector{UInt8}, 8*asize, offset)
    cellid = reinterpret(UInt, a)
@@ -705,7 +745,7 @@ Return the parameter value from the VLSV file associated with `meta`.
 readparameter(meta::MetaVLSV, param::String) =
    readparameter(meta.fid, meta.nodeVLSV.param, param)
 
-function readparameter(fid::IOStream, nodeparam::Vector{EzXML.Node}, name::String)
+function readparameter(fid::IOStream, nodeparam::NodeVector, name::String)
    T, offset = getparaminfo(nodeparam, name)
    seek(fid, offset)
    p = read(fid, T)
@@ -726,7 +766,7 @@ Check if the VLSV file associated with `meta` contains a variable `var`.
 hasvariable(meta::MetaVLSV, var::String) = hasname(meta.nodeVLSV.var, var)
 
 "Check if the XML `nodes` contain a node with `name`."
-function hasname(nodes::Vector{EzXML.Node}, name::String)
+function hasname(nodes::NodeVector, name::String)
    any(node -> node["name"] == name, nodes)
 end
 
