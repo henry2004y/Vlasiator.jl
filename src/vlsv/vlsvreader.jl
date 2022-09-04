@@ -29,7 +29,12 @@ struct MetaVLSV
    dir::String
    name::String
    fid::IOStream
-   footer::EzXML.Node
+   nodevar::Vector{EzXML.Node}
+   nodeparam::Vector{EzXML.Node}
+   nodecellwithVDF::Vector{EzXML.Node}
+   nodecellblocks::Vector{EzXML.Node}
+   nodeblockvar::Vector{EzXML.Node}
+   nodeblockid::Vector{EzXML.Node}
    variable::Vector{String}
    "mapping of unsorted cell ID to ordering"
    celldict::Dict{UInt, Int}
@@ -76,32 +81,14 @@ end
    # First 8 bytes indicate big-endian or else
    endian_offset = 8
    seek(fid, endian_offset)
-   # Obtain the offset of the XML footer
+   # Obtain the offset of the XML
    offset = read(fid, UInt)
    seek(fid, offset)
    footer = read(fid, String) |> parsexml |> root
 end
 
 
-"Return size and type information for the inquired parameter/data with `name`."
-function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
-   local arraysize, datasize, datatype, vectorsize, variable_offset
-   isFound = false
-
-   for var in findall("//$tag", footer)
-      if var[attr] == String(name)
-         arraysize = parse(Int, var["arraysize"])
-         datasize = parse(Int, var["datasize"])
-         datatype = var["datatype"]
-         vectorsize = parse(Int, var["vectorsize"])
-         variable_offset = parse(Int, nodecontent(var))
-         isFound = true
-         break
-      end
-   end
-
-   isFound || throw(ArgumentError("unknown variable $name"))
-
+@inline function getdatatype(datatype::String, datasize::Int)
    T::Type =
       if datatype == "float"
          datasize == 4 ? Float32 : Float64
@@ -109,14 +96,82 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
          datasize == 4 ? Int32 : Int
       elseif datatype == "uint"
          datasize == 4 ? UInt32 : UInt
+      else
+         throw(ArgumentError("unknown type $datatype"))
       end
-
-   T, variable_offset, arraysize, datasize, vectorsize
 end
 
-"Return vector of `name` from the VLSV file with `footer` associated with stream `fid`."
-function readvector(fid::IOStream, footer::EzXML.Node, name::String, tag::String)
-   T, offset, asize, dsize, vsize = getObjInfo(footer, name, tag, "name")
+function getvarinfo(nodevar::Vector{EzXML.Node}, name::String)
+   local arraysize, datasize, datatype, vectorsize, offset
+   isFound = false
+
+   for var in nodevar
+      if var["name"] == name
+         arraysize = parse(Int, var["arraysize"])
+         datasize = parse(Int, var["datasize"])
+         datatype = var["datatype"]
+         vectorsize = parse(Int, var["vectorsize"])
+         offset = parse(Int, nodecontent(var))
+         isFound = true
+         break
+      end
+   end
+
+   isFound || throw(ArgumentError("unknown variable $name"))
+
+   T = getdatatype(datatype, datasize)
+
+   T, offset, arraysize, datasize, vectorsize
+end
+
+function getparameterinfo(nodeparam::Vector{EzXML.Node}, name::String)
+   local datasize, datatype, offset
+   isFound = false
+
+   for p in nodeparam
+      if p["name"] == name
+         datasize = parse(Int, p["datasize"])
+         datatype = p["datatype"]
+         offset = parse(Int, nodecontent(p))
+         isFound = true
+         break
+      end
+   end
+
+   isFound || throw(ArgumentError("unknown variable $name"))
+
+   T = getdatatype(datatype, datasize)
+
+   T, offset
+end
+
+"General inquiry of element `tag` with `name` and `attr`."
+function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
+   local arraysize, datasize, datatype, vectorsize, offset
+   isFound = false
+
+   for var in findall("//$tag", footer)
+      if var[attr] == name
+         arraysize = parse(Int, var["arraysize"])
+         datasize = parse(Int, var["datasize"])
+         datatype = var["datatype"]
+         vectorsize = parse(Int, var["vectorsize"])
+         offset = parse(Int, nodecontent(var))
+         isFound = true
+         break
+      end
+   end
+
+   isFound || throw(ArgumentError("unknown variable $name"))
+
+   T = getdatatype(datatype, datasize)
+
+   T, offset, arraysize, datasize, vectorsize
+end
+
+"Return vector of `name` from the VLSV file associated with stream `fid`."
+function readvector(fid::IOStream, nodevar::Vector{EzXML.Node}, name::String)
+   T, offset, asize, dsize, vsize = getvarinfo(nodevar, name)
 
    if Sys.total_memory() > 8*asize*vsize*dsize
       w = vsize == 1 ?
@@ -145,20 +200,18 @@ function load(file::AbstractString)
 
    footer = getfooter(fid)
 
-   cellid = getcellid(fid, footer)
+   nodevar = findall("//VARIABLE", footer)
+   nodeparam = findall("//PARAMETER", footer)
+   nodecellwithVDF = findall("//CELLSWITHBLOCKS", footer)
+   nodecellblocks = findall("//BLOCKSPERCELL", footer)
+   nodeblockvar = findall("//BLOCKVARIABLE", footer)
+   nodeblockid = findall("//BLOCKIDS", footer)
+
+   cellid = getcellid(fid, nodevar)
 
    cellindex = sortperm(cellid)
 
-   bbox = readmesh(fid, footer, "SpatialGrid", "MESH_BBOX")::Vector{UInt}
-
-   nodeX = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_X")::Vector{Float64}
-   nodeY = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Y")::Vector{Float64}
-   nodeZ = readmesh(fid, footer, "SpatialGrid", "MESH_NODE_CRDS_Z")::Vector{Float64}
-
-   @inbounds ncells = (bbox[1], bbox[2], bbox[3])
-   @inbounds block_size = (bbox[4], bbox[5], bbox[6])
-   @inbounds coordmin = (nodeX[begin], nodeY[begin], nodeZ[begin])
-   @inbounds coordmax = (nodeX[end], nodeY[end], nodeZ[end])
+   ncells, block_size, coordmin, coordmax = readmesh(fid, footer)
 
    dcoord = ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
@@ -172,16 +225,12 @@ function load(file::AbstractString)
    vmin = [0.0, 0.0, 0.0]
    vmax = [1.0, 1.0, 1.0]
 
-   for varinfo in findall("//BLOCKIDS", footer)
-
-      if haskey(varinfo, "name")
+   for node in nodeblockid
+      if haskey(node, "name")
          # VLSV 5.0 file with bounding box
-         popname = varinfo["name"]
+         popname = node["name"]
 
-         vbox = readmesh(fid, footer, popname, "MESH_BBOX")::Vector{UInt}
-         nodeX = readmesh(fid, footer, popname, "MESH_NODE_CRDS_X")::Vector{Float64}
-         nodeY = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Y")::Vector{Float64}
-         nodeZ = readmesh(fid, footer, popname, "MESH_NODE_CRDS_Z")::Vector{Float64}
+         vbox, nodeX, nodeY, nodeZ = readvmesh(fid, footer, popname)
 
          vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
          vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
@@ -191,17 +240,16 @@ function load(file::AbstractString)
       else
          popname = "avgs"
          # In VLSV before 5.0 the mesh is defined with parameters.
-         if "vxblocks_ini" in getindex.(findall("//PARAMETER", footer), "name")
+         if "vxblocks_ini" in getindex.(nodeparam, "name")
             vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
             vmin_str = ("vxmin", "vymin", "vzmin")
             vmax_str = ("vxmax", "vymax", "vzmax")
-            vblocks .= [readparameter(fid, footer, vblocks_str[i]) for i in 1:3]
-            vmin .= [readparameter(fid, footer, vmin_str[i]) for i in 1:3]
-            vmax .= [readparameter(fid, footer, vmax_str[i]) for i in 1:3]
+            vblocks .= [readparameter(fid, nodeparam, vblocks_str[i]) for i in 1:3]
+            vmin .= [readparameter(fid, nodeparam, vmin_str[i]) for i in 1:3]
+            vmax .= [readparameter(fid, nodeparam, vmax_str[i]) for i in 1:3]
             dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
          else
-            # No velocity space info, e.g., file not written by Vlasiator
-            dv = (1.0, 1.0, 1.0)
+            error("File not written by Vlasiator!")
          end
       end
 
@@ -221,10 +269,10 @@ function load(file::AbstractString)
       meshes[popname] = popVMesh
    end
 
-   if hasname(footer, "PARAMETER", "time") # Vlasiator 5.0+
-      timesim = readparameter(fid, footer, "time")::Float64
-   elseif hasname(footer, "PARAMETER", "t")
-      timesim = readparameter(fid, footer, "t")::Float64
+   if hasname(nodeparam, "time") # Vlasiator 5.0+
+      timesim = readparameter(fid, nodeparam, "time")::Float64
+   elseif hasname(nodeparam, "t")
+      timesim = readparameter(fid, nodeparam, "t")::Float64
    else
       timesim = Inf
    end
@@ -234,17 +282,16 @@ function load(file::AbstractString)
    # Obtain maximum refinement level
    maxamr = getmaxrefinement(cellid, ncells)
 
-   varinfo = findall("//VARIABLE", footer)
-   vars = [info["name"] for info in varinfo]
+   vars = [node["name"] for node in nodevar]
 
    hasvdf = let
-      vcells = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
-      !isempty(vcells)
+      nodecellwithVDF[1]["arraysize"] != "0"
    end
 
    # File IOstream is not closed for sake of data processing later.
 
-   meta = MetaVLSV(splitdir(file)..., fid, footer, vars, celldict, cellindex,
+   meta = MetaVLSV(splitdir(file)..., fid, nodevar, nodeparam, nodecellwithVDF,
+      nodecellblocks, nodeblockvar, nodeblockid, vars, celldict, cellindex,
       timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
       dcoord, species, meshes)
 end
@@ -260,7 +307,6 @@ function load(f::Function, file::AbstractString)
 end
 
 function getmaxrefinement(cellid::AbstractArray{UInt, 1}, ncells::NTuple{3, UInt})
-
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
    while @inbounds cid < maximum(cellid)
@@ -284,13 +330,13 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    if varSym in keys(units_predefined)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
    elseif hasvariable(meta, var) # For Vlasiator 5 files, MetaVLSV is included
-      for varinfo in findall("//VARIABLE", meta.footer)
-         if varinfo["name"] == var
-            haskey(varinfo, "unit") || break
-            unit = varinfo["unit"]
-            unitLaTeX = varinfo["unitLaTeX"]
-            variableLaTeX = varinfo["variableLaTeX"]
-            unitConversion = varinfo["unitConversion"]
+      for node in meta.nodevar
+         if node["name"] == var
+            haskey(node, "unit") || break
+            unit = node["unit"]
+            unitLaTeX = node["unitLaTeX"]
+            variableLaTeX = node["variableLaTeX"]
+            unitConversion = node["unitConversion"]
          end
       end
    end
@@ -298,15 +344,81 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
-"Return mesh related variable."
-function readmesh(fid::IOStream, footer::EzXML.Node, typeMesh::String, varMesh::String)
-   T, offset, arraysize, _, _ = getObjInfo(footer, typeMesh, varMesh, "mesh")
+@inline function readcoords(fid::IOStream ,footer::EzXML.Node, qstring::String)
+   node = findfirst(qstring, footer)
 
-   w = Vector{T}(undef, arraysize)
+   arraysize = parse(Int, node["arraysize"])
+   offset = parse(Int, nodecontent(node))
+
+   # Warning: it may be Float32 in Vlasiator
+   coord = Vector{Float64}(undef, arraysize)
    seek(fid, offset)
-   read!(fid, w)
+   read!(fid, coord)
 
-   w
+   coord
+end
+
+function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring::String)
+   local coord
+   nodes = findall(qstring, footer)
+
+   for i in eachindex(nodes)[3:end]
+      if nodes[i]["mesh"] == species
+         arraysize = parse(Int, nodes[i]["arraysize"])
+         offset = parse(Int, nodecontent(nodes[i]))
+         # Warning: it may be Float32 in Vlasiator
+         coord = Vector{Float64}(undef, arraysize)
+         seek(fid, offset)
+         read!(fid, coord)
+         break
+      end
+   end
+
+   coord
+end
+
+"Return spatial mesh information."
+function readmesh(fid::IOStream, footer::EzXML.Node)
+   # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
+   node = findfirst("//MESH_BBOX", footer)
+   offset = parse(Int, nodecontent(node))
+
+   bbox = Vector{UInt}(undef, 6)
+   seek(fid, offset)
+   read!(fid, bbox)
+
+   nodeX = readcoords(fid, footer, "//MESH_NODE_CRDS_X")
+   nodeY = readcoords(fid, footer, "//MESH_NODE_CRDS_Y")
+   nodeZ = readcoords(fid, footer, "//MESH_NODE_CRDS_Z")
+
+   @inbounds ncells = (bbox[1], bbox[2], bbox[3])
+   @inbounds block_size = (bbox[4], bbox[5], bbox[6])
+   @inbounds coordmin = (nodeX[begin], nodeY[begin], nodeZ[begin])
+   @inbounds coordmax = (nodeX[end], nodeY[end], nodeZ[end])
+
+   ncells, block_size, coordmin, coordmax
+end
+
+"Return velocity mesh information."
+function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
+   nodes = findall("//MESH_BBOX", footer)
+
+   bbox = Vector{UInt}(undef, 6)
+
+   for i in eachindex(nodes)[3:end]
+      if nodes[i]["mesh"] == species
+         offset = parse(Int, nodecontent(nodes[i]))
+         seek(fid, offset)
+         read!(fid, bbox)
+         break
+      end
+   end
+
+   nodeX = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_X")
+   nodeY = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_Y")
+   nodeZ = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_Z")
+
+   bbox, nodeX, nodeY, nodeZ
 end
 
 """
@@ -316,16 +428,16 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 `sorted=true`, which means that for DCCRG grid the variables are sorted by cell ID.
 """
 function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)::Array
-   (;fid, footer, cellindex) = meta
+   (;fid, cellindex) = meta
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta)
       return v
    end
 
-   raw = readvector(fid, footer, var, "VARIABLE")
+   raw = readvector(fid, meta.nodevar, var)
 
    if startswith(var, "fg_") # fsgrid
-      bbox = readmesh(fid, footer, "fsgrid", "MESH_BBOX")::Vector{Int}
+      bbox = @. meta.ncells * 2^meta.maxamr
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
@@ -359,7 +471,7 @@ empty, return the whole sorted array of `var`.
 """
 function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, footer, celldict) = meta
+   (;fid, nodevar, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta, ids)
@@ -369,7 +481,7 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
    if (local nid = length(ids)) == 0
       v = readvariable(meta, var)
    else
-      T, offset, asize, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      T, offset, asize, dsize, vsize = getvarinfo(nodevar, var)
 
       v = _readcells(T, fid, celldict, ids, nid, offset, asize, dsize, vsize)
 
@@ -388,14 +500,14 @@ Read variable `var` in cell `cid` associated with `meta`.
 """
 function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
-   (;fid, footer, celldict) = meta
+   (;fid, nodevar, celldict) = meta
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta, cid)
       return v
    end
 
-   T, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+   T, offset, _, dsize, vsize = getvarinfo(nodevar, var)
 
    v = _readcell(T, fid, celldict, cid, offset, dsize, vsize)
 
@@ -477,8 +589,8 @@ end
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
 
-@inline function getcellid(fid::IOStream, footer::EzXML.Node)
-   _, offset, asize, _, _ = getObjInfo(footer, "CellID", "VARIABLE", "name")
+@inline function getcellid(fid::IOStream, nodevar::Vector{EzXML.Node})
+   _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
    a = mmap(fid, Vector{UInt8}, 8*asize, offset)
    cellid = reinterpret(UInt, a)
 end
@@ -492,16 +604,19 @@ same grid structure.
 function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
    v = open(files[1], "r") do fid
       footer = getfooter(fid)
-      T, _, _, _, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      nodevar = findall("//VARIABLE", footer)
+      T, _, _, _, vsize = getvarinfo(nodevar, var)
+
       Array{T,2}(undef, vsize, length(files))
    end
 
    for i in eachindex(files)
       fid = open(files[i], "r")
       footer = getfooter(fid)
-      cellid = getcellid(fid, footer)
+      nodevar = findall("//VARIABLE", footer)
+      cellid = getcellid(fid, nodevar)
       c_ = findfirst(isequal(cid), cellid)
-      _, offset, _, dsize, vsize = getObjInfo(footer, var, "VARIABLE", "name")
+      _, offset, _, dsize, vsize = getvarinfo(nodevar, var)
       seek(fid, offset + (c_ - 1)*vsize*dsize)
       @views read!(fid, v[:,i])
    end
@@ -579,21 +694,14 @@ function calcLocalSize(globalCells, nprocs, lcells)
 end
 
 """
-    hasvariable(meta::MetaVLSV, var::String) -> Bool
-
-Check if the VLSV file associated with `meta` contains a variable `var`.
-"""
-hasvariable(meta::MetaVLSV, var::String) = hasname(meta.footer, "VARIABLE", var)
-
-"""
     readparameter(meta::MetaVLSV, param::String)
 
 Return the parameter value from the VLSV file associated with `meta`.
 """
-readparameter(meta::MetaVLSV, param::String) = readparameter(meta.fid, meta.footer, param)
+readparameter(meta::MetaVLSV, param::String) = readparameter(meta.fid, meta.nodeparam, param)
 
-function readparameter(fid::IOStream, footer::EzXML.Node, param::String)
-   T, offset, _, _, _ = getObjInfo(footer, param, "PARAMETER", "name")
+function readparameter(fid::IOStream, nodeparam::Vector{EzXML.Node}, name::String)
+   T, offset = getparameterinfo(nodeparam, name)
    seek(fid, offset)
    p = read(fid, T)
 end
@@ -603,18 +711,18 @@ end
 
 Check if the VLSV file contains a certain parameter `param`.
 """
-hasparameter(meta::MetaVLSV, param::String) = hasname(meta.footer, "PARAMETER", param)
+hasparameter(meta::MetaVLSV, param::String) = hasname(meta.nodeparam, param)
 
-"Check if the XML `element` contains a `tag` with `name`."
-function hasname(element::EzXML.Node, tag::String, name::String)
-   isFound = false
+"""
+    hasvariable(meta::MetaVLSV, var::String) -> Bool
 
-   for var in findall("//$tag", element)
-      var["name"] == name && (isFound = true)
-      isFound && break
-   end
+Check if the VLSV file associated with `meta` contains a variable `var`.
+"""
+hasvariable(meta::MetaVLSV, var::String) = hasname(meta.nodevar, var)
 
-   isFound
+"Check if the XML `nodes` contain a node with `name`."
+function hasname(nodes::Vector{EzXML.Node}, name::String)
+   any(node -> node["name"] == name, nodes)
 end
 
 """
@@ -634,13 +742,36 @@ Read velocity cells of `species` from a spatial cell of ID `cid` associated with
 return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
 function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
-   (;fid, footer) = meta
+   (;fid, nodecellwithVDF, nodecellblocks, nodeblockvar, nodeblockid) = meta
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)
 
-   local offset::Int, nblocks::Int
-   let cellsWithVDF = readvector(fid, footer, species, "CELLSWITHBLOCKS"),
-      nblock_C = readvector(fid, footer, species, "BLOCKSPERCELL")::Vector{UInt32}
+   local offset_v::Int, nblocks::Int
+
+   let cellsWithVDF, nblock_C
+      for node in nodecellwithVDF
+         if node["name"] == species
+            asize = parse(Int, node["arraysize"])
+            offset = parse(Int, nodecontent(node))
+            cellsWithVDF = Vector{UInt}(undef, asize)
+            seek(fid, offset)
+            read!(fid, cellsWithVDF)
+            break
+         end
+      end
+
+      for node in nodecellblocks
+         if node["name"] == species
+            asize = parse(Int, node["arraysize"])
+            dsize = parse(Int, node["datasize"])
+            offset = parse(Int, nodecontent(node))
+            nblock_C = dsize == 4 ?
+               Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
+            seek(fid, offset)
+            read!(fid, nblock_C)
+            break
+         end
+      end
 
       cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
       if !isnothing(cellWithVDFIndex)
@@ -652,38 +783,39 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
          throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
       end
       # Offset position to vcell storage
-      offset = sum(@view nblock_C[1:cellWithVDFIndex-1])
+      offset_v = sum(@view nblock_C[1:cellWithVDFIndex-1])
    end
 
-   local datasize, datatype, vectorsize, variable_offset
+   local dsize, vsize, offset
    # Read in avgs
-   let varinfo = findfirst("//BLOCKVARIABLE", footer)
-      datasize = parse(Int, varinfo["datasize"])
-      datatype = varinfo["datatype"]
-      datatype == "float" || @error "VDFs must be floating numbers!"
-      vectorsize = parse(Int, varinfo["vectorsize"])
-      variable_offset = parse(Int, nodecontent(varinfo))
+   for node in nodeblockvar
+      if node["name"] == species
+         dsize = parse(Int, node["datasize"])
+         vsize = parse(Int, node["vectorsize"])
+         offset = parse(Int, nodecontent(node))
+         break
+      end
    end
 
    data = let
-      Tavg = datasize == 4 ? Float32 : Float64
-      a = mmap(fid, Vector{UInt8}, datasize*vectorsize*nblocks,
-         offset*vectorsize*datasize + variable_offset)
-      reshape(reinterpret(Tavg, a), vectorsize, nblocks)
+      Tavg = dsize == 4 ? Float32 : Float64
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*nblocks, offset_v*vsize*dsize + offset)
+      reshape(reinterpret(Tavg, a), vsize, nblocks)
    end
 
    # Read in block IDs
-   let varinfo = findfirst("//BLOCKIDS", footer)
-      datasize = parse(Int, varinfo["datasize"])
-      datatype = varinfo["datatype"]
-      datatype == "uint" || @error "Block ID must be unsigned integer!"
-      variable_offset = parse(Int, nodecontent(varinfo))
+   for node in nodeblockid
+      if node["name"] == species
+         dsize = parse(Int, node["datasize"])
+         offset = parse(Int, nodecontent(node))
+         break
+      end
    end
 
-   blockIDs = let T = datasize == 4 ? UInt32 : UInt
+   blockIDs = let T = dsize == 4 ? UInt32 : UInt
       Vector{T}(undef, nblocks)
    end
-   seek(fid, offset * datasize + variable_offset)
+   seek(fid, offset_v*dsize + offset)
    read!(fid, blockIDs)
 
    # Velocity cell IDs and distributions (ordered by blocks)

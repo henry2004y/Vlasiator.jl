@@ -45,6 +45,11 @@ end
 
    if group in (:read, :all)
       @testset "Reading files" begin
+         _, offset, _, _, _ = let footer = Vlasiator.getfooter(meta1.fid)
+            Vlasiator.getObjInfo(footer, "time", "PARAMETER", "name")
+         end
+         @test offset == 264
+
          @test_throws SystemError load("nonsense")
          meta = meta1
          @test ndims(meta) == 1

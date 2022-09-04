@@ -834,14 +834,38 @@ function getnearestcellwithvdf(meta::MetaVLSV, id::Integer)
 end
 
 """
-    getcellwithvdf(meta) -> cellids
+    getcellwithvdf(meta, species::String="proton") -> cellids
 
 Get all the cell IDs with VDF saved associated with `meta`.
 """
-function getcellwithvdf(meta::MetaVLSV)
-   fid, footer = meta.fid, meta.footer
-   cellsWithVDF = readmesh(fid, footer, "SpatialGrid", "CELLSWITHBLOCKS")::Vector{UInt}
-   nblock_C = readmesh(fid, footer, "SpatialGrid", "BLOCKSPERCELL")::Vector{UInt32}
+function getcellwithvdf(meta::MetaVLSV, species::String="proton")
+   (; fid, nodecellwithVDF, nodecellblocks) = meta
+
+   local cellsWithVDF::Vector{UInt}, nblock_C::Vector{UInt32}
+
+   for node in nodecellwithVDF
+      if node["name"] == species
+         asize = parse(Int, node["arraysize"])
+         cellsWithVDF = Vector{UInt}(undef, asize)
+         offset = parse(Int, nodecontent(node))
+         seek(fid, offset)
+         read!(fid, cellsWithVDF)
+         break
+      end
+   end
+
+   for node in nodecellblocks
+      if node["name"] == species
+         asize = parse(Int, node["arraysize"])
+         dsize = parse(Int, node["datasize"])
+         offset = parse(Int, nodecontent(node))
+         nblock_C = dsize == 4 ?
+            Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
+         seek(fid, offset)
+         read!(fid, nblock_C)
+         break
+      end
+   end
 
    innerBCCells = findall(==(0), nblock_C)
 
@@ -867,7 +891,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 function fillmesh(meta::MetaVLSV, vars::Vector{String};
    skipghosttype::Bool=true, verbose::Bool=false)
 
-   (;maxamr, fid, footer, ncells, celldict) = meta
+   (;maxamr, fid, nodevar, ncells, celldict) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
@@ -876,8 +900,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    arraysize = similar(offset)
    vsize = similar(offset)
    @inbounds for i = 1:nv
-      T[i], offset[i], arraysize[i], _, vsize[i] =
-         getObjInfo(footer, vars[i], "VARIABLE", "name")
+      T[i], offset[i], arraysize[i], _, vsize[i] = getvarinfo(nodevar, vars[i])
    end
 
    Tout = copy(T)
