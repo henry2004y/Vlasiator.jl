@@ -210,35 +210,26 @@ function load(file::AbstractString)
    nodes = elements(footer)
 
    ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
+
    for i in eachindex(nodes)
       if nodes[i].name == "VARIABLE"
          if ibegin_[1] == 0 ibegin_[1] = i end
+         iend_[1] = i
       elseif nodes[i].name == "PARAMETER"
          if ibegin_[2] == 0 ibegin_[2] = i end
+         iend_[2] = i
       elseif nodes[i].name == "CELLSWITHBLOCKS"
          if ibegin_[3] == 0 ibegin_[3] = i end
+         iend_[3] = i
       elseif nodes[i].name == "BLOCKSPERCELL"
          if ibegin_[4] == 0 ibegin_[4] = i end
+         iend_[4] = i
       elseif nodes[i].name == "BLOCKVARIABLE"
          if ibegin_[5] == 0 ibegin_[5] = i end
+         iend_[5] = i
       elseif nodes[i].name == "BLOCKIDS"
          if ibegin_[6] == 0 ibegin_[6] = i end
-      end
-   end
-
-   for i in Iterators.reverse(eachindex(nodes))
-      if nodes[i].name == "VARIABLE"
-         if iend_[1] == 0 iend_[1] = i end
-      elseif nodes[i].name == "PARAMETER"
-         if iend_[2] == 0 iend_[2] = i end
-      elseif nodes[i].name == "CELLSWITHBLOCKS"
-         if iend_[3] == 0 iend_[3] = i end
-      elseif nodes[i].name == "BLOCKSPERCELL"
-         if iend_[4] == 0 iend_[4] = i end
-      elseif nodes[i].name == "BLOCKVARIABLE"
-         if iend_[5] == 0 iend_[5] = i end
-      elseif nodes[i].name == "BLOCKIDS"
-         if iend_[6] == 0 iend_[6] = i end
+         iend_[6] = i
       end
    end
 
