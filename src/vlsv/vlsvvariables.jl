@@ -378,7 +378,7 @@ const variables_predefined = Dict(
    :IonInertial => function (meta, ids=UInt[])
       n = readvariable(meta, "n", ids)
       Z = 1
-      fi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ / 2π
+      fi = @. √(n/(mᵢ*μ₀)) * Z * qᵢ
       di = @. c / fi
       di::Vector{Float64}
    end,
