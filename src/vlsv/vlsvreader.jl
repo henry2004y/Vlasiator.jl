@@ -177,17 +177,16 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
 end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
-function readvector(fid::IOStream, nodevar::NodeVector, name::String)
+function readvector(fid::IOStream, nodevar::NodeVector, name::String, usemmap::Bool=false)
    T, offset, asize, dsize, vsize = getvarinfo(nodevar, name)
 
-   if Sys.total_memory() > 8*asize*vsize*dsize
+   if !usemmap
       w = vsize == 1 ?
          Vector{T}(undef, asize) :
          Array{T,2}(undef, vsize, asize)
       seek(fid, offset)
       read!(fid, w)
    else
-      @warn "Large array detected. Using memory-mapped I/O!" maxlog=1
       a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
       w = vsize == 1 ?
          reinterpret(T, a) :
@@ -233,7 +232,7 @@ function load(file::AbstractString)
       end
    end
 
-   @views begin 
+   @views begin
       nodevar = nodes[ibegin_[1]:iend_[1]]
       nodeparam = nodes[ibegin_[2]:iend_[2]]
       nodecellwithVDF = nodes[ibegin_[3]:iend_[3]]
@@ -459,19 +458,19 @@ function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
 end
 
 """
-    readvariable(meta::MetaVLSV, var::String, sorted::Bool=true) -> Array
+    readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=false) -> Array
 
-Return variable value of `var` from the VLSV file associated with `meta`. By default
-`sorted=true`, which means that for DCCRG grid the variables are sorted by cell ID.
+Return variable value of `var` from the VLSV file associated with `meta`. By default for
+DCCRG variables are sorted by cell ID. `usemmap` decides whether to use memory-mapped IO,
+especially for large arrays.
 """
-function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)::Array
-   (; cellindex) = meta
+function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=false)
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta)
-      return v
+      return v::Array
    end
 
-   raw = readvector(meta.fid, meta.nodeVLSV.var, var)
+   raw = readvector(meta.fid, meta.nodeVLSV.var, var, usemmap)
 
    if startswith(var, "fg_") # fsgrid
       bbox = @. meta.ncells * 2^meta.maxamr
@@ -491,13 +490,13 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true)::Array
 
       v = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
-      @inbounds v = ndims(raw) == 1 ? raw[cellindex] : raw[:,cellindex]
+      @inbounds v = ndims(raw) == 1 ? raw[meta.cellindex] : raw[:,meta.cellindex]
       if eltype(v) == Float64; v = Float32.(v); end
-   else
+   else # dccrg grid
       v = raw
    end
 
-   return v
+   return v::Array
 end
 
 """
@@ -570,6 +569,7 @@ end
 
 @inline function _readcell(::Type{T}, fid::IOStream, celldict::Dict{UInt, Int},
    cid::Integer, offset::Int, dsize::Int, vsize::Int)::Array{T} where T
+
    v = vsize == 1 ? Vector{T}(undef, 1) : Array{T,2}(undef, vsize, 1)
    seek(fid, offset + (celldict[cid]-1)*vsize*dsize)
    read!(fid, v)
