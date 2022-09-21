@@ -77,8 +77,9 @@ end
          @test t == 10.0
          # unsorted ID
          @test readvariable(meta, "CellID", false) == 10:-1:1
-         indexRef = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-         @test meta.cellindex == indexRef
+         @test meta.cellindex == [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+         # unsorted ID + mmap
+         @test readvariable(meta, "CellID", false, true) == 10:-1:1
          # sorted var by default
          @test meta["vg_boundarytype"] == [4, 4, 1, 1, 1, 1, 1, 1, 3, 3]
          # ID finding (noAMR)

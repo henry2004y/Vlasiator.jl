@@ -193,7 +193,7 @@ function readvector(fid::IOStream, nodevar::NodeVector, name::String, usemmap::B
          reshape(reinterpret(T, a), vsize, asize)
    end
 
-   w
+   w::Union{Array, Base.ReinterpretArray}
 end
 
 """
@@ -496,7 +496,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       v = raw
    end
 
-   return v::Array
+   return v::Union{Array, Base.ReinterpretArray}
 end
 
 """
