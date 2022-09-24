@@ -177,9 +177,8 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
 end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
-function readvector(fid::IOStream, nodevar::NodeVector, name::String, usemmap::Bool=false)
-   T, offset, asize, dsize, vsize = getvarinfo(nodevar, name)
-
+function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
+   vsize::Int, usemmap::Bool=false) where T
    if !usemmap
       w = vsize == 1 ?
          Vector{T}(undef, asize) :
@@ -470,7 +469,8 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       return v::Array
    end
 
-   raw = readvector(meta.fid, meta.nodeVLSV.var, var, usemmap)
+   T, offset, asize, dsize, vsize = getvarinfo(meta.nodeVLSV.var, var)
+   raw = readvector(meta.fid, T, offset, asize, dsize, vsize, usemmap)
 
    if startswith(var, "fg_") # fsgrid
       bbox = @. meta.ncells * 2^meta.maxamr
@@ -486,7 +486,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
 
       @inbounds fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
 
-      _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
+      _fillFG!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
 
       v = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
@@ -575,23 +575,24 @@ end
    read!(fid, v)
 end
 
-@inline function _fillv!(v::Vector, w::AbstractArray, celldict::Dict{UInt, Int},
-   ids::Vector{<:Integer})
+@inline function _fillv!(v::Vector{T}, w::AbstractArray{T}, celldict::Dict{UInt, Int},
+   ids::Vector{<:Integer}) where T
 
    for i in eachindex(ids)
       @inbounds v[i] = w[celldict[ids[i]]]
    end
 end
 
-@inline function _fillv!(v::Array, w::AbstractArray, celldict::Dict{UInt, Int},
-   ids::Vector{<:Integer})
+@inline function _fillv!(v::Matrix{T}, w::AbstractArray{T}, celldict::Dict{UInt, Int},
+   ids::Vector{<:Integer}) where T
 
    for i in eachindex(ids), iv in axes(v,1)
       @inbounds v[iv,i] = w[iv,celldict[ids[i]]]
    end
 end
 
-function _fillFGordered!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
+function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
+   fgDecomposition::NTuple{3, Int}, nIORanks::Int32, bbox::NTuple{3, Int})
    offsetnow = 1
 
    @inbounds @views for i = 1:nIORanks
