@@ -193,7 +193,7 @@ function readvector(fid::IOStream, nodevar::NodeVector, name::String, usemmap::B
          reshape(reinterpret(T, a), vsize, asize)
    end
 
-   w::Union{Array, Base.ReinterpretArray}
+   w::Union{VecOrMat{T}, Base.ReinterpretArray{T}}
 end
 
 """
