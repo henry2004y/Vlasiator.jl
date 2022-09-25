@@ -46,12 +46,6 @@ export
    initfile = joinpath(@__DIR__, "../test/init.vlsv")
    @precompile_all_calls begin
       meta = load(initfile)
-      readvariable(meta, "CellID")
-      readvariable(meta, "proton/vg_v")
-      readvariable(meta, "fg_b")
-      readvariable(meta, "CellID", UInt(1))
-      readvariable(meta, "CellID", UInt[1])
-      getcell(meta, [1.0, 1.0, 1.0])
    end
 end
 
