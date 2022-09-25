@@ -178,7 +178,7 @@ end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
 @inline function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   usemmap::Bool=false) where T
+   usemmap::Bool=true) where T
    if !usemmap
       w = Vector{T}(undef, asize)
       seek(fid, offset)
@@ -191,7 +191,7 @@ end
 end
 
 @inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   vsize::Int, usemmap::Bool=false) where T
+   vsize::Int, usemmap::Bool=true) where T
    if !usemmap
       w = Array{T,2}(undef, vsize, asize)
       seek(fid, offset)
@@ -471,7 +471,7 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 DCCRG variables are sorted by cell ID. `usemmap` decides whether to use memory-mapped IO,
 especially for large arrays.
 """
-function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=false)
+function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=true)
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta)
       return v::Array
