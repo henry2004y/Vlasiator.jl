@@ -177,22 +177,30 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
 end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
-function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   vsize::Int, usemmap::Bool=false) where T
+@inline function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
+   usemmap::Bool=true) where T
    if !usemmap
-      w = vsize == 1 ?
-         Vector{T}(undef, asize) :
-         Array{T,2}(undef, vsize, asize)
+      w = Vector{T}(undef, asize)
       seek(fid, offset)
       read!(fid, w)
    else
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      w = vsize == 1 ?
-         reinterpret(T, a) :
-         reshape(reinterpret(T, a), vsize, asize)
+      w = mmap(fid, Vector{T}, asize, offset)
    end
 
-   w::Union{VecOrMat{T}, Base.ReinterpretArray{T}}
+   w::Vector{T}
+end
+
+@inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
+   vsize::Int, usemmap::Bool=true) where T
+   if !usemmap
+      w = Array{T,2}(undef, vsize, asize)
+      seek(fid, offset)
+      read!(fid, w)
+   else
+      w = mmap(fid, Array{T,2}, (vsize,asize), offset)
+   end
+
+   w::Array{T,2}
 end
 
 """
@@ -463,14 +471,18 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 DCCRG variables are sorted by cell ID. `usemmap` decides whether to use memory-mapped IO,
 especially for large arrays.
 """
-function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=false)
+function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=true)
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta)
       return v::Array
    end
 
    T, offset, asize, dsize, vsize = getvarinfo(meta.nodeVLSV.var, var)
-   raw = readvector(meta.fid, T, offset, asize, dsize, vsize, usemmap)
+   if vsize == 1
+      raw = readvector(meta.fid, T, offset, asize, dsize, usemmap)
+   else
+      raw = readarray(meta.fid, T, offset, asize, dsize, vsize, usemmap)
+   end
 
    if startswith(var, "fg_") # fsgrid
       bbox = @. meta.ncells * 2^meta.maxamr
@@ -496,7 +508,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       v = raw
    end
 
-   return v::Union{Array, Base.ReinterpretArray}
+   return v::Array
 end
 
 """
@@ -557,10 +569,7 @@ end
    nid::Int, offset::Int, asize::Int, dsize::Int, vsize::Int)::Array{T} where T
    v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
 
-   w = let
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      reshape(reinterpret(T, a), vsize, asize)
-   end
+   w = mmap(fid, Array{T,2}, (vsize,asize), offset)
 
    _fillv!(v, w, celldict, ids)
 
@@ -627,8 +636,7 @@ end
 
 @inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
-   a = mmap(fid, Vector{UInt8}, 8*asize, offset)
-   cellid = reinterpret(UInt, a)
+   cellid = mmap(fid, Vector{UInt64}, asize, offset)
 end
 
 """
@@ -836,8 +844,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
 
    data = let
       Tavg = dsize == 4 ? Float32 : Float64
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*nblocks, offset_v*vsize*dsize + offset)
-      reshape(reinterpret(Tavg, a), vsize, nblocks)
+      mmap(fid, Array{Tavg, 2}, (vsize,nblocks), offset_v*vsize*dsize + offset)
    end
 
    # Read in block IDs

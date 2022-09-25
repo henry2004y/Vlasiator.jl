@@ -11,6 +11,7 @@ using WriteVTK
 using LazyGrids: ndgrid
 using LaTeXStrings
 using Dates
+using SnoopPrecompile
 
 include("utility/rotation.jl")
 include("utility/log.jl")
@@ -40,14 +41,13 @@ export
    # fluxfunction
    compute_flux_function, find_reconnection_points
 
-precompile(readvariable, (MetaVLSV, String, Vector{UInt}))
-precompile(readvariable, (MetaVLSV, String, Int))
-precompile(readvariable, (MetaVLSV, String, UnitRange{Int}))
-precompile(readvcells, (MetaVLSV, Int))
-precompile(readvcells, (MetaVLSV, UInt))
-precompile(getcell, (MetaVLSV, Vector{Float64}))
-precompile(prep2d, (MetaVLSV, String, Int))
-precompile(searchsorted, (Vector{UInt}, Int))
+# SnoopPrecompile
+@precompile_setup begin
+   initfile = joinpath(@__DIR__, "../test/init.vlsv")
+   @precompile_all_calls begin
+      meta = load(initfile)
+   end
+end
 
 function __init__()
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
