@@ -178,29 +178,31 @@ end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
 @inline function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   usemmap::Bool=true) where T
+   usemmap::Bool=false) where T
    if !usemmap
       w = Vector{T}(undef, asize)
       seek(fid, offset)
       read!(fid, w)
    else
-      w = mmap(fid, Vector{T}, asize, offset)
+      a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
+      w = reinterpret(T, a)
    end
 
-   w::Vector{T}
+   w::AbstractVector{T}
 end
 
 @inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   vsize::Int, usemmap::Bool=true) where T
+   vsize::Int, usemmap::Bool=false) where T
    if !usemmap
       w = Array{T,2}(undef, vsize, asize)
       seek(fid, offset)
       read!(fid, w)
    else
-      w = mmap(fid, Array{T,2}, (vsize,asize), offset)
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      w = reshape(reinterpret(T, a), vsize, asize)
    end
 
-   w::Array{T,2}
+   w::AbstractArray{T, 2}
 end
 
 """
@@ -471,7 +473,7 @@ Return variable value of `var` from the VLSV file associated with `meta`. By def
 DCCRG variables are sorted by cell ID. `usemmap` decides whether to use memory-mapped IO,
 especially for large arrays.
 """
-function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=true)
+function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=false)
    if (local symvar = Symbol(var)) in keys(variables_predefined)
       v = variables_predefined[symvar](meta)
       return v::Array
@@ -508,7 +510,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       v = raw
    end
 
-   return v::Array
+   return v::Union{Array, Base.ReinterpretArray}
 end
 
 """
@@ -569,7 +571,10 @@ end
    nid::Int, offset::Int, asize::Int, dsize::Int, vsize::Int)::Array{T} where T
    v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
 
-   w = mmap(fid, Array{T,2}, (vsize,asize), offset)
+   w = let
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+      reshape(reinterpret(T, a), vsize, asize)
+   end
 
    _fillv!(v, w, celldict, ids)
 
@@ -636,7 +641,8 @@ end
 
 @inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
-   cellid = mmap(fid, Vector{UInt64}, asize, offset)
+   a = mmap(fid, Vector{UInt8}, 8*asize, offset)
+   cellid = reinterpret(UInt, a)
 end
 
 """
@@ -844,7 +850,8 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
 
    data = let
       Tavg = dsize == 4 ? Float32 : Float64
-      mmap(fid, Array{Tavg, 2}, (vsize,nblocks), offset_v*vsize*dsize + offset)
+      a = mmap(fid, Vector{UInt8}, dsize*vsize*nblocks, offset_v*vsize*dsize + offset)
+      reshape(reinterpret(Tavg, a), vsize, nblocks)
    end
 
    # Read in block IDs
