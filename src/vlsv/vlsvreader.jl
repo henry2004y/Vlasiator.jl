@@ -641,8 +641,7 @@ end
 
 @inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
-   a = mmap(fid, Vector{UInt8}, 8*asize, offset)
-   cellid = reinterpret(UInt, a)
+   cellid = mmap(fid, Vector{UInt}, asize, offset)
 end
 
 """
