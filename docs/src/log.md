@@ -100,7 +100,7 @@ We have not made a consensus on which integer to use for cell indexes. Be carefu
 
 ## Memory
 
-Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through [`mmap`](https://docs.julialang.org/en/v1/stdlib/Mmap/) in Julia. With this mechanism you never need to worry about unable to process data with small free memory. Besides, we found that proper usage of `mmap` can also speed up reading and reduce memory comsumption --- after v0.9.28 we switch to `mmap` by default.
+Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through [`mmap`](https://docs.julialang.org/en/v1/stdlib/Mmap/) in Julia. With this mechanism you never need to worry about unable to process data with small free memory. Besides, we found that proper usage of `mmap` can also speed up reading and reduce memory comsumption. However, without `reinterpret` we may encounter the alignment issue!
 
 ## Parallelism
 
