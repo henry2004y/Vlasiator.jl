@@ -42,11 +42,9 @@ export
    compute_flux_function, find_reconnection_points
 
 # SnoopPrecompile
-@precompile_setup begin
+@precompile_all_calls begin
    initfile = joinpath(@__DIR__, "../test/init.vlsv")
-   @precompile_all_calls begin
-      meta = load(initfile)
-   end
+   meta = load(initfile)
 end
 
 function __init__()
