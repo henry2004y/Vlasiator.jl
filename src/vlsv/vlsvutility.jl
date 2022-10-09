@@ -357,9 +357,9 @@ getvelocity(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{T};
     getpressure(meta, vcellids, vcellf; species="proton")
     getpressure(vmesh::VMeshInfo, vcellids, vcellf)
 
-Get pressure tensor (6 components) of `species` from `VDF` associated with `meta`,
-pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV. Alternatively, one can directly pass `vcellids`,
-`vcellf`, as in [`getdensity`](@ref).
+Get pressure tensor (6 components: Pxx, Pyy, Pzz, Pyz, Pzx, Pxy) of `species` from `VDF`
+associated with `meta`, pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
+Alternatively, one can directly pass `vcellids`, `vcellf`, as in [`getdensity`](@ref).
 """
 function getpressure(meta::MetaVLSV, VDF::Array{T};
    species::String="proton") where T <: AbstractFloat
@@ -430,6 +430,79 @@ end
 getpressure(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat};
    species::String="proton") =
    getpressure(meta.meshes[species], vcellids, vcellf)
+
+"""
+   getheatfluxvector(meta, VDF; species="proton")
+   getheatfluxvector(meta, vcellids, vcellf; species="proton")
+   getheatfluxvector(vmesh::VMeshInfo, vcellids, vcellf)
+
+Get heat flux vector (3 components) of `species` from `VDF` associated with `meta`,
+qᵢ = m/2 * ∫ (v - u)²(v - u)ᵢ * f(r,v) dV. Alternatively, one can directly pass `vcellids`,
+`vcellf`, as in [`getdensity`](@ref).
+"""
+function getheatfluxvector(meta::MetaVLSV, VDF::Array{T}; species::String="proton") where
+   T <: AbstractFloat
+
+   (;dv, vmin) = meta.meshes[species]
+   q = @SVector zeros(T, 3)
+
+   u = getvelocity(meta, VDF; species)
+
+   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
+      vx = vmin[1] + (i - 0.5f0)*dv[1]
+      vy = vmin[2] + (j - 0.5f0)*dv[2]
+      vz = vmin[3] + (k - 0.5f0)*dv[3]
+
+      q += VDF[i,j,k] .* SVector(
+         (vx - u[1])*(vx - u[1])*(vx - u[1]),
+         (vy - u[2])*(vy - u[2])*(vy - u[2]),
+         (vz - u[3])*(vz - u[3])*(vz - u[3]))
+   end
+
+   factor = mᵢ * convert(T, prod(dv))
+   q *= factor
+
+   q
+end
+
+function getheatfluxvector(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}
+   ) where T <: AbstractFloat
+
+   (;vblock_size, vblocks, dv, vmin) = vmesh
+   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   slicez = vsize[1]*vsize[2]
+   blocksize = prod(vblock_size)
+   sliceBz = vblocks[1]*vblocks[2]
+   sliceCz = vblock_size[1]*vblock_size[2]
+
+   u = getvelocity(vmesh, vcellids, vcellf)
+
+   q = @SVector zeros(T, 3)
+
+   @inbounds @simd for ic in eachindex(vcellids)
+      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      i = id % vsize[1]
+      j = id % slicez ÷ vsize[1]
+      k = id ÷ slicez
+
+      vx = vmin[1] + (i + 0.5f0)*dv[1]
+      vy = vmin[2] + (j + 0.5f0)*dv[2]
+      vz = vmin[3] + (k + 0.5f0)*dv[3]
+      q += vcellf[ic] .* SVector(
+         (vx - u[1])*(vx - u[1])*(vx - u[1]),
+         (vy - u[2])*(vy - u[2])*(vy - u[2]),
+         (vz - u[3])*(vz - u[3])*(vz - u[3]))
+  end
+
+   factor = mᵢ * convert(T, prod(dv))
+   q *= factor
+
+   q
+end
+
+getheatfluxvector(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat};
+   species::String="proton") =
+   getheatfluxvector(meta.meshes[species], vcellids, vcellf)
 
 "Get the original vcell index without blocks from raw vcell index `i` (0-based)."
 @inline function findindex(i::UInt32, vblocks::NTuple{3, Int}, vblock_size::NTuple{3, Int},

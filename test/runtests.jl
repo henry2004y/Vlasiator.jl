@@ -118,6 +118,8 @@ end
          @test getvelocity(meta, vcellids, vcellf)[1] ≈ 1.0f0 rtol=3e-3
          @test getpressure(meta, f) ≈ zeros(Float32, 6) atol=1e-16
          @test getpressure(meta, vcellids, vcellf) ≈ zeros(Float32, 6) atol=1e-16
+         @test getheatfluxvector(meta, f) ≈ zeros(Float32, 3) atol=1e-16
+         @test getheatfluxvector(meta, vcellids, vcellf) ≈ zeros(Float32, 3) atol=1e-16
          @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
          @test getmaxwellianity(meta, vcellids, vcellf) ≈ 5.741325243685855 rtol=1e-4
 

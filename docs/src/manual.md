@@ -171,8 +171,10 @@ vcellids, vcellf = readvcells(meta, cellid; species="proton")
 getdensity(meta, vcellf)
 
 getvelocity(meta, vcellids, vcellf)
-
+# pressure tensor components Pxx, Pyy, Pzz, Pyz, Pzx, Pxy
 getpressure(meta, vcellids, vcellf)
+# heat flux components qⱼⱼᵢ
+getheatfluxvector(meta, vcellids, vcellf)
 ```
 
 To obtain the original ordering of velocity cells,
