@@ -5,13 +5,16 @@ using StaticArrays: SVector, @SVector, SMatrix, @SMatrix
 using Printf: @sprintf
 using LinearAlgebra: ×, dot, ⋅, norm, normalize, normalize!
 using Statistics: mean
-using EzXML
+#using EzXML
 using Mmap: mmap
 using WriteVTK
 using LazyGrids: ndgrid
 using LaTeXStrings
 using Dates
 using SnoopPrecompile
+
+include("utility/xml/vlsvxml.jl")
+using ..VLSVXML
 
 include("utility/rotation.jl")
 include("utility/log.jl")

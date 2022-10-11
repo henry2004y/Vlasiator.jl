@@ -2,7 +2,7 @@
 
 include("vlsvvariables.jl")
 
-const NodeVector = SubArray{EzXML.Node, 1, Vector{EzXML.Node}, Tuple{UnitRange{Int64}},
+const NodeVector = SubArray{VLSVXML.Node, 1, Vector{VLSVXML.Node}, Tuple{UnitRange{Int64}},
    true}
 
 "Velocity mesh information."
@@ -108,7 +108,8 @@ end
       end
 end
 
-function getvarinfo(nodevar::AbstractVector{EzXML.Node}, name::String)
+#::AbstractVector{Vlasiator.VLSVXML.Node}
+function getvarinfo(nodevar::AbstractVector{<:VLSVXML.Node}, name::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
@@ -153,11 +154,11 @@ end
 end
 
 "General inquiry of element `tag` with `name` and `attr`."
-function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
+function getObjInfo(footer::VLSVXML.ElementNode, name::String, tag::String, attr::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
-   for var in findall("//$tag", footer)
+   for var in findall(tag, footer)
       if var[attr] == name
          arraysize = parse(Int, var["arraysize"])
          datasize = parse(Int, var["datasize"])
@@ -215,39 +216,39 @@ function load(file::AbstractString)
 
    footer = getfooter(fid)
 
-   nodes = elements(footer)
+   ns = elements(footer)
 
    ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
 
-   for i in eachindex(nodes)
-      if nodes[i].name == "VARIABLE"
+   for i in eachindex(ns)
+      if ns[i].name == "VARIABLE"
          if ibegin_[1] == 0 ibegin_[1] = i end
          iend_[1] = i
-      elseif nodes[i].name == "PARAMETER"
+      elseif ns[i].name == "PARAMETER"
          if ibegin_[2] == 0 ibegin_[2] = i end
          iend_[2] = i
-      elseif nodes[i].name == "CELLSWITHBLOCKS"
+      elseif ns[i].name == "CELLSWITHBLOCKS"
          if ibegin_[3] == 0 ibegin_[3] = i end
          iend_[3] = i
-      elseif nodes[i].name == "BLOCKSPERCELL"
+      elseif ns[i].name == "BLOCKSPERCELL"
          if ibegin_[4] == 0 ibegin_[4] = i end
          iend_[4] = i
-      elseif nodes[i].name == "BLOCKVARIABLE"
+      elseif ns[i].name == "BLOCKVARIABLE"
          if ibegin_[5] == 0 ibegin_[5] = i end
          iend_[5] = i
-      elseif nodes[i].name == "BLOCKIDS"
+      elseif ns[i].name == "BLOCKIDS"
          if ibegin_[6] == 0 ibegin_[6] = i end
          iend_[6] = i
       end
    end
 
    @views begin
-      nodevar = nodes[ibegin_[1]:iend_[1]]
-      nodeparam = nodes[ibegin_[2]:iend_[2]]
-      nodecellwithVDF = nodes[ibegin_[3]:iend_[3]]
-      nodecellblocks = nodes[ibegin_[4]:iend_[4]]
-      nodeblockvar = nodes[ibegin_[5]:iend_[5]]
-      nodeblockid = nodes[ibegin_[6]:iend_[6]]
+      nodevar = ns[ibegin_[1]:iend_[1]]
+      nodeparam = ns[ibegin_[2]:iend_[2]]
+      nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
+      nodecellblocks = ns[ibegin_[4]:iend_[4]]
+      nodeblockvar = ns[ibegin_[5]:iend_[5]]
+      nodeblockid = ns[ibegin_[6]:iend_[6]]
    end
 
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
@@ -389,7 +390,7 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
-@inline function readcoords(fid::IOStream ,footer::EzXML.Node, qstring::String)
+@inline function readcoords(fid::IOStream, footer::VLSVXML.ElementNode, qstring::String)
    node = findfirst(qstring, footer)
 
    arraysize = parse(Int, node["arraysize"])
@@ -403,7 +404,7 @@ end
    coord
 end
 
-function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring::String)
+function readvcoords(fid::IOStream, footer::VLSVXML.ElementNode, species::String, qstring::String)
    local coord
    nodes = findall(qstring, footer)
 
@@ -423,18 +424,18 @@ function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring
 end
 
 "Return spatial mesh information."
-function readmesh(fid::IOStream, footer::EzXML.Node)
+function readmesh(fid::IOStream, footer::VLSVXML.ElementNode)
    # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
-   node = findfirst("//MESH_BBOX", footer)
+   node = findfirst("MESH_BBOX", footer)
    offset = parse(Int, nodecontent(node))
 
    bbox = Vector{UInt}(undef, 6)
    seek(fid, offset)
    read!(fid, bbox)
 
-   nodeX = readcoords(fid, footer, "//MESH_NODE_CRDS_X")
-   nodeY = readcoords(fid, footer, "//MESH_NODE_CRDS_Y")
-   nodeZ = readcoords(fid, footer, "//MESH_NODE_CRDS_Z")
+   nodeX = readcoords(fid, footer, "MESH_NODE_CRDS_X")
+   nodeY = readcoords(fid, footer, "MESH_NODE_CRDS_Y")
+   nodeZ = readcoords(fid, footer, "MESH_NODE_CRDS_Z")
 
    @inbounds ncells = (bbox[1], bbox[2], bbox[3])
    @inbounds block_size = (bbox[4], bbox[5], bbox[6])
@@ -445,8 +446,8 @@ function readmesh(fid::IOStream, footer::EzXML.Node)
 end
 
 "Return velocity mesh information."
-function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
-   nodes = findall("//MESH_BBOX", footer)
+function readvmesh(fid::IOStream, footer::VLSVXML.ElementNode, species::String)
+   nodes = findall("MESH_BBOX", footer)
 
    bbox = Vector{UInt}(undef, 6)
 
@@ -459,9 +460,9 @@ function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
       end
    end
 
-   nodeX = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_X")
-   nodeY = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_Y")
-   nodeZ = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_Z")
+   nodeX = readvcoords(fid, footer, species, "MESH_NODE_CRDS_X")
+   nodeY = readvcoords(fid, footer, species, "MESH_NODE_CRDS_Y")
+   nodeZ = readvcoords(fid, footer, species, "MESH_NODE_CRDS_Z")
 
    bbox, nodeX, nodeY, nodeZ
 end
@@ -639,7 +640,7 @@ end
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
 
-@inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
+@inline function getcellid(fid::IOStream, nodevar::AbstractVector{<:VLSVXML.Node})
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
    cellid = mmap(fid, Vector{UInt}, asize, offset)
 end
@@ -653,7 +654,7 @@ same grid structure.
 function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
    v = open(files[1], "r") do fid
       footer = getfooter(fid)
-      nodevar = findall("//VARIABLE", footer)
+      nodevar = findall("VARIABLE", footer)
       T, _, _, _, vsize = getvarinfo(nodevar, var)
 
       Array{T,2}(undef, vsize, length(files))
@@ -662,7 +663,7 @@ function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
    for i in eachindex(files)
       fid = open(files[i], "r")
       footer = getfooter(fid)
-      nodevar = findall("//VARIABLE", footer)
+      nodevar = findall("VARIABLE", footer)
       cellid = getcellid(fid, nodevar)
       c_ = findfirst(isequal(cid), cellid)
       _, offset, _, dsize, vsize = getvarinfo(nodevar, var)
