@@ -94,7 +94,6 @@ end
    footer = read(fid, String) |> parsexml |> root
 end
 
-
 @inline function getdatatype(datatype::String, datasize::Int)
    T::Type =
       if datatype == "float"
@@ -389,7 +388,7 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
-@inline function readcoords(fid::IOStream ,footer::EzXML.Node, qstring::String)
+@inline function readcoords(fid::IOStream, footer::EzXML.Node, qstring::String)
    node = findfirst(qstring, footer)
 
    arraysize = parse(Int, node["arraysize"])
