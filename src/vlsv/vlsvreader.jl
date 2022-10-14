@@ -113,11 +113,11 @@ function getvarinfo(nodevar::AbstractVector{EzXML.Node}, name::String)
 
    for var in nodevar
       if var["name"] == name
-         arraysize = parse(Int, var["arraysize"])
-         datasize = parse(Int, var["datasize"])
+         arraysize = Parsers.parse(Int, var["arraysize"])
+         datasize = Parsers.parse(Int, var["datasize"])
          datatype = var["datatype"]
-         vectorsize = parse(Int, var["vectorsize"])
-         offset = parse(Int, nodecontent(var))
+         vectorsize = Parsers.parse(Int, var["vectorsize"])
+         offset = Parsers.parse(Int, nodecontent(var))
          isFound = true
          break
       end
@@ -136,9 +136,9 @@ end
 
    for p in nodeparam
       if p["name"] == name
-         datasize = parse(Int, p["datasize"])
+         datasize = Parsers.parse(Int, p["datasize"])
          datatype = p["datatype"]
-         offset = parse(Int, nodecontent(p))
+         offset = Parsers.parse(Int, nodecontent(p))
          isFound = true
          break
       end
@@ -158,11 +158,11 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
 
    for var in findall("//$tag", footer)
       if var[attr] == name
-         arraysize = parse(Int, var["arraysize"])
-         datasize = parse(Int, var["datasize"])
+         arraysize = Parsers.parse(Int, var["arraysize"])
+         datasize = Parsers.parse(Int, var["datasize"])
          datatype = var["datatype"]
-         vectorsize = parse(Int, var["vectorsize"])
-         offset = parse(Int, nodecontent(var))
+         vectorsize = Parsers.parse(Int, var["vectorsize"])
+         offset = Parsers.parse(Int, nodecontent(var))
          isFound = true
          break
       end
@@ -391,8 +391,8 @@ end
 @inline function readcoords(fid::IOStream, footer::EzXML.Node, qstring::String)
    node = findfirst(qstring, footer)
 
-   arraysize = parse(Int, node["arraysize"])
-   offset = parse(Int, nodecontent(node))
+   arraysize = Parsers.parse(Int, node["arraysize"])
+   offset = Parsers.parse(Int, nodecontent(node))
 
    # Warning: it may be Float32 in Vlasiator
    coord = Vector{Float64}(undef, arraysize)
@@ -408,8 +408,8 @@ function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring
 
    for i in eachindex(ns)[3:end]
       if ns[i]["mesh"] == species
-         arraysize = parse(Int, ns[i]["arraysize"])
-         offset = parse(Int, nodecontent(ns[i]))
+         arraysize = Parsers.parse(Int, ns[i]["arraysize"])
+         offset = Parsers.parse(Int, nodecontent(ns[i]))
          # Warning: it may be Float32 in Vlasiator
          coord = Vector{Float64}(undef, arraysize)
          seek(fid, offset)
@@ -425,7 +425,7 @@ end
 function readmesh(fid::IOStream, footer::EzXML.Node)
    # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
    node = findfirst("//MESH_BBOX", footer)
-   offset = parse(Int, nodecontent(node))
+   offset = Parsers.parse(Int, nodecontent(node))
 
    bbox = Vector{UInt}(undef, 6)
    seek(fid, offset)
@@ -451,7 +451,7 @@ function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
 
    for i in eachindex(ns)[3:end]
       if ns[i]["mesh"] == species
-         offset = parse(Int, nodecontent(ns[i]))
+         offset = Parsers.parse(Int, nodecontent(ns[i]))
          seek(fid, offset)
          read!(fid, bbox)
          break
@@ -798,8 +798,8 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    let cellsWithVDF, nblock_C
       for node in nodeVLSV.cellwithVDF
          if node["name"] == species
-            asize = parse(Int, node["arraysize"])
-            offset = parse(Int, nodecontent(node))
+            asize = Parsers.parse(Int, node["arraysize"])
+            offset = Parsers.parse(Int, nodecontent(node))
             cellsWithVDF = Vector{UInt}(undef, asize)
             seek(fid, offset)
             read!(fid, cellsWithVDF)
@@ -809,9 +809,9 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
 
       for node in nodeVLSV.cellblocks
          if node["name"] == species
-            asize = parse(Int, node["arraysize"])
-            dsize = parse(Int, node["datasize"])
-            offset = parse(Int, nodecontent(node))
+            asize = Parsers.parse(Int, node["arraysize"])
+            dsize = Parsers.parse(Int, node["datasize"])
+            offset = Parsers.parse(Int, nodecontent(node))
             nblock_C = dsize == 4 ?
                Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
             seek(fid, offset)
@@ -837,9 +837,9 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    # Read in avgs
    for node in nodeVLSV.blockvar
       if node["name"] == species
-         dsize = parse(Int, node["datasize"])
-         vsize = parse(Int, node["vectorsize"])
-         offset = parse(Int, nodecontent(node))
+         dsize = Parsers.parse(Int, node["datasize"])
+         vsize = Parsers.parse(Int, node["vectorsize"])
+         offset = Parsers.parse(Int, nodecontent(node))
          break
       end
    end
@@ -853,8 +853,8 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    # Read in block IDs
    for node in nodeVLSV.blockid
       if node["name"] == species
-         dsize = parse(Int, node["datasize"])
-         offset = parse(Int, nodecontent(node))
+         dsize = Parsers.parse(Int, node["datasize"])
+         offset = Parsers.parse(Int, nodecontent(node))
          break
       end
    end

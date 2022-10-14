@@ -11,6 +11,7 @@ using WriteVTK
 using LazyGrids: ndgrid
 using LaTeXStrings
 using Dates
+using Parsers
 using SnoopPrecompile
 
 include("utility/rotation.jl")
