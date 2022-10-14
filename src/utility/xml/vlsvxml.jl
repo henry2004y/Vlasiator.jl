@@ -24,22 +24,22 @@ export
    next_char, backup_char, peek_char, current_char,
    accept_char, accept_char_run,
    emit_token, lexeme,
-   next_token, drain,
+   next_token,
    # parser
    Parser,
-   next_token, peek_token, backup_token,
+   peek_token, backup_token,
    peek_token_type,
    expect,
    # dom
-   Node, Document, ElementNode, TextNode, AttributeNode,
-   nodename, iselement, istext, isattribute, hasroot, hasnode,
+   Node, ElementNode, OffsetNode, AttributeNode,
+   nodename, iselement, istext, hasroot, hasnode,
    nodecontent,
    countnodes, countattributes,
-   nodes, elements, textnodes, attributes, eachattribute,
+   nodes, elements, attributes, eachattribute,
    root, setroot!,
    addchild!, addchildren!, addelement!,
    # XPath-like query API
-   locatefirst, findall, findfirst,
+   findall, findfirst,
    # xml_lexer
    lex_xml,
    # xml_parser

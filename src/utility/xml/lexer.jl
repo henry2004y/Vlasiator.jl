@@ -12,7 +12,7 @@ mutable struct Lexer
    input::String # string being scanned
    start::Int    # start position of this item (lexeme)
    pos::Int      # current position in the input
-   tokens::Channel{Token}
+   const tokens::Channel{Token}
    function Lexer(input::String)
       l = new(input, 1, 0, Channel{Token}(32))
       return l
@@ -48,7 +48,7 @@ end
 
 function current_char(l::Lexer)
    if l.pos < 1
-      error("Can't ask for current char before first char has been fetched")
+      error(l, "Can't ask for current char before first char has been fetched")
    elseif l.pos > lastindex(l.input)
       return EOFChar
    end
@@ -64,7 +64,7 @@ function accept_char(l::Lexer, valid::AbstractString)
 	return false
 end
 
-"Accept a run of characters contained withing array of valid chars"
+"Accept a run of characters contained within array of valid chars"
 accept_char_run(l::Lexer, valid::String) = accept_char_run(ch->ch in valid, l)
 
 "Accept characters which `pred` evaluate to true. E.g. `accept_char_run(l, isdigit)`"
@@ -208,7 +208,6 @@ function run(l::Lexer, start::Function)
 end
 
 next_token(l::Lexer) = take!(l.tokens)
-drain(l::Lexer) = collect(l.tokens)
 
 #####
 

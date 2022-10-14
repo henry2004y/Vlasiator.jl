@@ -2,8 +2,10 @@
 
 include("vlsvvariables.jl")
 
-const NodeVector = SubArray{VLSVXML.Node, 1, Vector{VLSVXML.Node}, Tuple{UnitRange{Int64}},
-   true}
+#const NodeVector = SubArray{VLSVXML.Node, 1, Vector{VLSVXML.Node}, Tuple{UnitRange{Int64}},
+#   true}
+
+const NodeVector = Vector{VLSVXML.ElementNode}
 
 "Velocity mesh information."
 struct VMeshInfo
@@ -26,7 +28,7 @@ struct VarInfo
    "conversion factor to SI units as a string"
    unitConversion::String
 end
-
+#=
 struct NodeVLSV
    var::NodeVector
    param::NodeVector
@@ -34,6 +36,15 @@ struct NodeVLSV
    cellblocks::NodeVector
    blockvar::NodeVector
    blockid::NodeVector
+end
+=#
+struct NodeVLSV
+   var::Vector{ElementNode}
+   param::Vector{ElementNode}
+   cellwithVDF::Vector{ElementNode}
+   cellblocks::Vector{ElementNode}
+   blockvar::Vector{ElementNode}
+   blockid::Vector{ElementNode}
 end
 
 "VLSV meta data."
@@ -84,14 +95,14 @@ function Base.show(io::IO, vmesh::VMeshInfo)
 end
 
 "Return the XML footer of opened VLSV file."
-@inline function getfooter(fid::IOStream)
+@inline function getfooter(fid::IOStream)::VLSVXML.ElementNode
    # First 8 bytes indicate big-endian or else
    endian_offset = 8
    seek(fid, endian_offset)
    # Obtain the offset of the XML
    offset = read(fid, UInt)
    seek(fid, offset)
-   footer = read(fid, String) |> parsexml |> root
+   footer = read(fid, String) |> parsexml
 end
 
 
@@ -108,8 +119,7 @@ end
       end
 end
 
-#::AbstractVector{Vlasiator.VLSVXML.Node}
-function getvarinfo(nodevar::AbstractVector{<:VLSVXML.Node}, name::String)
+function getvarinfo(nodevar::Vector{VLSVXML.ElementNode}, name::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
@@ -119,7 +129,7 @@ function getvarinfo(nodevar::AbstractVector{<:VLSVXML.Node}, name::String)
          datasize = parse(Int, var["datasize"])
          datatype = var["datatype"]
          vectorsize = parse(Int, var["vectorsize"])
-         offset = parse(Int, nodecontent(var))
+         offset = nodecontent(var.children[1])
          isFound = true
          break
       end
@@ -140,7 +150,7 @@ end
       if p["name"] == name
          datasize = parse(Int, p["datasize"])
          datatype = p["datatype"]
-         offset = parse(Int, nodecontent(p))
+         offset = nodecontent(p.children[1])
          isFound = true
          break
       end
@@ -164,7 +174,7 @@ function getObjInfo(footer::VLSVXML.ElementNode, name::String, tag::String, attr
          datasize = parse(Int, var["datasize"])
          datatype = var["datatype"]
          vectorsize = parse(Int, var["vectorsize"])
-         offset = parse(Int, nodecontent(var))
+         offset = nodecontent(var)
          isFound = true
          break
       end
@@ -214,9 +224,9 @@ Generate a MetaVLSV object from `file` of VLSV format.
 function load(file::AbstractString)
    fid = open(file, "r")
 
-   footer = getfooter(fid)
+   footer = getfooter(fid) # too slow due to push! ?
 
-   ns = elements(footer)
+   ns = nodes(footer)
 
    ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
 
@@ -242,14 +252,14 @@ function load(file::AbstractString)
       end
    end
 
-   @views begin
+   #@views begin
       nodevar = ns[ibegin_[1]:iend_[1]]
       nodeparam = ns[ibegin_[2]:iend_[2]]
       nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
       nodecellblocks = ns[ibegin_[4]:iend_[4]]
       nodeblockvar = ns[ibegin_[5]:iend_[5]]
       nodeblockid = ns[ibegin_[6]:iend_[6]]
-   end
+   #end
 
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
       nodeblockid)
@@ -394,7 +404,7 @@ end
    node = findfirst(qstring, footer)
 
    arraysize = parse(Int, node["arraysize"])
-   offset = parse(Int, nodecontent(node))
+   offset = nodecontent(node.children[1])
 
    # Warning: it may be Float32 in Vlasiator
    coord = Vector{Float64}(undef, arraysize)
@@ -411,7 +421,7 @@ function readvcoords(fid::IOStream, footer::VLSVXML.ElementNode, species::String
    for i in eachindex(nodes)[3:end]
       if nodes[i]["mesh"] == species
          arraysize = parse(Int, nodes[i]["arraysize"])
-         offset = parse(Int, nodecontent(nodes[i]))
+         offset = nodecontent(nodes[i].children[1])
          # Warning: it may be Float32 in Vlasiator
          coord = Vector{Float64}(undef, arraysize)
          seek(fid, offset)
@@ -427,7 +437,7 @@ end
 function readmesh(fid::IOStream, footer::VLSVXML.ElementNode)
    # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
    node = findfirst("MESH_BBOX", footer)
-   offset = parse(Int, nodecontent(node))
+   offset = nodecontent(node.children[1])
 
    bbox = Vector{UInt}(undef, 6)
    seek(fid, offset)
@@ -453,7 +463,7 @@ function readvmesh(fid::IOStream, footer::VLSVXML.ElementNode, species::String)
 
    for i in eachindex(nodes)[3:end]
       if nodes[i]["mesh"] == species
-         offset = parse(Int, nodecontent(nodes[i]))
+         offset = nodecontent(nodes[i].children[1])
          seek(fid, offset)
          read!(fid, bbox)
          break
@@ -803,7 +813,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
       for node in nodeVLSV.cellwithVDF
          if node["name"] == species
             asize = parse(Int, node["arraysize"])
-            offset = parse(Int, nodecontent(node))
+            offset = nodecontent(node.children[1])
             cellsWithVDF = Vector{UInt}(undef, asize)
             seek(fid, offset)
             read!(fid, cellsWithVDF)
@@ -815,7 +825,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
          if node["name"] == species
             asize = parse(Int, node["arraysize"])
             dsize = parse(Int, node["datasize"])
-            offset = parse(Int, nodecontent(node))
+            offset = nodecontent(node.children[1])
             nblock_C = dsize == 4 ?
                Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
             seek(fid, offset)
@@ -843,7 +853,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
       if node["name"] == species
          dsize = parse(Int, node["datasize"])
          vsize = parse(Int, node["vectorsize"])
-         offset = parse(Int, nodecontent(node))
+         offset = nodecontent(node.children[1])
          break
       end
    end
@@ -858,7 +868,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
    for node in nodeVLSV.blockid
       if node["name"] == species
          dsize = parse(Int, node["datasize"])
-         offset = parse(Int, nodecontent(node))
+         offset = nodecontent(node.children[1])
          break
       end
    end

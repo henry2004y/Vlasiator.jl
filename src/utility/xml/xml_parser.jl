@@ -10,7 +10,7 @@ end
 function add_parsed_nodes!(parser::Parser, parent::ElementNode)
    t = peek_token(parser)
    while t.kind == BEGIN_TAG || t.kind == TEXT
-      addchild!(parent, parse_node(parser))
+      addchild!(parent, parse_node(parser)) #!!!
       t = peek_token(parser)
    end
 end
@@ -20,17 +20,17 @@ function add_parsed_attribute_nodes!(parser::Parser, parent::ElementNode)
    while t.kind == IDENT
       t = expect(parser, IDENT)
       name = t.lexeme
-      expect(parser, EQUAL)
+      next_token(parser)
       t = expect(parser, STRING)
       value = t.lexeme
-      parent[name] = value
+      push!(parent.attributes, AttributeNode(name, value))
       t = peek_token(parser)
    end
 end
 
 function parse_text(parser::Parser)
    t = expect(parser, TEXT)
-   TextNode(t.lexeme)
+   parse(Int, t.lexeme) |> OffsetNode
 end
 
 # Most time-consuming function!
@@ -44,9 +44,9 @@ function parse_element(parser::Parser)
    while t.kind in [END_TAG, IDENT]
       if t.kind == END_TAG
          expect(parser, END_TAG)
-         add_parsed_nodes!(parser, n)
+         add_parsed_nodes!(parser, n) #!!!
       elseif t.kind == IDENT
-         add_parsed_attribute_nodes!(parser, n)
+         add_parsed_attribute_nodes!(parser, n) #!!!
       end
       t = peek_token(parser)
    end
@@ -66,7 +66,7 @@ end
 function parse_node(parser::Parser)
    t = peek_token(parser)
    if t.kind == BEGIN_TAG
-      parse_element(parser)::Node
+      parse_element(parser)::Node #!!!
    elseif t.kind == TEXT
       parse_text(parser)::Node
    else
@@ -79,19 +79,19 @@ xmlparser(s::AbstractString) = Parser(lex_xml(s))
 """
     parsexml(xmlstring::AbstractString; ignore_declaration=false)
     
-Parse a text string containing XML, and return an XML document object
+Parse a text string containing XML, and return a vector of ElementNode.
 """
 function parsexml(s::AbstractString)
    l = lex_xml(s)
    p = Parser(l)
-   Document(parse_element(p))
+   parse_element(p)
 end
 
 """
-    readxml(stream::IO=stdin)
-    readxml(filename::AbstractString)
+    readxml(stream::IO=stdin) -> Vector{ElementNode}
+    readxml(filename::AbstractString) -> Vector{ElementNode}
     
-Read and parse XML from an I/O stream or file. Result is returned as an XML document object.
+Read and parse XML from an I/O stream or file.
 """
 function readxml(stream::IO=stdin)
    text = read(stream, String)

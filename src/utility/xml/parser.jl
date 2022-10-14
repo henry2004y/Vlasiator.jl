@@ -11,7 +11,7 @@ end
 
 "Keeps track of current state of parsing."
 mutable struct Parser
-   lexer::Lexer
+   const lexer::Lexer
    ahead_token::Union{Token, Nothing}
    backup_token::Union{Token, Nothing}
    function Parser(lexer::Lexer)
@@ -27,7 +27,7 @@ function show(io::IO, p::Parser)
       print(", $(get(p.ahead_token))") 
    end
     
-   if p.backup_token != nothing
+   if p.backup_token !== nothing
       print(", $(get(p.backup_token))") 
    end
    print(")")
