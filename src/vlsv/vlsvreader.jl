@@ -214,39 +214,39 @@ function load(file::AbstractString)
 
    footer = getfooter(fid)
 
-   nodes = elements(footer)
+   ns = elements(footer)
 
    ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
 
-   for i in eachindex(nodes)
-      if nodes[i].name == "VARIABLE"
+   for i in eachindex(ns)
+      if ns[i].name == "VARIABLE"
          if ibegin_[1] == 0 ibegin_[1] = i end
          iend_[1] = i
-      elseif nodes[i].name == "PARAMETER"
+      elseif ns[i].name == "PARAMETER"
          if ibegin_[2] == 0 ibegin_[2] = i end
          iend_[2] = i
-      elseif nodes[i].name == "CELLSWITHBLOCKS"
+      elseif ns[i].name == "CELLSWITHBLOCKS"
          if ibegin_[3] == 0 ibegin_[3] = i end
          iend_[3] = i
-      elseif nodes[i].name == "BLOCKSPERCELL"
+      elseif ns[i].name == "BLOCKSPERCELL"
          if ibegin_[4] == 0 ibegin_[4] = i end
          iend_[4] = i
-      elseif nodes[i].name == "BLOCKVARIABLE"
+      elseif ns[i].name == "BLOCKVARIABLE"
          if ibegin_[5] == 0 ibegin_[5] = i end
          iend_[5] = i
-      elseif nodes[i].name == "BLOCKIDS"
+      elseif ns[i].name == "BLOCKIDS"
          if ibegin_[6] == 0 ibegin_[6] = i end
          iend_[6] = i
       end
    end
 
    @views begin
-      nodevar = nodes[ibegin_[1]:iend_[1]]
-      nodeparam = nodes[ibegin_[2]:iend_[2]]
-      nodecellwithVDF = nodes[ibegin_[3]:iend_[3]]
-      nodecellblocks = nodes[ibegin_[4]:iend_[4]]
-      nodeblockvar = nodes[ibegin_[5]:iend_[5]]
-      nodeblockid = nodes[ibegin_[6]:iend_[6]]
+      nodevar = ns[ibegin_[1]:iend_[1]]
+      nodeparam = ns[ibegin_[2]:iend_[2]]
+      nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
+      nodecellblocks = ns[ibegin_[4]:iend_[4]]
+      nodeblockvar = ns[ibegin_[5]:iend_[5]]
+      nodeblockid = ns[ibegin_[6]:iend_[6]]
    end
 
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
@@ -404,12 +404,12 @@ end
 
 function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring::String)
    local coord
-   nodes = findall(qstring, footer)
+   ns = findall(qstring, footer)
 
-   for i in eachindex(nodes)[3:end]
-      if nodes[i]["mesh"] == species
-         arraysize = parse(Int, nodes[i]["arraysize"])
-         offset = parse(Int, nodecontent(nodes[i]))
+   for i in eachindex(ns)[3:end]
+      if ns[i]["mesh"] == species
+         arraysize = parse(Int, ns[i]["arraysize"])
+         offset = parse(Int, nodecontent(ns[i]))
          # Warning: it may be Float32 in Vlasiator
          coord = Vector{Float64}(undef, arraysize)
          seek(fid, offset)
@@ -445,13 +445,13 @@ end
 
 "Return velocity mesh information."
 function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
-   nodes = findall("//MESH_BBOX", footer)
+   ns = findall("//MESH_BBOX", footer)
 
    bbox = Vector{UInt}(undef, 6)
 
-   for i in eachindex(nodes)[3:end]
-      if nodes[i]["mesh"] == species
-         offset = parse(Int, nodecontent(nodes[i]))
+   for i in eachindex(ns)[3:end]
+      if ns[i]["mesh"] == species
+         offset = parse(Int, nodecontent(ns[i]))
          seek(fid, offset)
          read!(fid, bbox)
          break
@@ -769,10 +769,8 @@ Check if the VLSV file associated with `meta` contains a variable `var`.
 """
 hasvariable(meta::MetaVLSV, var::String) = hasname(meta.nodeVLSV.var, var)
 
-"Check if the XML `nodes` contain a node with `name`."
-function hasname(nodes::NodeVector, name::String)
-   any(node -> node["name"] == name, nodes)
-end
+"Check if the XML nodes `ns` contain a node of `name`."
+hasname(ns::NodeVector, name::String) = any(n -> n["name"] == name, ns)
 
 """
     ndims(meta::MetaVLSV) -> Int
