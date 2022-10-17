@@ -166,7 +166,6 @@ end
          @test size(data) == (3, ncells[1]*namr^2, ncells[2]*namr^2, ncells[3]*namr^2)
          @test data[:,16,8,8] == [-1.3758785f-7, 3.2213068f-4, -3.1518404f-4]
 
-
          # Compare two VLSV files
          @test issame(files[1], files[1])
       end

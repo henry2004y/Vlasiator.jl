@@ -1302,15 +1302,15 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
 end
 
 """
-    issame(file1, file2, tol=1e-4; verbose=false) -> Bool
+    issame(file1, file2, tol=1e-4; strict=true, verbose=false) -> Bool
 
 Check if two VLSV files `file1` and `file2` are approximately identical, under relative
-tolerance `tol`.
+tolerance `tol`. If `strict=true`, the file size difference should be less than 1%.
 """
 function issame(f1::AbstractString, f2::AbstractString, tol::AbstractFloat=1e-4;
-   verbose::Bool=false)
+   strict::Bool=true, verbose::Bool=false)
    # 1st sanity check: minimal filesize difference
-   if abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
+   if strict && abs(filesize(f1) - filesize(f2)) / filesize(f2) > 1e-2
       verbose && println("The sizes of files are already quite different!")
       return false
    end
@@ -1330,7 +1330,6 @@ function issame(f1::AbstractString, f2::AbstractString, tol::AbstractFloat=1e-4;
       if abs(s1 - s2) > tol * abs(s1) && abs(s1 - s2) > tol * abs(s2)
          isIdentical = false
          verbose && println("$vname is quite different!")
-         break
       end
    end
    verbose && isIdentical && println("$f1 and $f2 are identical under tolerance $tol.")
