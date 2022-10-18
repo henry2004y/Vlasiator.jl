@@ -918,9 +918,9 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
 
    for node in nodeVLSV.cellwithVDF
       if node["name"] == species
-         asize = parse(Int, node["arraysize"])
+         asize = Parsers.parse(Int, node["arraysize"])
          cellsWithVDF = Vector{UInt}(undef, asize)
-         offset = parse(Int, nodecontent(node))
+         offset = Parsers.parse(Int, nodecontent(node))
          seek(fid, offset)
          read!(fid, cellsWithVDF)
          break
@@ -929,9 +929,9 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
 
    for node in nodeVLSV.cellblocks
       if node["name"] == species
-         asize = parse(Int, node["arraysize"])
-         dsize = parse(Int, node["datasize"])
-         offset = parse(Int, nodecontent(node))
+         asize = Parsers.parse(Int, node["arraysize"])
+         dsize = Parsers.parse(Int, node["datasize"])
+         offset = Parsers.parse(Int, nodecontent(node))
          nblock_C = dsize == 4 ?
             Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
          seek(fid, offset)
