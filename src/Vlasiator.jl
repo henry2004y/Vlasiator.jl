@@ -20,6 +20,7 @@ include("utility/monitor.jl")
 include("utility/differential.jl")
 include("utility/fluxfunction.jl")
 include("vlsv/vlsvreader.jl")
+include("vlsv/vlsvvariables.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
 

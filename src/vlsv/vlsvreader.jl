@@ -1,7 +1,5 @@
 # VLSV reader in Julia
 
-include("vlsvvariables.jl")
-
 const NodeVector = SubArray{EzXML.Node, 1, Vector{EzXML.Node}, Tuple{UnitRange{Int64}},
    true}
 

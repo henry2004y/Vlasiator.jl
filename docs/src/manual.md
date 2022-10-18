@@ -103,7 +103,8 @@ Vlasiator is capable of computing plasma moments and some predefined derived qua
 To avoid confusion about variable names, the conventions are
 
 - raw quantities are all lowercases;
-- all predefined derived variable names start with a capital letter.
+- all predefined derived variable names start with a capital letter;
+- exceptions are for aliases (e.g. `"n"`).
 
 To obtain a derived quantity, use either a key of string or symbol,
 
@@ -119,6 +120,7 @@ Here is a full list of available quantities[^1]:
 | Bmag                  | magnetic field magnitude         | vg\_b\_vol            |
 | Emag                  | electric field magnitude         | vg\_e\_vol            |
 | Vmag                  | bulk speed                       | vg\_v                 |
+| Bhat                  | unit magnetic field              | vg\_b\_vol            |
 | VS                    | sound speed                      | vg\_ptensor\_diagonal; vg\_rho |
 | VA                    | Alfvén speed                     | vg\_rho; Bmag         |
 | MA                    | Alfvén Mach number               | Vmag; VA              |
@@ -148,6 +150,7 @@ Here is a full list of available quantities[^1]:
 | Gyrofrequency         | proton gyro-frequency            | Bmag                  |
 | Omegap                | plasma frequency (proton)        | vg\_rho               |
 | MagneticTension       | [magnetic tension force](https://en.wikipedia.org/wiki/Magnetic_tension) | vg\_b\_vol |
+| n                     | proton number density            | vg\_rho               |
 
 which can also be found as keys of dictionary in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl).
 
