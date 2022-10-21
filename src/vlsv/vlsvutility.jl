@@ -948,7 +948,7 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
 end
 
 "Return the first cell ID on `mylevel` given `ncells` on this level."
-get1stcell(mylevel, ncells) = ncells * (8^mylevel - 1) ÷ 7 + 1
+get1stcell(mylevel::Int, ncells::Int) = ncells * (8^mylevel - 1) ÷ 7 + 1
 
 fillmesh(meta::MetaVLSV, vars::String) = fillmesh(meta, [vars])
 
