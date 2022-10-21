@@ -59,17 +59,17 @@ end
 
 
 function Base.show(io::IO, meta::MetaVLSV)
-   print(io, "File: ")
+   print(io, "File       : ")
    printstyled(io, meta.name, '\n'; color=:cyan, underline=true)
-   print(io, "Time: ")
+   print(io, "Time       : ")
    printstyled(io, round(meta.time, digits=2), '\n'; color=:cyan)
-   print(io, "Dimension: ")
+   print(io, "Dimension  : ")
    printstyled(io, ndims(meta), '\n'; color=:yellow)
-   print(io, "Maximum AMR level: ")
+   print(io, "Max AMR lvl: ")
    printstyled(io, meta.maxamr, '\n'; color=:yellow)
-   print(io, "Contains VDF: ")
+   print(io, "Has VDF    : ")
    printstyled(io, meta.hasvdf, '\n'; color=:yellow)
-   print(io, "Variables: ")
+   print(io, "Variables  : ")
    printstyled(io, meta.variable, '\n'; color=:blue)
 end
 

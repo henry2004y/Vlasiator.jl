@@ -54,7 +54,7 @@ end
          meta = meta1
          @test ndims(meta) == 1
          @test isopen(meta)
-         @test startswith(repr(meta), "File: bulk.1d.vlsv")
+         @test startswith(repr(meta), "File       : bulk.1d.vlsv")
          @test size(meta) == 529201
          # Variable strings reading
          @test meta.variable[end] == "vg_boundarytype"
