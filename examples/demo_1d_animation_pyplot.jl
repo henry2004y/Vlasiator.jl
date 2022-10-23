@@ -10,7 +10,7 @@ files = glob("bulk.*.vlsv", ".")
 # Choose plotting variable
 var = "proton/vg_rho"
 
-fig = plt.figure()
+fig = plt.figure(constrained_layout=true)
 # Fix axis limits according to data range
 axis = plt.axes(xlim=(-10, 10), ylim=(0, 4))
 
