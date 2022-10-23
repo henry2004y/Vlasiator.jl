@@ -6,8 +6,8 @@ const NodeVector = SubArray{EzXML.Node, 1, Vector{EzXML.Node}, Tuple{UnitRange{I
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
-   vblocks::NTuple{3, Int}
-   vblock_size::NTuple{3, Int}
+   vblocks::NTuple{3, UInt}
+   vblock_size::NTuple{3, UInt}
    vmin::NTuple{3, Float64}
    vmax::NTuple{3, Float64}
    dv::NTuple{3, Float64}
@@ -269,8 +269,8 @@ function load(file::AbstractString)
    # Find all species by the BLOCKIDS tag
    species = String[]
 
-   vblocks = [0, 0, 0]
-   vblock_size = [4, 4, 4]
+   vblocks = UInt[0, 0, 0]
+   vblock_size = UInt[4, 4, 4]
    vmin = [0.0, 0.0, 0.0]
    vmax = [1.0, 1.0, 1.0]
 
@@ -293,9 +293,9 @@ function load(file::AbstractString)
             vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
             vmin_str = ("vxmin", "vymin", "vzmin")
             vmax_str = ("vxmax", "vymax", "vzmax")
-            vblocks .= [readparameter(fid, n.param, vblocks_str[i]) for i in 1:3]
-            vmin .= [readparameter(fid, n.param, vmin_str[i]) for i in 1:3]
-            vmax .= [readparameter(fid, n.param, vmax_str[i]) for i in 1:3]
+            map!(i -> readparameter(fid, n.param, vblocks_str[i]), vblocks, 1:3)
+            map!(i -> readparameter(fid, n.param, vmin_str[i]), vmin, 1:3)
+            map!(i -> readparameter(fid, n.param, vmax_str[i]), vmax, 1:3)
             dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
          else
             error("File not written by Vlasiator!")
@@ -308,12 +308,8 @@ function load(file::AbstractString)
       end
 
       # Create a new object for this population
-      popVMesh = VMeshInfo(
-         (vblocks[1], vblocks[2], vblocks[3]),
-         (vblock_size[1], vblock_size[2], vblock_size[3]),
-         (vmin[1], vmin[2], vmin[3]),
-         (vmax[1], vmax[2], vmax[3]),
-         dv)
+      popVMesh = VMeshInfo(NTuple{3}(vblocks), NTuple{3}(vblock_size),
+         NTuple{3}(vmin), NTuple{3}(vmax), dv)
 
       meshes[popname] = popVMesh
    end

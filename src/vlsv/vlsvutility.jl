@@ -505,8 +505,8 @@ getheatfluxvector(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:Abs
    getheatfluxvector(meta.meshes[species], vcellids, vcellf)
 
 "Get the original vcell index without blocks from raw vcell index `i` (0-based)."
-@inline function findindex(i::UInt32, vblocks::NTuple{3, Int}, vblock_size::NTuple{3, Int},
-   blocksize::Int, vsize::NTuple{3, Int}, sliceBz::Int, sliceCz::Int)
+@inline function findindex(i::UInt32, vblocks::NTuple{3, UInt}, vblock_size::NTuple{3,UInt},
+   blocksize::UInt, vsize::NTuple{3, UInt}, sliceBz::UInt, sliceCz::UInt)
    iB = i ÷ blocksize
    iBx = iB % vblocks[1]
    iBy = iB % sliceBz ÷ vblocks[1]
