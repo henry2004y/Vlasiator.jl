@@ -9,6 +9,7 @@ using Vlasiator, Glob, PyPlot, Printf
 files = glob("bulk.*.vlsv", ".")
 # Choose plotting variable
 var = "proton/vg_rho"
+comp = 0 # component of vector, if used
 
 fig = plt.figure(constrained_layout=true)
 # Fix axis limits according to data range
@@ -16,10 +17,11 @@ ax = plt.axes(xlim=(-10, 10), ylim=(0, 4))
 
 line, = ax.plot([], [], lw=3, marker="*")
 
-function animate(i::Int, files::Vector{String}, var::String, ax, line)
+function animate(i::Int, files::Vector{String}, var::String, comp::Int, ax, line)
    meta = load(files[i+1])
    x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
-   y = readvariable(meta, var)
+   d = readvariable(meta, var)
+   y = ndims(d) == 1 ? d : d[comp,:]
    line.set_data(x, y)
 
    t = readparameter(meta, "time")
@@ -30,7 +32,7 @@ function animate(i::Int, files::Vector{String}, var::String, ax, line)
 end
 
 # https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html
-anim = matplotlib.animation.FuncAnimation(fig, animate, fargs=(files, var, ax, line),
+anim = matplotlib.animation.FuncAnimation(fig, animate, fargs=(files, var, comp, ax, line),
    frames=length(files), blit=true,
    repeat_delay=1000, interval=200)
 # Make sure ffmpeg is available!
