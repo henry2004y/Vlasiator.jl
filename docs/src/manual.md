@@ -125,6 +125,8 @@ Here is a full list of available quantities[^1]:
 | VA                    | Alfvén speed                     | vg\_rho; Bmag         |
 | MA                    | Alfvén Mach number               | Vmag; VA              |
 | MS                    | Sonic Mach number                | Vmag; VS              |
+| Epar                  | $\mathbf{E}_\parallel$           | vg\_e\_vol; Bhat      |
+| Eperp                 | $\mathbf{E}_\perp$               | vg\_e\_vol; Bhat      |
 | Vpar                  | bulk velocity $\parallel\mathbf{B}$| vg\_v; vg\_b\_vol   |
 | Vperp                 | bulk velocity $\perp \mathbf{B}$ | vg\_v; vg\_b\_vol     |
 | Vth                   | proton thermal velocity          | P; vg\_rho            |
