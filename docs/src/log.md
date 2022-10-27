@@ -94,9 +94,9 @@ For post-processing and data analysis purposes, it makes less sense to stick to 
 
 * physical constants are defined in `Float64`, since single precision only resolves up to ±3.4E+38, and it may go out of bound in the middle of calculation (e.g. plasma frequency).
 
-## Int v.s. UInt
+## Int vs. UInt
 
-We have not made a consensus on which integer to use for cell indexes. Be careful about potential bugs due to incorrect arithmetics especially for unsigned integers!
+Integers but not unsigned integers shall be used for indexing, even though [unsigned integers are tempting](http://eigen.tuxfamily.org/index.php?title=FAQ#Why_Eigen.27s_API_is_using_signed_integers_for_sizes.2C_indices.2C_etc..3F).
 
 ## Memory
 

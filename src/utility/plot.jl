@@ -16,7 +16,7 @@ struct PlotArgs
    "cut plane origin"
    origin::Float64
    "cell IDs in the cut plane"
-   idlist::Vector{UInt}
+   idlist::Vector{Int}
    "mapping from original cell order to cut plane"
    indexlist::Vector{Int}
    "title"
@@ -60,7 +60,7 @@ function set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit; normal::Symbo
    sizes = ncells[[seq...]] .<< meta.maxamr # data needs to be refined later
 
    if normal == :none
-      idlist, indexlist = UInt[], Int[]
+      idlist, indexlist = Int[], Int[]
    else
       idlist, indexlist = let sliceoffset = origin - coordmin[dir]
          getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])

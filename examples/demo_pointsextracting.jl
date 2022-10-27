@@ -24,7 +24,7 @@ function extract_vars(files, locations)
    b   = zeros(Float32, 3, nlocs, nfiles)
    e   = zeros(Float32, 3, nlocs, nfiles)
 
-   ids = Vector{UInt}(undef, nlocs)
+   ids = Vector{Int}(undef, nlocs)
    load(files[1]) do meta
       for iloc in eachindex(locations)
          ids[iloc] = getcell(meta, locations[iloc])

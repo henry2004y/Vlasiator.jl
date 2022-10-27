@@ -6,8 +6,8 @@ const NodeVector = SubArray{EzXML.Node, 1, Vector{EzXML.Node}, Tuple{UnitRange{I
 "Velocity mesh information."
 struct VMeshInfo
    "number of velocity blocks"
-   vblocks::NTuple{3, UInt}
-   vblock_size::NTuple{3, UInt}
+   vblocks::NTuple{3, Int}
+   vblock_size::NTuple{3, Int}
    vmin::NTuple{3, Float64}
    vmax::NTuple{3, Float64}
    dv::NTuple{3, Float64}
@@ -42,7 +42,7 @@ struct MetaVLSV
    nodeVLSV::NodeVLSV
    variable::Vector{String}
    "mapping of unsorted cell ID to ordering"
-   celldict::Dict{UInt, Int}
+   celldict::Dict{Int, Int}
    "ordered sequence indexes of raw cell IDs"
    cellindex::Vector{Int}
    time::Float64
@@ -93,7 +93,7 @@ end
    endian_offset = 8
    seek(fid, endian_offset)
    # Obtain the offset of the XML
-   offset = read(fid, UInt)
+   offset = read(fid, Int)
    seek(fid, offset)
    footer = read(fid, String) |> parsexml |> root
 end
@@ -269,8 +269,8 @@ function load(file::AbstractString)
    # Find all species by the BLOCKIDS tag
    species = String[]
 
-   vblocks = UInt[0, 0, 0]
-   vblock_size = UInt[4, 4, 4]
+   vblocks = [0, 0, 0]
+   vblock_size = [4, 4, 4]
    vmin = [0.0, 0.0, 0.0]
    vmax = [1.0, 1.0, 1.0]
 
@@ -350,7 +350,7 @@ function load(f::Function, file::AbstractString)
    end
 end
 
-function getmaxrefinement(cellid::AbstractArray{UInt, 1}, ncells::NTuple{3, UInt})
+function getmaxrefinement(cellid::Vector{Int}, ncells::NTuple{3, Int})
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
    while @inbounds cid < maximum(cellid)
@@ -427,7 +427,7 @@ function readmesh(fid::IOStream, footer::EzXML.Node)
    node = findfirst("//MESH_BBOX", footer)
    offset = Parsers.parse(Int, nodecontent(node))
 
-   bbox = Vector{UInt}(undef, 6)
+   bbox = Vector{Int}(undef, 6)
    seek(fid, offset)
    read!(fid, bbox)
 
@@ -447,7 +447,7 @@ end
 function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
    ns = findall("//MESH_BBOX", footer)
 
-   bbox = Vector{UInt}(undef, 6)
+   bbox = Vector{Int}(undef, 6)
 
    for i in eachindex(ns)[3:end]
       if ns[i]["mesh"] == species
@@ -513,12 +513,12 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
 end
 
 """
-    readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer}) -> Array
+    readvariable(meta::MetaVLSV, var::String, ids::Vector{Int}) -> Array
 
 Read variable `var` in a collection of cells `ids` associated with `meta`. if `ids` is
 empty, return the whole sorted array of `var`.
 """
-function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Array
+function readvariable(meta::MetaVLSV, var::String, ids::Vector{Int})::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
@@ -542,15 +542,15 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{<:Integer})::Arra
 end
 
 """
-    readvariable(meta::MetaVLSV, var::String, cid::Integer) -> Array
+    readvariable(meta::MetaVLSV, var::String, cid::Int) -> Array
 
 Read variable `var` in cell `cid` associated with `meta`.
 """
-function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
+function readvariable(meta::MetaVLSV, var::String, cid::Int)::Array
    startswith(var, "fg_") && error("Currently does not support reading fsgrid!")
 
    if (local symvar = Symbol(var)) in keys(variables_predefined)
-      v = variables_predefined[symvar](meta, cid)
+      v = variables_predefined[symvar](meta, [cid])
       return v
    end
 
@@ -566,7 +566,7 @@ function readvariable(meta::MetaVLSV, var::String, cid::Integer)::Array
 end
 
 @inline function _readcells(::Type{T}, fid::IOStream,
-   celldict::Dict{UInt, Int}, ids::Vector{<:Integer},
+   celldict::Dict{Int, Int}, ids::Vector{Int},
    nid::Int, offset::Int, asize::Int, dsize::Int, vsize::Int)::Array{T} where T
    v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
 
@@ -580,24 +580,24 @@ end
    v
 end
 
-@inline function _readcell(::Type{T}, fid::IOStream, celldict::Dict{UInt, Int},
-   cid::Integer, offset::Int, dsize::Int, vsize::Int)::Array{T} where T
+@inline function _readcell(::Type{T}, fid::IOStream, celldict::Dict{Int, Int},
+   cid::Int, offset::Int, dsize::Int, vsize::Int)::Array{T} where T
 
    v = vsize == 1 ? Vector{T}(undef, 1) : Array{T,2}(undef, vsize, 1)
    seek(fid, offset + (celldict[cid]-1)*vsize*dsize)
    read!(fid, v)
 end
 
-@inline function _fillv!(v::Vector{T}, w::AbstractArray{T}, celldict::Dict{UInt, Int},
-   ids::Vector{<:Integer}) where T
+@inline function _fillv!(v::Vector{T}, w::AbstractArray{T}, celldict::Dict{Int, Int},
+   ids::Vector{Int}) where T
 
    for i in eachindex(ids)
       @inbounds v[i] = w[celldict[ids[i]]]
    end
 end
 
-@inline function _fillv!(v::Matrix{T}, w::AbstractArray{T}, celldict::Dict{UInt, Int},
-   ids::Vector{<:Integer}) where T
+@inline function _fillv!(v::Matrix{T}, w::AbstractArray{T}, celldict::Dict{Int, Int},
+   ids::Vector{Int}) where T
 
    for i in eachindex(ids), iv in axes(v,1)
       @inbounds v[iv,i] = w[iv,celldict[ids[i]]]
@@ -640,16 +640,16 @@ end
 
 @inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
-   cellid = mmap(fid, Vector{UInt}, asize, offset)
+   cellid = mmap(fid, Vector{Int}, asize, offset)
 end
 
 """
-    extractsat(files::AbstractVector{String}, var::String, cid::Integer)
+    extractsat(files::AbstractVector{String}, var::String, cid::Int)
 
 Extract `var` at a fixed cell ID `cid` from `files`. This assumes that `files` come from the
 same grid structure.
 """
-function extractsat(files::AbstractVector{String}, var::String, cid::Integer)
+function extractsat(files::AbstractVector{String}, var::String, cid::Int)
    v = open(files[1], "r") do fid
       footer = getfooter(fid)
       nodevar = findall("//VARIABLE", footer)
@@ -783,12 +783,12 @@ Base.ndims(meta::MetaVLSV) = count(>(1), meta.ncells)
 Base.isopen(meta::MetaVLSV) = isopen(meta.fid)
 
 """
-    readvcells(meta::MetaVLSV, cid::Integer; species="proton") -> vcellids, vcellf
+    readvcells(meta::MetaVLSV, cid::Int; species="proton") -> vcellids, vcellf
 
 Read velocity cells of `species` from a spatial cell of ID `cid` associated with `meta`, and
 return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
-function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
+function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    (;fid, nodeVLSV) = meta
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)
@@ -800,7 +800,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
          if node["name"] == species
             asize = Parsers.parse(Int, node["arraysize"])
             offset = Parsers.parse(Int, nodecontent(node))
-            cellsWithVDF = Vector{UInt}(undef, asize)
+            cellsWithVDF = Vector{Int}(undef, asize)
             seek(fid, offset)
             read!(fid, cellsWithVDF)
             break
@@ -813,7 +813,7 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
             dsize = Parsers.parse(Int, node["datasize"])
             offset = Parsers.parse(Int, nodecontent(node))
             nblock_C = dsize == 4 ?
-               Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
+               Vector{Int32}(undef, asize) : Vector{Int}(undef, asize)
             seek(fid, offset)
             read!(fid, nblock_C)
             break
@@ -859,14 +859,14 @@ function readvcells(meta::MetaVLSV, cid::Integer; species::String="proton")
       end
    end
 
-   blockIDs = let T = dsize == 4 ? UInt32 : UInt
+   blockIDs = let T = dsize == 4 ? Int32 : Int
       Vector{T}(undef, nblocks)
    end
    seek(fid, offset_v*dsize + offset)
    read!(fid, blockIDs)
 
    # Velocity cell IDs and distributions (ordered by blocks)
-   vcellids = Vector{UInt32}(undef, bsize*nblocks)
+   vcellids = Vector{Int32}(undef, bsize*nblocks)
    vcellf = Vector{Float32}(undef, bsize*nblocks)
 
    vcellid_local = @inbounds [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k

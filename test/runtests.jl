@@ -217,7 +217,7 @@ end
 
          @test meta["IonInertial"][1] == 8.578087716535188e7
 
-         @test readvariable(meta, "Larmor", UInt64[1])[1] == 322324.70603759587
+         @test readvariable(meta, "Larmor", 1)[1] == 322324.70603759587
 
          @test meta["Gyroperiod"][1] == 21.834297799454554
 
@@ -236,7 +236,7 @@ end
       @testset "VLSV writing" begin
          meta = meta1
          # Obtain unsorted derived variables, workaround #59
-         cellid = readvariable(meta, "CellID", false)
+         cellid = Vlasiator.getcellid(meta.fid, meta.nodeVLSV.var) # Int but not UInt!
          vmag = readvariable(meta, "Vmag", cellid)
          pa = readvariable(meta, "Panisotropy", cellid)
          vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)

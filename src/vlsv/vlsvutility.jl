@@ -1,7 +1,7 @@
 # Utility functions for processing VLSV data.
 
 """
-    getcell(meta::MetaVLSV, location:::AbstractVector{<:AbstractFloat}) -> UInt
+    getcell(meta::MetaVLSV, location:::AbstractVector{<:AbstractFloat}) -> Int
 
 Return cell ID containing the given spatial `location` in meter, excluding domain
 boundaries. Only accept 3D location.
@@ -12,11 +12,11 @@ function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
    foreach( (i,comp) -> coordmin[i] < loc[i] < coordmax[i] ? nothing :
       error("$comp coordinate out of bound!"), 1:3, 'x':'z')
 
-   indices = @inbounds ntuple(i -> round(UInt, (loc[i] - coordmin[i]) ÷ dcoord[i]), Val(3))
+   indices = @inbounds ntuple(i -> round(Int, (loc[i] - coordmin[i]) ÷ dcoord[i]), Val(3))
 
    cid = @inbounds indices[1] + indices[2]*ncells[1] + indices[3]*ncells[1]*ncells[2] + 1
 
-   ncells_lowerlevel = UInt(0)
+   ncells_lowerlevel = 0
    ncell = prod(ncells)
 
    @inbounds for ilevel = 0:maxamr
@@ -26,7 +26,7 @@ function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
 
       ratio = 2^(ilevel+1)
 
-      indices = ntuple(i -> floor(UInt, (loc[i] - coordmin[i]) / dcoord[i] * ratio), Val(3))
+      indices = ntuple(i -> floor(Int, (loc[i] - coordmin[i]) / dcoord[i] * ratio), Val(3))
 
       cid = ncells_lowerlevel + indices[1] +
          ratio*ncells[1]*indices[2] + ratio^2*ncells[1]*ncells[2]*indices[3] + 1
@@ -36,14 +36,14 @@ function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
 end
 
 """
-    getlevel(meta::MetaVLSV, cid::Integer) -> Int
+    getlevel(meta::MetaVLSV, cid::Int) -> Int
 
 Return the AMR level of a given cell ID `cid`.
 !!! warning
     This function does not check if the VLSV file of `meta` actually contains `cid`; it may
     be shadowed by refined children.
 """
-function getlevel(meta::MetaVLSV, cid::Integer)
+function getlevel(meta::MetaVLSV, cid::Int)
    ncell = prod(meta.ncells)
    ilevel = 0
    c = Int(cid) - ncell
@@ -56,11 +56,11 @@ function getlevel(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getparent(meta::MetaVLSV, cid::Integer) -> Int
+    getparent(meta::MetaVLSV, cid::Int) -> Int
 
 Return the parent cell ID of given child `cid`.
 """
-function getparent(meta::MetaVLSV, cid::Integer)
+function getparent(meta::MetaVLSV, cid::Int)
    @inbounds xcell, ycell = meta.ncells[1], meta.ncells[2]
    ncell = prod(meta.ncells)
 
@@ -95,11 +95,11 @@ function getparent(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getchildren(meta::MetaVLSV, cid::Integer) -> Vector{Int}
+    getchildren(meta::MetaVLSV, cid::Int) -> Vector{Int}
 
 Return direct children of `cid`.
 """
-function getchildren(meta::MetaVLSV, cid::Integer)
+function getchildren(meta::MetaVLSV, cid::Int)
    xcell, ycell, zcell = meta.ncells
    ncell = prod(meta.ncells)
 
@@ -138,11 +138,11 @@ function getchildren(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    getsiblings(meta::MetaVLSV, cid::Integer) -> Vector{Int}
+    getsiblings(meta::MetaVLSV, cid::Int) -> Vector{Int}
 
 Return sibling cells of a given `cid`, including itself.
 """
-function getsiblings(meta::MetaVLSV, cid::Integer)
+function getsiblings(meta::MetaVLSV, cid::Int)
    xcell, ycell, zcell = meta.ncells
    ncell = prod(meta.ncells)
 
@@ -182,22 +182,22 @@ function getsiblings(meta::MetaVLSV, cid::Integer)
 end
 
 """
-    isparent(meta::MetaVLSV, cid::Integer) -> Bool
+    isparent(meta::MetaVLSV, cid::Int) -> Bool
 
 Check if `cid` is a parent cell.
 """
-function isparent(meta::MetaVLSV, cid::Integer)
+function isparent(meta::MetaVLSV, cid::Int)
    ncell_accum = get1stcell(meta.maxamr, prod(meta.ncells))
 
    !haskey(meta.celldict, cid) && 0 < cid < ncell_accum
 end
 
 """
-    getcellcoordinates(meta::MetaVLSV, cid::Integer) -> SVector{3,Float64}
+    getcellcoordinates(meta::MetaVLSV, cid::Int) -> SVector{3,Float64}
 
 Return a given cell's spatial coordinates.
 """
-function getcellcoordinates(meta::MetaVLSV, cid::Integer)
+function getcellcoordinates(meta::MetaVLSV, cid::Int)
    (;ncells, coordmin, coordmax) = meta
    cid -= 1 # for easy divisions
 
@@ -231,7 +231,8 @@ end
 
 Return velocity cells' coordinates of `species` and `vcellids`.
 """
-function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector; species::String="proton")
+function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector{Int32};
+   species::String="proton")
    (;vblocks, vblock_size, dv, vmin) = meta.meshes[species]
 
    bsize = prod(vblock_size)
@@ -317,7 +318,7 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
    u
 end
 
-function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
+function getvelocity(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{T}) where
    T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -348,7 +349,7 @@ function getvelocity(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{
    u
 end
 
-getvelocity(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{T};
+getvelocity(meta::MetaVLSV, vcellids::Vector{Int32}, vcellf::Vector{T};
    species::String="proton") where T <: AbstractFloat =
    getvelocity(meta.meshes[species], vcellids, vcellf)
 
@@ -389,7 +390,7 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
    p
 end
 
-function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}) where
+function getpressure(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{T}) where
    T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -427,7 +428,7 @@ function getpressure(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{
    p
 end
 
-getpressure(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat};
+getpressure(meta::MetaVLSV, vcellids::Vector{Int32}, vcellf::Vector{<:AbstractFloat};
    species::String="proton") =
    getpressure(meta.meshes[species], vcellids, vcellf)
 
@@ -465,7 +466,7 @@ function getheatfluxvector(meta::MetaVLSV, VDF::Array{T}; species::String="proto
    q
 end
 
-function getheatfluxvector(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{T}
+function getheatfluxvector(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{T}
    ) where T <: AbstractFloat
 
    (;vblock_size, vblocks, dv, vmin) = vmesh
@@ -500,13 +501,13 @@ function getheatfluxvector(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::V
    q
 end
 
-getheatfluxvector(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat};
+getheatfluxvector(meta::MetaVLSV, vcellids::Vector{Int32}, vcellf::Vector{<:AbstractFloat};
    species::String="proton") =
    getheatfluxvector(meta.meshes[species], vcellids, vcellf)
 
 "Get the original vcell index without blocks from raw vcell index `i` (0-based)."
-@inline function findindex(i::UInt32, vblocks::NTuple{3, UInt}, vblock_size::NTuple{3,UInt},
-   blocksize::UInt, vsize::NTuple{3, UInt}, sliceBz::UInt, sliceCz::UInt)
+@inline function findindex(i::Int32, vblocks::NTuple{3, Int}, vblock_size::NTuple{3,Int},
+   blocksize::Int, vsize::NTuple{3, Int}, sliceBz::Int, sliceCz::Int)
    iB = i ÷ blocksize
    iBx = iB % vblocks[1]
    iBy = iB % sliceBz ÷ vblocks[1]
@@ -523,12 +524,12 @@ getheatfluxvector(meta::MetaVLSV, vcellids::Vector{UInt32}, vcellf::Vector{<:Abs
 end
 
 """
-    reorder(vmesh::VMeshInfo, vcellids::Vector{UInt32}) -> vcellids_origin
+    reorder(vmesh::VMeshInfo, vcellids::Vector{Int32}) -> vcellids_origin
 
 Reorder vblock-organized VDF indexes into x-->y-->z indexes. `vcellids` are raw indices
 of nonzero VDFs ordered by blocks.
 """
-function reorder(vmesh::VMeshInfo, vcellids::Vector{UInt32})
+function reorder(vmesh::VMeshInfo, vcellids::Vector{Int32})
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
    sliceBz = vblocks[1]*vblocks[2]
@@ -546,12 +547,12 @@ function reorder(vmesh::VMeshInfo, vcellids::Vector{UInt32})
 end
 
 """
-    reconstruct(vmesh::VMeshInfo, vcellids::Vector{UInt32}, vcellf::Vector{<:AbstractFloat})
+    reconstruct(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{<:AbstractFloat})
 
 Reconstruct the full VDFs in 3D. `vcellids` are raw indices of nonzero VDFs ordered by
 blocks, and `vcellf` are the corresponding values in each cell.
 """
-function reconstruct(vmesh::VMeshInfo, vcellids::Vector{UInt32},
+function reconstruct(vmesh::VMeshInfo, vcellids::Vector{Int32},
    vcellf::Vector{<:AbstractFloat})
    (;vblock_size, vblocks) = vmesh
    blocksize = prod(vblock_size)
@@ -606,7 +607,7 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
    ϵₘ = -log(0.5 / n * convert(eltype(VDF), prod(dv)) * ϵₘ)
 end
 
-function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{UInt32},
+function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{Int32},
    vcellf::Vector{<:AbstractFloat}; species::String="proton")
 
    (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
@@ -749,7 +750,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset::Float64, idim::Int,
    nStart = (vcat(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))))
 
    indexlist = Int[]
-   idlist = UInt[]
+   idlist = Int[]
 
    cellidsorted = sort(collect(keys(celldict)))
 
@@ -785,13 +786,13 @@ function getslicecell(meta::MetaVLSV, sliceoffset::Float64, idim::Int,
 end
 
 """
-    refineslice(meta, idlist::Vector{UInt}, data::AbstractArray, normal::Symbol) -> Array
+    refineslice(meta, idlist::Vector{Int}, data::AbstractArray, normal::Symbol) -> Array
 
 Generate scalar data on the finest refinement level given cellids `idlist` and variable
 `data` on the slice perpendicular to `normal`.
 """
 function refineslice(meta::MetaVLSV,
-   idlist::Vector{UInt}, data::AbstractArray, normal::Symbol)
+   idlist::Vector{Int}, data::AbstractArray, normal::Symbol)
 
    (;ncells, maxamr) = meta
 
@@ -856,7 +857,7 @@ end
 
 "Compute x, y and z indexes of all cell `ids` on the given refinement level (0-based)."
 @inline function getindexes(ilevel::Int, xcells::Int, ycells::Int, nCellUptoLowerLvl::Int,
-   ids::AbstractVector{UInt})
+   ids::AbstractVector{Int})
 
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
@@ -876,7 +877,7 @@ end
 
 "Compute x, y and z index of cell `id` on a given refinement level `ilevel`(0-based)."
 @inline function getindexes(ilevel::Int, xcells::Int, ycells::Int, nCellUptoLowerLvl::Int,
-   id::Integer)
+   id::Int)
 
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
@@ -889,11 +890,11 @@ end
 end
 
 """
-    getnearestcellwithvdf(meta, id::Integer) -> UInt
+    getnearestcellwithvdf(meta, id::Int) -> Int
 
 Find the nearest spatial cell with VDF saved of a given cell `id` associated with `meta`.
 """
-function getnearestcellwithvdf(meta::MetaVLSV, id::Integer)
+function getnearestcellwithvdf(meta::MetaVLSV, id::Int)
    cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords = [SVector(0.0f0, 0.0f0, 0.0f0) for _ in cells]
@@ -914,12 +915,12 @@ Get all the cell IDs with VDF saved associated with `meta`.
 function getcellwithvdf(meta::MetaVLSV, species::String="proton")
    (; fid, nodeVLSV) = meta
 
-   local cellsWithVDF::Vector{UInt}, nblock_C::Vector{UInt32}
+   local cellsWithVDF, nblock_C
 
    for node in nodeVLSV.cellwithVDF
       if node["name"] == species
          asize = Parsers.parse(Int, node["arraysize"])
-         cellsWithVDF = Vector{UInt}(undef, asize)
+         cellsWithVDF = Vector{Int}(undef, asize)
          offset = Parsers.parse(Int, nodecontent(node))
          seek(fid, offset)
          read!(fid, cellsWithVDF)
@@ -933,7 +934,7 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
          dsize = Parsers.parse(Int, node["datasize"])
          offset = Parsers.parse(Int, nodecontent(node))
          nblock_C = dsize == 4 ?
-            Vector{UInt32}(undef, asize) : Vector{UInt}(undef, asize)
+            Vector{Int32}(undef, asize) : Vector{Int}(undef, asize)
          seek(fid, offset)
          read!(fid, nblock_C)
          break
@@ -1032,7 +1033,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
             _fillcell!(ilvl, maxamr, ids, ix, iy, iz, celldata[iv], data)
          end
       else # max refinement level
-         for (iv, var) = enumerate(vars)
+         for (iv, var) in enumerate(vars)
             verbose && @info "reading variable $var..."
             if startswith(var, "fg_")
                celldata[iv][end][:] = readvariable(meta, var)
@@ -1168,14 +1169,14 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `vars::Vector{String}`: variable names to be saved.
 - `data::Vector{Vector{Array}}`: data for all the variables on each refinement level.
 - `vtkGhostType::Array{UInt8}`: array for visibility control.
-- `level::Integer`: refinement level (0-based).
+- `level::Int`: refinement level (0-based).
 - `ascii::Bool=false`: save output in ASCII or binary format.
 - `append::Bool=true`: determines whether to append data at the end of file or do in-block
 writing.
 - `box::Vector`: selected box range in 3D.
 """
 function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
-   data, vtkGhostType::Array{UInt8}, level::Integer, ascii::Bool=false, append::Bool=true;
+   data, vtkGhostType::Array{UInt8}, level::Int, ascii::Bool=false, append::Bool=true;
    box::Vector{<:AbstractFloat}=[-Inf, Inf, -Inf, Inf, -Inf, Inf])
 
    (;coordmin, coordmax, dcoord, ncells) = meta
@@ -1238,7 +1239,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
    endian_offset = 8 # First 8 bytes indicate big-endian or else
    seek(fid, endian_offset)
    # Obtain the offset of the XML footer
-   offset = read(fid, UInt)
+   offset = read(fid, Int)
    # Store all non-footer part as raw data
    raw_data = Vector{UInt8}(undef, offset)
 

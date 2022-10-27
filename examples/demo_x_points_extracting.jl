@@ -43,7 +43,7 @@ ey = Vector{Vector{Float32}}(undef, 0)
 
 for it in eachindex(x_points_x)
    meta = load(files[it])
-   ids = Vector{UInt}(undef, length(x_points_x[it]))
+   ids = Vector{Int}(undef, length(x_points_x[it]))
    for ip in eachindex(x_points_x[it])
       loc = [x_points_x[it][ip], 0.0, x_points_z[it][ip]] .* Vlasiator.RE
       ids[ip] = getcell(meta, loc)

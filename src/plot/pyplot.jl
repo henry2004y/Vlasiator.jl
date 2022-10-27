@@ -387,7 +387,7 @@ function plotmesh(meta::MetaVLSV, ax::Union{PyObject,Nothing}=nothing;
       sliceoffset = origin - coordmin[dirp]
       ids, _ = getslicecell(meta, sliceoffset, dirp, coordmin[dirp], coordmax[dirp])
    else # 3D
-      ids = readvariable(meta, "CellID", false)
+      ids = Vlasiator.getcellid(meta.fid, meta.nodeVLSV.var)
    end
 
    centers = [zeros(SVector{3, Float32}) for _ in ids]
