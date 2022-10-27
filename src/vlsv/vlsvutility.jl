@@ -23,11 +23,8 @@ function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
       haskey(celldict, cid) && break
 
       ncells_lowerlevel += (8^ilevel)*ncell
-
       ratio = 2^(ilevel+1)
-
       indices = ntuple(i -> floor(Int, (loc[i] - coordmin[i]) / dcoord[i] * ratio), Val(3))
-
       cid = ncells_lowerlevel + indices[1] +
          ratio*ncells[1]*indices[2] + ratio^2*ncells[1]*ncells[2]*indices[3] + 1
    end
@@ -955,7 +952,7 @@ fillmesh(meta::MetaVLSV, vars::String) = fillmesh(meta, [vars])
 
 """
     fillmesh(meta::MetaVLSV, vars::Vector{String};
-       skipghosttype=true, verbose=false) -> celldata, vtkGhostType
+       skipghosttype=true, maxamronly=false, verbose=false) -> celldata, vtkGhostType
 
 Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 # Return arguments
@@ -963,7 +960,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 - `vtkGhostType::Array{UInt8}`: cell status (to be completed!).
 """
 function fillmesh(meta::MetaVLSV, vars::Vector{String};
-   skipghosttype::Bool=true, verbose::Bool=false)
+   skipghosttype::Bool=true, maxamronly::Bool=false, verbose::Bool=false)
 
    (;maxamr, fid, nodeVLSV, ncells, celldict) = meta
 
@@ -982,12 +979,19 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
       if T[i] == Float64 Tout[i] = Float32 end
    end
 
-   @inbounds celldata =
+   @inbounds celldata = if !maxamronly
       [[zeros(Tout[iv], vsize[iv], ncells[1] << i, ncells[2] << i, ncells[3] << i)
       for i = 0:maxamr] for iv in 1:nv]
+   else
+      [[zeros(Tout[iv], vsize[iv],
+      ncells[1] << maxamr, ncells[2] << maxamr, ncells[3] << maxamr)] for iv in 1:nv]
+   end
 
-   @inbounds vtkGhostType =
+   @inbounds vtkGhostType = if !skipghosttype
       [zeros(UInt8, ncells[1] << i, ncells[2] << i, ncells[3] << i) for i = 0:maxamr]
+   else
+      [UInt8[]]
+   end
 
    if maxamr == 0
       @inbounds for iv = 1:nv
@@ -1007,7 +1011,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
       idfirst_ = searchsortedfirst(cellidsorted, nLow+1)
       idlast_  = searchsortedlast(cellidsorted, nHigh)
 
-      ids = cellidsorted[idfirst_:idlast_]
+      ids = @view cellidsorted[idfirst_:idlast_]
 
       if !skipghosttype
          # Mark non-existing cells due to refinement
@@ -1029,8 +1033,11 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
             a = mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv], offset[iv])
             dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
             data = @view dataRaw[:,rOffsetsRaw]
-
-            _fillcell!(ilvl, maxamr, ids, ix, iy, iz, celldata[iv], data)
+            if !maxamronly
+               _fillcell!(ids, ix, iy, iz, celldata[iv], data, ilvl, maxamr)
+            else
+               _fillcell!(ids, ix, iy, iz, celldata[iv][end], data, ilvl, maxamr)
+            end
          end
       else # max refinement level
          for (iv, var) in enumerate(vars)
@@ -1054,7 +1061,8 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    celldata, vtkGhostType
 end
 
-function _fillcell!(ilvl, maxamr, ids, ix, iy, iz, dataout, datain)
+function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
+   iz::Vector{Int}, dataout::Vector, datain::AbstractArray, ilvl::Int, maxamr::Int)
    @inbounds for ilvlup = ilvl:maxamr
       r = 2^(ilvlup-ilvl) # ratio on refined level
       for c in eachindex(ids)
@@ -1065,14 +1073,26 @@ function _fillcell!(ilvl, maxamr, ids, ix, iy, iz, dataout, datain)
    end
 end
 
-function _fillcell!(ids, ix, iy, iz, dataout, datain)
+function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
+   iz::Vector{Int}, dataout::Array, datain::AbstractArray, ilvl::Int, maxamr::Int)
+   r = 2^(maxamr-ilvl) # ratio on refined level
+   @inbounds for c in eachindex(ids)
+      for k = 1:r, j = 1:r, i = 1:r
+         _fillcelldata!(dataout, datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
+      end
+   end
+end
+
+function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
+   iz::Vector{Int}, dataout::Array, datain::AbstractArray)
    @inbounds for c in eachindex(ids)
       _fillcelldata!(dataout, datain, ix[c]+1, iy[c]+1, iz[c]+1, c)
    end
 end
 
-@inline function _fillcelldata!(dataout, datain, i, j, k, index)
-   @inbounds @simd for icomp in axes(datain,1)
+@inline function _fillcelldata!(dataout::Array, datain::AbstractArray,
+   i::Int, j::Int, k::Int, index::Int)
+   @inbounds @simd for icomp in axes(datain, 1)
       dataout[icomp,i,j,k] = datain[icomp,index]
    end
 end
@@ -1109,7 +1129,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       if !isnothing(cellid_) deleteat!(vars, cellid_) end
    end
 
-   data, vtkGhostType = fillmesh(meta, vars; skipghosttype, verbose)
+   data, vtkGhostType = fillmesh(meta, vars; skipghosttype, maxamronly, verbose)
 
    if maxamronly
       save_image(meta, outdir*meta.name[1:end-4]*"vti", vars, data, vtkGhostType[end],
@@ -1182,6 +1202,10 @@ function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
    (;coordmin, coordmax, dcoord, ncells) = meta
    ratio = 2^level
    spacing = (dcoord[1] / ratio, dcoord[2] / ratio, dcoord[3] / ratio)
+   # Only max amr level is stored
+   if length(data[1]) == 1
+      level = 0
+   end
 
    if all(isinf.(box)) # full domain
       origin = (coordmin[1], coordmin[2], coordmin[3])

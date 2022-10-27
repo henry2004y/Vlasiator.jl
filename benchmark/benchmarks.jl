@@ -32,5 +32,8 @@ SUITE["read"]["VDF"] = @benchmarkable readvcells($meta, 5; species="proton")
 SUITE["VTK"] = BenchmarkGroup(["conversion"])
 file = joinpath(directory, files[3])
 meta = load(file)
-SUITE["VTK"]["AMR"] = @benchmarkable Vlasiator.fillmesh($meta,
+SUITE["VTK"]["AMR_full"] = @benchmarkable Vlasiator.fillmesh($meta,
    $["proton/vg_rho", "proton/vg_v", "fg_b", "vg_boundarytype"])
+SUITE["VTK"]["AMR_maxonly"] = @benchmarkable Vlasiator.fillmesh($meta,
+   $["proton/vg_rho", "proton/vg_v", "fg_b", "vg_boundarytype"],
+   skipghosttype=true, maxamronly=true)
