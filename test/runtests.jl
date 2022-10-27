@@ -313,6 +313,13 @@ end
          sha_str = bytes2hex(open(sha1, "bulk.amr_3.vti"))
          @test sha_str == "8a2bb0a15c5dcc329f88821036df840a86eef9d5"
 
+         @test Vlasiator.downsample_fg(meta, "fg_e")[1,3] == 7.5771624f-7
+         data = let
+            tmp = Vlasiator.fillmesh(meta, ["proton/vg_rho"]; maxamronly=true)[1][1][1]
+            reshape(tmp, size(tmp)[2:end])
+         end
+         @test Vlasiator.read_variable_as_fg(meta, "proton/vg_rho") == data
+
          # Selected region
          write_vtk(meta, vars=["proton/vg_rho"], maxamronly=true, box=
             [meta.coordmin[1], meta.coordmax[1], 0, meta.coordmax[2], 0, meta.coordmax[3]])

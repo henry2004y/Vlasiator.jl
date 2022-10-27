@@ -948,6 +948,122 @@ end
 "Return the first cell ID on `mylevel` given `ncells` on this level."
 get1stcell(mylevel::Int, ncells::Int) = ncells * (8^mylevel - 1) ÷ 7 + 1
 
+## Downsampling
+
+"""
+    downsample_fg(meta::MetaVLSV, v_fg::Array)
+    downsample_fg(meta::MetaVLSV, var::String)
+
+Downsample a field solver array `v_fg` to the spatial grid associated with `meta`.
+"""
+function downsample_fg(meta::MetaVLSV, v_fg::Array)
+   v_vg = zeros(eltype(v_fg), (3, length(meta.cellindex)))
+
+   for (cid, i) in meta.celldict
+      v_vg[:,i] = downsample_fg_cell(meta, v_fg, cid)
+   end
+
+   v_vg[:,meta.cellindex]
+end
+
+downsample_fg(meta::MetaVLSV, var::String) = downsample_fg(meta, meta[var])
+
+"Return a field solver grid subarray contained inside spatial cell `cid`."
+function downsample_fg_cell(meta::MetaVLSV, v_fg::Array, cid::Int)
+   v_sub_fg = get_fg_array_cell(meta, v_fg, cid)
+
+   dropdims(mean(v_sub_fg, dims=(2,3,4)), dims=(2,3,4))
+end
+
+"Return the field solver grid cell indexes containing `coords` (low-inclusive)."
+function get_fg_indices(meta::MetaVLSV, coords::SVector{3, Float64})
+   dx = meta.dcoord ./ 2^meta.maxamr
+   ri = @. Int(((coords - meta.coordmin) ÷ dx) + 1)
+   sz = meta.ncells .* 2 .^meta.maxamr
+   if any(i -> i < 1, ri) || any(i -> i[1] > i[2], zip(ri, sz))
+      error("fsgrid index out of bounds!")
+   end
+
+   ri
+end
+
+"""
+    get_fg_array_cell(meta::MetaVLSV, v_fg::Array, cid::Int)
+
+Return a subarray of the field solver grid array, corresponding to the fsgrid covered by
+the spatial cell ID `cid`.
+"""
+function get_fg_array_cell(meta::MetaVLSV, v_fg::Array, cid::Int)
+   il, ih = get_fg_indices_cell(meta, cid)
+   v_fg[:,il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]]
+end
+
+"Returns a slice tuple of fsgrid indices that are contained in the spatial cell `cid`."
+function get_fg_indices_cell(meta::MetaVLSV, cid::Int)
+   dx = meta.dcoord ./ 2^(getlevel(meta, cid) + 1)
+   mid = getcellcoordinates(meta, cid)
+
+   il, ih = get_fg_indices_subvolume(meta, mid .- dx, mid .+ dx)
+end
+
+"""
+    get_fg_indices_subvolume(meta::MetaVLSV, lower, upper, tol::Float64=1e-3)
+
+Get indices for subarray of fsgrid variables, in a cuboid defined by `lower` and `upper`
+vertices. This is used for mapping a set of fsgrid cells to a given DCCRG cell.
+Shift the corners (`lower`, `upper`) inward by a distance controlled by `tol`. If direct
+low-inclusive behaviour is required, `tol` shall be set to 0.
+"""
+function get_fg_indices_subvolume(meta::MetaVLSV, lower::SVector{3, Float64},
+   upper::SVector{3, Float64}, tol::Float64=1e-3)
+   ϵ = @. meta.dcoord / 2^meta.maxamr * tol
+   il = get_fg_indices(meta, lower .+ ϵ)
+   iu = get_fg_indices(meta, upper .- ϵ)
+
+   il, iu
+end
+
+## Upsampling
+
+"""
+    read_variable_as_fg(meta::MetaVLSV, var::String)
+
+Interpolate DCCRG variable `var` to field solver grid size.
+This is an alternative method to [`fillmesh`](@ref), but not optimized for performance.
+"""
+function read_variable_as_fg(meta::MetaVLSV, var::String)
+   sz = meta.ncells .* 2 .^meta.maxamr
+   data = readvariable(meta, var, false)
+   if eltype(data) == Float64; data = Float32.(data); end
+   cellid = Vlasiator.getcellid(meta.fid, meta.nodeVLSV.var)
+   if ndims(data) == 2
+      v_fg = zeros(eltype(data), (size(data,1), sz[1], sz[2], sz[3]))
+      for (i, cid) in enumerate(cellid)
+         upsample_fsgrid_subarray!(meta, data[:,i], cid, v_fg)
+      end
+   else
+      v_fg = zeros(eltype(data), (sz[1], sz[2], sz[3]))
+      for (i, cid) in enumerate(cellid)
+         upsample_fsgrid_subarray!(meta, data[i], cid, v_fg)
+      end
+   end
+
+   v_fg
+end
+
+"Set the elements of the fsgrid array to the value of corresponding cell ID `cid`."
+function upsample_fsgrid_subarray!(meta::MetaVLSV, data, cid::Int, v_fg::Array{T, 4}
+   ) where T 
+   il, ih = get_fg_indices_cell(meta, cid)
+   v_fg[:,il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]] .= data
+end
+
+function upsample_fsgrid_subarray!(meta::MetaVLSV, data, cid::Int, v_fg::Array{T, 3}
+   ) where T 
+   il, ih = get_fg_indices_cell(meta, cid)
+   v_fg[il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]] .= data
+end
+
 fillmesh(meta::MetaVLSV, vars::String) = fillmesh(meta, [vars])
 
 """
