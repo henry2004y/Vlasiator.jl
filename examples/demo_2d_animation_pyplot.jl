@@ -45,7 +45,7 @@ function animate(i::Int, files::Vector{String}, var::String, comp::Int, c)
    c.set_array(data)
 
    str_title = @sprintf "t= %4.1fs" t
-   ax.set_title(str_title)
+   ax.set_title(str_title, fontweight="bold")
 
    return (c,)
 end
