@@ -302,6 +302,24 @@ end
       end
    end
 
+   if group in (:sample, :all)
+      @testset "Sampling" begin
+         meta = meta3 # amr
+
+         @test Vlasiator.downsample_fg(meta, "fg_e")[1,3] == 7.5771624f-7
+         coords = Vlasiator.SVector(100.0,200.0, 3e8)
+         @test_throws ErrorException Vlasiator.get_fg_indices(meta, coords)
+
+         data = let
+            tmp = Vlasiator.fillmesh(meta, ["proton/vg_rho"]; maxamronly=true)[1][1][1]
+            reshape(tmp, size(tmp)[2:end])
+         end
+         @test Vlasiator.read_variable_as_fg(meta, "proton/vg_rho") == data
+         @test Vlasiator.read_variable_as_fg(meta, "proton/vg_v")[1,18,8,8] == 106991.59f0
+
+      end
+   end
+
    if group in (:vtk, :all)
       @testset "VTK" begin
          meta = meta2 # no amr

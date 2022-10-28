@@ -81,6 +81,25 @@ var_extract = readvariable(meta, "VA", cellids)
 extractsat(files, var, id)
 ```
 
+- Downsample field solver variable to DCCRG grid
+
+```julia
+Vlasiator.downsample_fg(meta, "fg_e")
+```
+
+- Upsample DCCRG variable to field solver grid
+
+```julia
+data = Vlasiator.read_variable_as_fg(meta, "proton/vg_rho")
+# Equivalent to the above, but faster
+data = let
+   tmp = Vlasiator.fillmesh(meta, ["proton/vg_rho"]; maxamronly=true)[1][1][1]
+   reshape(tmp, size(tmp)[2:end])
+end
+```
+
+This is useful when corresponding DCCRG variables are not saved, or a uniform mesh is required for further analysis.
+
 - Compare VLSV files
 
 One may want to check if two vlsv files are identical. This is tricky because
