@@ -157,6 +157,8 @@ Here is a full list of available quantities[^1]:
 | Tperp                 | temperature $\perp \mathbf{B}$   | vg\_rho; vg\_ptensor\_offdiagonal; vg\_b\_vol |
 | Tanisotropy           | $T_\perp / T_\parallel$          | Tpar; Tperp           |
 | J                     | current density                  | vg\_b\_vol            |
+| Jpar                  | $j_\parallel$                    | vg\_b\_vol            |
+| Jperp                 | $j_\perp$                        | vg\_b\_vol            |
 | Protated              | pressure tensor with $\widehat{z} \parallel \mathbf{B}$ | vg\_b\_vol; vg\_ptensor\_diagonal; vg\_ptensor\_offdiagonal |
 | Panisotropy           | $P_\perp / P_\parallel$          | ptensor; B            |
 | Pram                  | dynamic ram pressure             | vg\_rho; Vmag         |
