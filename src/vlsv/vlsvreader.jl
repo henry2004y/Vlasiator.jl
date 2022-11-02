@@ -470,7 +470,7 @@ end
 
 Return variable value of `var` from the VLSV file associated with `meta`. By default for
 DCCRG variables are sorted by cell ID. `usemmap` decides whether to use memory-mapped IO,
-especially for large arrays.
+which is especially useful for large arrays.
 """
 function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::Bool=false)
    if (local symvar = Symbol(var)) in keys(variables_predefined)

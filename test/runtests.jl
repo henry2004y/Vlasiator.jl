@@ -177,7 +177,7 @@ end
          @test meta["Vmag"] |> sortperm == [3, 4, 1, 2, 8, 9, 10, 5, 7, 6]
          @test meta["Protated"][2,2,3] == 1.7952461f-29
          @test meta["Panisotropy"][4] == 1.0147696f0
-         @test meta["Tanisotropy"][4] == 1.0147695404826917
+         @test meta["Tanisotropy"][4] == 1.0147696f0
          @test meta["Agyrotropy"][1] |> isnan
 
          meta = meta2
@@ -203,33 +203,37 @@ end
 
          @test_throws ArgumentError meta["Eperp"]
 
-         @test meta["T"][1] == 347619.9817319378
+         @test meta["T"][1] == 347619.97f0
 
          @test meta["Pram"][1] == 8.204415428337215e-10
 
          @test meta["Pb"][1] == 3.5950253021601317e-12
 
-         @test meta["Beta"][1] == 1.3359065984817116
+         @test meta["Beta"][1] == 1.3359065f0
 
-         @test meta["BetaStar"][1] == 229.55170154977864
+         @test meta["BetaStar"][1] == 229.5517f0
 
          @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
-         @test meta["IonInertial"][1] == 8.578087716535188e7
+         @test meta["IonInertial"][1] == 8.578087f7
 
-         @test readvariable(meta, "Larmor", 1)[1] == 322324.70603759587
+         @test readvariable(meta, "Larmor", 1)[1] == 322324.72f0
 
-         @test meta["Gyroperiod"][1] == 21.834297799454554
+         @test meta["Gyroperiod"][1] == 21.8343f0
 
          @test Vlasiator.getdata2d(meta, "Gyroperiod") |> ndims == 2
 
-         @test meta["Gyrofrequency"][1] == 0.04579950356933307
+         @test meta["Gyrofrequency"][1] == 0.0457995f0
 
-         @test meta["J"][1,1000] == -7.51350375600135e-15
+         @test meta["J"][1,30,50,1] == 4.6532236f-12
 
-         @test meta["Omegap"][1] == 209.5467447842415
+         @test meta["Jpar"][30,50,1] == -4.205885f-11
 
-         @test meta["PlasmaPeriod"][1] == 0.0047722048893178645
+         @test meta["Jperp"][30,50,1] == 9.058601f-11
+
+         @test meta["Omegap"][1] == 1316.6211f0
+
+         @test meta["PlasmaPeriod"][1] == 0.004772205f0
 
          @test meta["MagneticTension"][3, 40, 50] == -3.6856588f-19
       end
@@ -312,7 +316,7 @@ end
 
          data = let
             tmp = Vlasiator.fillmesh(meta, ["proton/vg_rho"]; maxamronly=true)[1][1][1]
-            reshape(tmp, size(tmp)[2:end])
+            dropdims(tmp; dims=1)
          end
          @test Vlasiator.read_variable_as_fg(meta, "proton/vg_rho") == data
          @test Vlasiator.read_variable_as_fg(meta, "proton/vg_v")[1,18,8,8] == 106991.59f0
