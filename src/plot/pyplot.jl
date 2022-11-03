@@ -232,12 +232,13 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::String,
 end
 
 """
-    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0;;]) -> norm, ticks
+    set_colorbar(colorscale::ColorScale, v1, v2, data=[1.0;;];
+       linthresh=1.0, logstep=1) -> norm, ticks
 
 Set colorbar norm and ticks in a given range `v1` to `v2` for `data` in `colorscale`.
 Matplotlib's Colormap Normalization Section presents various kinds of normlizations beyond
 linear, logarithmic and symmetric logarithmic, like centered, discrete, and two slope norm.
-For fine-grain control, it is suggested to use the norm methods from `matplotlib.colors`.
+For fine-grained control, use the norm methods from `matplotlib.colors` directly.
 
 # Example
 
@@ -245,12 +246,15 @@ For fine-grain control, it is suggested to use the norm methods from `matplotlib
 norm = matplotlib.colors.CenteredNorm(); # after matplotlib v3.4
 norm = matplotlib.colors.BoundaryNorm(boundaries=[0, 1], ncolors=2);
 norm = matplotlib.colors.TwoSlopeNorm(vmin=-500., vcenter=0, vmax=4000);
+norm = matplotlib.colors.SymLogNorm(;linthresh=1.0, linscale=0.01, vmin=-1e2, vmax=1e2, base=10)
 ```
 There are also various options for the ticks available in `matplotlib.ticker`.
 """
-function set_colorbar(colorscale::ColorScale, v1::Float64, v2::Float64,
-   data::AbstractArray{<:Real, 2}=[1.0;;])
-   vmin, vmax = set_lim(Float32(v1), Float32(v2), data, colorscale)
+function set_colorbar(colorscale::ColorScale, v1::AbstractFloat, v2::AbstractFloat,
+   data::AbstractArray{<:Real, 2}=[1.0;;];
+   linthresh::AbstractFloat=1.0, logstep::AbstractFloat=1.0, linscale::AbstractFloat=0.03)
+
+   vmin, vmax = set_lim(v1, v2, data, colorscale)
    if colorscale == Linear
       levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
       norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
@@ -259,16 +263,13 @@ function set_colorbar(colorscale::ColorScale, v1::Float64, v2::Float64,
       norm = matplotlib.colors.LogNorm(;vmin, vmax)
       ticks = matplotlib.ticker.LogLocator(base=10, subs=collect(0:9))
    else # symmetric log
-      linthresh = 1.0
-      logstep = 1
-
       logthresh = floor(Int, log10(linthresh))
       minlog = ceil(Int, log10(-vmin))
       maxlog = ceil(Int, log10(vmax))
 
-      norm = matplotlib.colors.SymLogNorm(;linthresh, linscale=0.03, vmin, vmax, base=10)
+      norm = matplotlib.colors.SymLogNorm(;linthresh, linscale, vmin, vmax, base=10)
       ticks = [ [-(10.0^x) for x in minlog:-logstep:logthresh]..., 0.0,
-         [10.0^x for x in logthresh+1:logstep:maxlog]..., ]
+         [10.0^x for x in logthresh:logstep:maxlog]..., ]
    end
 
    norm, ticks
