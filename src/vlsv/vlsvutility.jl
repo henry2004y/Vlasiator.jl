@@ -783,26 +783,18 @@ function getslicecell(meta::MetaVLSV, sliceoffset::Float64, idim::Int,
 end
 
 """
-    refineslice(meta, idlist::Vector{Int}, data::AbstractArray, normal::Symbol) -> Array
+    refineslice(meta, idlist::Vector{Int}, data::AbstractVector, normal::Symbol) -> Vector
+    refineslice(meta, idlist::Vector{Int}, data::AbstractMatrix, normal::Symbol) -> Matrix
 
-Generate scalar data on the finest refinement level given cellids `idlist` and variable
-`data` on the slice perpendicular to `normal`.
+Generate data on the finest refinement level given cellids `idlist` and variable `data` on
+the slice perpendicular to `normal`. If `data` is 2D, then the first dimension is treated as
+vector components.
 """
-function refineslice(meta::MetaVLSV,
-   idlist::Vector{Int}, data::AbstractArray, normal::Symbol)
-
+function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractVector,
+   normal::Symbol)
    (;ncells, maxamr) = meta
 
-   dims = let ratio = 2^maxamr
-      if normal == :x
-         i1, i2 = 2, 3
-      elseif normal == :y
-         i1, i2 = 1, 3
-      elseif normal == :z
-         i1, i2 = 1, 2
-      end
-      (ncells[i1]*ratio, ncells[i2]*ratio)
-   end
+   dims = _getdim2d(ncells, maxamr, normal)
 
    dpoints = zeros(eltype(data), dims...)
 
@@ -850,6 +842,31 @@ function refineslice(meta::MetaVLSV,
    end
 
    dpoints
+end
+
+function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractMatrix,
+   normal::Symbol)
+   dims = _getdim2d(meta.ncells, meta.maxamr, normal)
+
+   dout = zeros(eltype(data), size(data,1), dims...)
+
+   for i in axes(data,1)
+      dout[i,:,:] = @views refineslice(meta, idlist, data[i,:], normal)
+   end
+
+   dout
+end
+
+@inline function _getdim2d(ncells::NTuple{3, Int}, maxamr::Int, normal::Symbol)
+   ratio = 2^maxamr
+   if normal == :x
+      i1, i2 = 2, 3
+   elseif normal == :y
+      i1, i2 = 1, 3
+   elseif normal == :z
+      i1, i2 = 1, 2
+   end
+   dims = (ncells[i1]*ratio, ncells[i2]*ratio)
 end
 
 "Compute x, y and z indexes of all cell `ids` on the given refinement level (0-based)."

@@ -136,7 +136,12 @@ end
 
          data = readvariable(metaAMR, "proton/vg_rho")
          dataslice = refineslice(metaAMR, idlist, data[indexlist], :y)
-         @test sum(dataslice) ≈ 7.690352275026747e8
+         @test sum(dataslice) ≈ 7.6903526f8
+
+         data = readvariable(metaAMR, "proton/vg_v")
+         dataslice = refineslice(metaAMR, idlist, data[:,indexlist], :y)
+         @test dataslice[:,30,10] == [99989.88f0,-10.058721f0, -9.56321f0]
+
          let err = nothing
             try
                getslicecell(metaAMR, sliceoffset, 1, -2., -1.)
