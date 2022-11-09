@@ -138,6 +138,9 @@ end
          dataslice = refineslice(metaAMR, idlist, data[indexlist], :y)
          @test sum(dataslice) ≈ 7.6903526f8
 
+         dataslice = refineslice(metaAMR, idlist, data[indexlist], 2)
+         @test sum(dataslice) ≈ 7.6903526f8
+
          data = readvariable(metaAMR, "proton/vg_v")
          dataslice = refineslice(metaAMR, idlist, data[:,indexlist], :y)
          @test dataslice[:,30,10] == [99989.88f0,-10.058721f0, -9.56321f0]

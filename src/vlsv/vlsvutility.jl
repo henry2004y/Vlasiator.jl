@@ -725,18 +725,18 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
 end
 
 """
-    getslicecell(meta, sliceoffset, idim, minCoord, maxCoord) -> idlist, indexlist
+    getslicecell(meta, sliceoffset, dir, minCoord, maxCoord) -> idlist, indexlist
 
 Find the cell IDs `idlist` which are needed to plot a 2d cut through of a 3d mesh, in a
-direction `idim` at `sliceoffset`, and the `indexlist`, which is a mapping from original
+direction `dir` at `sliceoffset`, and the `indexlist`, which is a mapping from original
 order to the cut plane and can be used to select data onto the plane.
 """
-function getslicecell(meta::MetaVLSV, sliceoffset::Float64, idim::Int,
+function getslicecell(meta::MetaVLSV, sliceoffset::Float64, dir::Int,
    minCoord::Float64, maxCoord::Float64)
-   idim ∉ (1,2,3) && @error "Unknown slice direction $idim"
+   dir ∉ (1,2,3) && @error "Unknown slice direction $dir"
    (;ncells, maxamr, celldict) = meta
 
-   nsize = ncells[idim]
+   nsize = ncells[dir]
    sliceratio = sliceoffset / (maxCoord - minCoord)
    0.0 ≤ sliceratio ≤ 1.0 || error("slice plane index out of bound!")
 
@@ -761,9 +761,9 @@ function getslicecell(meta::MetaVLSV, sliceoffset::Float64, idim::Int,
       ix, iy, iz = getindexes(ilvl, ncells[1], ncells[2], nLow, ids)
 
       coords =
-         if idim == 1
+         if dir == 1
             ix
-         elseif idim == 2
+         elseif dir == 2
             iy
          else # 3
             iz
@@ -785,6 +785,7 @@ end
 """
     refineslice(meta, idlist::Vector{Int}, data::AbstractVector, normal::Symbol) -> Vector
     refineslice(meta, idlist::Vector{Int}, data::AbstractMatrix, normal::Symbol) -> Matrix
+    refineslice(meta, idlist::Vector{Int}, data::AbstractArray, dir::Int)
 
 Generate data on the finest refinement level given cellids `idlist` and variable `data` on
 the slice perpendicular to `normal`. If `data` is 2D, then the first dimension is treated as
@@ -842,6 +843,18 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractVector,
    end
 
    dpoints
+end
+
+function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractArray, dir::Int)
+   if dir == 1
+      refineslice(meta, idlist, data, :x)
+   elseif dir == 2
+      refineslice(meta, idlist, data, :y)
+   elseif dir == 3
+      refineslice(meta, idlist, data, :z)
+   else
+      error("Normal direction index $normal out of range!")
+   end
 end
 
 function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractMatrix,

@@ -226,19 +226,19 @@ const variables_predefined = Dict(
    end,
    :J => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
       @assert isempty(ids) "Do not support current calculation for selected cells!"
-      B = Vlasiator.fillmesh(meta, ["vg_b_vol"]; maxamronly=true)[1][1][1]
+      B = fillmesh(meta, ["vg_b_vol"]; maxamronly=true)[1][1][1]
       J = curl(B, meta.dcoord) ./ Float32(μ₀)
       J::Array{Float32, 4}
    end,
    :Jpar => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # velocity ∥ B
-      B = Vlasiator.fillmesh(meta, ["vg_b_vol"]; maxamronly=true)[1][1][1]
+      B = fillmesh(meta, ["vg_b_vol"]; maxamronly=true)[1][1][1]
       J = curl(B, meta.dcoord)
       μ₀32 = Float32(μ₀)
       Jpar = @views [J[:,i,j,k] ⋅ B[:,i,j,k] / (μ₀32 * norm(B[:,i,j,k]))
          for i in axes(J,2), j in axes(J,3), k in axes(J,4)]::Array{Float32,3}
    end,
    :Jperp => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # velocity ⟂ B
-      B = Vlasiator.fillmesh(meta, ["vg_b_vol"]; maxamronly=true)[1][1][1]
+      B = fillmesh(meta, ["vg_b_vol"]; maxamronly=true)[1][1][1]
       J = curl(B, meta.dcoord)
 
       μ₀32 = Float32(μ₀)

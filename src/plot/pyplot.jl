@@ -102,33 +102,46 @@ function PyPlot.quiver(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=
 end
 
 function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUnit)
-   (;ncells, coordmin, coordmax) = meta
+   (;ncells, maxamr, coordmin, coordmax) = meta
    if occursin("x", comp)
       v1_ = 1
       if occursin("y", comp)
+         dir = 3
          v2_ = 2
-         sizes = (ncells[1], ncells[2])
+         sizes = _getdim2d(ncells, maxamr, :z)
          plotrange = (coordmin[1], coordmax[1], coordmin[2], coordmax[2])
       else
+         dir = 2
          v2_ = 3
-         sizes = (ncells[1], ncells[3])
+         sizes = _getdim2d(ncells, maxamr, :y)
          plotrange = (coordmin[1], coordmax[1], coordmin[3], coordmax[3])
       end
    else
+      dir = 1
       v1_, v2_ = 2, 3
-      sizes = (ncells[2], ncells[3])
+      sizes = _getdim2d(ncells, maxamr, :x)
       plotrange = (coordmin[2], coordmax[2], coordmin[3], coordmax[3])
    end
 
    data = readvariable(meta, var)
 
    if !startswith(var, "fg_") # vlasov grid
-      @assert ndims(data) == 2 && size(data,1) == 3 "Vector data required!"
-      data = reshape(data, 3, sizes[1], sizes[2])
+      @assert ndims(data) == 2 && size(data,1) == 3 "Vector variable required!"
+      if meta.maxamr == 0
+         data = reshape(data, 3, sizes[1], sizes[2])
+         v1 = data[v1_,:,:]
+         v2 = data[v2_,:,:]
+      else
+         idlist, indexlist = 
+            getslicecell(meta, -coordmin[dir], dir, coordmin[dir], coordmax[dir])
+         v2D = data[:,indexlist]
+         v1 = @views refineslice(meta, idlist, v2D[v1_,:], dir)
+         v2 = @views refineslice(meta, idlist, v2D[v2_,:], dir)
+      end
+   else
+      v1 = data[v1_,:,:]
+      v2 = data[v2_,:,:]
    end
-
-   v1 = data[v1_,:,:]
-   v2 = data[v2_,:,:]
 
    x, y = get_axis(axisunit, plotrange, sizes)
 
