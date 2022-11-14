@@ -108,9 +108,9 @@ end
 files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
-x1, x2 = 8.0, 29.0
-point1 = [x1, 0, 0] .* RE
-point2 = [x2, 0, 0] .* RE
+const x1, x2 = 8.0, 29.0
+const point1 = [x1, 0, 0] .* RE
+const point2 = [x2, 0, 0] .* RE
 
 meta = load(files[1])
 cellids, _, _ = getcellinline(meta, point1, point2)
@@ -129,8 +129,8 @@ passobj(1, workers(), [:x1, :x2, :cellids])
    const fontsize = 14
 end
 
-jobs    = RemoteChannel(()->Channel{String}(nfile))
-results = RemoteChannel(()->Channel{Bool}(nworkers()))
+const jobs    = RemoteChannel(()->Channel{String}(nfile))
+const results = RemoteChannel(()->Channel{Bool}(nworkers()))
 
 println("Total number of files: $nfile")
 println("Running with $(nworkers()) workers...")

@@ -10,25 +10,24 @@ using Vlasiator, Glob, PyPlot, Printf
 files = glob("bulk*.vlsv")
 nfile = length(files)
 # Set output directory
-outdir = "out/"
+const outdir = "out/"
 
 meta = load(files[1])
-vardict = Dict("v"=>"proton/vg_v", "rho"=>"proton/vg_rho", "b"=>"vg_b_vol", "b2"=>"fg_b")
-varname = "rho"
+const varname = "proton/vg_rho"
 
 fig, ax = plt.subplots()
 
-comp = :z # vector component for plotting (if applicable)
-axisunit = EARTH
-colorscale = Log
-addcolorbar = true
+const comp = :z # vector component for plotting (if applicable)
+const axisunit = EARTH
+const colorscale = Log
+const addcolorbar = true
 # Choose colormap
-cmap = matplotlib.cm.turbo
+const cmap = matplotlib.cm.turbo
 # Set data plotting range
-vmin = 7.0e4
-vmax = 2.5e6
+const vmin = 7.0e4
+const vmax = 2.5e6
 
-pArgs = Vlasiator.set_args(meta, vardict[varname], axisunit; normal=:none)
+pArgs = Vlasiator.set_args(meta, varname, axisunit; normal=:none)
 
 x1, x2 = Vlasiator.get_axis(pArgs)
 
@@ -44,10 +43,10 @@ for (i, file) in enumerate(files)
    @info "$i out of $nfile"
    local meta = load(file)
 
-   var = meta[vardict[varname]]
+   var = meta[varname]
    t = readparameter(meta, "time")
 
-   data = Vlasiator.prep2d(meta, vardict[varname], comp)'
+   data = Vlasiator.prep2d(meta, varname, comp)'
    c.set_array(data)
 
    str_title = @sprintf "t= %4.1fs" t

@@ -8,9 +8,9 @@
 using Vlasiator, PyPlot
 using Vlasiator: RE
 
-file = "bulk.0000501.vlsv"
-nameρ = "rho"
-nameV = "rho_v"
+const file = "bulk.0000501.vlsv"
+const nameρ = "rho"
+const nameV = "rho_v"
 
 meta = load(file)
 
@@ -20,7 +20,7 @@ pcolormesh(meta, nameρ, ax)
 streamplot(meta, nameV, ax; comp="xy", color="w", density=2.0)
 
 cbar = ax.collections[end].colorbar
-boxcoords = [0, 20, -15, 15]
+const boxcoords = Float64[0, 20, -15, 15]
 ax.set_xlim([boxcoords[1],boxcoords[2]])
 ax.set_ylim([boxcoords[3],boxcoords[4]])
 
@@ -32,7 +32,7 @@ CS = plt.contour(x, y, data, levels = [1e7],
                  colors=("k",),linestyles=("-",),linewidths=(0.5,))
 
 # Add a rectangular box region
-boxrange = (250:299, 200:249)
+const boxrange = (250:299, 200:249)
 
 x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
 y = LinRange(meta.coordmin[2], meta.coordmax[2], meta.ncells[2])

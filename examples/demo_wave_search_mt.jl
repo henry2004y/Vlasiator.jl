@@ -158,24 +158,26 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
    end
 end
 
-##### Main
+function main()
+   varnames = ["proton/vg_rho", "vg_pressure", "proton/vg_v", "proton/vg_v", "vg_b_vol",
+      "vg_e_vol", "vg_e_vol"]
+   varnames_print = ["Density", "Thermal Pressure", "Vx", "Vy", "Bz", "Ex", "Ey"]
+   components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
+   Δt = 0.5                           # output time interval [s]
+   nboxlength = 101                   # moving box average length
+   interval = 2                       # local peak gap minimal interval
+   nplotstride = 50                   # plot intervals in frames 
+   dir = "./" # data directory
 
-varnames = ["proton/vg_rho", "vg_pressure", "proton/vg_v", "proton/vg_v", "vg_b_vol",
-   "vg_e_vol", "vg_e_vol"]
-varnames_print = ["Density", "Thermal Pressure", "Vx", "Vy", "Bz", "Ex", "Ey"]
-components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
-Δt = 0.5                           # output time interval [s]
-nboxlength = 101                   # moving box average length
-interval = 2                       # local peak gap minimal interval
-nplotstride = 50                   # plot intervals in frames 
-dir = "./" # data directory
+   files = glob("bulk*.vlsv", dir)
 
-files = glob("bulk*.vlsv", dir)
+   println("Total number of snapshots: $(length(files))")
+   println("Running with $(Threads.nthreads()) threads...")
 
-println("Total number of snapshots: $(length(files))")
-println("Running with $(Threads.nthreads()) threads...")
+   @time plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
+      interval, nplotstride)
 
-@time plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
-   interval, nplotstride)
+   println("Virtual satellite extraction done!")
+end
 
-println("Virtual satellite extraction done!")
+main()

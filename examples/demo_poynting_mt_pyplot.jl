@@ -236,13 +236,10 @@ end
 files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 
-frequency_range = "low" # filtered frequency range ∈ ("low", "high")
-
-extent = [6., 16., -7., 7.] # [RE], default full domain: [-Inf32, Inf32, -Inf32, Inf32]
-
-normal = :none # plane normal direction for 3D data, (:none, :x, :y, :z)
-
-fs = 2.0 # sampling frequency, [Hz]
+const frequency_range = "low" # filtered frequency range ∈ ("low", "high")
+const extent = [6., 16., -7., 7.] # [RE], default: [-Inf32, Inf32, -Inf32, Inf32]
+const normal = :none # plane normal direction for 3D data, (:none, :x, :y, :z)
+const fs = 2.0 # sampling frequency, [Hz]
 
 # WARNING: t may not be exact due to round-off errors in output time stamps!
 ndim, pArgs, t, range1, range2 = let meta = load(files[1])

@@ -133,20 +133,20 @@ files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
 # Set output directory
-outdir = "contour/"
+const outdir = "contour/"
 
 # Set colormaps for continuous and divergent data
-cmaps = (matplotlib.cm.turbo, matplotlib.cm.RdBu_r)
-axisunit = EARTH
-extent = [0., 20., -20., 20.] # [RE], default full domain: [-Inf32, Inf32, -Inf32, Inf32]
+const cmaps = (matplotlib.cm.turbo, matplotlib.cm.RdBu_r)
+const axisunit = EARTH
+const extent = [0., 20., -20., 20.] # [RE], default: [-Inf32, Inf32, -Inf32, Inf32]
 
 # Plotting range for each variable
-ρmin, ρmax   = 0.1, 15.0     # [amu/cc]
-vxmin, vxmax = -650.0, 650.0 # [km/s]
-vzmin, vzmax = -500.0, 500.0 # [km/s]
-pmin, pmax   = 0.0, 3.6      # [nPa]
-bmin, bmax   = -60.0, 60.    # [nT]
-emin, emax   = 0.0, 20.      # [mV/m]
+const ρmin, ρmax   = 0.1, 15.0     # [amu/cc]
+const vxmin, vxmax = -650.0, 650.0 # [km/s]
+const vzmin, vzmax = -500.0, 500.0 # [km/s]
+const pmin, pmax   = 0.0, 3.6      # [nPa]
+const bmin, bmax   = -60.0, 60.    # [nT]
+const emin, emax   = 0.0, 20.      # [mV/m]
 
 meta = load(files[1])
 
@@ -159,8 +159,8 @@ norm4, ticks4 = Vlasiator.set_colorbar(Linear, pmin, pmax)
 norm5, ticks5 = Vlasiator.set_colorbar(Linear, bmin, bmax)
 norm6, ticks6 = Vlasiator.set_colorbar(Linear, emin, emax)
 
-norms = (norm1, norm2, norm3, norm4, norm5, norm6)
-ticks = (ticks1, ticks2, ticks3, ticks4, ticks5, ticks6)
+const norms = (norm1, norm2, norm3, norm4, norm5, norm6)
+const ticks = (ticks1, ticks2, ticks3, ticks4, ticks5, ticks6)
 
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))

@@ -5,7 +5,7 @@ using Vlasiator, Dates, Plots
 # plotly is nice for scanning through data interactively
 plotly()
 
-file = "logfile.txt"
+const file = "logfile.txt"
 
 timestamps, speed = readlog(file)
 

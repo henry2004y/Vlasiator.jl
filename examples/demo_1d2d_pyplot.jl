@@ -203,13 +203,13 @@ end
 files = glob("bulk*.vlsv", ".")
 nfile = length(files)
 # Set output directory
-outdir = "out/"
+const outdir = "out/"
 
 meta = load(files[1])
 
-x1, x2 = 7.0, 18.0 # Earth radii
-point1 = [x1, 0, 0] .* Vlasiator.RE
-point2 = [x2, 0, 0] .* Vlasiator.RE
+const x1, x2 = 7.0, 18.0 # Earth radii
+const point1 = [x1, 0, 0] .* Vlasiator.RE
+const point2 = [x2, 0, 0] .* Vlasiator.RE
 
 cellids, distances, coords = getcellinline(meta, point1, point2)
 

@@ -3,50 +3,51 @@
 using FFTW, JLD2, CurveFit, PyPlot
 using Vlasiator: RE
 
-file = "satellites_uniform_sampled.jld2"
+function main()
+   file = "satellites_uniform_sampled.jld2"
+   data = JLD2.load(file)
 
+   nSatellite = length(data["t"])
+   nI, nJ = size(data["rho"])[2:3]
 
-data = JLD2.load(file)
+   t = data["t"]
+   # Select spatial point
+   i, j = 5, 5
+   var = data["rho"][:,i,j] 
 
-nSatellite = length(data["t"])
-nI, nJ = size(data["rho"])[2:3]
+   dt = t[2] - t[1] # uniform sample interval [s]
+   Fs = 1 / dt      # sample frequency, [Hz]
+   Fn = Fs / 2      # Nyquist frequency, [Hz]
 
-t = data["t"]
-# Select spatial point
-i, j = 5, 5
-var = data["rho"][:,i,j] 
+   ## Frequency calculation
+   nPoints = length(var)
+   nFFT = nPoints
+   df = Fs / nFFT
+   freq_fullrange = -Fn:df:Fn
 
-dt = t[2] - t[1] # uniform sample interval [s]
-Fs = 1 / dt      # sample frequency, [Hz]
-Fn = Fs / 2      # Nyquist frequency, [Hz]
+   freq = freq_fullrange[(nPoints ÷ 2 + 1):end-1]
 
-## Frequency calculation
+   var_freq = fft(var)
+   var_power = abs.(fftshift(var_freq))[(nPoints ÷ 2 + 1):end]
 
-nPoints = length(var)
-nFFT = nPoints
-df = Fs / nFFT
-freq_fullrange = -Fn:df:Fn
+   # k is the exponential coefficient
+   a, k = @views power_fit(freq[10:end], var_power[10:end])
 
-freq = freq_fullrange[(nPoints ÷ 2 + 1):end-1]
+   figure(figsize=(6,8))
+   loglog(freq, var_power)
+   axis("scaled")
 
-var_freq = fft(var)
-var_power = abs.(fftshift(var_freq))[(nPoints ÷ 2 + 1):end]
+   min_power, max_power = extrema(@view var_power[10:end])
+   xlim(freq[8], Fs)
+   ylim(min_power * 0.75, max_power * 2.0)
 
-# k is the exponential coefficient
-a, k = @views power_fit(freq[10:end], var_power[10:end])
+   xlabel("Frequency [Hz]"; fontsize=14)
+   ylabel("Power Density "; fontsize=14)
+   title(string(round.(data["locations"][i,j]./RE, digits=1))*"Re"; fontsize=14)
 
-figure(figsize=(6,8))
-loglog(freq, var_power)
-axis("scaled")
+   loglog(freq[10:end], a.*freq[10:end].^k, label="k = $(round(k, digits=1))")
 
-min_power, max_power = extrema(@view var_power[10:end])
-xlim(freq[8], Fs)
-ylim(min_power * 0.75, max_power * 2.0)
+   legend()
+end
 
-xlabel("Frequency [Hz]"; fontsize=14)
-ylabel("Power Density "; fontsize=14)
-title(string(round.(data["locations"][i,j]./RE, digits=1))*"Re"; fontsize=14)
-
-loglog(freq[10:end], a.*freq[10:end].^k, label="k = $(round(k, digits=1))")
-
-legend()
+main()

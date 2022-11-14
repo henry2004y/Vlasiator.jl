@@ -123,16 +123,16 @@ files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
 # Set output directory
-outdir = "out/"
+const outdir = "out/"
 
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))
 
-axisunit = EARTH # contour plot axes unit
-extent = [0., 20., -20., 20.] # [RE], default full domain: [-Inf32, Inf32, -Inf32, Inf32]
+const axisunit = EARTH # contour plot axes unit
+const extent = [0., 20., -20., 20.] # [RE], default: [-Inf32, Inf32, -Inf32, Inf32]
 
 # Upper/lower limits for each variable
-ρmin, ρmax = 0.0, 11.0      # [amu/cc]
+const ρmin, ρmax = 0.0, 11.0      # [amu/cc]
 
 meta = load(files[1])
 # Construct pieces for plotting
@@ -140,7 +140,7 @@ pArgs = Vlasiator.set_args(meta, "proton/vg_rho", axisunit; normal=:none)
 norm, ticks = Vlasiator.set_colorbar(Linear, ρmin, ρmax)
 
 # Mark spatial dimensions
-dim_ = pArgs.stry[1] == 'Z' ? (1,3) : (1,2)
+const dim_ = pArgs.stry[1] == 'Z' ? (1,3) : (1,2)
 
 (;coordmin, coordmax, ncells) = meta
 
@@ -148,7 +148,7 @@ dim_ = pArgs.stry[1] == 'Z' ? (1,3) : (1,2)
 grid1 = range(coordmin[dim_[1]], coordmax[dim_[1]], length=ncells[dim_[1]]) 
 grid2 = range(coordmin[dim_[2]], coordmax[dim_[2]], length=ncells[dim_[2]])
 # Generate seeds for in-plane field line tracing
-nseeds = 10
+const nseeds = 10
 seeds = generate_seeds(coordmin, coordmax, dim_, nseeds)
 
 

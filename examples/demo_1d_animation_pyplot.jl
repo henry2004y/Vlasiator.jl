@@ -8,8 +8,8 @@ using Vlasiator, Glob, PyPlot, Printf
 
 files = glob("bulk.*.vlsv", ".")
 # Choose plotting variable
-var = "proton/vg_rho"
-comp = 0 # component of vector, if used
+const var = "proton/vg_rho"
+const comp = 0 # component of vector, if used
 
 fig = plt.figure(constrained_layout=true)
 # Fix axis limits according to data range

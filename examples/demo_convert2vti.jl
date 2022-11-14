@@ -11,8 +11,7 @@ using Vlasiator, Glob
 
 files = glob("*.vlsv")
 
-Threads.@threads for i in 1:length(files)
-   file = files[i]
+Threads.@threads for file in files
    @info file, Threads.threadid()
    write_vtk(file; vti=true)
 end

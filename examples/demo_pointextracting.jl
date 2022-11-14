@@ -48,7 +48,7 @@ end
 files = glob("bulk*.vlsv", "./")
 
 # virtual satellite location
-loc = [12RE, 0, 0]
+const loc = Float64[12, 0, 0] .* RE
 
 println("Number of files: $(length(files))")
 println("Extracting location: $loc")

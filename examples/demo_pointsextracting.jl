@@ -51,7 +51,7 @@ end
 files = glob("bulk*.vlsv", "./")
 
 # virtual satellite locations
-locations = [[7RE, 0, 0], [9RE, 0, 0], [11RE, 0, 0], [12RE, 0, 0], [13RE, 0, 0],
+const locations = [[7RE, 0, 0], [9RE, 0, 0], [11RE, 0, 0], [12RE, 0, 0], [13RE, 0, 0],
    [14RE, 0, 0], [15RE, 0, 0], [16RE, 0, 0], [17RE, 0, 0], [29.3RE, 0, 0]]
 
 println("Number of files: $(length(files))")

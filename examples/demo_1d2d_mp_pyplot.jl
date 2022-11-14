@@ -220,7 +220,7 @@ files = glob("bulk*.vlsv", ".")
 
 nfile = length(files)
 # Set output directory
-outdir = "1d2d/"
+const outdir = "1d2d/"
 
 # Set contour plots' axes
 axisunit = EARTH
@@ -241,8 +241,8 @@ pArgs1 = Vlasiator.set_args(meta, "VA", axisunit; normal=:none)
 norm1, ticks1 = Vlasiator.set_colorbar(Linear, vamin, vamax)
 norm2, ticks2 = Vlasiator.set_colorbar(Linear, vsmin, vsmax)
 
-norms = (norm1, norm2)
-ticks = (ticks1, ticks2)
+const norms = (norm1, norm2)
+const ticks = (ticks1, ticks2)
 
 const jobs   = RemoteChannel(()->Channel{String}(nfile))
 const status = RemoteChannel(()->Channel{Bool}(nworkers()))

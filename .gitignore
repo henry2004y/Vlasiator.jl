@@ -10,6 +10,7 @@
 *.vti
 *.vthb
 *.mem
+*.jld2
 .CondaPkg/
 test*
 /benchmark/*.json

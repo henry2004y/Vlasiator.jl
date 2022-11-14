@@ -8,10 +8,10 @@ using Vlasiator, PyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
 ImageGrid = axes_grid1.ImageGrid
 
-file = "bulk1.0001000.vlsv"
-nameρ = "proton/vg_rho"
-colorscale = Log
-addcolorbar = false
+const file = "bulk1.0001000.vlsv"
+const nameρ = "proton/vg_rho"
+const colorscale = Log
+const addcolorbar = false
 
 meta = load(file)
 

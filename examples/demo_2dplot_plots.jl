@@ -7,11 +7,11 @@
 
 using Vlasiator, Plots
 
-file = "bulk.0000501.vlsv"
-nameρ = "rho"
-nameV = "rho_v"
+const file = "bulk.0000501.vlsv"
+const nameρ = "rho"
+const nameV = "rho_v"
 
-boxcoords = [0, 20, -15, 15]
+const boxcoords = Float64[0, 20, -15, 15]
 
 meta = load(file)
 

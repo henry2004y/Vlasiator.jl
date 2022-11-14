@@ -106,123 +106,125 @@ function align_yaxis(ax1, ax2)
    return
 end
 
-################# Main
+function main()
+   files = glob("bulk*.vlsv", ".")
 
-files = glob("bulk*.vlsv", ".")
+   # virtual satellite location
+   loc = [12Vlasiator.RE, 0, 0]
 
-# virtual satellite location
-loc = [12Vlasiator.RE, 0, 0]
+   nbox = 40 # moving box size, [# of indices]
+   fs = 2.0 # sampling rate, [Hz]
 
-nbox = 40 # moving box size, [# of indices]
-fs = 2.0 # sampling rate, [Hz]
+   println("Running with $(Threads.nthreads()) threads...")
+   println("Number of files: $(length(files))")
+   println("Extracting location: $loc [m]")
+   println("Sampling rate: $fs [Hz]")
+   println("Moving box window size: $(nbox / fs) [s]")
 
-println("Running with $(Threads.nthreads()) threads...")
-println("Number of files: $(length(files))")
-println("Extracting location: $loc [m]")
-println("Sampling rate: $fs [Hz]")
-println("Moving box window size: $(nbox / fs) [s]")
+   t, n, v, e, b = extract_vars(files, loc)
 
-t, n, v, e, b = extract_vars(files, loc)
+   bmag = [hypot(b[1,i], b[2,i], b[3,i]) for i in eachindex(n)]
 
-bmag = [hypot(b[1,i], b[2,i], b[3,i]) for i in eachindex(n)]
+   # Detrend before filtering to remove the lowest frequency changes
+   dn = detrend(n; nbox)
+   dbmag = detrend(bmag; nbox)
 
-# Detrend before filtering to remove the lowest frequency changes
-dn = detrend(n; nbox)
-dbmag = detrend(bmag; nbox)
+   n̄ = moving_average(n, nbox)
+   b̄mag = moving_average(bmag, nbox)
 
-n̄ = moving_average(n, nbox)
-b̄mag = moving_average(bmag, nbox)
+   v̄a = @. b̄mag / sqrt(μ₀ * mᵢ * n̄)
 
-v̄a = @. b̄mag / sqrt(μ₀ * mᵢ * n̄)
+   dv = detrend(v; nbox) # [m/s]
+   db = detrend(b; nbox) # [T]
 
-dv = detrend(v; nbox) # [m/s]
-db = detrend(b; nbox) # [T]
+   # Decompose into parallel and perpendicular vector components
+   b̂₀ = moving_average(b, nbox)
+   for i in axes(b̂₀, 2)
+      normalize!(@view b̂₀[:,i])
+   end
 
-# Decompose into parallel and perpendicular vector components
-b̂₀ = moving_average(b, nbox)
-for i in axes(b̂₀, 2)
-   normalize!(@view b̂₀[:,i])
+   # δB∥
+   db_par = [db[:,i] ⋅ b̂₀[:,i] for i in axes(db, 2)]
+   # δB⟂
+   db_perp = [norm(db[:,i] .- db_par[i] .* b̂₀[:,i]) for i in axes(db, 2)]
+   # δv∥
+   dv_par = [dv[:,i] ⋅ b̂₀[:,i] for i in axes(dv, 2)]
+   # δv⟂
+   dv_perp = [norm(dv[:,i] .- dv_par[i] .* b̂₀[:,i]) for i in axes(dv, 2)]
+
+   designmethod = Butterworth(5)
+
+   responsetype = Highpass(0.1; fs)
+   dn_high = filtfilt(digitalfilter(responsetype, designmethod), dn)
+   dbpar_high = filtfilt(digitalfilter(responsetype, designmethod), db_par)
+   dbperp_high = filtfilt(digitalfilter(responsetype, designmethod), db_perp)
+   dvperp_high = filtfilt(digitalfilter(responsetype, designmethod), dv_perp)
+
+   responsetype = Bandpass(0.02, 0.067; fs)
+   dn_low = filtfilt(digitalfilter(responsetype, designmethod), dn)
+   dbpar_low = filtfilt(digitalfilter(responsetype, designmethod), db_par)
+
+   color1 = "tab:blue"
+   color2 = "tab:red"
+
+   fig, axs = plt.subplots(3, 1; figsize=(13, 9), sharex=true, constrained_layout=true)
+
+   fig.suptitle("Virtual satellite at $(string(round.(loc./RE, digits=2))) "*L"R_E";
+      fontsize="x-large")
+
+   axs[1].plot(t, dn_low ./ n̄, color1, label=L"\delta n, 0.02-0.067\, Hz")
+   ax12 = axs[1].twinx()
+   ax12.plot(t, dbpar_low ./ b̄mag, color=color2, label=L"\delta B, 0.02-0.067\, Hz")
+
+   axs[2].plot(t, (dn_high ./ n̄), color1, label=L"\delta n, 0.1-1.0\, Hz")
+   ax22 = axs[2].twinx()
+   ax22.plot(t, (dbpar_high ./ b̄mag), color=color2, label=L"\delta B, 0.1-1.0\, Hz")
+
+   axs[3].plot(t, dvperp_high ./ v̄a, color1, label=L"\delta v_\perp, 0.1-1.0\, Hz")
+   ax32 = axs[3].twinx()
+   ax32.plot(t, dbperp_high ./ b̄mag, color=color2, label=L"\delta B, 0.1-1.0\, Hz")
+
+   axs[3].set_xlabel("time [s]"; fontsize="large")
+
+   n_str = (L"\delta n /n", L"\delta n / n", L"\delta v_\perp / V_A")
+
+   for (i, a) in enumerate(axs)
+      a.hlines(0.0, t[1], t[end]; colors="k", linestyle="dashed", alpha=0.3)
+      a.tick_params(axis="y", labelcolor=color1)
+      a.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      a.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      a.grid(true)
+      a.set_ylabel(n_str[i], color=color1, fontsize=14)
+   end
+
+   axtwin = (ax12, ax22, ax32)
+   b_str = ( L"\delta B_\parallel / B_0", L"\delta B_\parallel / B_0", L"\delta B_\perp / B_0")
+
+   for (i, a) in enumerate(axtwin)
+      a.tick_params(axis="y", labelcolor=color2)
+      a.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      a.set_ylabel(b_str[i], color=color2, fontsize="large")
+      align_yaxis(axs[i], a)
+   end
+
+   AnchoredText = matplotlib.offsetbox.AnchoredText
+
+   at = AnchoredText(
+      "[0.02, 0.067] Hz band", prop=Dict("size"=>"medium"), frameon=true, loc="lower left")
+   at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
+   axs[1].add_artist(at)
+
+   at = AnchoredText(
+      "[0.1, 1.0] Hz band", prop=Dict("size"=>"medium"), frameon=true, loc="lower left")
+   at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
+   axs[2].add_artist(at)
+
+   at = AnchoredText(
+      "[0.1, 1.0] Hz band", prop=Dict("size"=>"medium"), frameon=true, loc="lower left")
+   at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
+   axs[3].add_artist(at)
+
+   savefig("virtual_satellite_wave.png"; dpi=300)
 end
 
-# δB∥
-db_par = [db[:,i] ⋅ b̂₀[:,i] for i in axes(db, 2)]
-# δB⟂
-db_perp = [norm(db[:,i] .- db_par[i] .* b̂₀[:,i]) for i in axes(db, 2)]
-# δv∥
-dv_par = [dv[:,i] ⋅ b̂₀[:,i] for i in axes(dv, 2)]
-# δv⟂
-dv_perp = [norm(dv[:,i] .- dv_par[i] .* b̂₀[:,i]) for i in axes(dv, 2)]
-
-designmethod = Butterworth(5)
-
-responsetype = Highpass(0.1; fs)
-dn_high = filtfilt(digitalfilter(responsetype, designmethod), dn)
-dbpar_high = filtfilt(digitalfilter(responsetype, designmethod), db_par)
-dbperp_high = filtfilt(digitalfilter(responsetype, designmethod), db_perp)
-dvperp_high = filtfilt(digitalfilter(responsetype, designmethod), dv_perp)
-
-responsetype = Bandpass(0.02, 0.067; fs)
-dn_low = filtfilt(digitalfilter(responsetype, designmethod), dn)
-dbpar_low = filtfilt(digitalfilter(responsetype, designmethod), db_par)
-
-color1 = "tab:blue"
-color2 = "tab:red"
-
-fig, axs = plt.subplots(3, 1; figsize=(13, 9), sharex=true, constrained_layout=true)
-
-fig.suptitle("Virtual satellite at $(string(round.(loc./RE, digits=2))) "*L"R_E";
-   fontsize="x-large")
-
-axs[1].plot(t, dn_low ./ n̄, color1, label=L"\delta n, 0.02-0.067\, Hz")
-ax12 = axs[1].twinx()
-ax12.plot(t, dbpar_low ./ b̄mag, color=color2, label=L"\delta B, 0.02-0.067\, Hz")
-
-axs[2].plot(t, (dn_high ./ n̄), color1, label=L"\delta n, 0.1-1.0\, Hz")
-ax22 = axs[2].twinx()
-ax22.plot(t, (dbpar_high ./ b̄mag), color=color2, label=L"\delta B, 0.1-1.0\, Hz")
-
-axs[3].plot(t, dvperp_high ./ v̄a, color1, label=L"\delta v_\perp, 0.1-1.0\, Hz")
-ax32 = axs[3].twinx()
-ax32.plot(t, dbperp_high ./ b̄mag, color=color2, label=L"\delta B, 0.1-1.0\, Hz")
-
-axs[3].set_xlabel("time [s]"; fontsize="large")
-
-n_str = (L"\delta n /n", L"\delta n / n", L"\delta v_\perp / V_A")
-
-for (i, a) in enumerate(axs)
-   a.hlines(0.0, t[1], t[end]; colors="k", linestyle="dashed", alpha=0.3)
-   a.tick_params(axis="y", labelcolor=color1)
-   a.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-   a.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-   a.grid(true)
-   a.set_ylabel(n_str[i], color=color1, fontsize=14)
-end
-
-axtwin = (ax12, ax22, ax32)
-b_str = ( L"\delta B_\parallel / B_0", L"\delta B_\parallel / B_0", L"\delta B_\perp / B_0")
-
-for (i, a) in enumerate(axtwin)
-   a.tick_params(axis="y", labelcolor=color2)
-   a.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-   a.set_ylabel(b_str[i], color=color2, fontsize="large")
-   align_yaxis(axs[i], a)
-end
-
-AnchoredText = matplotlib.offsetbox.AnchoredText
-
-at = AnchoredText(
-   "[0.02, 0.067] Hz band", prop=Dict("size"=>"medium"), frameon=true, loc="lower left")
-at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
-axs[1].add_artist(at)
-
-at = AnchoredText(
-   "[0.1, 1.0] Hz band", prop=Dict("size"=>"medium"), frameon=true, loc="lower left")
-at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
-axs[2].add_artist(at)
-
-at = AnchoredText(
-   "[0.1, 1.0] Hz band", prop=Dict("size"=>"medium"), frameon=true, loc="lower left")
-at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
-axs[3].add_artist(at)
-
-savefig("virtual_satellite_wave.png"; dpi=300)
+main()

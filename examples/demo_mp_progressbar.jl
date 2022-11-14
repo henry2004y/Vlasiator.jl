@@ -185,8 +185,8 @@ end
 files = glob("bulk*.vlsv", "../run_rho2_bz-5_timevarying_startfrom300s")
 nfiles = length(files)
 
-p = Progress(nfiles; showspeed=true)
-channel = RemoteChannel(()->Channel{Bool}(), 1)
+const p = Progress(nfiles; showspeed=true)
+const channel = RemoteChannel(()->Channel{Bool}(), 1)
 
 @passobj 1 workers() files
 
@@ -215,11 +215,11 @@ channel = RemoteChannel(()->Channel{Bool}(), 1)
 end
 
 const x1, x2 = 8.0, 29.0
-point1 = [x1, 0, 0] .* RE
-point2 = [x2, 0, 0] .* RE
+const point1 = [x1, 0, 0] .* RE
+const point2 = [x2, 0, 0] .* RE
 
 meta = load(files[1])
-const cellids, _, _ = getcellinline(meta, point1, point2)
+cellids, _, _ = getcellinline(meta, point1, point2)
 passobj(1, workers(), [:x1, :x2, :cellids])
 @broadcast const loc = range(x1, x2, length=length(cellids))
 

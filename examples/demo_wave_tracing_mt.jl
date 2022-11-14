@@ -221,7 +221,8 @@ function estimate_meanstates(files, cellids)
 end
 
 "Plot the process of wave checks."
-function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dtfile, Δt)
+function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dtfile, Δt,
+   outdir)
 
    # Parameters
    nfile = length(files)
@@ -373,41 +374,44 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
 
 end
 
-## Main
+function main()
+   outdir = "../out/"
+   γ = 5 / 3
 
-const outdir = "../out/"
-const γ = 5 / 3
+   xStart = [10.0, 0.0, 0.0].*RE
+   xEnd   = [13.3, 0.0, 0.0].*RE
 
-xStart = [10.0, 0.0, 0.0].*RE
-xEnd   = [13.3, 0.0, 0.0].*RE
+   varnames = ["proton/vg_rho", "vg_b_vol", "vg_e_vol", "vg_pressure"]
+   varnames_print = ["rho", "b", "e", "p"]
+   components = [0, 3, 1, 0] # 0 for scalar, 1-3 for vector components
 
-varnames = ["proton/vg_rho", "vg_b_vol", "vg_e_vol", "vg_pressure"]
-varnames_print = ["rho", "b", "e", "p"]
-components = [0, 3, 1, 0] # 0 for scalar, 1-3 for vector components
+   dir = "../run_rho2_bz-5_timevarying_startfrom300s"
+   files = glob("bulk.*.vlsv", dir)
 
-dir = "../run_rho2_bz-5_timevarying_startfrom300s"
-files = glob("bulk.*.vlsv", dir)
+   vars = Variables(varnames, varnames_print, components)
 
-vars = Variables(varnames, varnames_print, components)
+   dtfile = 0.5                          # output interval, [s]
+   Δt   = 0.0147176                      # discrete time step from runlog, [s]
 
-dtfile = 0.5                          # output interval, [s]
-Δt   = 0.0147176                      # discrete time step from runlog, [s]
+   meta = load(files[1])
 
-meta = load(files[1])
+   if ispolar(meta) # polar plane
+      @error "not implemented!"
+   end
 
-if ispolar(meta) # polar plane
-   @error "not implemented!"
+   cellids, distances, coords = getcellinline(meta, xStart, xEnd)
+
+   meanstates = estimate_meanstates(files, cellids)
+
+   println("number of extracted points: ", length(cellids))
+   println("xStart: ", xStart)
+   println("xEnd: ", xEnd)
+   tbegin = load(files[1]).time
+   tend = load(files[end]).time
+   println("time from $tbegin to $tend s")
+
+   @time plot_dispersion(files, vars, cellids, distances, coords, meanstates, dtfile, Δt,
+      outdir)
 end
 
-cellids, distances, coords = getcellinline(meta, xStart, xEnd)
-
-meanstates = estimate_meanstates(files, cellids)
-
-println("number of extracted points: ", length(cellids))
-println("xStart: ", xStart)
-println("xEnd: ", xEnd)
-tbegin = load(files[1]).time
-tend = load(files[end]).time
-println("time from $tbegin to $tend s")
-
-@time plot_dispersion(files, vars, cellids, distances, coords, meanstates, dtfile, Δt)
+main()
