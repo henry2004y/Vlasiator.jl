@@ -1,4 +1,4 @@
-# Sample script for stream tracing from a given starting point.
+# Sample script for stream tracing in a 2D uniform field.
 #
 # Hongyang Zhou, hyzhou@umich.edu
 
