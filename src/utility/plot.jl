@@ -162,7 +162,7 @@ function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{In
 
    data3D = readvariable(meta, var)
 
-   if startswith(var, "fg_") # field quantities, fsgrid
+   if startswith(var, "fg_") || ndims(data3D) > 2 # field or derived quantities, fsgrid
       ncells = meta.ncells .* 2^meta.maxamr
       if normal == :x
          dir = 1
@@ -182,11 +182,14 @@ function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{In
          comp = comp == :x ? 1 : comp == :y ? 2 : comp == :z ? 3 : 0
       end
       if normal == :x
-         data = data3D[comp,icut,:,:]
-      elseif normal == :y
-         data = data3D[comp,:,icut,:]
-      elseif normal == :z
-         data = data3D[comp,:,:,icut]
+         data = comp != 0 ? data3D[comp,icut,:,:] :
+            @views hypot.(data3D[1,icut,:,:], data3D[2,icut,:,:], data3D[3,icut,:,:])
+      elseif normal == :y 
+         data = comp != 0 ? data3D[comp,:,icut,:] :
+            @views hypot.(data3D[1,:,icut,:], data3D[2,:,icut,:], data3D[3,:,icut,:])
+      elseif normal == :z 
+         data = comp != 0 ? data3D[comp,:,:,icut] :
+            @views hypot.(data3D[1,:,:,icut], data3D[2,:,:,icut], data3D[3,:,:,icut])
       end
    else # moments, dccrg grid
       # vlasov grid, AMR

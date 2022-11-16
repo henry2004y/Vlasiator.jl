@@ -424,10 +424,16 @@ end
          @test v[1] == 3.0058909f-9
          v = pcolormesh(meta, "proton/vg_v", comp=:x, colorscale=SymLog).get_array()
          @test v[2] == -699935.2f0
+         v = contour(meta, "proton/vg_rho").get_array()
+         @test length(v) == 8 && v[end] == 5.6e6
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
          v = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
          @test size(v) == (6300, 2)
+         # should be tested in 3D, but in principle 2D also works
+         pArgs = Vlasiator.set_args(meta, "J", EARTH; normal=:y, origin=0.0)
+         v = Vlasiator.prep2dslice(meta, "J", :y, 2, pArgs)
+         @test v[62,1] == 9.80949f-12
 
          # 3D AMR
          meta = meta3
@@ -435,6 +441,8 @@ end
          @test v[255] == 1.0483886f6 && length(v) == 512
          v = pcolormesh(meta, "proton/vg_v").get_array()
          @test v[255] == 99992.586f0
+         v = contour(meta, "proton/vg_rho").get_array()
+         @test length(v) == 9 && v[end] == 2.1e6
          pArgs = Vlasiator.set_args(meta, "fg_e", EARTH; normal=:y, origin=0.0)
          v = Vlasiator.prep2dslice(meta, "fg_e", :y, 2, pArgs)
          @test v[16,8] == 0.00032270234f0
