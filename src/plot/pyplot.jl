@@ -132,7 +132,7 @@ function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUni
          v1 = data[v1_,:,:]
          v2 = data[v2_,:,:]
       else
-         idlist, indexlist = 
+         idlist, indexlist =
             getslicecell(meta, -coordmin[dir], dir, coordmin[dir], coordmax[dir])
          v2D = data[:,indexlist]
          v1 = @views refineslice(meta, idlist, v2D[v1_,:], dir)
@@ -190,57 +190,10 @@ function PyPlot.pcolormesh(meta::MetaVLSV, var::String,
    vmin::Float64=-Inf, vmax::Float64=Inf, extent::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
    kwargs...)
 
-   if ndims(meta) == 3 || meta.maxamr > 0
-      # check if origin and normal exist in kwargs
-      normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
-      origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
-      kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
-
-      pArgs = set_args(meta, var, axisunit; normal, origin)
-      data = prep2dslice(meta, var, normal, comp, pArgs)'
-   else
-      pArgs = set_args(meta, var, axisunit)
-      data = prep2d(meta, var, comp)'
-   end
-
-   x1, x2 = get_axis(pArgs)
-
-   if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
-      _fillinnerBC!(data, data)
-   end
-
-   norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
-
-   range1, range2 =
-      if axisunit == EARTH
-         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
-         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
-      else
-         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
-         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
-      end
-
    isnothing(ax) && (ax = plt.gca())
 
-   if colorscale != SymLog
-      if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
-         c = ax.pcolormesh(x1, x2, data; norm, kwargs...)
-      else
-         c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
-            norm, kwargs...)
-      end
-   else
-      if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
-         c = ax.pcolormesh(x1, x2, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
-      else
-         c = ax.pcolormesh(x1[range1], x2[range2], data[range2, range1];
-            norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
-      end
-   end
-
-   set_plot(c, ax, pArgs, ticks, addcolorbar)
-
-   return c
+   _plot2d(ax.pcolormesh, meta, var, ax;
+      comp, axisunit, colorscale, addcolorbar, vmin, vmax, extent, kwargs...)
 end
 
 """
@@ -255,6 +208,42 @@ If `ax` is provided, then it will plot on that axes. The arguments are the same 
 Any valid keyword argument for `plt.contour` is supported.
 """
 function PyPlot.contour(meta::MetaVLSV, var::String,
+   ax::Union{PyObject,Nothing}=nothing; comp::Union{Int, Symbol}=0,
+   axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar::Bool=true,
+   vmin::Float64=-Inf, vmax::Float64=Inf, extent::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
+   kwargs...)
+
+   isnothing(ax) && (ax = plt.gca())
+
+   _plot2d(ax.contour, meta, var, ax;
+      comp, axisunit, colorscale, addcolorbar, vmin, vmax, extent, kwargs...)
+end
+
+"""
+    contourf(meta::MetaVLSV, var::String, ax=nothing;
+       comp=0, axisunit=EARTH, colorscale=Linear, vmin=-Inf, vmax=Inf,
+       addcolorbar=true, extent=[-Inf, Inf, -Inf, Inf], kwargs...)
+
+Plot colored contour lines of `var` from `meta` associated with 2D or 3D AMR grid.
+If `ax` is provided, then it will plot on that axes. The arguments are the same as in
+[`pcolormesh`](@ref). See also [`contour`](@ref).
+
+Any valid keyword argument for `plt.contourf` is supported.
+"""
+function PyPlot.contourf(meta::MetaVLSV, var::String,
+   ax::Union{PyObject,Nothing}=nothing; comp::Union{Int, Symbol}=0,
+   axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar::Bool=true,
+   vmin::Float64=-Inf, vmax::Float64=Inf, extent::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
+   kwargs...)
+
+   isnothing(ax) && (ax = plt.gca())
+
+   _plot2d(ax.contourf, meta, var, ax;
+      comp, axisunit, colorscale, addcolorbar, vmin, vmax, extent, kwargs...)
+end
+
+# General method for 2D plotting
+function _plot2d(f::PyObject, meta::MetaVLSV, var::String,
    ax::Union{PyObject,Nothing}=nothing; comp::Union{Int, Symbol}=0,
    axisunit::AxisUnit=EARTH, colorscale::ColorScale=Linear, addcolorbar::Bool=true,
    vmin::Float64=-Inf, vmax::Float64=Inf, extent::Vector{Float64}=[-Inf, Inf, -Inf, Inf],
@@ -290,20 +279,18 @@ function PyPlot.contour(meta::MetaVLSV, var::String,
          searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
       end
 
-   isnothing(ax) && (ax = plt.gca())
-
    if colorscale != SymLog
       if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
-         c = ax.contour(x1, x2, data; norm, kwargs...)
+         c = f(x1, x2, data; norm, kwargs...)
       else
-         c = ax.contour(x1[range1], x2[range2], data[range2, range1];
+         c = f(x1[range1], x2[range2], data[range2, range1];
             norm, kwargs...)
       end
    else
       if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
-         c = ax.contour(x1, x2, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
+         c = f(x1, x2, data; norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
       else
-         c = ax.contour(x1[range1], x2[range2], data[range2, range1];
+         c = f(x1[range1], x2[range2], data[range2, range1];
             norm, cmap=matplotlib.cm.RdBu_r, kwargs...)
       end
    end

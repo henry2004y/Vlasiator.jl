@@ -426,6 +426,8 @@ end
          @test v[2] == -699935.2f0
          v = contour(meta, "proton/vg_rho").get_array()
          @test length(v) == 8 && v[end] == 5.6e6
+         v = contourf(meta, "proton/vg_rho").get_array()
+         @test length(v) == 8 && v[end] == 5.6e6
          p = streamplot(meta, "proton/vg_v", comp="xy")
          @test typeof(p) == PyPlot.PyObject
          v = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
