@@ -122,7 +122,7 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
-    prep2d(meta::MetaVLSV, var::String, comp::Union{Symbol, Int}Int=0) -> Array
+    prep2d(meta::MetaVLSV, var::String, comp::Union{Symbol, Int}=0) -> Array
 
 Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
 """
