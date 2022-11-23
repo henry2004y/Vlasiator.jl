@@ -34,7 +34,7 @@ end
        normal::Symbol=:none, origin=0.0)
 
 Set plot-related arguments of `var` in `axisunit`. `normal` and `origin` are used for 2D
-slices of 3D data, as specified in [`pcolormeshslice`](@ref).
+slices of 3D data, as specified in [`pcolormesh`](@ref).
 """
 function set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit; normal::Symbol=:none,
    origin::AbstractFloat=0.0)
@@ -154,7 +154,7 @@ end
 
 Return `data` of `var` on a uniform 2D mesh on the finest AMR level. Use `normal` to select
 the plane orientation, and `comp` to select the component of a vector, same as in
-[`pcolormeshslice`](@ref).
+[`pcolormesh`](@ref).
 """
 function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{Int, Symbol},
    pArgs::PlotArgs)
