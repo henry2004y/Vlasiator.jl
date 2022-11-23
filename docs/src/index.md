@@ -93,7 +93,11 @@ You can then use the package via
 julia> using Vlasiator
 ```
 
-If you want to use [Plots.jl](https://docs.juliaplots.org/stable/) or [Makie.jl](https://makie.juliaplots.org/stable/) for visualization, add them through the pkg manager; if you aim at using Matplotlib, besides adding [`PyPlot`](https://github.com/JuliaPy/PyPlot.jl), you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
+### Visualization
+
+- PyPlot
+
+If you aim at using Matplotlib, besides adding [`PyPlot`](https://github.com/JuliaPy/PyPlot.jl), you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
 
 ```julia
 ENV["PYTHON"]="your python executable"
@@ -101,6 +105,14 @@ Pkg.build("PyCall")
 ```
 
 If `ENV["PYTHON"] = ""` before building, a private Python distribution will be installed via Miniconda. Details are described in [automated matplotlib installation](https://github.com/JuliaPy/PyPlot.jl#automated-matplotlib-installation).
+
+- Makie
+
+You can add [Makie.jl](https://makie.juliaplots.org/stable/) and [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) through the pkg manger. The sub-package VlasiatorMakie provides user recipes for Makie.
+
+- Plots
+
+Add [Plots.jl](https://docs.juliaplots.org/stable/) through the pkg manager. Built-in user recipes for Plots are provided.
 
 ## Author
 
