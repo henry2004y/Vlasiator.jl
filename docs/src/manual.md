@@ -1,6 +1,6 @@
 # Manual
 
-Here we demonstrate some basic usages of Vlasiator output processing. For complete description of the arguments, please refer to the [API](internal.md) documents or type `?function_name` to display help message in the REPL.
+Here we demonstrate some basic usages of processing Vlasiator output. For complete description of the arguments, please refer to the [API](internal.md) documents or type `?function_name` to display help message in the REPL.
 
 ## Common physical constants
 
@@ -118,7 +118,7 @@ In practice relative difference works better for "large" numbers, and absolute d
 
 ## Computing derived quantities
 
-Vlasiator is capable of computing plasma moments and some predefined derived quantities and saving them directly into VLSV files.
+Vlasiator.jl is capable of computing plasma moments and some predefined derived quantities and saving them directly into VLSV files.
 To avoid confusion about variable names, the conventions are
 
 - raw quantities are all lowercases;
