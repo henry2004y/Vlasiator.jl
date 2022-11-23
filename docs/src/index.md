@@ -4,9 +4,7 @@ CurrentModule = Vlasiator
 
 # Vlasiator.jl
 
-Data processing and analyzing tool for the numerical model for collisionless ion-kinetic plasma physics [Vlasiator](https://github.com/fmihpc/vlasiator).
-This lightweight package is built upon its sister in Python [Analysator](https://github.com/fmihpc/analysator) and carefully designed for performance, capability and ease of use.
-It can be easily integrated with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) to do all kinds of in-depth analysis.
+[Vlasiator.jl](https://github.com/henry2004y/Vlasiator.jl) is a data processing and analyzing tool for the numerical model for collisionless ion-kinetic plasma physics [Vlasiator](https://github.com/fmihpc/vlasiator). This lightweight package is built upon its sister in Python [Analysator](https://github.com/fmihpc/analysator) and carefully designed for performance, capability and ease of use. It can be easily integrated with external packages like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) to do all kinds of in-depth analysis.
 
 Vlasiator.jl contains the following features:
 
@@ -20,7 +18,7 @@ Vlasiator.jl contains the following features:
 - Monitoring Vlasiator run log files.
 
 !!! warning
-    This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standard for outputs, and is not guaranteed to work. [This analysator wiki page](https://github.com/fmihpc/analysator/wiki/Supported-variables-and-data-reducers) describes the old and new naming standards in detail.
+    This package mostly aims at supporting Vlasiator 5.0+. Older versions of Vlasiator has different naming standards for outputs, and is not guaranteed to work. The full naming standards are described in [the analysator wiki page](https://github.com/fmihpc/analysator/wiki/Supported-variables-and-data-reducers).
 
 ## What is Vlasiator
 
