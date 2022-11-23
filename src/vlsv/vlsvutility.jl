@@ -430,9 +430,9 @@ getpressure(meta::MetaVLSV, vcellids::Vector{Int32}, vcellf::Vector{<:AbstractFl
    getpressure(meta.meshes[species], vcellids, vcellf)
 
 """
-   getheatfluxvector(meta, VDF; species="proton")
-   getheatfluxvector(meta, vcellids, vcellf; species="proton")
-   getheatfluxvector(vmesh::VMeshInfo, vcellids, vcellf)
+    getheatfluxvector(meta, VDF; species="proton")
+    getheatfluxvector(meta, vcellids, vcellf; species="proton")
+    getheatfluxvector(vmesh::VMeshInfo, vcellids, vcellf)
 
 Get heat flux vector (3 components) of `species` from `VDF` associated with `meta`,
 qᵢ = m/2 * ∫ (v - u)²(v - u)ᵢ * f(r,v) dV. Alternatively, one can directly pass `vcellids`,
@@ -1337,8 +1337,7 @@ Save `data` of name `vars` at AMR `level` into VTK image file of name `file`.
 - `vtkGhostType::Array{UInt8}`: array for visibility control.
 - `level::Int`: refinement level (0-based).
 - `ascii::Bool=false`: save output in ASCII or binary format.
-- `append::Bool=true`: determines whether to append data at the end of file or do in-block
-writing.
+- `append::Bool=true`: determines whether to append data at the end of file or do in-block writing.
 - `box::Vector`: selected box range in 3D.
 """
 function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
