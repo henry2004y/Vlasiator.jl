@@ -37,4 +37,4 @@ cb_title_str = datainfo.variableLaTeX
 cb_title_str *= ",["*datainfo.unitLaTeX*"]"
 cb_title = cb.ax.set_title(cb_title_str, fontsize=14, fontweight="bold")
 
-plt.savefig("test.png",bbox_inches="tight")
+plt.savefig("test.png", bbox_inches="tight")
