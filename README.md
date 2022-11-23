@@ -17,3 +17,36 @@
 </p>
 
 Data processing and analyzing tool for the collisionless ion-kinetic plasma physics numerical model [Vlasiator](https://github.com/fmihpc/vlasiator).
+
+## Installation
+
+In the Julia REPL,
+
+```julia
+julia> ]
+pkg> add Vlasiator
+```
+
+Visualization via [`PyPlot`](https://github.com/JuliaPy/PyPlot.jl), [Makie.jl](https://makie.juliaplots.org/stable/), and [Plots.jl](https://docs.juliaplots.org/stable/) are supported. Please refer to [the manual](https://henry2004y.github.io/Vlasiator.jl/stable/#Getting-started) for installing different plotting backends.
+
+## Usage
+
+First import the package
+
+```julia
+julia> using Vlasiator
+```
+
+For Vlasiator data, e.g. `demo.vlsv`, we can load via
+
+```julia
+julia> meta = load("demo.vlsv")
+```
+
+For plotting 2D contours with PyPlot,
+
+```julia
+julia> pcolormesh(meta, "proton/vg_rho")
+```
+
+More usages can be found in [the manual](https://henry2004y.github.io/Vlasiator.jl/stable/manual/).
