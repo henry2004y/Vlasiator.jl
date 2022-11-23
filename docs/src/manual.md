@@ -1,6 +1,6 @@
 # Manual
 
-Here we demonstrate some basic usages of Vlasiator output processing. For complete description of the arguments, please refer to the [API](internal.md) documents or type `?function_name` to display help message in the REPL.
+Here we demonstrate some basic usages of processing Vlasiator output. For complete description of the arguments, please refer to the [API](internal.md) documents or type `?function_name` to display help message in the REPL.
 
 ## Common physical constants
 
@@ -118,7 +118,7 @@ In practice relative difference works better for "large" numbers, and absolute d
 
 ## Computing derived quantities
 
-Vlasiator is capable of computing plasma moments and some predefined derived quantities and saving them directly into VLSV files.
+Vlasiator.jl is capable of computing plasma moments and some predefined derived quantities and saving them directly into VLSV files.
 To avoid confusion about variable names, the conventions are
 
 - raw quantities are all lowercases;
@@ -182,9 +182,6 @@ which can also be found as keys of dictionary in [vlsvvariables.jl](https://gith
 
 !!! note
     In Vlasiator, the cells inside the inner boundary (which is usually a sphere/circle) are filled with zero density values. This is then used to identify the inner boundary for all other quantities. Therefore, if you are manipulating directly on data, make sure that the nonsense values inside the inner boundary are excluded. One way to do this can be found in [vlsvvariables.jl](https://github.com/henry2004y/Vlasiator.jl/blob/master/src/vlsv/vlsvvariables.jl).
-
-!!! warning
-    This part has not been carefully tested so it might not work or just generate wrong results. Contributions from users are warmly welcomed!
 
 ### Velocity space moments
 

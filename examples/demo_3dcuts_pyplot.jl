@@ -8,10 +8,10 @@ using Vlasiator, PyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
 ImageGrid = axes_grid1.ImageGrid
 
-const file = "bulk1.0001000.vlsv"
-const nameρ = "proton/vg_rho"
-const colorscale = Log
-const addcolorbar = false
+file = "bulk1.0001000.vlsv"
+nameρ = "proton/vg_rho"
+colorscale = Log
+addcolorbar = false
 
 meta = load(file)
 
@@ -37,4 +37,4 @@ cb_title_str = datainfo.variableLaTeX
 cb_title_str *= ",["*datainfo.unitLaTeX*"]"
 cb_title = cb.ax.set_title(cb_title_str, fontsize=14, fontweight="bold")
 
-plt.savefig("test.png",bbox_inches="tight")
+plt.savefig("test.png", bbox_inches="tight")

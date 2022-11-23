@@ -70,7 +70,7 @@ function Base.show(io::IO, meta::MetaVLSV)
    print(io, "Has VDF    : ")
    printstyled(io, meta.hasvdf, '\n'; color=:yellow)
    print(io, "Variables  : ")
-   printstyled(io, meta.variable, '\n'; color=:blue)
+   printstyled(io, meta.variable, '\n'; color=:green)
 end
 
 function Base.show(io::IO, s::VarInfo)
@@ -364,7 +364,7 @@ end
 """
     readvariablemeta(meta, var) -> VarInfo
 
-Return VarInfo about `var` in the VLSV file associated with `meta`.
+Return VarInfo of `var` in the VLSV file associated with `meta`.
 """
 function readvariablemeta(meta::MetaVLSV, var::String)
    varSym = isa(var, AbstractString) ? Symbol(var) : var
