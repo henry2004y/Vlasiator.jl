@@ -8,8 +8,8 @@
   <a href="https://codecov.io/gh/henry2004y/Vlasiator.jl">
     <img src="https://img.shields.io/codecov/c/github/henry2004y/Vlasiator.jl">
   </a>
-  <a href="https://henry2004y.github.io/Vlasiator.jl/dev">
-    <img src="https://img.shields.io/badge/docs-latest-blue">
+  <a href="https://henry2004y.github.io/Vlasiator.jl/stable">
+    <img src="https://img.shields.io/badge/docs-stable-blue">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue">
