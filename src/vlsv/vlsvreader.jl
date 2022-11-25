@@ -646,8 +646,8 @@ end
 """
     extractsat(files::AbstractVector{String}, var::String, cid::Int)
 
-Extract `var` at a fixed cell ID `cid` from `files`. This assumes that `files` come from the
-same grid structure.
+Multi-threaded extraction of `var` at a fixed cell ID `cid` from `files`. This assumes that
+`files` come from the same grid structure.
 """
 function extractsat(files::AbstractVector{String}, var::String, cid::Int)
    v = open(files[1], "r") do fid
@@ -658,7 +658,7 @@ function extractsat(files::AbstractVector{String}, var::String, cid::Int)
       Array{T,2}(undef, vsize, length(files))
    end
 
-   for i in eachindex(files)
+   Threads.@threads for i in eachindex(files)
       fid = open(files[i], "r")
       footer = getfooter(fid)
       nodevar = findall("//VARIABLE", footer)
