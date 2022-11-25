@@ -42,52 +42,6 @@ export_markdown("testresult", results)
 
 See more in the PkgBenchmark [manual](https://juliaci.github.io/PkgBenchmark.jl/dev/).
 
-### Benchmarks
-
-!!! note
-    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v1.0 running Python 3.6.9/3.9.7 and Julia 1.8.0-rc3. The timings are performed on a i5-10210U @ 1.6GHz if not specified. Note that when we are comparing against Python, we are mostly likely comparing with the underlying C libraries with a Python wrapper.
-
-* Reading DCCRG grid variables
-| Variable | 80KB Float32 | 900KB Float64 | 32MB Float64 |
-|:------|:----------:|:-------|:----------:|
-| Julia 1.8  [ms] | 0.02 | 0.4 | 13[^1] |
-| Python 3.6 [ms] | 0.14 | 8.7 | 295 |
-
-[^1]: Vlasiator.jl can be even faster if there is no conversion from Float64 to Float32. See [Precision](#precision).
-
-* Reading field solver grid variables[^2]
-| 13 GB  | tmean [s] |
-|:-------|:---------:|
-| Julia 1.8  | 8   |
-| Python 3.6 | 61  |
-
-[^2]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with 16 GB memory it is barely enough to read `fg_b` once. It will go out of memory for the second time in Analysator, but not in Vlasiator.jl --- see [Memory](#memory). This reading time corresponds to 35% of the maximum sequential read speed on the target machine.
-
-* Plotting 2D density contours on a uniform mesh[^3]
-| 28MB | tmean [s] |
-|:-------|:---------:|
-| Julia 1.8, 1st time | 2.4  |
-| Julia 1.8, 2nd time | 0.5  |
-| Python 3.6 | 4.7   |
-
-* Plotting 2D density slices from an 3D AMR mesh
-| 32MB | tmean [s] |
-|:-------|:---------:|
-| Julia 1.8, 1st time | 2.7  |
-| Julia 1.8, 2nd time | 0.5  |
-| Python 3.6 | 5.0  |
-
-[^3]: The inefficieny of JIT for the first time execution is a famous problem in the Julia community known as "Time-To-First-X".
-
-* Static virtual satellite tracking from 200 frames of 3D AMR data (26G per frame, 32 MB Cell IDs) on a cluster
-
-| 1 core | tmean [s][^4] |
-|:-------|:---------:|
-| Julia 1.8  | 14    |
-| Python 3.9 | 302   |
-
-[^4]: A single CPU core is used on Vorna, a local cluster at University of Helsinki with Intel Xeon E5-2697 @ 2.70GHz. With multithreading, the Julia timings can scale linearly on a node with the number of cores used.
-
 ## Precision
 
 For post-processing and data analysis purposes, it makes less sense to stick to double precisions, so we mostly use `Float32` in Vlasiator.jl for numerical arrays. Several exceptions are:

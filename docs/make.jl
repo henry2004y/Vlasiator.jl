@@ -17,6 +17,7 @@ makedocs(;
         "User Guide" => "manual.md",
         "Calling from Python" => "python.md",
         "Gallery" => "gallery.md",
+        "Benchmarks" => "benchmark.md",
         "API Reference" => "internal.md",
         "Contributing" => "contributing.md",
         "Log" => "log.md",
