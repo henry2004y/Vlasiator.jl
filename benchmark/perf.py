@@ -37,7 +37,7 @@ pt.plot.plot_colormap3dslice(filename='bulk1.0001000.vlsv', var='proton/vg_rho',
 
 p3 = p0+"""
 import glob
-dir = "/wrk/group/spacephysics/vlasiator/3D/EGI/bulk/dense_cold_hall1e5_afterRestart374/"
+dir = "/wrk-vakka/group/spacephysics/vlasiator/3D/EGI/bulk/dense_cold_hall1e5_afterRestart374/"
 var = "proton/vg_rho"
 Re = 6.371e6 # Earth radius, [m]
 loc = [12*Re, 0, 0]
@@ -49,7 +49,7 @@ print(id)
 """
 # Extracting variable from static location
 s5 = """
-for (i,fname) in enumerate(filenames[0:200]):
+for (i,fname) in enumerate(filenames):
    f = pt.vlsvfile.VlsvReader(fname)
    data_series[i] = f.read_variable(name=var, cellids=id)
 """
@@ -70,4 +70,4 @@ t4 = timeit.timeit(stmt=s4, setup=p0, number=3) / 3
 print(f"Finished plotting in {t4:0.4f} s")
 
 t5 = timeit.timeit(stmt=s5, setup=p3, number=1) / 1
-print(f"Finished plotting in {t5:0.4f} s")
+print(f"Finished virtual satellite tracking in {t5:0.4f} s")

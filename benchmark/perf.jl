@@ -1,9 +1,10 @@
 using Vlasiator
 using BenchmarkTools
+using Glob
 
 ## Reading
 
-#file = "bulk.singleprecision.vlsv" # 80 KB rho
+#file = "bulk.singleprecision.vlsv" # 80 B rho
 #file = "bulk.0000003.vlsv"        # 900 KB rho
 file = "bulk1.0001000.vlsv"       # 32 MB rho
 #file = "test/data/bulk.2d.vlsv"
@@ -52,3 +53,23 @@ meta = load(filename)
 @time pcolormesh(meta, "proton/vg_rho", colorscale=Log)
 close()
 @time pcolormesh(meta, "proton/vg_rho", colorscale=Log)
+
+## Virtual satellite tracking
+
+using Vlasiator: RE
+# EGI data on Turso, UH
+dir = "/wrk-vakka/group/spacephysics/vlasiator/3D/EGI/bulk/dense_cold_hall1e5_afterRestart374/"
+
+filenames = glob("bulk1*.vlsv", dir)
+
+var = "proton/vg_rho"
+loc = [12, 0, 0] .* RE
+
+println("Number of files: ", length(filenames))
+# Static cell ID
+id = let
+   meta = load(filenames[1])
+   getcell(meta, loc)
+end
+
+@btime data_series = extractsat($filenames, $var, $id)
