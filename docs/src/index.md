@@ -25,7 +25,7 @@ Vlasiator.jl contains the following features:
 Vlasiator solves the Vlasov–Maxwell system of equations for ions. The fundamental description of charged particle motion in an electromagnetic field is given by the Vlasov equation
 
 ```math
-\frac{\partial f_\alpha}{\partial t} + \mathbf{v}_\alpha\frac{\partial f_\alpha}{\partial \mathbf{r}_\alpha} + \mathbf{a}_\alpha\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}_\alpha} = 0
+\frac{\partial f_\alpha}{\partial t} + \mathbf{v}_\alpha\cdot\frac{\partial f_\alpha}{\partial \mathbf{r}_\alpha} + \mathbf{a}_\alpha\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}_\alpha} = 0
 ```
 
 where ``\alpha`` denotes the particle species, ``\mathbf{r}_\alpha$ and $\mathbf{v}_\alpha`` are the spatial and velocity coordinates, ``f(\mathbf{r},\mathbf{v},t)`` is the six-dimensional phase-space density of a particle species with mass ``m`` and charge ``q``, and acceleration ``\mathbf{a}`` is given by the Lorentz force
@@ -54,7 +54,7 @@ The magnetic field is updated using Faraday's law:
 and the electric field is given by the generalized Ohm's law:
 
 ```math
-\mathbf{E}_\alpha = -\mathbf{u}_\alpha \times\mathbf{B} + \frac{1}{n_\alpha e}(\nabla\times\mathbf{B})\times\mathbf{B} - \frac{1}{n_\alpha e}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
+\mathbf{E} = -\mathbf{u}_\alpha \times\mathbf{B} + \frac{1}{n_\alpha e}(\nabla\times\mathbf{B})\times\mathbf{B} - \frac{1}{n_\alpha e}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
 ```
 
 The four terms on the right-handed side are the convection term, the Hall term, the electron pressure gradient term, and the resistive term, respectively.
@@ -70,7 +70,7 @@ Finally, by determining the electron pressure tensor by using an appropriate equ
 P_e = n_e k_B T_e
 ```
 
-where ``n_e \approx n_i`` and ``T_e`` is a constant. In an adiabatic process,
+where ``n_e \approx n_i`` and ``T_e`` is a constant. In an adiabatic process with index $\gamma$,
 
 ```math
 P_e / n_e^\gamma = \text{const.}
