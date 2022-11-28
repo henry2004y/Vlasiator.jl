@@ -21,12 +21,12 @@
 [^2]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with limited memory (e.g. 16 GB RAM) you may encounter out-of-memory issues when reading `fg_b` more than once. In Vlasiator.jl, we provide the option `usemmap=true` for reading large arrays --- see [Memory](log.md#memory) for more.
 
 * Plotting 2D density contours on a uniform mesh[^3]
-| Size     | Julia, 1st time [s] | Julia, 1st time [s] | Python [s] | Speedup |
+| Size     | Julia, 1st time [s] | Julia, 2nd time [s] | Python [s] | Speedup |
 |:---------|:-------------------:|:-------------------:|:----------:|:-------:|
 | 26.7 MiB | 2.4                 | 0.5                 | 4.7        | 9.4     |
 
 * Plotting 2D density slices from an 3D AMR mesh
-| Size     | Julia, 1st time [s] | Julia, 1st time [s] | Python [s] | Speedup |
+| Size     | Julia, 1st time [s] | Julia, 2nd time [s] | Python [s] | Speedup |
 |:---------|:-------------------:|:-------------------:|:----------:|:-------:|
 | 30.5 MiB | 2.7                 | 0.5                 | 5.0        | 10      |
 
