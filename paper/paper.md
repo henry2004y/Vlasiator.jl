@@ -11,13 +11,13 @@ authors:
 affiliations:
  - name: University of Helsinki
    index: 1
-date: 4 August 2022
+date: 28 November 2022
 bibliography: paper.bib
 ---
 
 # Summary
 
-`Vlasiator.jl` is a Julia package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model Vlasiator [@vlasiator5.1].
+`Vlasiator.jl` is a Julia [@julia] package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model `Vlasiator` [@vlasiator5.1].
 This lightweight package is built upon its sister Python package `Analysator` [@analysator] and carefully designed for performance, capability and ease of use.
 
 `Vlasiator.jl` contains the following main features:
@@ -25,7 +25,7 @@ This lightweight package is built upon its sister Python package `Analysator` [@
 - Reading [VLSV](https://github.com/fmihpc/vlsv) format data, including `DCCRG` [@honkonen2013parallel] and [FSGRID](https://github.com/fmihpc/fsgrid), at any size.
 - Calculating predefined derived quantities from raw VLSV outputs.
 - Extracting quantities at a given point/line/plane/box.
-- Visualizing 1D curves/2D cuts/3D volumes of saved/derived variables and phase space distributions via multiple visualization libraries such as `Matplotlib` [@matplotlib], `Plots.jl` [@plots], and `Makie.jl` [@makie].
+- Visualizing 1D curves/2D cuts/3D volumes of saved/derived variables and phase space distributions via multiple visualization libraries such as `Matplotlib` [@matplotlib], `Plots.jl` [@plots], and Makie.jl [@makie].
 - Analyzing the velocity distribution functions reconstructed from sparsity storage.
 - Converting the selected part or whole data from VLSV into VTK format for post-processing and 3D rendering in ParaView and VisIt.
 
@@ -39,14 +39,13 @@ The performance and ease-of-use of `Vlasiator.jl` will enable exciting reproduci
 Space weather is used to describe the environmental effects in the solar system caused by the solar wind, a stream of charged particles carrying the solar electromagnetic field.
 Vast majority of space in the solar system is filled with charged particles, i.e. plasma.  Plasma can carry electromagnetic field and interacts with astronomical object's magnetic field to create a magnetosphere near the object.
 `Vlasiator` [@palmroth2018vlasov] is a numerical model for collisionless ion-kinetic plasma physics, aiming at studying space weather in the global magnetosphere.
-Due to the multi-dimensional approach at ion scales, Vlasiator's computational challenges are immense.
-The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes
-beyond ~10 GB, which necessitates the development of high performance programs for processing the data.
+Due to the multi-dimensional approach at ion scales, `Vlasiator`'s computational challenges are immense.
+The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes beyond ~10 GB, which necessitates the development of high performance programs for processing the data.
 
 `Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python.
-It is targeted at space plasma physics researchers who want to analyze and visualize Vlasiator simulation outputs in an efficient manner.
+It is targeted at space plasma physics researchers who want to analyze and visualize `Vlasiator` simulation outputs in an efficient manner: we have reached 8 - 55 times speedups over the same tasks in `Analysator`.
 This package satisfies the current requirements of simulation data processing, unifies the implementation in a single language base, and facilitates more fluent downstream processing tasks and in-depth exploration of large datasets.
-It has preliminarily been used in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
+It has been used extensively in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
 
 # Acknowledgements
 

@@ -1,5 +1,18 @@
+@article{julia,
+    title={Julia: A fresh approach to numerical computing},
+    author={Bezanson, Jeff and Edelman, Alan and Karpinski, Stefan and Shah, Viral B},
+    journal={SIAM {R}eview},
+    volume={59},
+    number={1},
+    pages={65--98},
+    year={2017},
+    publisher={SIAM},
+    doi={10.1137/141000671},
+    url={https://epubs.siam.org/doi/10.1137/141000671}
+}
+
 @article{palmroth2018vlasov,
-  url = {https://link.springer.com/article/10.1007/s41115-018-0003-2},
+  doi = {10.1007/s41115-018-0003-2}
   title={Vlasov methods in space physics and astrophysics},
   author={Palmroth, Minna and Ganse, Urs and Pfau-Kempf, Yann and Battarbee, Markus and Turc, Lucile and Brito, Thiago and Grandin, Maxime and Hoilijoki, Sanni and Sandroos, Arto and von Alfthan, Sebastian},
   journal={Living Reviews in Computational Astrophysics},
@@ -11,7 +24,7 @@
 }
 
 @article{von2014vlasiator,
-  url = {https://doi.org/10.1016/j.jastp.2014.08.012},
+  doi = {10.1016/j.jastp.2014.08.012},
   title={Vlasiator: First global hybrid-Vlasov simulations of Earth's foreshock and magnetosheath},
   author={Von Alfthan, S and Pokhotelov, D and Kempf, Y and Hoilijoki, S and Honkonen, I and Sandroos, A and Palmroth, M},
   journal={Journal of Atmospheric and Solar-Terrestrial Physics},
@@ -22,7 +35,7 @@
 }
 
 @article{honkonen2013parallel,
-  url = {https://doi.org/10.1016/j.cpc.2012.12.017},
+  doi = {10.1016/j.cpc.2012.12.017},
   title={Parallel grid library for rapid and flexible simulation development},
   author={Honkonen, Ilja and von Alfthan, Sebastian and Sandroos, Arto and Janhunen, Pekka and Palmroth, Minna},
   journal={Computer Physics Communications},
@@ -34,8 +47,7 @@
 }
 
 @article{pc5,
-  url = {http://www.frontiersin.org/articles/10.3389/fspas.2022.984918/abstract},
-  doi = {10.3389/fspas.2022.984918},
+  doi = {10.1016/j.cpc.2012.12.017},
   title={Magnetospheric Responses to Solar Wind Pc5 Density Fluctuations: Results from 2D Hybrid Vlasov Simulation},
   author={Zhou, Hongyang and Turc, Lucile and Pfau-Kempf, Yann and Battarbee, Markus and Tarvus, Vertti and Dubart, Maxime and George, Harriet and Cozzani, Giulia and Grandin, Maxime and Ganse, Urs and Alho, Markku and Johlander, Andreas and Suni, Jonas and Bussov, Maarja and Papadakis, Konstantinos and Horaites, Konstantinos and Zaitsev, Ivan and Tesema, Fasil and Gordeev, Evgeniy and Palmroth, Minna},
   journal={Frontiers in Astronomy and Space Sciences},
@@ -43,14 +55,15 @@
   publisher={Frontiers}
 }
 
-@misc{analysator,
-  author = {Battarbee, Markus and Akseli Hannuksela, Otto and Pfau-Kempf, Yann and von Alfthan, Sebastian and Ganse, Urs and Jarvinen, Riku and Grandin, Maxime, Lkotipal, Leo and Suni, Jonas and Alho, Markku},
-  title = {Analysator v0.9},
-  year = {2021},
-  publisher = {GitHub},
-  journal = {GitHub repository},
-  doi = {10.5281/zenodo.4462514},
-  url = {https://github.com/fmihpc/analysator}
+@software{analysator,
+  author = {Battarbee, Markus and Hannuksela, Otto Akseli and Pfau-Kempf, Yann and von Alfthan, Sebastian and Ganse, Urs and Jarvinen, Riku and Grandin, Maxime and Kotipalo, Leo and Suni, Jonas and Alho, Markku},
+  title        = {fmihpc/analysator: v0.9},
+  month        = jan,
+  year         = 2021,
+  publisher    = {Zenodo},
+  version      = {v0.9},
+  doi          = {10.5281/zenodo.4462515},
+  url          = {https://doi.org/10.5281/zenodo.4462515}
 }
 
 @misc{ressac,
@@ -63,7 +76,7 @@
 }
 
 @article{makie,
-  url = {https://joss.theoj.org/papers/10.21105/joss.03349},
+  doi = {10.21105/joss.03349},
   title={Makie. jl: Flexible high-performance data visualization for Julia},
   author={Danisch, Simon and Krumbiegel, Julius},
   journal={Journal of Open Source Software},
@@ -73,33 +86,37 @@
   year={2021}
 }
 
-@misc{juliacall,
-  author = {Christopher Rowley},
+@sofrware{juliacall,
+  author = {Rowley, Christopher},
   title = {JuliaCall},
-  year = {2022},
-  url = {https://cjdoris.github.io/PythonCall.jl/stable/juliacall/}
+  year = 2022,
+  publisher = {GitHub},
+  version = {v0.9.9},
+  url = {https://github.com/cjdoris/PythonCall.jl}
 }
 
 @software{pyjulia,
   author       = {Arakaki, Takafumi and Bolewski, Jake and Deits, Robin and Fischer, Keno and Johnson, Steven G. and Bussonnier, Matthias and Norton, Isaiah and Haraldsson, Páll and Rocklin, Matthew and Tsur and Shah, Viral B. and Soto, Daniel, eslgastal and Kuthe, Elias and jakirkham and Millea, Marius and grahamgill and fnmdx111 and Arslan, Alex},
-  title        = {PyJulia},
-  year         = 2020,
+  title        = {JuliaPy/pyjulia: v0.6.0},
+  year         = 2022,
   publisher    = {Zenodo},
-  version      = {v0.5.6},
-  doi          = {10.5281/zenodo.4294940},
-  url          = {https://doi.org/10.5281/zenodo.4294940}
+  version      = {v0.6.0},
+  doi          = {10.5281/zenodo.7340220},
+  url          = {https://doi.org/10.5281/zenodo.7340220}
 }
 
-@misc{plots,
-  author = {Breloff, Tom},
-  title = {Plots.jl},
-  year = {2021},
-  publisher = {Zenodo},
-  doi = {10.5281/zenodo.5509773},
-  url = {https://github.com/JuliaPlots/Plots.jl}
+@software{plots,
+  author       = {Breloff, Tom},
+  title        = {Plots.jl},
+  month        = nov,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {v1.36.5},
+  doi          = {10.5281/zenodo.7368531},
+  url          = {https://doi.org/10.5281/zenodo.7368531}
 }
 
-@Article{matplotlib,
+@article{matplotlib,
   Author    = {Hunter, J. D.},
   Title     = {Matplotlib: A 2D graphics environment},
   Journal   = {Computing in Science \& Engineering},
@@ -111,26 +128,26 @@
   year      = 2007
 }
 
-@software{vlasiator5.1,
-  author       = {Yann Pfau-Kempf and
-                  Sebastian von Alfthan and
-                  Arto Sandroos and
-                  Urs Ganse and
-                  Tuomas Koskela and
-                  Markus Battarbee and
-                  Otto Akseli Hannuksela and
+@software{vlasiator5.2.1,
+  author       = {Pfau-Kempf, Yann and
+                  von Alfthan, Sebastian and
+                  Ganse, Urs and
+                  Sandroos, Arto and
+                  Koskela, Tuomas and
+                  Battarbee, Markus and
+                  Hannuksela, Otto Akseli and
                   Ilja and
-                  Kostis Papadakis and
-                  Maxime Grandin and
-                  Dimitry Pokhotelov and
-                  Hongyang Zhou and
-                  Leo and
-                  Markku Alho},
-  title        = {fmihpc/vlasiator: Vlasiator 5.1},
-  month        = apr,
-  year         = 2021,
+                  Papadakis, Kostis and
+                  Kotipalo, Leo and
+                  Zhou, Hongyang and
+                  Grandin, Maxime and
+                  Pokhotelov, Dimitry and
+                  Alho, Markku},
+  title        = {fmihpc/vlasiator: Vlasiator 5.2.1},
+  month        = jun,
+  year         = 2022,
   publisher    = {Zenodo},
-  version      = {v5.1},
-  doi          = {10.5281/zenodo.4719554},
-  url          = {https://doi.org/10.5281/zenodo.4719554}
+  version      = {v5.2.1},
+  doi          = {10.5281/zenodo.6782211},
+  url          = {https://doi.org/10.5281/zenodo.6782211}
 }
