@@ -27,7 +27,7 @@ julia> ]
 pkg> add Vlasiator
 ```
 
-Visualization via [PyPlot](https://github.com/JuliaPy/PyPlot.jl), [Makie.jl](https://makie.juliaplots.org/stable/), and [Plots.jl](https://docs.juliaplots.org/stable/) are supported. Please refer to [the manual](https://henry2004y.github.io/Vlasiator.jl/stable/#Getting-started) for installing different plotting backends.
+Visualization via [PyPlot](https://github.com/JuliaPy/PyPlot.jl), [Makie](https://makie.juliaplots.org/stable/), and [Plots](https://docs.juliaplots.org/stable/) are supported. Please refer to [the manual](https://henry2004y.github.io/Vlasiator.jl/stable/#Getting-started) for installing different plotting backends.
 
 ## Usage
 
