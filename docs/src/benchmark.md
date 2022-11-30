@@ -25,7 +25,7 @@
 |:---------|:-------------------:|:-------------------:|:----------:|:-------:|
 | 26.7 MiB | 2.4                 | 0.5                 | 4.7        | 9.4     |
 
-* Plotting 2D density slices from an 3D AMR mesh
+* Plotting 2D density slices from a 3D AMR mesh
 | Size     | Julia, 1st time [s] | Julia, 2nd time [s] | Python [s] | Speedup |
 |:---------|:-------------------:|:-------------------:|:----------:|:-------:|
 | 30.5 MiB | 2.7                 | 0.5                 | 5.0        | 10      |

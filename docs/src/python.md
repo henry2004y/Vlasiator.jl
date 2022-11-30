@@ -1,6 +1,9 @@
 # Interoperability Between Julia and Python
 
-There are currently two ways to call Julia from Python and vice versa.
+There are currently two ways to call Julia from Python and vice versa, which are described below. When converting from Julia to Python, there are two most important differences:
+
+1. Julia is column-major, while Python is row-major.
+2. Julia adopts by default 1-based indexing, while Python adopts 0-based indexing.
 
 ## JuliaCall
 
@@ -26,7 +29,7 @@ plt.show()
 ```
 
 !!! warn
-    There seems to be issue that JuliaCall may decide to check pkg installation every time for a new session. We need to first make sure that PythonCall is installed in Julia; then make sure your `PYTHONPATH` is properly set. See this [issue](https://github.com/cjdoris/PythonCall.jl/issues/144) for more information.
+    There is an issue that JuliaCall may decide to check pkg installation every time for a new session. We need to first make sure that PythonCall is installed in Julia; then make sure your `PYTHONPATH` is properly set. See this [issue](https://github.com/cjdoris/PythonCall.jl/issues/144) for more information.
 
 ## PyJulia
 

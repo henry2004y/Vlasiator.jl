@@ -164,8 +164,8 @@ Here is a full list of available quantities[^1]:
 | Pram                  | dynamic ram pressure             | vg\_rho; Vmag         |
 | Pb                    | magnetic pressure                | vg\_b\_vol            |
 | Poynting              | Poynting flux                    | E; B                  |
-| Beta                  | plasma beta, $P / P_B$           | P; vg\_b\_vol         |
-| BetaStar              | modified beta, $(P + P_{ram}) / P_B$| P; Pram; vg\_b\_vol |
+| Beta                  | plasma $\beta$, $P / P_B$        | P; vg\_b\_vol         |
+| BetaStar              | modified $\beta$, $(P+P_{ram})/P_B$| P; Pram; vg\_b\_vol |
 | IonInertial           | proton inertial length           | vg\_rho               | 
 | Larmor                | proton Larmor radius             | Vth; Bmag             |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |
@@ -226,9 +226,9 @@ However, usually in practice there would be only about 1% nonzero values. The mo
 
 Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting recipes/wrappers once the target plotting package is used.
 
-Currently `PyPlot.jl` provides the most complete and fine-tuned plotting capabilities.
-`Plots.jl` is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
-`Makie.jl`, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from `PackageCompiler.jl`, it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
+Currently PyPlot provides the most complete and fine-tuned plotting capabilities.
+Plots is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
+Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
 More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
 
@@ -246,7 +246,7 @@ All the functions with identical names as in Matplotlib accept all possible keyw
 pcolormesh(meta, "rho")
 ```
 
-- Vector z component colored contour from 2D simulation in a manually set range
+- Vector z-component colored contour from 2D simulation in a manually set range
 
 ```julia
 pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
@@ -451,6 +451,6 @@ More [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples)
 - Simulation log file tracking
 - Converting VLSV to VTK format
 - Parallel post-processing
-- Finding X-points and O-points in 2D reconnection
+- Finding X-points and O-points in 2D reconnections
 
 Feel free to check those out and try on your data!
