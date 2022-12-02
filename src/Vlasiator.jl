@@ -50,8 +50,8 @@ export
 end
 
 function __init__()
-   @require PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d" begin
-      include("plot/matplotlib.jl")
+   @require PythonPlot = "274fc56d-3b97-40fa-a1cd-1b4a50311bf9" begin
+      include("plot/pythonplot.jl")
    end
    @require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" begin
       include("plot/pyplot.jl")
