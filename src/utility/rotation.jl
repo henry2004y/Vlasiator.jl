@@ -33,8 +33,8 @@ Reference: [Rotation matrix from axis and angle](https://en.wikipedia.org/wiki/R
 using LinearAlgebra
 v = [-0.5, 1.0, 1.0]
 v̂ = normalize(v)
-angle = deg2rad(-74)
-R = getRotationMatrix(v̂, angle)
+θ = deg2rad(-74)
+R = getRotationMatrix(v̂, θ)
 ```
 """
 function getRotationMatrix(v::AbstractVector{<:AbstractFloat}, θ::Real)
