@@ -1,4 +1,4 @@
-# Log
+# FAQ
 
 ## Test Data
 
@@ -61,7 +61,7 @@ Vlasiator output files can be large. If we have limited memory relative to the f
 The current design choice is to achieve optimal serial performance per file, and apply parallel processing across individual files. In most common cases, the time it takes for post-processing one snapshot is reasonably short, but the number of snapshots are large. Julia's built-in support for all kinds of parallelism paradigm (multithreading, multiprocessing, channel) and external support from packages (MPI.jl, Polyester.jl) can be relatively easily incorported to make the whole workflow parallel.
 
 * multi-threading with `@threads` (recommended when working within one node)
-* multi-processing with `pmap` 
+* multi-processing with `pmap`
 * multi-processing with `RemoteChannel`
 * `ClusterManagers` for multi-node jobs
 
