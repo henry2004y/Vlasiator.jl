@@ -17,8 +17,8 @@ bibliography: paper.bib
 
 # Summary
 
-`Vlasiator.jl` is a Julia [@julia] package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model `Vlasiator` [@vlasiator5.2.1].
-This lightweight package retains all the actively used funtionalities in its sister Python package `Analysator` [@analysator] and is carefully designed for performance, capability and ease of use.
+`Vlasiator.jl` is a Julia [@julia] package for processing and analyzing simulation data from the collisionless ion-kinetic plasma physics numerical model [`Vlasiator`](https://github.com/fmihpc/vlasiator) [@vlasiator5.2.1].
+This lightweight package retains all the actively used funtionalities in its sister Python package [`Analysator`](https://github.com/fmihpc/analysator) [@analysator] and is carefully designed for performance, capability and ease of use.
 
 `Vlasiator.jl` contains the following main features:
 
@@ -40,7 +40,7 @@ Space weather is used to describe the environmental effects in the solar system 
 Vast majority of space in the solar system is filled with charged particles, i.e. plasma.  Plasma can carry electromagnetic field and interacts with astronomical object's magnetic field to create a magnetosphere near the object.
 `Vlasiator` [@palmroth2018vlasov] is a numerical model for collisionless ion-kinetic plasma physics, aiming at studying space weather in the global magnetosphere.
 Due to the multi-dimensional approach at ion scales, `Vlasiator`'s computational challenges are immense.
-The storage required to resolve the phase space distributions can easily go beyond tegabytes with each reduced snapshot goes beyond ~10 GB, which necessitates the development of high performance programs for processing the data.
+The storage required to resolve the phase space distributions can easily go beyond terabytes with each reduced snapshot goes beyond ~10 GB, which necessitates the development of high performance programs for processing the data.
 
 `Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python.
 It is targeted at space plasma physics researchers who want to analyze and visualize `Vlasiator` simulation outputs in an efficient manner: we have reached 8 - 55 times speedups over the same tasks in `Analysator`.
