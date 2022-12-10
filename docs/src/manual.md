@@ -166,7 +166,7 @@ Here is a full list of available quantities[^1]:
 | Poynting              | Poynting flux                    | E; B                  |
 | Beta                  | plasma $\beta$, $P / P_B$        | P; vg\_b\_vol         |
 | BetaStar              | modified $\beta$, $(P+P_{ram})/P_B$| P; Pram; vg\_b\_vol |
-| IonInertial           | proton inertial length           | vg\_rho               | 
+| IonInertial           | proton inertial length           | vg\_rho               |
 | Larmor                | proton Larmor radius             | Vth; Bmag             |
 | Gyroperiod            | proton gyroperiod                | Bmag                  |
 | PlasmaPeriod          | plasma oscillation period        | vg\_rho               |
@@ -230,7 +230,7 @@ Currently PyPlot provides the most complete and fine-tuned plotting capabilities
 Plots is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
 Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
-More examples of customized plots can be found in the [repo](https://github.com/henry2004y/Vlasiator.jl/tree/master/src/examples).
+More [examples]((https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) of customized plots can be found in the repository.
 
 ### PyPlot Backend
 
