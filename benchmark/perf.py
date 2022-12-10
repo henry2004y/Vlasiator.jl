@@ -1,40 +1,31 @@
+# Script for generating benchmark results in
+# https://henry2004y.github.io/Vlasiator.jl/dev/benchmark/
+#
+# Note: this script is not intended for execution as a whole: each benchmark
+# needs to be executed independently after importing all the required packages.
+
 import timeit
 
+# Setup: importing packages
 p0 = """
 import pytools as pt
 import numpy as np
 import matplotlib.pyplot as plt
 """
-
+# Setup: selecting file and variable
 p1 = p0+"""
-file = 'bulk1.0001000.vlsv'
+file1 = 'bulk.singleprecision.vlsv' # 80 B
+file2 = 'bulk.0000003.vlsv'         # 900 KB
+file3 = 'bulk1.0001000.vlsv'        # 32 MB
+
+file = file1
 var = 'proton/vg_rho'
 """
-
-p2 = p0+"""
-file = 'bulk1.0001000.vlsv'
-var = 'proton/vg_rho'
+# Setup: reading metadata
+p2 = p0+p1+"""
 f = pt.vlsvfile.VlsvReader(file)
 """
-# Reading meta data
-s1 = """
-f = pt.vlsvfile.VlsvReader(file)
-"""
-# Obtaining scalar variable
-s2 = """
-cellID = f.read_variable('CellID')
-cell_sorted = np.argsort(cellID)
-rho = f.read_variable(var)[cell_sorted]
-"""
-# Plotting contour from uniform mesh
-s3 = """
-pt.plot.plot_colormap(filename='bulk.0000501.vlsv', var='rho', draw=1)
-"""
-# Plotting contour slice from AMR mesh
-s4 = """
-pt.plot.plot_colormap3dslice(filename='bulk1.0001000.vlsv', var='proton/vg_rho', draw=1, normal='y')
-"""
-
+# Setup: virtual satellite extraction
 p3 = p0+"""
 import glob
 dir = "/wrk-vakka/group/spacephysics/vlasiator/3D/EGI/bulk/dense_cold_hall1e5_afterRestart374/"
@@ -47,7 +38,26 @@ f = pt.vlsvfile.VlsvReader(filenames[0])
 id = f.get_cellid(loc)
 print(id)
 """
-# Extracting variable from static location
+
+# Run: reading metadata
+s1 = """
+f = pt.vlsvfile.VlsvReader(file)
+"""
+# Run: obtaining scalar variable
+s2 = """
+cellID = f.read_variable('CellID')
+cell_sorted = np.argsort(cellID)
+rho = f.read_variable(var)[cell_sorted]
+"""
+# Run: plotting density contour on a uniform mesh
+s3 = """
+pt.plot.plot_colormap(filename='bulk.0000501.vlsv', var='rho', draw=1)
+"""
+# Run: plotting density slice from a 3D AMR mesh
+s4 = """
+pt.plot.plot_colormap3dslice(filename='bulk1.0001000.vlsv', var='proton/vg_rho', draw=1, normal='y')
+"""
+# Run: virtual satellite extraction from a static location
 s5 = """
 for (i,fname) in enumerate(filenames):
    f = pt.vlsvfile.VlsvReader(fname)
@@ -58,10 +68,10 @@ print(timeit.timeit(stmt=s1, setup=p1, number=10) / 10 * 1e3) # [ms]
 print(timeit.timeit(stmt=s2, setup=p2, number=10) / 10 * 1e3) # [ms]
 
 t1 = timeit.timeit(stmt=s1, setup=p1, number=10) / 10
-print(f"Finished plotting in {t1:0.4f} ms")
+print(f"Finished reading metadata in {t1:0.4f} ms")
 
 t2 = timeit.timeit(stmt=s2, setup=p2, number=10) / 10
-print(f"Finished plotting in {t2:0.4f} ms")
+print(f"Finished reading scalar DCCRG variable in {t2:0.4f} ms")
 
 t3 = timeit.timeit(stmt=s3, setup=p0, number=3) / 3
 print(f"Finished plotting in {t3:0.4f} s")
