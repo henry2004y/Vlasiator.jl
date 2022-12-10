@@ -1,7 +1,7 @@
 # Benchmarks
 
 !!! note
-    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.9.32 running Python 3.6.9/3.9.7 and Julia 1.8.3. The timings are collected from a i5-10210U @ 1.6GHz CPU with 16 GB RAM if not specified.
+    The numbers shown here are comparisons between Analysator v0.9 and Vlasiator.jl v0.9.32 running Python 3.6.9/3.9.7 and Julia 1.8.3 with the scripts [`perf.jl`](https://github.com/henry2004y/Vlasiator.jl/blob/master/benchmark/perf.jl) and [`perf.py`](https://github.com/henry2004y/Vlasiator.jl/blob/master/benchmark/perf.py). The timings are collected from a i5-10210U @ 1.6GHz CPU with 16 GB RAM if not specified.
 
 * Reading DCCRG grid variables
 | Size            | Julia [ms] | Python [ms] | Speedup |
