@@ -20,7 +20,7 @@ makedocs(;
         "Benchmarks" => "benchmark.md",
         "API Reference" => "internal.md",
         "Contributing" => "contributing.md",
-        "Log" => "log.md",
+        "FAQ" => "log.md",
     ],
 )
 
