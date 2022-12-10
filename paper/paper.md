@@ -22,7 +22,7 @@ This lightweight package retains all the actively used funtionalities in its sis
 
 `Vlasiator.jl` contains the following main features:
 
-- Reading [VLSV](https://github.com/fmihpc/vlsv) format data, including `DCCRG` [@honkonen2013parallel] and [FSGRID](https://github.com/fmihpc/fsgrid), at any size.
+- Reading [VLSV](https://github.com/fmihpc/vlsv) format data, including [`DCCRG`](https://github.com/fmihpc/dccrg) [@honkonen2013parallel] and [FSGRID](https://github.com/fmihpc/fsgrid), at any size.
 - Calculating predefined derived quantities from raw VLSV outputs.
 - Extracting quantities at a given point/line/plane/box.
 - Visualizing 1D curves/2D cuts/3D volumes of saved/derived variables and phase space distributions via multiple visualization libraries such as `Matplotlib` [@matplotlib], `Plots.jl` [@plots], and Makie.jl [@makie].
