@@ -20,6 +20,8 @@ A bunch of physical constants are predefined in [Vlasiator.jl](https://github.co
 
 ## Loading VLSV data
 
+A quick way to obtain small test data can be found in [F&Q](log.md#Test-Data). Larger open-access data can be found from the references in [Vlasiator publications](https://www.helsinki.fi/en/researchgroups/vlasiator/publications-and-presentations), e.g. [Takahashi+ 2020](https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/).
+
 - Read meta data
 
 ```julia
