@@ -64,17 +64,25 @@ The total current density ``\mathbf{j}`` is obtained from Ampère–Maxwell's la
 \nabla\times\mathbf{B} = \mu_0 \mathbf{j}
 ```
 
-Finally, by determining the electron pressure tensor by using an appropriate equation of state, the evolution of the system can be followed in time. For example, let $\overleftrightarrow{P}_e = P_e \overleftrightarrow{I}$ where $P_e$ is the isotropic scalar electron pressure. In an isothermal process,
+Finally, by determining the electron pressure tensor by using an appropriate equation of state, the evolution of the system can be followed in time. For example, let $\overleftrightarrow{P}_e = p_e \overleftrightarrow{I}$ where $p_e$ is the isotropic scalar electron pressure. In an isothermal process,
 
 ```math
-P_e = n_e k_B T_e
+p_e = n_e k_B T_e
 ```
 
 where ``n_e \approx n_i`` and ``T_e`` is a constant. In an adiabatic process with index $\gamma$,
 
 ```math
-P_e / n_e^\gamma = \text{const.}
+p_e / n_e^\gamma = \text{const.}
 ```
+
+The different processes can be generalized into the [polytropic process](https://en.wikipedia.org/wiki/Polytropic_process):
+
+```math
+p_e / n_e^n = \text{const.}
+```
+
+When the ideal gas law applies, the _polytropic index_ $n=1$ for an isothermal process, and $n=\gamma$ for an adiabatic process.
 
 For more details, please refer to [Vlasov methods in space physics and astrophysics](https://link.springer.com/article/10.1007/s41115-018-0003-2).
 
