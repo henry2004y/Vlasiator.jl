@@ -1,66 +1,82 @@
 # Script for generating benchmark results in
 # https://henry2004y.github.io/Vlasiator.jl/dev/benchmark/
-#
-# Note: this script is not intended for execution as a whole: each benchmark needs to be
-# executed independently after importing all the required packages.
 
-using Vlasiator
-using Vlasiator: RE
+using Vlasiator, PyPlot
 using BenchmarkTools
-using Glob
 
-## Reading DCCRG variables
+ENV["MPLBACKEND"]="agg" # no GUI for Matplotlib
 
-file1 = "bulk.singleprecision.vlsv" # 80 B
-file2 = "bulk.0000003.vlsv"         # 900 KB
-file3 = "bulk1.0001000.vlsv"        # 32 MB
-# Select file
-file = file1
-# Load metadata
-@time meta = load(file);
-@time meta = load(file);
-@time meta = load(file);
-# Select variable name
-var = "proton/vg_rho";
-# Read variable, sorted
-@time rho = meta[var];
-@time rho = meta[var];
-# Read variable, unsorted
-@time rho_unsorted = readvariable($meta, $var, false);
-@time rho_unsorted = readvariable($meta, $var, false);
+files = ["1d_single.vlsv", "bulk.2d.vlsv", "2d_double.vlsv", "2d_AFC.vlsv", "3d_EGI.vlsv"]
+versions = [5,5,5,4,5]
 
-## Plotting with PyPlot
-# Log color scale is used for comparison with Analysator.
-
-# 2D density contour on a uniform mesh
-filename = "bulk.0000501.vlsv"
-meta = load(filename)
-@time pcolormesh(meta, "rho", colorscale=Log)
-close()
-@time pcolormesh(meta, "rho", colorscale=Log)
-
-# 2D density slices from 3D AMR mesh
-filename = "bulk1.0001000.vlsv"
-meta = load(filename)
-@time pcolormesh(meta, "proton/vg_rho", colorscale=Log)
-close()
-@time pcolormesh(meta, "proton/vg_rho", colorscale=Log)
-
-## Virtual satellite tracking at a static location
-
-# 3D EGI data on Turso, University of Helsinki
-dir = "/wrk-vakka/group/spacephysics/vlasiator/3D/EGI/bulk/dense_cold_hall1e5_afterRestart374/"
-
-filenames = glob("bulk1*.vlsv", dir)
-
-var = "proton/vg_rho"
-loc = [12, 0, 0] .* RE
-
-println("Number of files: ", length(filenames))
-# Static cell ID
-id = let
-   meta = load(filenames[1])
-   getcell(meta, loc)
+# Download test files if not found in the current path
+for i in eachindex(files)
+   if isfile(files[i])
+      @info "Benchmark file $(files[i]) found..."
+      continue
+   elseif i == 4
+      url_base = "https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/"
+      filename = "production_halfres/bulk.0000000.vlsv"
+      file_origin = basename(filename)
+      url = joinpath(url_base, filename)
+      @info "Downloading 1.8G test file..."
+      run(`curl -o $file_new $url`)
+      run(`mv $(file_origin) $file`)
+   elseif i in (1,2,3)
+      @info "Downloading test files..."
+      run(`curl -o testdata.tar.gz https://raw.githubusercontent.com/henry2004y/vlsv_data/master/testdata.tar.gz`)
+      run(`curl -o 1d_single.vlsv https://raw.githubusercontent.com/henry2004y/vlsv_data/master/1d_single.vlsv`)
+      run(`curl -o 2d_double.vlsv https://raw.githubusercontent.com/henry2004y/vlsv_data/master/2d_double.vlsv`)
+      run(`tar -xzvf testdata.tar.gz`)
+   elseif i == 5
+      @warn "$(files[i]) is not open-access!"
+   end
 end
 
-@btime data_series = extractsat($filenames, $var, $id)
+# Define a parent BenchmarkGroup to contain our suite
+const suite = BenchmarkGroup()
+
+# Add children groups and tags to our benchmark suite.
+suite["load"] = BenchmarkGroup(files)
+suite["read"] = BenchmarkGroup(files)
+suite["plot"] = BenchmarkGroup(["2d", "3d"])
+
+# Add benchmarks
+for (i, file) in enumerate(files)
+   suite["load"][file] = @benchmarkable load($file)
+   if i == 4
+      var = "proton/rho"
+      suite["read"][file*"_sorted"] = @benchmarkable meta[$var] setup=(meta=load($file))
+      suite["read"][file*"_unsorted"] =
+         @benchmarkable readvariable(meta, $var, false) setup=(meta=load($file))
+      suite["plot"]["contour_uniform"] =
+         @benchmarkable pcolormesh(meta, $var, colorscale=Log) setup=(meta=load($file))
+   else
+      var = "proton/vg_rho"
+      suite["read"][file*"_sorted"] = @benchmarkable meta[$var] setup=(meta=load($file))
+      suite["read"][file*"_unsorted"] =
+         @benchmarkable readvariable(meta, $var, false) setup=(meta=load($file))
+   end
+   if i == 5
+      var = "proton/vg_rho"
+      suite["plot"]["contour_nonuniform"] =
+         @benchmarkable pcolormesh(meta, $var, colorscale=Log) setup=(meta=load($file))
+   end
+
+end
+
+# If a cache of tuned parameters already exists, use it, otherwise, tune and cache
+# the benchmark parameters. Reusing cached parameters is faster and more reliable
+# than re-tuning `suite` every time the file is included.
+paramspath = joinpath(dirname(@__FILE__), "params.json")
+
+if isfile(paramspath)
+   loadparams!(suite, BenchmarkTools.load(paramspath)[1], :evals)
+else
+   tune!(suite)
+   BenchmarkTools.save(paramspath, params(suite))
+end
+
+results = run(suite, verbose=true, samples=100, seconds=20)
+
+show(results)

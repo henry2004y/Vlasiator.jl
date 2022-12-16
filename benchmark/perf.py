@@ -1,83 +1,94 @@
 # Script for generating benchmark results in
 # https://henry2004y.github.io/Vlasiator.jl/dev/benchmark/
-#
-# Note: this script is not intended for execution as a whole: each benchmark
-# needs to be executed independently after importing all the required packages.
 
-import timeit
+import requests, tarfile, timeit, os, os.path, textwrap
+import pytools as pt
+import matplotlib
+matplotlib.use('agg')
+
+os.environ["PTNONINTERACTIVE"] = "1"
+
+files = ['1d_single.vlsv', 'bulk.2d.vlsv', '2d_double.vlsv', '2d_AFC.vlsv', '3d_EGI.vlsv']
+
+for i, file in enumerate(files):
+   if os.path.isfile(file):
+      print(f"Benchmark file {file} found...")
+   elif i == 3:
+      url_base = 'https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/'
+      filename = 'production_halfres/bulk.0000000.vlsv'
+      r = requests.get(url_base+filename, allow_redirects=True)
+      open('2d_AFC.vlsv', 'wb').write(r.content)
+   elif i in [0,1,2]:
+      r = requests.get('https://raw.githubusercontent.com/henry2004y/vlsv_data/master/testdata.tar.gz', allow_redirects=True)
+      open('testdata.tar.gz', 'wb').write(r.content)
+      r = requests.get('https://raw.githubusercontent.com/henry2004y/vlsv_data/master/1d_single.vlsv', allow_redirects=True)
+      open('1d_single.vlsv', 'wb').write(r.content)
+      r = requests.get('https://raw.githubusercontent.com/henry2004y/vlsv_data/master/2d_double.vlsv', allow_redirects=True)
+      open('2d_double.vlsv', 'wb').write(r.content)
+
+      file = tarfile.open('testdata.tar.gz')
+      file.extractall('./')
+      file.close()
+   elif i == 4:
+      print(f"{file} is not open-access!")
+
+# Number of trails for each benchmark
+ntrail = 100
 
 # Setup: importing packages
 p0 = """
 import pytools as pt
 import numpy as np
 import matplotlib.pyplot as plt
-"""
-# Setup: selecting file and variable
-p1 = p0+"""
-file1 = 'bulk.singleprecision.vlsv' # 80 B
-file2 = 'bulk.0000003.vlsv'         # 900 KB
-file3 = 'bulk1.0001000.vlsv'        # 32 MB
-
-file = file1
-var = 'proton/vg_rho'
-"""
-# Setup: reading metadata
-p2 = p0+p1+"""
-f = pt.vlsvfile.VlsvReader(file)
-"""
-# Setup: virtual satellite extraction
-p3 = p0+"""
-import glob
-dir = "/wrk-vakka/group/spacephysics/vlasiator/3D/EGI/bulk/dense_cold_hall1e5_afterRestart374/"
-var = "proton/vg_rho"
-Re = 6.371e6 # Earth radius, [m]
-loc = [12*Re, 0, 0]
-filenames = sorted(glob.glob(dir+"bulk1*.vlsv"))
-data_series = np.zeros(len(filenames))
-f = pt.vlsvfile.VlsvReader(filenames[0])
-id = f.get_cellid(loc)
-print(id)
+import matplotlib
+matplotlib.use('agg')
 """
 
-# Run: reading metadata
-s1 = """
-f = pt.vlsvfile.VlsvReader(file)
-"""
-# Run: obtaining scalar variable
-s2 = """
-cellID = f.read_variable('CellID')
-cell_sorted = np.argsort(cellID)
-rho = f.read_variable(var)[cell_sorted]
-"""
+for i, file in enumerate(files):
+   # Setup: reading metadata
+   p2 = textwrap.dedent("""\
+   f = pt.vlsvfile.VlsvReader(file)
+   cellID = f.read_variable('CellID')
+   cell_sorted = np.argsort(cellID)
+   """)
+
+   if i != 3:
+      # Setup: selecting file and variable
+      p1 = p0 + textwrap.dedent(f"""\
+      file = '{file}'
+      var = 'proton/vg_rho'
+      """)
+   else:
+      # Setup: selecting file and variable
+      p1 = p0 + textwrap.dedent(f"""\
+      file = '{file}'
+      var = 'proton/rho'
+      """)
+
+   # Run: reading metadata
+   s1 = p2
+   t1 = timeit.timeit(stmt=s1, setup=p1, number=ntrail) / ntrail * 1e3
+   print(f"{file}:")
+   print(f"Reading metadata in {t1:0.4f} ms")
+   # Run: obtaining sorted scalar variable
+   s2 = textwrap.dedent("""
+   rho = f.read_variable(var)[cell_sorted]
+   """)
+   t2 = timeit.timeit(stmt=s2, setup=p0+p1+p2, number=ntrail) / ntrail * 1e3
+   print(f"{file}:")
+   print(f"Reading scalar DCCRG variable in {t2:0.4f} ms")
+
 # Run: plotting density contour on a uniform mesh
-s3 = """
-pt.plot.plot_colormap(filename='bulk.0000501.vlsv', var='rho', draw=1)
+s3 = f"""
+pt.plot.plot_colormap(filename='{files[3]}', var='rho', draw=1)
 """
+t3 = timeit.timeit(stmt=s3, setup=p0, number=5) / 5
+print(f"Uniform 2d plotting in {t3:0.4f} s")
+
 # Run: plotting density slice from a 3D AMR mesh
-s4 = """
-pt.plot.plot_colormap3dslice(filename='bulk1.0001000.vlsv', var='proton/vg_rho', draw=1, normal='y')
-"""
-# Run: virtual satellite extraction from a static location
-s5 = """
-for (i,fname) in enumerate(filenames):
-   f = pt.vlsvfile.VlsvReader(fname)
-   data_series[i] = f.read_variable(name=var, cellids=id)
+s4 = f"""
+pt.plot.plot_colormap3dslice(filename='{files[4]}', var='proton/vg_rho', draw=1, normal='y')
 """
 
-print(timeit.timeit(stmt=s1, setup=p1, number=10) / 10 * 1e3) # [ms]
-print(timeit.timeit(stmt=s2, setup=p2, number=10) / 10 * 1e3) # [ms]
-
-t1 = timeit.timeit(stmt=s1, setup=p1, number=10) / 10
-print(f"Finished reading metadata in {t1:0.4f} ms")
-
-t2 = timeit.timeit(stmt=s2, setup=p2, number=10) / 10
-print(f"Finished reading scalar DCCRG variable in {t2:0.4f} ms")
-
-t3 = timeit.timeit(stmt=s3, setup=p0, number=3) / 3
-print(f"Finished plotting in {t3:0.4f} s")
-
-t4 = timeit.timeit(stmt=s4, setup=p0, number=3) / 3
-print(f"Finished plotting in {t4:0.4f} s")
-
-t5 = timeit.timeit(stmt=s5, setup=p3, number=1) / 1
-print(f"Finished virtual satellite tracking in {t5:0.4f} s")
+t4 = timeit.timeit(stmt=s4, setup=p0, number=5) / 5
+print(f"AMR slice plotting in {t4:0.4f} s")
