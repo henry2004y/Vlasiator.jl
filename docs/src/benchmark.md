@@ -52,7 +52,7 @@ Access to the public data can be found from [vlsv_data](https://github.com/henry
 * Plotting 2D density slices from a 3D AMR mesh
 | File Index | Julia [s][^4] | Python [s] | Ratio |
 |:-----------|:-------------:|:----------:|:-----:|
-| 5          | 0.5           | 4.6        | 10    |
+| 5          | 0.5           | 4.7        | 9.4    |
 
 [^4]: The first time execution will be slower due to JIT compilation (which is excluded in the timing here). This is known as "Time-To-First-X" in the Julia community.
 
