@@ -406,7 +406,7 @@ function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring
    local coord
    ns = findall(qstring, footer)
 
-   for i in eachindex(ns)[3:end]
+   for i in reverse(eachindex(ns))
       if ns[i]["mesh"] == species
          arraysize = Parsers.parse(Int, ns[i]["arraysize"])
          offset = Parsers.parse(Int, nodecontent(ns[i]))
@@ -449,7 +449,7 @@ function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
 
    bbox = Vector{Int}(undef, 6)
 
-   for i in eachindex(ns)[3:end]
+   for i in reverse(eachindex(ns))
       if ns[i]["mesh"] == species
          offset = Parsers.parse(Int, nodecontent(ns[i]))
          seek(fid, offset)
