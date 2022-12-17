@@ -4,7 +4,8 @@
 using Vlasiator, PyPlot
 using BenchmarkTools
 
-ENV["MPLBACKEND"]="agg" # no GUI for Matplotlib
+# Turn off GUI for Matplotlib
+pygui(false)
 
 files = ["1d_single.vlsv", "bulk.2d.vlsv", "2d_double.vlsv", "2d_AFC.vlsv", "3d_EGI.vlsv"]
 versions = [5,5,5,4,5]
@@ -20,8 +21,7 @@ for i in eachindex(files)
       file_origin = basename(filename)
       url = joinpath(url_base, filename)
       @info "Downloading 1.8G test file..."
-      run(`curl -o $file_new $url`)
-      run(`mv $(file_origin) $file`)
+      run(`curl -o $(files[i]) $url`)
    elseif i in (1,2,3)
       @info "Downloading test files..."
       run(`curl -o testdata.tar.gz https://raw.githubusercontent.com/henry2004y/vlsv_data/master/testdata.tar.gz`)
@@ -43,6 +43,7 @@ suite["plot"] = BenchmarkGroup(["2d", "3d"])
 
 # Add benchmarks
 for (i, file) in enumerate(files)
+   !isfile(file) && continue
    suite["load"][file] = @benchmarkable load($file)
    if i == 4
       var = "proton/rho"

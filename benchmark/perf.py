@@ -1,12 +1,17 @@
 # Script for generating benchmark results in
 # https://henry2004y.github.io/Vlasiator.jl/dev/benchmark/
+#
+# If Tex is not installed, LaTeX format output can be disabled via
+#    export PTNOLATEX=1
 
-import requests, tarfile, timeit, os, os.path, textwrap
-import pytools as pt
-import matplotlib
-matplotlib.use('agg')
+# Set environment variables for Analysator
+import os
 
 os.environ["PTNONINTERACTIVE"] = "1"
+os.environ["PTBACKEND"] = 'Agg'
+
+import requests, tarfile, timeit, os.path, textwrap
+import pytools as pt
 
 files = ['1d_single.vlsv', 'bulk.2d.vlsv', '2d_double.vlsv', '2d_AFC.vlsv', '3d_EGI.vlsv']
 
@@ -45,6 +50,8 @@ matplotlib.use('agg')
 """
 
 for i, file in enumerate(files):
+   if not os.path.isfile(file):
+      continue
    # Setup: reading metadata
    p2 = textwrap.dedent("""\
    f = pt.vlsvfile.VlsvReader(file)
@@ -71,7 +78,7 @@ for i, file in enumerate(files):
    print(f"{file}:")
    print(f"Reading metadata in {t1:0.4f} ms")
    # Run: obtaining sorted scalar variable
-   s2 = textwrap.dedent("""
+   s2 = textwrap.dedent("""\
    rho = f.read_variable(var)[cell_sorted]
    """)
    t2 = timeit.timeit(stmt=s2, setup=p0+p1+p2, number=ntrail) / ntrail * 1e3
@@ -85,10 +92,11 @@ pt.plot.plot_colormap(filename='{files[3]}', var='rho', draw=1)
 t3 = timeit.timeit(stmt=s3, setup=p0, number=5) / 5
 print(f"Uniform 2d plotting in {t3:0.4f} s")
 
-# Run: plotting density slice from a 3D AMR mesh
-s4 = f"""
-pt.plot.plot_colormap3dslice(filename='{files[4]}', var='proton/vg_rho', draw=1, normal='y')
-"""
+if os.path.isfile(files[4]):
+   # Run: plotting density slice from a 3D AMR mesh
+   s4 = textwrap.dedent(f"""\
+   pt.plot.plot_colormap3dslice(filename='{files[4]}', var='proton/vg_rho', draw=1, normal='y')
+   """)
 
-t4 = timeit.timeit(stmt=s4, setup=p0, number=5) / 5
-print(f"AMR slice plotting in {t4:0.4f} s")
+   t4 = timeit.timeit(stmt=s4, setup=p0, number=5) / 5
+   print(f"AMR slice plotting in {t4:0.4f} s")

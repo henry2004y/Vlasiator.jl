@@ -378,7 +378,7 @@ end
    if group in (:plot, :all)
       @testset "PyPlot" begin
          using PyPlot
-         ENV["MPLBACKEND"]="agg" # no GUI
+         pygui(false)
          # 1D
          meta = meta1
          line = plot(meta, "proton/vg_rho")[1]
