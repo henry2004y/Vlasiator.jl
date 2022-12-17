@@ -38,9 +38,9 @@ Access to the public data can be found from [vlsv_data](https://github.com/henry
 [^2]: Vlasiator.jl can be faster if there is no conversion from Float64 to Float32. See [Precision](log.md#precision).
 
 * Reading field solver grid variables[^3]
-| File Index | Size            | Julia [s] | Python [s] | Ratio |
-|:-----------|:----------------|:---------:|:----------:|:-----:|
-| 5          | 6.2 GiB Float32 | 8         | 61         | 7.6   |
+| File Index | Size            | Julia [s] | Julia, mmap [s] | Python [s] | Ratio |
+|:-----------|:----------------|:---------:|:---------------:|:----------:|:-----:|
+| 5          | 6.2 GiB Float32 | 18        | 8               | 56         | 7     |
 
 [^3]: The field solver grid is a regular Cartesian grid at the finest refinement level introduced after Vlasiator 5. Therefore fsgrid variables are quite large for 3D AMR runs: with limited memory (e.g. 16 GB RAM) you may encounter out-of-memory issues when reading `fg_b` more than once. In Vlasiator.jl, we provide the option `usemmap=true` for reading large arrays --- see [Memory](log.md#memory) for more.
 

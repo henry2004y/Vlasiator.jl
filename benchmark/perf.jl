@@ -81,3 +81,13 @@ end
 results = run(suite, verbose=true, samples=100, seconds=20)
 
 show(results)
+
+if isfile(files[5])
+   println("----------")
+   meta = load(files[5])
+   # mmap
+   @time b = readvariable(meta, "fg_b", true, true);
+   println("----------")
+   # regular
+   @time b = readvariable(meta, "fg_b", true, false);
+end

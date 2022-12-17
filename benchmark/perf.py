@@ -102,3 +102,16 @@ if os.path.isfile(files[4]):
 
    t4 = timeit.timeit(stmt=s4, setup=p0, number=5) / 5
    print(f"AMR slice plotting in {t4:0.4f} s")
+
+   p3 = textwrap.dedent("""\
+   import pytools as pt
+   file = '3d_EGI.vlsv'
+   f = pt.vlsvfile.VlsvReader(file)
+   """)
+
+   s5 = textwrap.dedent("""\
+   fg_b = f.read_fsgrid_variable('fg_b')
+   """)
+
+   t5 = timeit.timeit(stmt=s5, setup=p3, number=1)
+   print(f"Reading FSGrid variable in {t5:0.4f} s")
