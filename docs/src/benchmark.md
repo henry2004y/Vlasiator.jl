@@ -42,17 +42,17 @@ Access to the public data can be found from [vlsv_data](https://github.com/henry
 |:-----------|:----------------|:---------:|:----------:|:-----:|
 | 5          | 6.2 GiB Float32 | 8         | 61         | 7.6   |
 
-[^3]: The field solver grid is a regular Cartesian grid at the finest refinement level. Therefore the storage requirement for fsgrid variables are quite significant: with limited memory (e.g. 16 GB RAM) you may encounter out-of-memory issues when reading `fg_b` more than once. In Vlasiator.jl, we provide the option `usemmap=true` for reading large arrays --- see [Memory](log.md#memory) for more.
+[^3]: The field solver grid is a regular Cartesian grid at the finest refinement level introduced after Vlasiator 5. Therefore fsgrid variables are quite large for 3D AMR runs: with limited memory (e.g. 16 GB RAM) you may encounter out-of-memory issues when reading `fg_b` more than once. In Vlasiator.jl, we provide the option `usemmap=true` for reading large arrays --- see [Memory](log.md#memory) for more.
 
-* Plotting 2D density contours on a uniform mesh
+* Plotting 2D density contours on a uniform mesh (no GUI)
 | File Index | Julia [s] | Python [s] | Ratio |
 |:-----------|:---------:|:----------:|:-----:|
-| 4          | 0.5       | 12.3       | 9.4   |
+| 4          | 0.5       | 5.4       | 11   |
 
-* Plotting 2D density slices from a 3D AMR mesh
+* Plotting 2D density slices from a 3D AMR mesh (no GUI)
 | File Index | Julia [s][^4] | Python [s] | Ratio |
 |:-----------|:-------------:|:----------:|:-----:|
-| 5          | 0.5           | 4.7        | 9.4    |
+| 5          | 0.5           | 3.1        | 6.2    |
 
 [^4]: The first time execution will be slower due to JIT compilation (which is excluded in the timing here). This is known as "Time-To-First-X" in the Julia community.
 
