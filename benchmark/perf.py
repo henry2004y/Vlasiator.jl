@@ -19,11 +19,13 @@ for i, file in enumerate(files):
    if os.path.isfile(file):
       print(f"Benchmark file {file} found...")
    elif i == 3:
+      print("Downloading 1.8G test file...")
       url_base = 'https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/'
       filename = 'production_halfres/bulk.0000000.vlsv'
       r = requests.get(url_base+filename, allow_redirects=True)
       open('2d_AFC.vlsv', 'wb').write(r.content)
    elif i in [0,1,2]:
+      print("Downloading test files...")
       r = requests.get('https://raw.githubusercontent.com/henry2004y/vlsv_data/master/testdata.tar.gz', allow_redirects=True)
       open('testdata.tar.gz', 'wb').write(r.content)
       r = requests.get('https://raw.githubusercontent.com/henry2004y/vlsv_data/master/1d_single.vlsv', allow_redirects=True)
