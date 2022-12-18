@@ -8,7 +8,6 @@ using BenchmarkTools
 pygui(false)
 
 files = ["1d_single.vlsv", "bulk.2d.vlsv", "2d_double.vlsv", "2d_AFC.vlsv", "3d_EGI.vlsv"]
-versions = [5,5,5,4,5]
 
 # Download test files if not found in the current path
 for i in eachindex(files)
@@ -63,7 +62,6 @@ for (i, file) in enumerate(files)
       suite["plot"]["contour_nonuniform"] =
          @benchmarkable pcolormesh(meta, $var, colorscale=Log) setup=(meta=load($file))
    end
-
 end
 
 # If a cache of tuned parameters already exists, use it, otherwise, tune and cache
@@ -83,6 +81,7 @@ results = run(suite, verbose=true, samples=100, seconds=20)
 show(results)
 
 if isfile(files[5])
+   println("")
    println("----------")
    meta = load(files[5])
    # mmap
