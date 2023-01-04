@@ -191,7 +191,7 @@ end
       w = reinterpret(T, a)
    end
 
-   w::AbstractVector{T}
+   w::Union{Array{T,1}, Base.ReinterpretArray}
 end
 
 @inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
@@ -205,7 +205,7 @@ end
       w = reshape(reinterpret(T, a), vsize, asize)
    end
 
-   w::AbstractArray{T, 2}
+   w::Union{Array{T,2}, Base.ReinterpretArray}
 end
 
 """
@@ -491,8 +491,8 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
       dataOrdered =
-         if ndims(raw) > 1
-            @inbounds Array{Float32}(undef, size(raw,1), bbox[1], bbox[2], bbox[3])
+         if ndims(raw)::Int64 > 1
+            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox[1], bbox[2], bbox[3])
          else
             @inbounds Array{Float32}(undef, bbox[1], bbox[2], bbox[3])
          end
