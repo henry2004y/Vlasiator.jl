@@ -504,7 +504,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       v = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
    elseif sorted # dccrg grid
       @inbounds v = ndims(raw) == 1 ? raw[meta.cellindex] : raw[:,meta.cellindex]
-      if eltype(v) == Float64; v = Float32.(v); end
+      if T === Float64; v = map(x->Float32(x), v); end
    else # dccrg grid
       v = raw
    end
@@ -534,7 +534,7 @@ function readvariable(meta::MetaVLSV, var::String, ids::Vector{Int})::Array
       v = _readcells(T, meta.fid, meta.celldict, ids, nid, offset, asize, dsize, vsize)
 
       if T === Float64
-         v = Float32.(v)
+         v = map(x->Float32(x), v)
       end
    end
 
@@ -559,7 +559,7 @@ function readvariable(meta::MetaVLSV, var::String, cid::Int)::Array
    v = _readcell(T, meta.fid, meta.celldict, cid, offset, dsize, vsize)
 
    if T === Float64
-      v = Float32.(v)
+      v = map(x->Float32(x), v)
    end
 
    return v
