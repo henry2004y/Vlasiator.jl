@@ -924,14 +924,14 @@ Find the nearest spatial cell with VDF saved of a given cell `id` associated wit
 function getnearestcellwithvdf(meta::MetaVLSV, id::Int)
    cells = getcellwithvdf(meta)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
-   coords = [SVector(0.0f0, 0.0f0, 0.0f0) for _ in cells]
+   coords_orig = getcellcoordinates(meta, id)
+   coords = [zeros(SVector{3}) for _ in cells]
    @inbounds for i in eachindex(cells)
       coords[i] = getcellcoordinates(meta, cells[i])
    end
-   coords_orig = getcellcoordinates(meta, id)
-   d2 = [sum((c .- coords_orig).^2) for c in coords]
+   min_ = findmin(c -> sum(abs2, c .- coords_orig), coords)[2]
 
-   cells[argmin(d2)]
+   cells[min_]
 end
 
 """
@@ -1083,13 +1083,13 @@ end
 
 "Set the elements of the fsgrid array to the value of corresponding cell ID `cid`."
 function upsample_fsgrid_subarray!(meta::MetaVLSV, data, cid::Int, v_fg::Array{T, 4}
-   ) where T 
+   ) where T
    il, ih = get_fg_indices_cell(meta, cid)
    v_fg[:,il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]] .= data
 end
 
 function upsample_fsgrid_subarray!(meta::MetaVLSV, data, cid::Int, v_fg::Array{T, 3}
-   ) where T 
+   ) where T
    il, ih = get_fg_indices_cell(meta, cid)
    v_fg[il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]] .= data
 end
