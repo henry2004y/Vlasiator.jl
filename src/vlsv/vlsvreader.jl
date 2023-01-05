@@ -793,7 +793,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)
 
-   local offset_v::Int, nblocks::Int
+   offset_v, nblocks = 0, 0
 
    let cellsWithVDF, nblock_C
       for node in nodeVLSV.cellwithVDF
@@ -830,7 +830,9 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
          throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
       end
       # Offset position to vcell storage
-      offset_v = sum(@view nblock_C[1:cellWithVDFIndex-1])
+      @inbounds for i in 1:cellWithVDFIndex-1
+         offset_v += nblock_C[i]
+      end
    end
 
    local dsize, vsize, offset
