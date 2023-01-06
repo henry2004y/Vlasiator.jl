@@ -85,7 +85,7 @@ const units_predefined = Dict(
 const variables_predefined = Dict(
    :Bmag => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
       ρ = _readrho(meta, ids)
-      B = readvariable(meta, "vg_b_vol", ids)
+      B = readvariable(meta, "vg_b_vol", ids)::Array{Float32,2}
       Bmag = sum(x -> x*x, B, dims=1) |> vec
       @. Bmag = √(Bmag)
       _fillinnerBC!(Bmag, ρ)
@@ -93,7 +93,7 @@ const variables_predefined = Dict(
    end,
    :Emag => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
       ρ = _readrho(meta, ids)
-      E = readvariable(meta, "vg_e_vol", ids)
+      E = readvariable(meta, "vg_e_vol", ids)::Array{Float32,2}
       Emag = sum(x -> x*x, E, dims=1) |> vec
       @. Emag = √(Emag)
       _fillinnerBC!(Emag, ρ)
@@ -101,7 +101,7 @@ const variables_predefined = Dict(
    end,
    :Vmag => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
       ρ = _readrho(meta, ids)
-      V = readvariable(meta, "proton/vg_v", ids)
+      V = readvariable(meta, "proton/vg_v", ids)::Array{Float32,2}
       Vmag = sum(x -> x*x, V, dims=1) |> vec
       @. Vmag = √(Vmag)
       _fillinnerBC!(Vmag, ρ)
@@ -109,7 +109,7 @@ const variables_predefined = Dict(
    end,
    :Bhat => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
       ρ = _readrho(meta, ids)
-      Bhat = readvariable(meta, "vg_b_vol", ids)
+      Bhat = readvariable(meta, "vg_b_vol", ids)::Array{Float32,2}
       Bmag = sum(x -> x*x, Bhat, dims=1) |> vec
       @. Bmag = √(Bmag)
       Bhat ./= Bmag'
@@ -139,39 +139,39 @@ const variables_predefined = Dict(
       P::Vector{Float32}
    end,
    :VS => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # sound speed
-      P = readvariable(meta, "P", ids)
-      ρm = readvariable(meta, "Rhom", ids)
+      P = readvariable(meta, "P", ids)::Vector{Float32}
+      ρm = readvariable(meta, "Rhom", ids)::Vector{<:Real}
       _fillinnerBC!(ρm, ρm)
-      VS = @. √( (P*5.0f0/3.0f0) / ρm )
+      VS = @. √( (P*5/3) / ρm )
       VS::Union{Vector{Float32}, Vector{Float64}}
    end,
    :VA => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # Alfvén speed
-      ρm = readvariable(meta, "Rhom", ids)
+      ρm = readvariable(meta, "Rhom", ids)::Vector{<:Real}
       _fillinnerBC!(ρm, ρm)
       Bmag = readvariable(meta, "Bmag", ids)
       VA = @. Bmag / √(ρm*μ₀)
-      VA::Union{Vector{Float32}, Vector{Float64}}
+      VA::Vector{Float64}
    end,
    :MA => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # Alfvén Mach number
-      V = readvariable(meta, "Vmag", ids)
-      VA = readvariable(meta, "VA", ids)
+      V = readvariable(meta, "Vmag", ids)::Vector{Float32}
+      VA = readvariable(meta, "VA", ids)::Vector{Float64}
       MA = V ./ VA
-      MA::Union{Vector{Float32}, Vector{Float64}}
+      MA::Vector{Float64}
    end,
    :MS => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # Sonic Mach number
-      V = readvariable(meta, "Vmag", ids)
+      V = readvariable(meta, "Vmag", ids)::Vector{Float32}
       VS = readvariable(meta, "VS", ids)
       MS = V ./ VS
       MS::Union{Vector{Float32}, Vector{Float64}}
    end,
    :Vpar => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # velocity ∥ B
-      V = readvariable(meta, "proton/vg_v", ids)
-      b = readvariable(meta, "Bhat", ids)
+      V = readvariable(meta, "proton/vg_v", ids)::Array{Float32,2}
+      b = readvariable(meta, "Bhat", ids)::Array{Float32,2}
       Vpar = @views [V[:,i] ⋅ b[:,i] for i in axes(V,2)]::Vector{Float32}
    end,
    :Vperp => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) # velocity ⟂ B
-      V = readvariable(meta, "proton/vg_v", ids)
-      b = readvariable(meta, "Bhat", ids)
+      V = readvariable(meta, "proton/vg_v", ids)::Array{Float32,2}
+      b = readvariable(meta, "Bhat", ids)::Array{Float32,2}
       Vperp = Vector{Float32}(undef, size(V, 2))
 
       # Avoid sqrt of negative values, but does not guarantee orthogonality.
@@ -294,14 +294,14 @@ const variables_predefined = Dict(
       Pb::Vector{Float64}
    end,
    :Epar => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
-      E = readvariable(meta, "vg_e_vol", ids)
-      b = readvariable(meta, "Bhat", ids)
+      E = readvariable(meta, "vg_e_vol", ids)::Array{Float32,2}
+      b = readvariable(meta, "Bhat", ids)::Array{Float32,2}
 
       @views [E[:,i] ⋅ b[:,i] for i in axes(E,2)]::Vector{Float32}
    end,
    :Eperp => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
-      E = readvariable(meta, "vg_e_vol", ids)
-      b = readvariable(meta, "Bhat", ids)
+      E = readvariable(meta, "vg_e_vol", ids)::Array{Float32,2}
+      b = readvariable(meta, "Bhat", ids)::Array{Float32,2}
 
       Eperp = Vector{Float32}(undef, size(E, 2))
 
@@ -504,7 +504,7 @@ const variables_predefined = Dict(
 
 function _readrho(meta::MetaVLSV, ids::Vector{Int}=Int[])
    ρ_ = findfirst(endswith("rho"), meta.variable)
-   ρ = readvariable(meta, meta.variable[ρ_], ids)
+   ρ = readvariable(meta, meta.variable[ρ_], ids)::Vector{Float32}
 end
 
 function _fillinnerBC!(data::AbstractArray{T}, dataRef::AbstractArray{T}) where
