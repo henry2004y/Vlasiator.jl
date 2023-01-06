@@ -181,31 +181,33 @@ end
 
 "Return vector of `name` from the VLSV file associated with stream `fid`."
 @inline function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   usemmap::Bool=false) where T
-   if !usemmap
-      w = Vector{T}(undef, asize)
-      seek(fid, offset)
-      read!(fid, w)
-   else
-      a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
-      w = reinterpret(T, a)
-   end
+   ::Val{false}) where T
+   w = Vector{T}(undef, asize)
+   seek(fid, offset)
+   read!(fid, w)
 
-   w::Union{Array{T,1}, Base.ReinterpretArray}
+   w
+end
+
+@inline function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
+   ::Val{true}) where T
+   a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
+   w = reinterpret(T, a)
 end
 
 @inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
-   vsize::Int, usemmap::Bool=false) where T
-   if !usemmap
-      w = Array{T,2}(undef, vsize, asize)
-      seek(fid, offset)
-      read!(fid, w)
-   else
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      w = reshape(reinterpret(T, a), vsize, asize)
-   end
+   vsize::Int, ::Val{false}) where T
+   w = Array{T,2}(undef, vsize, asize)
+   seek(fid, offset)
+   read!(fid, w)
 
-   w::Union{Array{T,2}, Base.ReinterpretArray}
+   w
+end
+
+@inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
+   vsize::Int, ::Val{true}) where T
+   a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+   w = reshape(reinterpret(T, a), vsize, asize)
 end
 
 """
@@ -480,9 +482,9 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
 
    T, offset, asize, dsize, vsize = getvarinfo(meta.nodeVLSV.var, var)
    if vsize == 1
-      raw = readvector(meta.fid, T, offset, asize, dsize, usemmap)
+      raw = readvector(meta.fid, T, offset, asize, dsize, Val(usemmap))
    else
-      raw = readarray(meta.fid, T, offset, asize, dsize, vsize, usemmap)
+      raw = readarray(meta.fid, T, offset, asize, dsize, vsize, Val(usemmap))
    end
 
    if startswith(var, "fg_") # fsgrid
