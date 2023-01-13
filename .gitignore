@@ -16,3 +16,5 @@ test*
 /benchmark/*.json
 /docs/build/
 Manifest.toml
+/.benchmarkci
+/benchmark/*.json
