@@ -22,26 +22,26 @@ Vlasiator.jl contains the following features:
 
 ## What is Vlasiator
 
-Vlasiator solves the Vlasov–Maxwell system of equations for ions. The fundamental description of charged particle motion in an electromagnetic field is given by the Vlasov equation
+Vlasiator solves the Vlasov–Maxwell system of equations for ions while assuming massless electrons under quasi-neutrality. The fundamental description of charged particle motion in an electromagnetic field is given by the Vlasov equation
 
 ```math
-\frac{\partial f_\alpha}{\partial t} + \mathbf{v}_\alpha\cdot\frac{\partial f_\alpha}{\partial \mathbf{r}_\alpha} + \mathbf{a}_\alpha\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}_\alpha} = 0
+\frac{\partial f_\alpha}{\partial t} + \mathbf{v}\cdot\frac{\partial f_\alpha}{\partial \mathbf{r}} + \mathbf{a}_\alpha\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}} = 0
 ```
 
-where ``\alpha`` denotes the particle species, ``\mathbf{r}_\alpha$ and $\mathbf{v}_\alpha`` are the spatial and velocity coordinates, ``f(\mathbf{r},\mathbf{v},t)`` is the six-dimensional phase-space density of a particle species with mass ``m`` and charge ``q``, and acceleration ``\mathbf{a}`` is given by the Lorentz force
+where ``\alpha`` denotes the particle species, ``\mathbf{r}`` and ``\mathbf{v}`` are the spatial and velocity coordinates, ``f_\alpha(\mathbf{r},\mathbf{v},t)`` is the six-dimensional phase-space density of a particle species with mass ``m_\alpha`` and charge ``q_\alpha``, and acceleration ``\mathbf{a}`` is given by the Lorentz force
 
 ```math
-\mathbf{a}_\alpha = \frac{q_\alpha}{m_\alpha}(\mathbf{E}+\mathbf{v}_\alpha\times\mathbf{B})
+\mathbf{a}_\alpha = \frac{q_\alpha}{m_\alpha}(\mathbf{E}+\mathbf{v}\times\mathbf{B})
 ```
 
 where ``\mathbf{E}`` and ``\mathbf{B}`` are the electric and magnetic field, respectively.
 
-The bulk parameters of the plasma, such as the ion density ``n_\alpha`` and velocity ``\mathbf{u}_\alpha``, are obtained as velocity moments of the ion velocity distribution function
+The moments of plasma, such as the ion density ``n_\alpha`` and velocity ``\mathbf{u}_\alpha``, are obtained as the integrals of the ion velocity distribution function
 
 ```math
 \begin{aligned}
-n_\alpha &= \int f(\mathbf{r},\mathbf{v},t)d^3 v \\
-\mathbf{u}_\alpha &= \int \mathbf{v}f(\mathbf{r},\mathbf{v},t)d^3 v
+n_\alpha &= \int f_\alpha(\mathbf{r},\mathbf{v},t)d^3 v \\
+\mathbf{u}_\alpha &= \frac{1}{n_\alpha}\int \mathbf{v}f_\alpha(\mathbf{r},\mathbf{v},t)d^3 v
 \end{aligned}
 ```
 
