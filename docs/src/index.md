@@ -40,8 +40,8 @@ The moments of plasma, such as the ion density ``n_\alpha`` and velocity ``\math
 
 ```math
 \begin{aligned}
-n_\alpha &= \int f_\alpha(\mathbf{r},\mathbf{v},t)d^3 v \\
-\mathbf{u}_\alpha &= \frac{1}{n_\alpha}\int \mathbf{v}f_\alpha(\mathbf{r},\mathbf{v},t)d^3 v
+n_\alpha &= \int f_\alpha(\mathbf{r},\mathbf{v},t)\mathrm{d}\mathbf{v} \\
+\mathbf{u}_\alpha &= \frac{1}{n_\alpha}\int \mathbf{v}f_\alpha(\mathbf{r},\mathbf{v},t)\mathrm{d}\mathbf{v}
 \end{aligned}
 ```
 
