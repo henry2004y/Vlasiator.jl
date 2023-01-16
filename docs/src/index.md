@@ -36,7 +36,7 @@ where ``\alpha`` denotes the particle species, ``\mathbf{r}`` and ``\mathbf{v}``
 
 where ``\mathbf{E}`` and ``\mathbf{B}`` are the electric and magnetic field, respectively.
 
-The moments of plasma, such as the ion density ``n_\alpha`` and velocity ``\mathbf{u}_\alpha``, are obtained as the integrals of the ion velocity distribution function
+The moments of plasma, such as the ion density ``n_\alpha`` and velocity ``\mathbf{u}_\alpha``, are obtained as integrals of the ion velocity distribution function
 
 ```math
 \begin{aligned}
