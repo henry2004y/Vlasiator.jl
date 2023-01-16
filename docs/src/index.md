@@ -25,18 +25,12 @@ Vlasiator.jl contains the following features:
 Vlasiator solves the Vlasov–Maxwell system of equations for ions while assuming massless electrons under quasi-neutrality. The fundamental description of charged particle motion in an electromagnetic field is given by the Vlasov equation
 
 ```math
-\frac{\partial f_\alpha}{\partial t} + \mathbf{v}\cdot\frac{\partial f_\alpha}{\partial \mathbf{r}} + \mathbf{a}_\alpha\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}} = 0
+\frac{\partial f_\alpha}{\partial t} + \mathbf{v}\cdot\frac{\partial f_\alpha}{\partial \mathbf{r}} + \frac{q_\alpha}{m_\alpha}(\mathbf{E}+\mathbf{v}\times\mathbf{B})\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}} = 0
 ```
 
-where ``\alpha`` denotes the particle species, ``\mathbf{r}`` and ``\mathbf{v}`` are the spatial and velocity coordinates, ``f_\alpha(\mathbf{r},\mathbf{v},t)`` is the six-dimensional phase-space density of a particle species with mass ``m_\alpha`` and charge ``q_\alpha``, and acceleration ``\mathbf{a}`` is given by the Lorentz force
+where ``\alpha`` denotes the particle species, ``\mathbf{r}`` and ``\mathbf{v}`` are the spatial and velocity coordinates, ``f_\alpha(\mathbf{r},\mathbf{v},t)`` is the six-dimensional phase-space density of a particle species with mass ``m_\alpha`` and charge ``q_\alpha``, and acceleration ``\mathbf{a}`` is given by the Lorentz force with ``\mathbf{E}`` and ``\mathbf{B}`` are the electric and magnetic field, respectively.
 
-```math
-\mathbf{a}_\alpha = \frac{q_\alpha}{m_\alpha}(\mathbf{E}+\mathbf{v}\times\mathbf{B})
-```
-
-where ``\mathbf{E}`` and ``\mathbf{B}`` are the electric and magnetic field, respectively.
-
-The moments of plasma, such as the ion density ``n_\alpha`` and velocity ``\mathbf{u}_\alpha``, are obtained as integrals of the ion velocity distribution function
+The zeroth and first moments of plasma, ion density ``n_\alpha`` and velocity ``\mathbf{u}_\alpha``, are obtained as integrals of the ion velocity distribution function
 
 ```math
 \begin{aligned}
@@ -51,14 +45,14 @@ The magnetic field is updated using Faraday's law:
 \nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
 ```
 
-and the electric field is given by the generalized Ohm's law:
+and the electric field is given by the generalized Ohm's law (assuming proton ion):
 
 ```math
 \mathbf{E} = -\mathbf{u}_\alpha \times\mathbf{B} + \frac{1}{n_\alpha e}(\nabla\times\mathbf{B})\times\mathbf{B} - \frac{1}{n_\alpha e}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
 ```
 
 The four terms on the right-handed side are the convection term, the Hall term, the electron pressure gradient term, and the resistive term, respectively.
-The total current density ``\mathbf{j}`` is obtained from Ampère–Maxwell's law where the displacement current has been neglected:
+The total current density ``\mathbf{j}`` is obtained from Ampère's law where the displacement current has been neglected:
 
 ```math
 \nabla\times\mathbf{B} = \mu_0 \mathbf{j}
