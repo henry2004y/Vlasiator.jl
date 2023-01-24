@@ -208,13 +208,20 @@ To obtain the original ordering of velocity cells,
 vcellids_original = Vlasiator.reorder(meta.meshes["proton"], vcellids)
 ```
 
-Some useful quantities like non-Maxwellianity may be of interest. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big[ 1/(2n) \int |f(v) - g(v)| dv \big]``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density, bulk velocity and scalar pressure as f.
+Non-Maxwellianity represents the deviation from a Maxwellian distribution. Currently we have implemented a monitor quantity named "Maxwellianity", which is defined as ``-ln \big[ 1/(2n) \int |f(v) - g(v)| dv \big]``, where n is the density, f(vᵢ) is the actual VDF value at velocity cell i, and g(vᵢ) is the analytical Maxwellian (or strictly speaking, normal) distribution with the same density, bulk velocity and scalar pressure as f.
 
 ```julia
 getmaxwellianity(meta, vcellids, vcellf)
 ```
 
 The value ranges from [0, +∞], with 0 meaning not Maxwellian-distributed at all, and +∞ a perfect Maxwellian distribution.
+An alternative measure is the KL-divergence borrowed from statistics, where we select the reference distribution g to be again a Maxwellian derived from the actual distribution f:
+
+```julia
+getKLdivergence(meta, vcellids, vcellf)
+```
+
+In this case, 0 indicates perfect Maxwellian while +∞ indicates largest deviation. There is no unique definition of non-Maxwellianity, and we are still trying to see which one works better for describing plasma behaviors.
 
 Sometimes it may be useful to recover the full 3D array of VDFs:
 

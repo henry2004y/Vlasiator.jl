@@ -7,10 +7,7 @@ println()
 println("Benchmarking Vlasiator.jl...")
 println()
 
-#directory = artifact"testdata" # The artifact"" macro does not support a path input!
-artifact_toml = LazyArtifacts.find_artifacts_toml(".")
-directory = artifact_hash("testdata", artifact_toml) |> artifact_path
-
+directory = artifact"testdata"
 files = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
 
 const SUITE = BenchmarkGroup()
