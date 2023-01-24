@@ -122,6 +122,8 @@ end
          @test getheatfluxvector(meta, vcellids, vcellf) ≈ zeros(Float32, 3) atol=1e-16
          @test getmaxwellianity(meta, f) ≈ 5.741325243685855 rtol=1e-4
          @test getmaxwellianity(meta, vcellids, vcellf) ≈ 5.741325243685855 rtol=1e-4
+         @test getKLdivergence(meta, f) ≈ 4.699781401109378e-5 rtol=1e-4
+         @test getKLdivergence(meta, vcellids, vcellf) ≈ 4.693076222745189e-5 rtol=1e-4
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3

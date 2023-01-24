@@ -590,6 +590,7 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
 
    ϵₘ = zero(eltype(VDF))
    vth2⁻¹ = mᵢ / (2kB*T)
+   coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
 
    @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
       vx = vmin[1] + (i - 0.5f0)*dv[1]
@@ -597,7 +598,7 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
       vz = vmin[3] + (k - 0.5f0)*dv[3]
       dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
 
-      g = n * √(vth2⁻¹/π) * (vth2⁻¹/π) * ℯ^(-vth2⁻¹*dv2)
+      g = n * coef * ℯ^(-vth2⁻¹*dv2)
       ϵₘ += abs(VDF[i,j,k] - g)
    end
 
@@ -622,6 +623,7 @@ function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{Int32},
 
    ϵₘ = zero(eltype(vcellf))
    vth2⁻¹ = mᵢ / (2kB*T)
+   coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
 
    @inbounds @simd for ic in eachindex(vcellids)
       id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
@@ -634,11 +636,89 @@ function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{Int32},
       vz = vmin[3] + (k + 0.5f0)*dv[3]
       dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
 
-      g = n * √(vth2⁻¹/π) * (vth2⁻¹/π) * ℯ^(-vth2⁻¹*dv2)
+      g = n * coef * ℯ^(-vth2⁻¹*dv2)
       ϵₘ += abs(vcellf[ic] - g)
    end
 
    ϵₘ = -log(0.5 / n * convert(eltype(vcellf), prod(dv)) * ϵₘ)
+end
+
+"""
+    getKLdivergence(meta, VDF; species="proton")
+    getKLdivergence(meta, vcellids, vcellf; species="proton")
+
+Obtain the KL-divergence ∫ f*log(f/g)dv, where `f` is the VDF from Vlasiator and `g` is the
+analytical Maxwellian distribution that generates the same density as `f`. The value ranges
+from [0, +∞], with 0 meaning perfect Maxwellian. Usually the values are quite small.
+Alternatively, one can pass original `vcellids` and `vcellf` directly.
+"""
+function getKLdivergence(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
+   species::String="proton")
+   (;dv, vmin) = meta.meshes[species]
+
+   n = getdensity(meta, VDF)
+   u = getvelocity(meta, VDF)
+   P = getpressure(meta, VDF)
+   p = (P[1] + P[2] + P[3]) / 3
+   T = p / (n *kB) # temperature from scalar pressure
+
+   ϵₘ = zero(eltype(VDF))
+   vth2⁻¹ = mᵢ / (2kB*T)
+   coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
+
+   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
+      vx = vmin[1] + (i - 0.5f0)*dv[1]
+      vy = vmin[2] + (j - 0.5f0)*dv[2]
+      vz = vmin[3] + (k - 0.5f0)*dv[3]
+      dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
+
+      p = VDF[i,j,k] / n
+      q = coef * ℯ^(-vth2⁻¹*dv2)
+      f = p*log(p/q)
+      ϵₘ += ifelse(isnan(f), zero(f), f)
+   end
+
+   ϵₘ * convert(eltype(VDF), prod(dv))
+end
+
+function getKLdivergence(meta::MetaVLSV, vcellids::Vector{Int32},
+   vcellf::Vector{<:AbstractFloat}; species::String="proton")
+
+   (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
+   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   slicez = vsize[1]*vsize[2]
+   blocksize = prod(vblock_size)
+   sliceBz = vblocks[1]*vblocks[2]
+   sliceCz = vblock_size[1]*vblock_size[2]
+
+   n = getdensity(meta, vcellf)
+   u = getvelocity(meta, vcellids, vcellf)
+   P = getpressure(meta, vcellids, vcellf)
+   p = (P[1] + P[2] + P[3]) / 3
+   T = p / (n *kB) # temperature from scalar pressure
+
+   ϵₘ = zero(eltype(vcellf))
+   vth2⁻¹ = mᵢ / (2kB*T)
+   coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
+
+   @inbounds @simd for ic in eachindex(vcellids)
+      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      i = id % vsize[1]
+      j = id % slicez ÷ vsize[1]
+      k = id ÷ slicez
+
+      vx = vmin[1] + (i + 0.5f0)*dv[1]
+      vy = vmin[2] + (j + 0.5f0)*dv[2]
+      vz = vmin[3] + (k + 0.5f0)*dv[3]
+      dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
+
+      p = vcellf[ic] / n
+      q = coef * ℯ^(-vth2⁻¹*dv2)
+      f = p*log(p/q)
+      ϵₘ += ifelse(isnan(f), zero(f), f)
+   end
+
+   ϵₘ * convert(eltype(vcellf), prod(dv))
 end
 
 function isInsideDomain(meta::MetaVLSV, point::Vector{<:Real})
