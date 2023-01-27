@@ -1,6 +1,6 @@
 # Manual
 
-Here we demonstrate some basic usages of processing Vlasiator output. For complete description of the arguments, please refer to the [API](internal.md) documents or type `?function_name` to display help message in the REPL.
+Here we demonstrate some basic usages of processing Vlasiator output. A quick self-contained [demo](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples/demo_pluto.jl) is shown with [Pluto](https://plutojl.org/). For complete description of the arguments, please refer to the [API](internal.md) documents or type `?function_name` to display help message in the REPL.
 
 ## Common physical constants
 
