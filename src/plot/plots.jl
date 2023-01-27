@@ -30,7 +30,7 @@ using RecipesBase, Printf
          axislabels = ('X', 'Y')
       end
 
-      x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
+      x1, x2 = Vlasiator.get_axis(axisunit, plotrange, sizes)
       data = Vlasiator.prep2d(meta, var, comp)'
       unitstr = axisunit == Vlasiator.EARTH ? "R_E" : "m"
 
@@ -43,18 +43,18 @@ using RecipesBase, Printf
          xguide --> strx
          yguide --> stry
          title --> @sprintf "t= %4.1fs" meta.time
-         x, y, data
+         x1, x2, data
       end
    elseif ndims(meta) == 3
-      pArgs = set_args(meta, var, axisunit; normal, origin)
-      data = prep2dslice(meta, var, normal, pArgs)'
-      x, y = Vlasiator.get_axis(axisunit, plotrange, sizes)
+      pArgs = Vlasiator.set_args(meta, var, axisunit; normal, origin)
+      data = Vlasiator.prep2dslice(meta, var, normal, comp, pArgs)'
+      x1, x2 = Vlasiator.get_axis(pArgs)
 
       @series begin
          seriestype --> :heatmap  # use := if you want to force it
          seriescolor --> :turbo
          title --> @sprintf "t= %4.1fs" meta.time
-         x, y, data
+         x1, x2, data
       end
    end
 end

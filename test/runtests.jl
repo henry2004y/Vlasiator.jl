@@ -471,6 +471,11 @@ end
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
             rec[1].args[1] isa LinRange
+
+         # 3D AMR
+         meta = meta3
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
+         @test getfield(rec[1], 1)[:seriestype] == :heatmap
       end
 
       @testset "Plot UI" begin
