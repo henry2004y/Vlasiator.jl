@@ -78,7 +78,7 @@ for i, file in enumerate(files):
    s1 = p2
    t1 = timeit.timeit(stmt=s1, setup=p1, number=ntrail) / ntrail * 1e3
    print(f"{file}:")
-   print(f"Reading metadata in {t1:0.4f} ms")
+   print(f"Loading metadata in {t1:0.4f} ms")
    # Run: obtaining sorted scalar variable
    s2 = textwrap.dedent("""\
    rho = f.read_variable(var)[cell_sorted]
