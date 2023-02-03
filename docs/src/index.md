@@ -45,10 +45,10 @@ The magnetic field is updated using Faraday's law:
 \nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}
 ```
 
-and the electric field is given by the generalized Ohm's law (assuming proton ion):
+and the electric field is given by the generalized Ohm's law:
 
 ```math
-\mathbf{E} = -\mathbf{u}_\alpha \times\mathbf{B} + \frac{1}{n_\alpha e}(\nabla\times\mathbf{B})\times\mathbf{B} - \frac{1}{n_\alpha e}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
+\mathbf{E} = -\mathbf{u}_\alpha \times\mathbf{B} + \frac{1}{n_\alpha q_\alpha}\mathbf{j}\times\mathbf{B} - \frac{1}{n_\alpha q_\alpha}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
 ```
 
 The four terms on the right-handed side are the convection term, the Hall term, the electron pressure gradient term, and the resistive term, respectively.
