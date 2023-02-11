@@ -260,7 +260,6 @@ function load(file::AbstractString)
       nodeblockid)
 
    cellid = getcellid(fid, n.var)
-   #TODO: check the new sorting algorithms in Julia 1.9!
    cellindex = sortperm(cellid, alg=MergeSort)
 
    ncells, block_size, coordmin, coordmax = readmesh(fid, footer)
