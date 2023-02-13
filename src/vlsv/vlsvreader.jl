@@ -250,10 +250,17 @@ function load(file::AbstractString)
    @views begin
       nodevar = ns[ibegin_[1]:iend_[1]]
       nodeparam = ns[ibegin_[2]:iend_[2]]
-      nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
-      nodecellblocks = ns[ibegin_[4]:iend_[4]]
-      nodeblockvar = ns[ibegin_[5]:iend_[5]]
-      nodeblockid = ns[ibegin_[6]:iend_[6]]
+      if ibegin_[3] != 0
+         nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
+         nodecellblocks = ns[ibegin_[4]:iend_[4]]
+         nodeblockvar = ns[ibegin_[5]:iend_[5]]
+         nodeblockid = ns[ibegin_[6]:iend_[6]]
+      else # non-standard Vlasiator outputs with no vspace meta data
+         nodecellwithVDF = ns[1:0]
+         nodecellblocks = ns[1:0]
+         nodeblockvar = ns[1:0]
+         nodeblockid = ns[1:0]
+      end
    end
 
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
@@ -332,7 +339,11 @@ function load(file::AbstractString)
    vars = [node["name"] for node in n.var]
 
    hasvdf = let
-      n.cellwithVDF[1]["arraysize"] != "0"
+      if length(n.cellwithVDF) == 0
+         false
+      else
+         n.cellwithVDF[1]["arraysize"] != "0"
+      end
    end
 
    # File IOstream is not closed for sake of data processing later.
