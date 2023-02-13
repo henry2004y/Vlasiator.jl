@@ -339,7 +339,11 @@ function load(file::AbstractString)
    vars = [node["name"] for node in n.var]
 
    hasvdf = let
-      n.cellwithVDF[1]["arraysize"] != "0"
+      if length(n.cellwithVDF) == 0
+         false
+      else
+         n.cellwithVDF[1]["arraysize"] != "0"
+      end
    end
 
    # File IOstream is not closed for sake of data processing later.
