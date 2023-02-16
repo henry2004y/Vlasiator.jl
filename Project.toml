@@ -21,6 +21,14 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 
+[weakdeps]
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
+
+[extensions]
+PyPlotExt = "PyPlot"
+PlotsExt = "Plots"
+
 [compat]
 EzXML = "1.1"
 LaTeXStrings = "1.2"
@@ -35,10 +43,12 @@ WriteVTK = "1.9"
 julia = "1.7"
 
 [extras]
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "LazyArtifacts", "SHA", "Suppressor"]
+test = ["Test", "LazyArtifacts", "SHA", "Suppressor", "PyPlot"]

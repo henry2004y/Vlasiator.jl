@@ -1,6 +1,15 @@
-# Plotting functionalities from Matplotlib.
+"Plotting functionalities from Matplotlib."
+module PyPlotExt
 
-using PyPlot
+using Vlasiator
+using Vlasiator: AxisUnit, ColorScale, PlotArgs,
+   set_args, prep2d, get_axis, _fillinnerBC!, set_lim
+if isdefined(Base, :get_extension)
+   using PyPlot
+else
+   using ..PyPlot
+end
+
 import PyPlot.PyCall: PyObject
 using REPL.TerminalMenus # Command line UI
 
@@ -524,3 +533,5 @@ function pui(meta::MetaVLSV; suppress_output::Bool=false)
 end
 
 pui(file::AbstractString) = file |> load |> plot_ui
+
+end
