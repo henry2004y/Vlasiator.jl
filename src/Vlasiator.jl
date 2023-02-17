@@ -13,7 +13,7 @@ using Dates
 using Parsers
 using SnoopPrecompile
 if !isdefined(Base, :get_extension)
-   using Requires
+   using Requires: @require
 end
 
 include("utility/rotation.jl")
