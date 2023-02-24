@@ -1,13 +1,15 @@
 name: CI
 on:
   pull_request:
+    paths:
+    - 'VlasiatorPyPlot/**'
     branches:
       - master
     paths-ignore:
       - 'README.md'
-      - 'examples/**'
-      - 'VlasiatorPyPlot/**'
   push:
+    paths:
+    - 'VlasiatorPyPlot/**'
     branches:
       - master
     tags: '*'
@@ -15,7 +17,6 @@ on:
       - 'README.md'
       - 'examples/**'
       - 'benchmark/**'
-      - 'VlasiatorPyPlot/**'
 env:
   JULIA_NUM_THREADS: 1
 jobs:
@@ -29,12 +30,14 @@ jobs:
           - '1'
         os:
           - ubuntu-latest
-          - macos-latest
+          #- macos-latest
           #- windows-latest
         arch:
           - x64
     steps:
       - name: Install dependencies
+        run: |
+          pip install matplotlib
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
@@ -57,28 +60,3 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           file: lcov.info
-  docs:
-    name: Documentation
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install dependencies
-        run: |
-          pip install matplotlib
-      - uses: actions/checkout@v3
-      - uses: julia-actions/setup-julia@v1
-        with:
-          version: '1'
-      - run: |
-          julia --project=docs -e '
-            using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()'
-      - run: |
-          julia --project=docs -e '
-            using Documenter: doctest
-            using Vlasiator
-            doctest(Vlasiator)'
-      - run: julia --project=docs docs/make.jl
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}

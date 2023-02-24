@@ -1,15 +1,6 @@
-"Using user recipes from Plots."
-module PlotsExt
+# Using user recipes from Plots.
 
-using Vlasiator
-using Vlasiator: AxisUnit, ColorScale, PlotArgs,
-   set_args, prep2d, get_axis, _fillinnerBC!, set_lim
-if isdefined(Base, :get_extension)
-   using RecipesBase
-else
-   using ..RecipesBase
-end
-using Printf
+using RecipesBase
 
 # Build a recipe which acts on a custom type.
 @recipe function f(meta::MetaVLSV, var::AbstractString;
@@ -105,7 +96,5 @@ end
       bins --> r1, r2
       v1, v2
    end
-
-end
 
 end

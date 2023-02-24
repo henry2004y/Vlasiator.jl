@@ -1,14 +1,11 @@
 "Plotting functionalities from Matplotlib."
-module PyPlotExt
+module VlasiatorPyPlot
 
 using Vlasiator
 using Vlasiator: AxisUnit, ColorScale, PlotArgs,
-   set_args, prep2d, get_axis, _fillinnerBC!, set_lim
-if isdefined(Base, :get_extension)
-   using PyPlot
-else
-   using ..PyPlot
-end
+   set_args, prep2d, prep2dslice, get_axis, _fillinnerBC!, _getdim2d, set_lim, prep_vdf,
+   SVector
+using PyPlot
 
 import PyPlot.PyCall: PyObject
 using REPL.TerminalMenus # Command line UI
