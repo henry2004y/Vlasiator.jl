@@ -235,15 +235,15 @@ However, usually in practice there would be only about 1% nonzero values. The mo
 
 Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting recipes/wrappers once the target plotting package is used.
 
-Currently PyPlot provides the most complete and fine-tuned plotting capabilities.
-Plots is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
+Currently PyPlot provides the most complete and fine-tuned plotting capabilities. Plotting with PyPlot is supported via [`VlasiatorPyPlot`](https://github.com/henry2004y/Vlasiator.jl/VlasiatorPyPlot).
+Plots is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs between different backends.
 Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
 More [examples]((https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) of customized plots can be found in the repository.
 
 ### PyPlot Backend
 
-To trigger Matplotlib plotting, `using PyPlot`.
+To trigger Matplotlib plotting, `using VlasiatorPyPlot`.
 All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by their Matplotlib counterparts, e.g. font width, font size, colormap, etc. Users are encouraged to read the [Matplotlib](https://matplotlib.org/) documentation for details.
 
 !!! warning
@@ -350,7 +350,7 @@ contourf(meta, var)
 vdfslice(meta, location)
 ```
 
-The keyword arguments are the same as in the PyPlot shown in the [API](internal.md#Vlasiator.vdfslice).
+The keyword arguments are the same as in PyPlot shown in the [API](internal.md#Vlasiator.vdfslice).
 
 ### Makie Backend
 

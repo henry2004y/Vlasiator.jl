@@ -99,7 +99,7 @@ julia> using Vlasiator
 
 - PyPlot
 
-If you aim at using Matplotlib, besides adding [`PyPlot`](https://github.com/JuliaPy/PyPlot.jl), you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
+If you aim at using Matplotlib, besides adding [`PyPlot`](https://github.com/JuliaPy/PyPlot.jl) and the Vlasiator specific wrapper [`VlasiatorPyPlot`](https://github.com/henry2004y/Vlasiator.jl/VlasiatorPyPlot), you should also link to a preinstalled Python version by setting the environment variable and building the PyCall package
 
 ```julia
 ENV["PYTHON"]="your python executable"
