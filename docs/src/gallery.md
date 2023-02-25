@@ -3,22 +3,22 @@
 
 ## PyPlot
 
-* Proton density in a laminar flow with points denoting cell centers. [demo](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_mesh_pyplot.jl)
+* Proton density in a laminar flow with points denoting cell centers. [demo](@ref demo_plot_mesh)
 ![](figures/mesh.png)
 
-* Proton density of Earth's magnetosphere in the meridional cut from 2D simulation, with fieldlines through fixed seeding points. [demo](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_B_fieldline_pyplot.jl)
+* Proton density of Earth's magnetosphere in the meridional cut from 2D simulation, with fieldlines through fixed seeding points. [demo](@ref demo_2d_fieldlines)
 ![](figures/magnetosphere_earth_proton_density_2D_bx_bz.png)
 
 * Proton density of Earth's magnetosphere in the meridional plane from 3D simulation.
 ![](figures/magnetosphere_earth_proton_density_ycut.png)
 
-* Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and foreshock region, with streamlines and density contour at 10 amu/cc. [demo](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_2dplot_pyplot.jl)
+* Proton density of Earth's magnetosphere in the equatorial plane from 2D simulation, zoomed in to the magnetosheath and foreshock region, with streamlines and density contour at 10 amu/cc. [demo](@ref demo_2d_contour_streamline_levels)
 ![](figures/magnetosphere_earth_proton_density_2D.png)
 
-* Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation. [demo](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_3dcuts_pyplot.jl)
+* Proton density of Earth's magnetosphere in the normal cut planes from 3D simulation. [demo](@ref demo_3d_cuts)
 ![](figures/magnetosphere_earth_proton_density_3cuts.png)
 
-* Proton phase space distribution projected onto the X-Z plane. [demo](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_vdf_pyplot.jl)
+* Proton phase space distribution projected onto the X-Z plane. [demo](@ref demo_vdf)
 ![](figures/phase_space_distribution.png)
 
 ## Makie
