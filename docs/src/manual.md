@@ -239,7 +239,7 @@ Currently PyPlot provides the most complete and fine-tuned plotting capabilities
 Plots is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
 Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
-More [examples]((https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) of customized plots can be found in the repository.
+More [examples](@ref examples) of customized plots can be found in the repository.
 
 ### PyPlot Backend
 
@@ -432,7 +432,7 @@ write_vtk(file)
 
 This function accepts either string of file names or `MetaVLSV`.
 
-To see the full list of options, please refer to the documentation in [API Reference](internal.md). Example usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
+To see the full list of options, please refer to the documentation in [API Reference](internal.md). Example usage can be found [here](@ref demo_convertvtk).
 
 !!! warning
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `maxamronly`: when it is set to `true`, then only the image file at the highest refinement level is generated.
@@ -447,11 +447,11 @@ file = "logfile.txt"
 timestamps, speed = readlog(file)
 ```
 
-See a live example at [demo_log.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples/demo_log.jl).
+Here is a live [demo](@ref demo_log).
 
 ## Examples
 
-More [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) are provided about
+More [examples](@ref examples) are provided about
 
 - Plotting with PyPlot
 - Plotting with Plots
