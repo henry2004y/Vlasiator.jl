@@ -1,6 +1,7 @@
 # ---
 # title: Plot mesh
 # id: demo_plot_mesh
+# cover: ../../src/figures/mesh.png
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"
 # julia: 1.8.5
