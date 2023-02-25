@@ -1,6 +1,7 @@
 # ---
 # title: 2D contour plot with streamlines and levels
 # id: demo_2d_contour_streamline_levels
+# cover: ../../src/figures/magnetosphere_earth_proton_density_2D.png
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"
 # julia: 1.8.5

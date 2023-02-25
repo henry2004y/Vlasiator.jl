@@ -1,6 +1,7 @@
 # ---
 # title: VDF
 # id: demo_vdf
+# cover: ../../src/figures/phase_space_distribution.png
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"
 # julia: 1.8.5

@@ -1,6 +1,7 @@
 # ---
 # title: Orthogonal slices
 # id: demo_3d_cuts
+# cover: ../../src/figures/magnetosphere_earth_proton_density_3cuts.png
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"
 # julia: 1.8.5
