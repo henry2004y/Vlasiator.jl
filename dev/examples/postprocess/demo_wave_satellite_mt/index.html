@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Identify EMIC and mirror modes · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_wave_satellite_mt/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Identify EMIC and mirror modes</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Identify EMIC and mirror modes</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/postprocess/demo_wave_satellite_mt.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_identify_EMIC_mirror"><a class="docs-heading-anchor" href="#demo_identify_EMIC_mirror">Identify EMIC and mirror modes</a><a id="demo_identify_EMIC_mirror-1"></a><a class="docs-heading-anchor-permalink" href="#demo_identify_EMIC_mirror" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to identify EMIC and mirror modes in two frequency bands from single satellite data. For EMIC mode we check δB⟂ vs. δv⟂; for mirror mode we check δB∥ vs. δn. The moving box window size is decided empirically.</p><p>Usage:</p><pre><code class="language-shell hljs">julia -t 4 demo_wave_satellite_mt.jl</code></pre><p>or</p><pre><code class="language-shell hljs">JULIA_NUM_THREADS=4 julia demo_wave_satellite_mt.jl</code></pre><pre><code class="language-julia hljs">using Statistics: mean
+using LinearAlgebra: ⋅, normalize!, norm
+using DSP, PyPlot, Glob
+using Vlasiator
+using Vlasiator: μ₀, mᵢ, RE
+using Polyester
+
+&quot;Extract variables at `loc` from VLSV `files`.&quot;
+function extract_vars(files, loc)
+   nfiles = length(files)
+
+   t = zeros(Float32, nfiles)
+   n = zeros(Float32, nfiles)
+   v = zeros(Float32, 3, nfiles)
+   b = zeros(Float32, 3, nfiles)
+   e = zeros(Float32, 3, nfiles)
+
+   id = load(files[1]) do meta
+      getcell(meta, loc)
+   end
+
+   # Extract data from each frame
+   @batch for i = eachindex(files)
+      meta = load(files[i])
+      t[i] = meta.time
+      n[i] = readvariable(meta, &quot;proton/vg_rho&quot;, id)[1]
+      v[:,i] = readvariable(meta, &quot;proton/vg_v&quot;, id)
+      b[:,i] = readvariable(meta, &quot;vg_b_vol&quot;, id)
+      e[:,i] = readvariable(meta, &quot;vg_e_vol&quot;, id)
+   end
+
+   t, n, v, e, b
+end
+
+function moving_average(g::AbstractVector{&lt;:AbstractFloat}, n::Int)
+   nbackward = div(n,2)
+   nforward = isodd(n) ? nbackward : nbackward - 1
+   len = length(g)
+   g_avg = similar(g)
+   @inbounds @batch for i = 1:len
+      lo = max(1, i - nbackward)
+      hi = min(len, i + nforward)
+      g_avg[i] = mean(@view g[lo:hi])
+   end
+   g_avg
+end
+
+function moving_average(g::AbstractMatrix{&lt;:AbstractFloat}, n::Int)
+   nbackward = div(n,2)
+   nforward = isodd(n) ? nbackward : nbackward - 1
+   len = size(g,2)
+   g_avg = similar(g)
+   for icomp = axes(g,1)
+      @inbounds @batch for i = 1:len
+         lo = max(1, i - nbackward)
+         hi = min(len, i + nforward)
+         g_avg[icomp,i] = mean(@view g[icomp, lo:hi])
+      end
+   end
+   g_avg
+end
+
+function detrend(v::AbstractVector{&lt;:AbstractFloat}; nbox=length(v)÷12)
+   v̄ = moving_average(v, nbox)
+   dv = v .- v̄
+end
+
+function detrend(v::AbstractMatrix{&lt;:AbstractFloat}; nbox=size(v,2)÷12)
+   v̄ = similar(v)
+   for i in axes(v,1)
+      v̄[i,:] = @views moving_average(v[i,:], nbox)
+   end
+   dv = v .- v̄
+end
+
+function align_yaxis(ax1, ax2)
+   y_lims = [ax.get_ylim() for ax in [ax1, ax2]]
+
+   # normalize both axes
+   y_mags = ntuple(i -&gt; y_lims[i][2] - y_lims[i][1], Val(2))
+   y_lims_normalized = ntuple(i -&gt; y_lims[i] ./ y_mags[i], Val(2))
+
+   # find combined range
+   y_new_lims_normalized = (min(y_lims_normalized[1][1],y_lims_normalized[2][1]),
+      max(y_lims_normalized[1][2], y_lims_normalized[2][2]))
+
+   # denormalize combined range to get new axes
+   new_lim1 = y_new_lims_normalized .* y_mags[1]
+   new_lim2 = y_new_lims_normalized .* y_mags[2]
+   ax1.set_ylim(new_lim1)
+   ax2.set_ylim(new_lim2)
+   return
+end
+
+function main()
+   files = glob(&quot;bulk*.vlsv&quot;, &quot;.&quot;)
+
+   # virtual satellite location
+   loc = [12Vlasiator.RE, 0, 0]
+
+   nbox = 40 # moving box size, [# of indices]
+   fs = 2.0 # sampling rate, [Hz]
+
+   println(&quot;Running with $(Threads.nthreads()) threads...&quot;)
+   println(&quot;Number of files: $(length(files))&quot;)
+   println(&quot;Extracting location: $loc [m]&quot;)
+   println(&quot;Sampling rate: $fs [Hz]&quot;)
+   println(&quot;Moving box window size: $(nbox / fs) [s]&quot;)
+
+   t, n, v, e, b = extract_vars(files, loc)
+
+   bmag = [hypot(b[1,i], b[2,i], b[3,i]) for i in eachindex(n)]
+
+   # Detrend before filtering to remove the lowest frequency changes
+   dn = detrend(n; nbox)
+   dbmag = detrend(bmag; nbox)
+
+   n̄ = moving_average(n, nbox)
+   b̄mag = moving_average(bmag, nbox)
+
+   v̄a = @. b̄mag / sqrt(μ₀ * mᵢ * n̄)
+
+   dv = detrend(v; nbox) # [m/s]
+   db = detrend(b; nbox) # [T]
+
+   # Decompose into parallel and perpendicular vector components
+   b̂₀ = moving_average(b, nbox)
+   for i in axes(b̂₀, 2)
+      normalize!(@view b̂₀[:,i])
+   end
+
+   # δB∥
+   db_par = [db[:,i] ⋅ b̂₀[:,i] for i in axes(db, 2)]
+   # δB⟂
+   db_perp = [norm(db[:,i] .- db_par[i] .* b̂₀[:,i]) for i in axes(db, 2)]
+   # δv∥
+   dv_par = [dv[:,i] ⋅ b̂₀[:,i] for i in axes(dv, 2)]
+   # δv⟂
+   dv_perp = [norm(dv[:,i] .- dv_par[i] .* b̂₀[:,i]) for i in axes(dv, 2)]
+
+   designmethod = Butterworth(5)
+
+   responsetype = Highpass(0.1; fs)
+   dn_high = filtfilt(digitalfilter(responsetype, designmethod), dn)
+   dbpar_high = filtfilt(digitalfilter(responsetype, designmethod), db_par)
+   dbperp_high = filtfilt(digitalfilter(responsetype, designmethod), db_perp)
+   dvperp_high = filtfilt(digitalfilter(responsetype, designmethod), dv_perp)
+
+   responsetype = Bandpass(0.02, 0.067; fs)
+   dn_low = filtfilt(digitalfilter(responsetype, designmethod), dn)
+   dbpar_low = filtfilt(digitalfilter(responsetype, designmethod), db_par)
+
+   color1 = &quot;tab:blue&quot;
+   color2 = &quot;tab:red&quot;
+
+   fig, axs = plt.subplots(3, 1; figsize=(13, 9), sharex=true, constrained_layout=true)
+
+   fig.suptitle(&quot;Virtual satellite at $(string(round.(loc./RE, digits=2))) &quot;*L&quot;R_E&quot;;
+      fontsize=&quot;x-large&quot;)
+
+   axs[1].plot(t, dn_low ./ n̄, color1, label=L&quot;\delta n, 0.02-0.067\, Hz&quot;)
+   ax12 = axs[1].twinx()
+   ax12.plot(t, dbpar_low ./ b̄mag, color=color2, label=L&quot;\delta B, 0.02-0.067\, Hz&quot;)
+
+   axs[2].plot(t, (dn_high ./ n̄), color1, label=L&quot;\delta n, 0.1-1.0\, Hz&quot;)
+   ax22 = axs[2].twinx()
+   ax22.plot(t, (dbpar_high ./ b̄mag), color=color2, label=L&quot;\delta B, 0.1-1.0\, Hz&quot;)
+
+   axs[3].plot(t, dvperp_high ./ v̄a, color1, label=L&quot;\delta v_\perp, 0.1-1.0\, Hz&quot;)
+   ax32 = axs[3].twinx()
+   ax32.plot(t, dbperp_high ./ b̄mag, color=color2, label=L&quot;\delta B, 0.1-1.0\, Hz&quot;)
+
+   axs[3].set_xlabel(&quot;time [s]&quot;; fontsize=&quot;large&quot;)
+
+   n_str = (L&quot;\delta n /n&quot;, L&quot;\delta n / n&quot;, L&quot;\delta v_\perp / V_A&quot;)
+
+   for (i, a) in enumerate(axs)
+      a.hlines(0.0, t[1], t[end]; colors=&quot;k&quot;, linestyle=&quot;dashed&quot;, alpha=0.3)
+      a.tick_params(axis=&quot;y&quot;, labelcolor=color1)
+      a.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      a.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      a.grid(true)
+      a.set_ylabel(n_str[i], color=color1, fontsize=14)
+   end
+
+   axtwin = (ax12, ax22, ax32)
+   b_str = ( L&quot;\delta B_\parallel / B_0&quot;, L&quot;\delta B_\parallel / B_0&quot;, L&quot;\delta B_\perp / B_0&quot;)
+
+   for (i, a) in enumerate(axtwin)
+      a.tick_params(axis=&quot;y&quot;, labelcolor=color2)
+      a.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      a.set_ylabel(b_str[i], color=color2, fontsize=&quot;large&quot;)
+      align_yaxis(axs[i], a)
+   end
+
+   AnchoredText = matplotlib.offsetbox.AnchoredText
+
+   at = AnchoredText(
+      &quot;[0.02, 0.067] Hz band&quot;, prop=Dict(&quot;size&quot;=&gt;&quot;medium&quot;), frameon=true, loc=&quot;lower left&quot;)
+   at.patch.set_boxstyle(&quot;round,pad=0.,rounding_size=0.2&quot;)
+   axs[1].add_artist(at)
+
+   at = AnchoredText(
+      &quot;[0.1, 1.0] Hz band&quot;, prop=Dict(&quot;size&quot;=&gt;&quot;medium&quot;), frameon=true, loc=&quot;lower left&quot;)
+   at.patch.set_boxstyle(&quot;round,pad=0.,rounding_size=0.2&quot;)
+   axs[2].add_artist(at)
+
+   at = AnchoredText(
+      &quot;[0.1, 1.0] Hz band&quot;, prop=Dict(&quot;size&quot;=&gt;&quot;medium&quot;), frameon=true, loc=&quot;lower left&quot;)
+   at.patch.set_boxstyle(&quot;round,pad=0.,rounding_size=0.2&quot;)
+   axs[3].add_artist(at)
+
+   savefig(&quot;virtual_satellite_wave.png&quot;; dpi=300)
+end
+
+main()</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 25 February 2023 12:53">Saturday 25 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Extract variables along the magnetopause · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_magnetopause_2d_mt/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Extract variables along the magnetopause</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Extract variables along the magnetopause</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/postprocess/demo_magnetopause_2d_mt.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_extract_magnetopause"><a class="docs-heading-anchor" href="#demo_extract_magnetopause">Extract variables along the magnetopause</a><a id="demo_extract_magnetopause-1"></a><a class="docs-heading-anchor-permalink" href="#demo_extract_magnetopause" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to extract variables along the magnetopause defined by <code>Bz == 0</code> from multiple frames.</p><p>Usage:</p><pre><code class="language-shell hljs">julia -t 4 demo_magnetopause_2d_mt.jl</code></pre><p>or</p><pre><code class="language-shell hljs">JULIA_NUM_THREADS=4 julia demo_magnetopause_2d_mt.jl</code></pre><pre><code class="language-julia hljs">using Vlasiator, Glob
+using Vlasiator: RE # Earth radius, [m]
+using JLD2: jldsave
+
+&quot;&quot;&quot;
+    extract_magnetopause_var(files; zmin=-4RE, zmax=4RE, verbose=true)
+
+Extract variables on the magnetopause defined by ``B_z = 0``.
+&quot;&quot;&quot;
+function extract_magnetopause_var(files; zmin=-4RE, zmax=4RE, verbose=true)
+   nfiles = length(files)
+
+   verbose &amp;&amp; println(&quot;Number of files: $nfiles&quot;)
+
+   meta = load(files[1])
+
+   x = LinRange{Float32}(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
+   z = LinRange{Float32}(meta.coordmin[3], meta.coordmax[3], meta.ncells[3])
+
+   z_range = let zmin_ = searchsortedfirst(z, zmin), zmax_ = searchsortedlast(z, zmax)
+      zmin_:zmax_
+   end
+
+   x_crossing = zeros(Float32, length(z_range))
+   z_crossing = z[z_range]
+
+   cellids = Vector{Int}(undef, length(z_range))
+
+   x_crossings = zeros(length(z_range), nfiles)
+   v = zeros(3, length(z_range), nfiles)
+   ey = zeros(length(z_range), nfiles)
+
+   Threads.@threads for ifile in eachindex(files)
+      verbose &amp;&amp; println(&quot;$(files[ifile]) on thread $(Threads.threadid())&quot;)
+      meta = load(files[ifile])
+
+      # Obtain thermal temperature
+      b = meta[&quot;vg_b_vol&quot;]
+      b = reshape(b, 3, meta.ncells[1], meta.ncells[3])
+
+      # Extract the last point from right to left which fulfills Bz &lt; 0
+      for (i,k) in enumerate(z_range) # scan in z direction
+         ind_ = findlast(&gt;(0), @view b[3,:,k]) + 1 # count from upstream
+         isnothing(ind_) &amp;&amp; (ind_ = 1) # if not found then set to 1
+         x_crossing[i] = x[ind_]
+      end
+
+      cellids = [ getcell(meta, [x_crossing[i], 0, z_crossing[i]])
+         for i in eachindex(x_crossing, z_crossing) ]
+
+      x_crossings[:,ifile] = x_crossing
+      v[:,:,ifile] = readvariable(meta, &quot;proton/vg_v&quot;, cellids)
+      ey[:,ifile] = readvariable(meta, &quot;vg_e_vol&quot;, cellids)[2,:]
+   end
+
+   z_crossing, x_crossings, v, ey
+end
+
+######
+
+files = glob(&quot;bulk*.vlsv&quot;, &quot;.&quot;)
+
+@time z,x,v,ey = extract_magnetopause_var(files)
+
+jldsave(&quot;magnetopause.jld2&quot;; z,x,v,ey)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 25 February 2023 12:53">Saturday 25 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
