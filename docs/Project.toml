@@ -1,3 +1,4 @@
 [deps]
+DemoCards = "311a05b2-6137-4a5a-b473-18580a3d38b5"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Vlasiator = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
