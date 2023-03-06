@@ -20,12 +20,12 @@ A bunch of physical constants are predefined in [Vlasiator.jl](https://github.co
 
 ## Loading VLSV data
 
-A quick way to obtain small test data can be found in [F&Q](log.md#Test-Data). Larger open-access data can be found from the references in [Vlasiator publications](https://www.helsinki.fi/en/researchgroups/vlasiator/publications-and-presentations), e.g. [Takahashi+ 2020](https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/).
+A quick way to obtain small test data can be found in [F&Q](log.md#Test-Data). Larger open-access data can be found from the references in [Vlasiator publications](https://www.helsinki.fi/en/researchgroups/vlasiator/publications-and-presentations), e.g. [Takahashi+ 2020](https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/). In this tutorial we are using the 2D test file `bulk.2d.vlsv` from [vlsv_data](https://github.com/henry2004y/vlsv_data) if not specified.
 
 - Read meta data
 
 ```julia
-file = "bulk.0000004.vlsv"
+file = "bulk.2d.vlsv"
 meta = load(file)
 ```
 
@@ -52,9 +52,9 @@ A list of utility functions has been implemented for checking variable status. S
 - Read variable
 
 ```julia
-data = meta["proton/vg_rho"]
+data = meta["CellID"]
 # Or equivalently
-data = readvariable(meta, "proton/vg_rho")
+data = readvariable(meta, "CellID")
 ```
 
 The variable reading is designed for cells, which takes cell ID(s) as the 3rd argument if specified. The same interface works for both [DCCRG](https://github.com/fmihpc/dccrg) grid (for storing cell centered quantities like plasma moments) and [FS](https://github.com/fmihpc/fsgrid) grid (for storing field solver related quantities on a uniform high resolution mesh) variables. By default the returned DCCRG variable array is sorted by cell IDs. If in any case you want the original unsorted version as being stored in the file, use `readvariable(meta, var, false)`.
@@ -64,7 +64,7 @@ The variable reading is designed for cells, which takes cell ID(s) as the 3rd ar
 ```julia
 loc = [2.0, 0.0, 0.0]
 id = getcell(meta, loc)
-readvariable(meta, "proton/vg_rho", id)
+readvariable(meta, "CellID", id)
 ```
 
 - Get variable along a line between two points
@@ -80,6 +80,9 @@ var_extract = readvariable(meta, "VA", cellids)
 - Extract variable at a static cell ID from a sequence of files under the same grid
 
 ```julia
+files = ["bulk.2d.vlsv"]
+var = "CellID"
+id = 1
 extractsat(files, var, id)
 ```
 
@@ -190,6 +193,8 @@ which can also be found as keys of dictionary in [vlsvvariables.jl](https://gith
 We can also calculate plasma moments from the saved VLSV velocity space distributions.
 
 ```julia
+meta = load("bulk.1d.vlsv")
+cellid = 5
 # VDF cell indexes and values, with sparsity
 vcellids, vcellf = readvcells(meta, cellid; species="proton")
 
@@ -252,13 +257,13 @@ All the functions with identical names as in Matplotlib accept all possible keyw
 - Scalar colored contour from 2D simulation
 
 ```julia
-pcolormesh(meta, "rho")
+pcolormesh(meta, "n")
 ```
 
 - Vector z-component colored contour from 2D simulation in a manually set range
 
 ```julia
-pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "n", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
 ```
 
 - Vz colored contour from 2D simulation with prescribed colormap
@@ -270,19 +275,19 @@ pcolormesh(meta, "proton/vg_v", comp=:z, colorscale=Linear, cmap=matplotlib.cm.R
 - Derived quantity colored contour from 2D simulation (as long as the input variable is in the predefined dictionary)
 
 ```julia
-pcolormesh(meta, "b", comp=:z, colorscale=Linear, axisunit=SI)
+pcolormesh(meta, "Bmag", comp=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline from 2D simulation
 
 ```julia
-streamplot(meta, "rho_v", comp="xy")
+streamplot(meta, "proton/vg_v", comp="xy")
 ```
 
 - Quiver from 2D simulation
 
 ```julia
-quiver(meta, "rho_v", comp="xy")
+quiver(meta, "proton/vg_v", comp="xy")
 ```
 
 The `comp` option is used to specify the two vector components.
@@ -292,27 +297,22 @@ You can choose to use a linear/log/symlog color scale by setting keyword `colors
 - Mesh denoted by cell centers
 
 ```julia
-plotmesh(meta; projection="z", color="w")
+plotmesh(meta; projection="z", color="k")
 ```
 
 - Cut slice colored contour from 3D simulation
 
 ```julia
+meta = load("bulk.amr.vlsv")
 pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 ```
 
-- Velocity distribution slice plot near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
+- Velocity distribution slice plot near a given spatial location
 
 ```julia
+meta = load("bulk.1d.vlsv")
+coordinates = [0.0, 0.0, 0.0]
 vdfslice(meta, coordinates)
-```
-
-- Extracted quantity line plot
-
-```julia
-rho_extract = vec(rho_extract)
-loc = range(x1, x2, length=length(rho_extract))
-plot(loc, rho_extract)
 ```
 
 - Quick interactive REPL-based function for data inspection
@@ -335,18 +335,22 @@ To trigger Plots.jl plotting, `using Plots`. This backend supports all available
 - Scaler colored contour from 2D simulation
 
 ```julia
+var = "n"
 heatmap(meta, var, aspect_ratio=:equal, c=:turbo)
 ```
 
 - Scaler colored contour with lines from 2D simulation
 
 ```julia
+var = "n"
 contourf(meta, var)
 ```
 
 - VDF projected slice in a normal direction
 
 ```julia
+meta = load("bulk.1d.vlsv")
+location = [0.0, 0.0, 0.0]
 vdfslice(meta, location)
 ```
 
@@ -407,14 +411,15 @@ The interactive plots are available through the OpenGL backend of Makie `GLMakie
 We are able to compute derived quantities from an original VLSV file and generate a new VLSV output with new quantities included.
 
 ```julia
-vmag = readvariable(meta, "Vmag", meta.cellid)
-pa = readvariable(meta, "Panisotropy", meta.cellid)
+meta = load("bulk.1d.vlsv")
+vmag = readvariable(meta, "Vmag")
+pa = readvariable(meta, "Panisotropy")
 vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
-# require LaTeXStrings.jl
+using LaTeXStrings
 push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
 push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
 
-write_vlsv("bulk.vlsv", "bulk_new.vlsv", vars)
+write_vlsv("bulk.1d.vlsv", "bulk.1d_new.vlsv", vars)
 ```
 
 !!! note
