@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>VDFs along a line · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_vdfs_pyplot/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>VDFs along a line</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>VDFs along a line</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_vdfs_pyplot.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_vdfs"><a class="docs-heading-anchor" href="#demo_vdfs">VDFs along a line</a><a id="demo_vdfs-1"></a><a class="docs-heading-anchor-permalink" href="#demo_vdfs" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to plot velocity distribution functions along a line.</p><pre><code class="language-julia hljs">using Vlasiator, PyPlot, JLD2
+using Vlasiator: RE # Earth radius [m]
+
+function main()
+   ## Plot velocity space distributions
+   xloc = range(7.0, 10.0, step=2.35)
+   yloc = range(-0.0, 5.0, step=2.35)
+   zloc = 0.0
+
+   CIs = CartesianIndices((1:length(xloc), 1:length(yloc)))
+
+   fig, axs = plt.subplots(length(xloc), length(yloc), sharex=true, sharey=true)
+
+   for i in CIs
+      loc = RE .* [xloc[i[1]], yloc[i[2]], zloc]
+      vdfslice(meta, loc, axs[i]; verbose=false)
+   end
+
+   for a in axs[end,:] a.set_xlabel(&quot;vx [km/s]&quot;) end
+   for a in axs[:  ,1] a.set_ylabel(&quot;vy [km/s]&quot;) end
+
+   ## Subtract data of cells with VDF
+
+   file = &quot;test/data/bulk.1d.vlsv&quot;
+   meta = load(file)
+
+   cells = getcellwithvdf(meta)
+
+   ρ = zeros(Float64, size(cells))
+   v = zeros(Float64, 3, size(cells)...)
+   p = zeros(Float64, size(cells))
+
+   vsize = meta.meshes[&quot;proton&quot;].vblock_size .* meta.meshes[&quot;proton&quot;].vblocks
+   vcellids = [Int[] for _ in cells]
+   vcellf = [Float64[] for _ in cells]
+
+   for (i, cell) in enumerate(cells)
+      ρ[i] = readvariable(meta, &quot;proton/vg_rho&quot;, cell)[1]
+      v[i] = readvariable(meta, &quot;proton/vg_v&quot;, cell)[1]
+      p[i] = readvariable(meta, &quot;vg_pressure&quot;, cell)[1]
+
+      vcellids[i], vcellf[i] = readvcells(meta, cell)
+   end
+
+   jldopen(&quot;example.jld2&quot;, &quot;a+&quot;) do file
+      file[&quot;file1/density&quot;] = ρ
+      file[&quot;file1/velocity&quot;] = v
+      file[&quot;file1/pressure&quot;] = p
+      file[&quot;file1/VDF&quot;] = vcellf
+   end
+end
+
+main()</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Monday 6 March 2023 16:50">Monday 6 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
