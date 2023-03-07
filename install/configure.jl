@@ -85,7 +85,7 @@ function main()
       end
 
       if parsed_args["lib"] == :all || parsed_args["lib"] == :vectorclass
-         joinpath(origindir, "vectorclass")
+         libpath = joinpath(origindir, "vectorclass")
          if !isdir(libpath)
             run(`git clone https://github.com/vectorclass/version1.git`)
             run(`git clone https://github.com/vectorclass/add-on.git`)
@@ -123,9 +123,17 @@ function main()
             mkdir(libpath)
             cd(libpath)
             zoltanpath = joinpath(tmpdir, "Zoltan")
-            run(`$zoltanpath/configure --prefix=$libpath --enable-mpi --with-mpi-compilers --with-gnumake --with-id-type=ullong`)
+            run(`$zoltanpath/configure --prefix=$libpath --enable-mpi --with-mpi-compilers --with-gnumake --with-id-type=ullong CC=mpicc CXX=mpicxx`)
             run(`make`)
             run(`make install`)
+         end
+      end
+
+      if parsed_args["lib"] == :all || parsed_args["lib"] == :fsgrid
+         libpath = joinpath(origindir, "fsgrid")
+         if !isdir(libpath)
+            run(`git clone https://github.com/fmihpc/fsgrid.git`)
+            mv("fsgrid", libpath)
          end
       end
    end
