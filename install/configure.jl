@@ -43,7 +43,7 @@ function main()
       if parsed_args["lib"] == :all || parsed_args["lib"] == :dccrg
          libpath = joinpath(origindir, "dccrg")
          if !isdir(libpath)
-            run(`git clone git@github.com:fmihpc/dccrg.git`)
+            run(`git clone https://github.com/fmihpc/dccrg.git`)
             cd("dccrg")
             run(`git checkout vlasiator-version`)
             cd("../")
