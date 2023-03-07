@@ -119,7 +119,7 @@ function main()
       if parsed_args["lib"] == :all || parsed_args["lib"] == :zoltan
          libpath = joinpath(origindir, "zoltan")
          if !isdir(libpath)
-            run(`git clone git@github.com:sandialabs/Zoltan.git`)
+            run(`git clone https://github.com/sandialabs/Zoltan.git`)
             mkdir(libpath)
             cd(libpath)
             zoltanpath = joinpath(tmpdir, "Zoltan")
