@@ -1441,8 +1441,9 @@ function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
       @inbounds for (iv, var) in enumerate(vars)
          vtk[var, VTKCellData()] = data[iv][level+1]
       end
-
-      vtk["vtkGhostType", VTKCellData()] = vtkGhostType
+      if !isempty(vtkGhostType)
+         vtk["vtkGhostType", VTKCellData()] = vtkGhostType
+      end
    else # selected box region
       xrange = box[1]:spacing[1]:box[2]
       yrange = box[3]:spacing[2]:box[4]
@@ -1464,7 +1465,9 @@ function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
       @inbounds for (iv, var) in enumerate(vars)
          vtk[var, VTKCellData()] = data[iv][level+1][:,imin:imax,jmin:jmax,kmin:kmax]
       end
-      vtk["vtkGhostType", VTKCellData()] = vtkGhostType[imin:imax,jmin:jmax,kmin:kmax]
+      if !isempty(vtkGhostType)
+         vtk["vtkGhostType", VTKCellData()] = vtkGhostType[imin:imax,jmin:jmax,kmin:kmax]
+      end
    end
 
    vtk_save(vtk)
