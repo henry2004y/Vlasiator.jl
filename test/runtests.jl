@@ -126,6 +126,7 @@ end
          @test getKLdivergence(meta, vcellids, vcellf) ≈ 4.693076222745189e-5 rtol=1e-4
 
          meta = meta2
+         @test_throws ErrorException Vlasiator.prep1d(meta, "CellID")
          v = Vlasiator.prep1d(meta, "CellID"; i1=1)
          @test length(v) == 100 && v[end] == 0x000000000000185e
          v = Vlasiator.prep1d(meta, "CellID"; i2=1)
