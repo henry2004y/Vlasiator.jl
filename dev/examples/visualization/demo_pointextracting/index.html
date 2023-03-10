@@ -7,12 +7,10 @@ function extract_vars(files, loc)
    # variables to be extracted
    t   = zeros(Float32, nfiles)
    rho = zeros(Float32, nfiles)
-   vx  = zeros(Float32, nfiles)
-   vy  = zeros(Float32, nfiles)
+   v   = zeros(Float32, 3, nfiles)
    p   = zeros(Float32, nfiles)
-   bz  = zeros(Float32, nfiles)
-   ex  = zeros(Float32, nfiles)
-   ey  = zeros(Float32, nfiles)
+   b   = zeros(Float32, 3, nfiles)
+   e   = zeros(Float32, 3, nfiles)
 
    id = load(files[1]) do meta
       getcell(meta, loc)
@@ -23,13 +21,13 @@ function extract_vars(files, loc)
       meta = load(files[i])
       t[i] = meta.time
       rho[i] = readvariable(meta, &quot;proton/vg_rho&quot;, id)[1]
-      vx[i], vy[i] = readvariable(meta, &quot;proton/vg_v&quot;, id)[1:2]
+      v[:,i] = readvariable(meta, &quot;proton/vg_v&quot;, id)
       p[i] = readvariable(meta, &quot;vg_pressure&quot;, id)[1]
-      bz[i] = readvariable(meta, &quot;vg_b_vol&quot;, id)[3]
-      ex[i], ey[i] = readvariable(meta, &quot;vg_e_vol&quot;, id)[1:2]
+      b[:,i] = readvariable(meta, &quot;vg_b_vol&quot;, id)
+      e[:,i] = readvariable(meta, &quot;vg_e_vol&quot;, id)
    end
 
-   df = DataFrame(t = t, rho = rho, vx = vx, vy = vy, p = p, bz = bz, ex = ex, ey = ey)
+   df = DataFrame(t = t, rho = rho, v = v, p = p, b = b, e = e)
    # Save into text file
    writedlm(&quot;satellite.csv&quot;, Iterators.flatten(([names(df)], eachrow(df))), &#39;,&#39;)
 end
@@ -80,4 +78,4 @@ ax[5].set_xlabel(&quot;time [s]&quot;, fontsize=14)
 fig.suptitle(&quot;Density Pulse Run, location = [12, 0, 0]&quot;, fontsize=&quot;xx-large&quot;)
 
 savefig(&quot;virtual_satellite.png&quot;, bbox_inches=&quot;tight&quot;)
-=#</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 10 March 2023 10:34">Friday 10 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+=#</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Friday 10 March 2023 15:18">Friday 10 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
