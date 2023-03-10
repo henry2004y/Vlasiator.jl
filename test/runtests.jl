@@ -107,6 +107,12 @@ end
          @test getKLdivergence(meta, f) ≈ 4.699781401109378e-5 rtol=1e-4
          @test getKLdivergence(meta, vcellids, vcellf) ≈ 4.693076222745189e-5 rtol=1e-4
 
+         meta = meta2
+         v = Vlasiator.prep1d(meta, "CellID"; i1=1)
+         @test length(v) == 100 && v[end] == 0x000000000000185e
+         v = Vlasiator.prep1d(meta, "CellID"; i2=1)
+         @test length(v) == 63 && v[end] == 0x000000000000003f
+
          # AMR data reading, DCCRG grid
          metaAMR = meta3
          sliceoffset = abs(metaAMR.coordmin[2])

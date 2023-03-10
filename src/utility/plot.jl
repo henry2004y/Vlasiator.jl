@@ -122,6 +122,45 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
+    prep1d(meta::MetaVLSV, var::String; ix::Int=Inf, iy::Int=Inf, iz::Int=Inf,
+       comp::Int=0) -> Array
+
+Obtain data from `meta` of `var` for 1D plotting. Use `comp` to select vector components.
+"""
+function prep1d(meta::MetaVLSV, var::String; i1::Int=0, i2::Int=0, comp::Int=0)
+   if i1 == 0 && i2 == 0
+      error("Must provide an index for either i1 or i2!")
+   end
+   dataRaw = Vlasiator.getdata2d(meta, var)
+
+   if i1 != 0
+      data =
+         if ndims(dataRaw) == 3
+            if comp != 0
+               @view dataRaw[comp,i1,:]
+            else
+               @views hypot.(dataRaw[1,i1,:], dataRaw[2,i1,:], dataRaw[3,i1,:])
+            end
+         else
+            @view dataRaw[i1,:]
+         end
+   else
+      data =
+         if ndims(dataRaw) == 3
+            if comp != 0
+               @view dataRaw[comp,:,i2]
+            else
+               @views hypot.(dataRaw[1,:,i2], dataRaw[2,:,i2], dataRaw[3,:,i2])
+            end
+         else
+            @view dataRaw[:,i2]
+         end
+   end
+
+   data
+end
+
+"""
     prep2d(meta::MetaVLSV, var::String, comp::Union{Symbol, Int}=0) -> Array
 
 Obtain data from `meta` of `var` for 2D plotting. Use `comp` to select vector components.
@@ -184,10 +223,10 @@ function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{In
       if normal == :x
          data = comp != 0 ? data3D[comp,icut,:,:] :
             @views hypot.(data3D[1,icut,:,:], data3D[2,icut,:,:], data3D[3,icut,:,:])
-      elseif normal == :y 
+      elseif normal == :y
          data = comp != 0 ? data3D[comp,:,icut,:] :
             @views hypot.(data3D[1,:,icut,:], data3D[2,:,icut,:], data3D[3,:,icut,:])
-      elseif normal == :z 
+      elseif normal == :z
          data = comp != 0 ? data3D[comp,:,:,icut] :
             @views hypot.(data3D[1,:,:,icut], data3D[2,:,:,icut], data3D[3,:,:,icut])
       end
