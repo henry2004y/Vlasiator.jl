@@ -1,6 +1,9 @@
 {
    "order": [
      "demo_convert2vti.md",
+     "demo_pointextracting.md",
+     "demo_pointsextracting_2d_uniform.md",
+     "demo_pointsextracting.md",
      "demo_em_extract_slice.md",
      "demo_lineextracting_mt.md",
      "demo_log.md",
