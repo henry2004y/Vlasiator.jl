@@ -27,12 +27,10 @@ function extract_vars(files, loc)
    # variables to be extracted
    t   = zeros(Float32, nfiles)
    rho = zeros(Float32, nfiles)
-   vx  = zeros(Float32, nfiles)
-   vy  = zeros(Float32, nfiles)
+   v   = zeros(Float32, 3, nfiles)
    p   = zeros(Float32, nfiles)
-   bz  = zeros(Float32, nfiles)
-   ex  = zeros(Float32, nfiles)
-   ey  = zeros(Float32, nfiles)
+   b   = zeros(Float32, 3, nfiles)
+   e   = zeros(Float32, 3, nfiles)
 
    id = load(files[1]) do meta
       getcell(meta, loc)
@@ -43,13 +41,13 @@ function extract_vars(files, loc)
       meta = load(files[i])
       t[i] = meta.time
       rho[i] = readvariable(meta, "proton/vg_rho", id)[1]
-      vx[i], vy[i] = readvariable(meta, "proton/vg_v", id)[1:2]
+      v[:,i] = readvariable(meta, "proton/vg_v", id)
       p[i] = readvariable(meta, "vg_pressure", id)[1]
-      bz[i] = readvariable(meta, "vg_b_vol", id)[3]
-      ex[i], ey[i] = readvariable(meta, "vg_e_vol", id)[1:2]
+      b[:,i] = readvariable(meta, "vg_b_vol", id)
+      e[:,i] = readvariable(meta, "vg_e_vol", id)
    end
 
-   df = DataFrame(t = t, rho = rho, vx = vx, vy = vy, p = p, bz = bz, ex = ex, ey = ey)
+   df = DataFrame(t = t, rho = rho, v = v, p = p, b = b, e = e)
    # Save into text file
    writedlm("satellite.csv", Iterators.flatten(([names(df)], eachrow(df))), ',')
 end
