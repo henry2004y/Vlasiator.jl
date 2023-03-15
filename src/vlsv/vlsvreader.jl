@@ -100,7 +100,7 @@ end
 end
 
 @inline function getdatatype(datatype::String, datasize::Int)
-   T::Type =
+   T::DataType =
       if datatype == "float"
          datasize == 4 ? Float32 : Float64
       elseif datatype == "int"
