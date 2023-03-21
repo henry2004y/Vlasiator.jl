@@ -44,7 +44,7 @@ Due to the multi-dimensional approach at ion scales, `Vlasiator`'s computational
 The storage required to resolve the phase space distributions can easily go beyond terabytes, with each reduced snapshot going beyond ~10 GB, which necessitates the development of high performance programs for processing the data.
 
 `Vlasiator.jl` tackles the post-processing challenges by taking advantage of novel techniques shared in the open source community, which is built from the ground up to leverage the power of Julia and successful tools written in C++ and Python.
-It is targeted at space plasma physics researchers who want to analyze and visualize `Vlasiator` simulation outputs in an efficient manner: we have reached 8 - 55 times speedups over the same tasks in `Analysator`.
+It is targeted at space plasma physics researchers who want to analyze and visualize `Vlasiator` simulation outputs in an efficient manner: we have reached up to 27 times speedups over the same tasks in `Analysator`.
 This package satisfies the current requirements of simulation data processing, unifies the implementation in a single language base, and facilitates more fluent downstream processing tasks and in-depth exploration of large datasets.
 It has been used extensively in ultra-low frequency wave studies [@pc5] and responses of near-Earth space under changing solar wind conditions [@ressac].
 
