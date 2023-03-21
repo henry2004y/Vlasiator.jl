@@ -32,7 +32,8 @@ This lightweight package retains all the actively used functionalities in its si
 `Vlasiator.jl` achieves optimal serial performance for single file processing and can be directly applied to parallel batch jobs using both multiple threads and multiprocessing.
 The interoperability with Python can be easily achieved via two community packages `JuliaCall` [@juliacall] and `PyJulia` [@pyjulia].
 It can also be easily integrated with other packages in the community like [FieldTracer.jl](https://github.com/henry2004y/FieldTracer.jl) for tracing along the field lines and [TestParticle.jl](https://github.com/henry2004y/TestParticle.jl) for embedded test particle simulations.
-The performance and ease-of-use of `Vlasiator.jl` will enable exciting reproducible scientific exploration of forthcoming data from exascale simulations.
+The benchmark suite demonstrates the performance of `Vlasiator.jl` compared with `Analysator`, which is also expected to improve further through refactoring and incorporating the latest advancement in the Julia community.
+The efficiency and ease-of-use of `Vlasiator.jl` will enable exciting reproducible scientific exploration of forthcoming data from exascale simulations.
 
 # Statement of need
 
