@@ -1,6 +1,6 @@
 # Using user recipes from Plots.
 
-using RecipesBase, Printf
+using RecipesBase
 
 # Build a recipe which acts on a custom type.
 @recipe function f(meta::MetaVLSV, var::AbstractString;

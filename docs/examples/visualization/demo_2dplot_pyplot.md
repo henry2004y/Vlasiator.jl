@@ -10,7 +10,7 @@
 
 This demo shows how to plot 2D colored contour in a region of interest with streamlines and levels.
 ```julia
-using Vlasiator, PyPlot
+using Vlasiator, PyPlot, VlasiatorPyPlot
 using Vlasiator: RE
 
 function main(file::String, varname::String)

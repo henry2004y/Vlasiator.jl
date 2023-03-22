@@ -10,7 +10,7 @@
 This demo shows how to plot velocity distribution functions along a line.
 
 ```julia
-using Vlasiator, PyPlot, JLD2
+using Vlasiator, PyPlot, VlasiatorPyPlot, JLD2
 using Vlasiator: RE # Earth radius [m]
 
 function main()
