@@ -2,19 +2,17 @@ name: CI
 on:
   pull_request:
     paths:
-    - 'PyPlot/**'
+      - 'PyPlot/**'
+      - '!README.md'
     branches:
       - master
-    paths-ignore:
-      - 'README.md'
   push:
     paths:
-    - 'PyPlot/**'
+      - 'PyPlot/**'
+      - '!README.md'
     branches:
       - master
     tags: '*'
-    paths-ignore:
-      - 'README.md'
 env:
   JULIA_NUM_THREADS: 1
 jobs:
