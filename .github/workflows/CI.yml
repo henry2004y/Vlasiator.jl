@@ -6,7 +6,7 @@ on:
     paths-ignore:
       - 'README.md'
       - 'examples/**'
-      - 'VlasiatorPyPlot/**'
+      - 'PyPlot/**'
   push:
     branches:
       - master
@@ -15,7 +15,7 @@ on:
       - 'README.md'
       - 'examples/**'
       - 'benchmark/**'
-      - 'VlasiatorPyPlot/**'
+      - 'PyPlot/**'
 env:
   JULIA_NUM_THREADS: 1
 jobs:
@@ -61,9 +61,6 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - name: Install dependencies
-        run: |
-          pip install matplotlib
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
         with:
