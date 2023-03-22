@@ -14,18 +14,21 @@ using REPL.TerminalMenus # Command line UI
 export plot, pcolormesh, vdfslice, streamplot, quiver, plotmesh
 export pui
 
-@static if matplotlib.__version__ ≥ "3.3"
-   matplotlib.rc("image", cmap="turbo") # set default colormap
+function __init__()
+   @static if matplotlib.__version__ ≥ "3.3"
+      matplotlib.rc("image", cmap="turbo") # set default colormap
+   end
+
+   @static if matplotlib.__version__ < "3.5"
+      matplotlib.rc("pcolor", shading="nearest") # newer version default "auto"
+   end
+
+   matplotlib.rc("font", size=14)
+   matplotlib.rc("xtick", labelsize=10)
+   matplotlib.rc("ytick", labelsize=10)
+   matplotlib.rc("xtick.minor", visible=true)
+   matplotlib.rc("ytick.minor", visible=true)
 end
-
-@static if matplotlib.__version__ < "3.5"
-   matplotlib.rc("pcolor", shading="nearest") # newer version default "auto"
-end
-
-matplotlib.rc("font", size=14)
-matplotlib.rc("xtick", labelsize=10)
-matplotlib.rc("ytick", labelsize=10)
-
 
 """
     plot(meta::MetaVLSV, var::String, ax=nothing; comp=0, kwargs...)
