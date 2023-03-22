@@ -2,21 +2,19 @@ name: CI
 on:
   pull_request:
     paths:
-    - 'VlasiatorPyPlot/**'
+    - 'PyPlot/**'
     branches:
       - master
     paths-ignore:
       - 'README.md'
   push:
     paths:
-    - 'VlasiatorPyPlot/**'
+    - 'PyPlot/**'
     branches:
       - master
     tags: '*'
     paths-ignore:
       - 'README.md'
-      - 'examples/**'
-      - 'benchmark/**'
 env:
   JULIA_NUM_THREADS: 1
 jobs:

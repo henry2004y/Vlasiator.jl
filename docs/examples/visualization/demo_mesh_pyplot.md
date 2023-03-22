@@ -10,7 +10,7 @@
 
 This demo shows how to plot mesh. The cell centers are represented by the markers.
 ```julia
-using Vlasiator, PyPlot
+using Vlasiator, PyPlot, VlasiatorPyPlot
 
 const file = "test/data/bulk.amr.vlsv"
 meta = load(file)

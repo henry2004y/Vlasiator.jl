@@ -10,7 +10,7 @@
 
 This demo shows how to plot 2D colored contour slices for 3D data.
 ```julia
-using Vlasiator, PyPlot, PyCall
+using Vlasiator, PyPlot, VlasiatorPyPlot, PyCall
 axes_grid1 = pyimport("mpl_toolkits.axes_grid1")
 ImageGrid = axes_grid1.ImageGrid
 
