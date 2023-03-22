@@ -55,7 +55,7 @@ jobs:
         run: |
           using Pkg;
           # dev mono repo versions
-          pkg"dev . ./VlasiatorPyPlot"
+          pkg"dev . ./PyPlot"
       - name: Run the tests
         continue-on-error: true
         run: |
