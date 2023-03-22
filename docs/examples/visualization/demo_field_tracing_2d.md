@@ -9,7 +9,7 @@
 
 This demo shows how to trace streamlines in a 2D uniform field.
 ```julia
-using PyPlot, FieldTracer, Vlasiator, VlasiatorPyPlot
+using VlasiatorPyPlot, FieldTracer
 using Vlasiator: RE # Earth radius, [m]
 
 function main()

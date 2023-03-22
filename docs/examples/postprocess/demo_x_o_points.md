@@ -16,7 +16,7 @@ Here we assume a X-Z meridional plane.
     needs to set the relative tolerance, while method 2 does not.
 
 ```julia
-using Vlasiator, PyPlot, VlasiatorPyPlot
+using VlasiatorPyPlot
 
 function main()
    file = "bulk.0001657.vlsv"

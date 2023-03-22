@@ -9,7 +9,7 @@
 
 This demo shows how to plot field lines with handpicked seeds.
 ```julia
-using Vlasiator, PyPlot, VlasiatorPyPlot, FieldTracer
+using VlasiatorPyPlot, FieldTracer
 using Vlasiator: RE # Earth radius, [m]
 
 function main()

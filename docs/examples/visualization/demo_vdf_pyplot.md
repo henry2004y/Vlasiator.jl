@@ -10,7 +10,7 @@
 
 This demo shows how to plot the phase space density (i.e. velocity distribution function) near a given spatial location.
 ```julia
-using Vlasiator, PyPlot, VlasiatorPyPlot
+using VlasiatorPyPlot
 using Vlasiator: RE # Earth radius [m]
 
 function main()
