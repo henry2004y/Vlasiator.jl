@@ -122,10 +122,11 @@ end
 get_axis(pArgs::PlotArgs) = get_axis(pArgs.axisunit, pArgs.plotrange, pArgs.sizes)
 
 """
-    prep1d(meta::MetaVLSV, var::String; i1::Int=0, i1::Int=0, comp::Int=0) -> Array
+    prep1d(meta::MetaVLSV, var::String; i1::Int=0, i2::Int=0, comp::Int=0) -> Array
 
 Obtain a 1D slice from 2D `meta` of `var`. `i1` is the index for the first dimension, and
-`i2` is the index for the second dimension. Use `comp` to select vector components.
+`i2` is the index for the second dimension; only one of them is needed. Use `comp` to select
+vector components.
 """
 function prep1d(meta::MetaVLSV, var::String; i1::Int=0, i2::Int=0, comp::Int=0)
    if i1 == 0 && i2 == 0
