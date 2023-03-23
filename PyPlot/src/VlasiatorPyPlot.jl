@@ -82,7 +82,7 @@ function PyPlot.streamplot(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothi
 
    isnothing(ax) && (ax = plt.gca())
 
-   streamplot(X, Y, v1, v2; kwargs...)
+   ax.streamplot(X, Y, v1, v2; kwargs...)
 end
 
 """
