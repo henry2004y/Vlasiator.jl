@@ -15,7 +15,7 @@ julia -p $ncores demo_fieldline_mp_pyplot.jl
 
 ```julia
 using Distributed, ParallelDataTransfer, Glob
-@everywhere using Vlasiator, PyPlot, PyCall, Printf, LaTeXStrings, FieldTracer
+@everywhere using Vlasiator, VlasiatorPyPlot, PyCall, Printf, LaTeXStrings, FieldTracer
 @everywhere using Vlasiator: RE
 
 function generate_seeds(coordmin, coordmax, dim_, nseeds)
@@ -146,7 +146,7 @@ const ρmin, ρmax = 0.0, 11.0      # [amu/cc]
 meta = load(files[1])
 # Construct pieces for plotting
 pArgs = Vlasiator.set_args(meta, "proton/vg_rho", axisunit; normal=:none)
-norm, ticks = Vlasiator.set_colorbar(Linear, ρmin, ρmax)
+norm, ticks = set_colorbar(Linear, ρmin, ρmax)
 
 # Mark spatial dimensions
 const dim_ = pArgs.stry[1] == 'Z' ? (1,3) : (1,2)

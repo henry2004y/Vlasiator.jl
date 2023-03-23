@@ -40,8 +40,8 @@ addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
 
 @everywhere begin
    using ParallelDataTransfer
-   using Vlasiator, PyPlot, Printf, LaTeXStrings
-   using Vlasiator: set_args, prep2d, set_colorbar, set_plot
+   using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
+   using Vlasiator: set_args, prep2d
 end
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"

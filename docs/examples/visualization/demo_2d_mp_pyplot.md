@@ -15,7 +15,7 @@ julia -p $ncores demo_2d_mp_pyplot.jl
 
 ```julia
 using Distributed, ParallelDataTransfer, Glob
-@everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
+@everywhere using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
 
 @everywhere function init_figure(cmaps, norms, ticks, pArgs1, extent)
    fig, axs = plt.subplots(2, 3; num=myid(),
@@ -161,12 +161,12 @@ meta = load(files[1])
 
 pArgs1 = Vlasiator.set_args(meta, "proton/vg_rho", axisunit; normal=:none)
 
-norm1, ticks1 = Vlasiator.set_colorbar(Linear, ρmin, ρmax)
-norm2, ticks2 = Vlasiator.set_colorbar(Linear, vxmin, vxmax)
-norm3, ticks3 = Vlasiator.set_colorbar(Linear, vzmin, vzmax)
-norm4, ticks4 = Vlasiator.set_colorbar(Linear, pmin, pmax)
-norm5, ticks5 = Vlasiator.set_colorbar(Linear, bmin, bmax)
-norm6, ticks6 = Vlasiator.set_colorbar(Linear, emin, emax)
+norm1, ticks1 = set_colorbar(Linear, ρmin, ρmax)
+norm2, ticks2 = set_colorbar(Linear, vxmin, vxmax)
+norm3, ticks3 = set_colorbar(Linear, vzmin, vzmax)
+norm4, ticks4 = set_colorbar(Linear, pmin, pmax)
+norm5, ticks5 = set_colorbar(Linear, bmin, bmax)
+norm6, ticks6 = set_colorbar(Linear, emin, emax)
 
 const norms = (norm1, norm2, norm3, norm4, norm5, norm6)
 const ticks = (ticks1, ticks2, ticks3, ticks4, ticks5, ticks6)

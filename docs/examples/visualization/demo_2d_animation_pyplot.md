@@ -10,7 +10,7 @@
 This example shows how to plot 2D colored contours with `pcolormesh`.
 `ffmpeg` is required to be installed for saving into mp4.
 ```julia
-using Vlasiator, Glob, PyPlot, Printf
+using Vlasiator, Glob, VlasiatorPyPlot, Printf
 
 files = glob("bulk*.vlsv", ".")
 const var = "proton/vg_rho"
@@ -33,7 +33,7 @@ meta = load(files[1])
 
 pArgs = Vlasiator.set_args(meta, var, axisunit; normal=:none)
 
-norm, ticks = Vlasiator.set_colorbar(colorscale, vmin, vmax)
+norm, ticks = set_colorbar(colorscale, vmin, vmax)
 
 c = let
    x1, x2 = Vlasiator.get_axis(pArgs)

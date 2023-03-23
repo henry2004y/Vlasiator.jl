@@ -10,7 +10,7 @@
 This script creates contours from a series of input files with a fixed color range.
 Combined with `ffmpeg`, we can easily make animations from data.
 ```julia
-using Vlasiator, Glob, PyPlot, Printf
+using Vlasiator, Glob, VlasiatorPyPlot, Printf
 
 files = glob("bulk*.vlsv")
 nfile = length(files)
@@ -36,7 +36,7 @@ pArgs = Vlasiator.set_args(meta, varname, axisunit; normal=:none)
 
 x1, x2 = Vlasiator.get_axis(pArgs)
 
-norm, ticks = Vlasiator.set_colorbar(colorscale, vmin, vmax)
+norm, ticks = set_colorbar(colorscale, vmin, vmax)
 
 fakedata = zeros(Float32, length(x2), length(x1))
 

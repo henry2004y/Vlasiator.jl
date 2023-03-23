@@ -9,8 +9,8 @@
 
 To generate combined 1D/2D plots across multiple frames,
 ```julia
-using Vlasiator, PyPlot, Glob, Printf, LaTeXStrings
-using Vlasiator: set_args, prep2d, set_colorbar
+using Vlasiator, VlasiatorPyPlot, Glob, Printf, LaTeXStrings
+using Vlasiator: set_args, prep2d
 
 @assert VERSION ≥ v"1.7.0" "Compatible with Julia v1.7+!"
 @assert matplotlib.__version__ >= "3.4" "Require Matplotlib version 3.4+ to use subfigure!"

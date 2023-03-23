@@ -10,7 +10,7 @@
 This demo shows how to plot the pressure tensor from one snapshot.
 
 ```julia
-using Vlasiator, PyPlot, LaTeXStrings, Printf
+using Vlasiator, VlasiatorPyPlot, LaTeXStrings, Printf
 
 function main()
    file = "bulk.0001582.vlsv"
@@ -42,7 +42,7 @@ function main()
    vmin = minimum(minimum.(P))
    vmax = maximum(maximum.(P))
 
-   cnorm1, cticks1 = Vlasiator.set_colorbar(colorscale, vmin, vmax)
+   cnorm1, cticks1 = set_colorbar(colorscale, vmin, vmax)
 
    fig, axs = subplots(3,2,
       figsize=(6, 12), sharex=true, sharey=true, constrained_layout=true)

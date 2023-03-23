@@ -23,12 +23,11 @@ JULIA_NUM_THREADS=4 julia demo_wave_tracing_mt.jl
 ```
 
 ```julia
-using Vlasiator
+using Vlasiator, VlasiatorPyPlot
 using Vlasiator: qᵢ, μ₀, c, mᵢ, ϵ₀, RE
 using Glob, DSP, FFTW, ImageFiltering, Interpolations
 using Statistics: mean
 using LinearAlgebra
-using PyPlot
 
 ## Types
 
@@ -353,7 +352,7 @@ function plot_dispersion(files, vars, cellids, distances, coords, meanstates, dt
       pArgs = Vlasiator.set_args(meta, varnames[i], axisunit; normal=:none)
       x, y = Vlasiator.get_axis(pArgs)
       data = Vlasiator.prep2d(meta, varnames[i], components[i])'
-      cnorm, cticks = Vlasiator.set_colorbar(Vlasiator.Linear, -Inf, Inf, data)
+      cnorm, cticks = set_colorbar(Vlasiator.Linear, -Inf, Inf, data)
       cmesh = ax[3].pcolormesh(x, y, data, norm=cnorm)
 
       ax[3].set_xlabel(pArgs.strx)

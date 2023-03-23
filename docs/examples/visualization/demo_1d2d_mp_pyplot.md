@@ -15,7 +15,7 @@ julia -p $ncores demo_1d2d_mp_pyplot.jl
 
 ```julia
 using Distributed, Glob
-@everywhere using Vlasiator, PyPlot, Printf, LaTeXStrings
+@everywhere using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
 
@@ -247,8 +247,8 @@ varminmax = Varminmax(ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, em
 meta = load(files[1])
 
 pArgs1 = Vlasiator.set_args(meta, "VA", axisunit; normal=:none)
-norm1, ticks1 = Vlasiator.set_colorbar(Linear, vamin, vamax)
-norm2, ticks2 = Vlasiator.set_colorbar(Linear, vsmin, vsmax)
+norm1, ticks1 = set_colorbar(Linear, vamin, vamax)
+norm2, ticks2 = set_colorbar(Linear, vsmin, vsmax)
 
 const norms = (norm1, norm2)
 const ticks = (ticks1, ticks2)

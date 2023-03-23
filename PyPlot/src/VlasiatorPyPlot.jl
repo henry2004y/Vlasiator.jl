@@ -11,7 +11,7 @@ using Vlasiator: AxisUnit, ColorScale, PlotArgs,
 import PyPlot.PyCall: PyObject
 using REPL.TerminalMenus # Command line UI
 
-export plot, pcolormesh, vdfslice, streamplot, quiver, plotmesh
+export plot, pcolormesh, vdfslice, streamplot, quiver, plotmesh, set_colorbar
 export pui
 
 function __init__()

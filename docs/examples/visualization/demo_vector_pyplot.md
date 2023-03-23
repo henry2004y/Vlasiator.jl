@@ -9,7 +9,7 @@
 
 This demo shows how to plot the components of a vector from one snapshot.
 ```julia
-using Vlasiator, PyPlot, LaTeXStrings, Printf
+using Vlasiator, VlasiatorPyPlot, LaTeXStrings, Printf
 
 function main()
    file = "/wrk/group/spacephysics/vlasiator/2D/ABA/bulk/bulk.0001000.vlsv"
@@ -42,7 +42,7 @@ function main()
    vmin = minimum(minimum.(V))
    vmax = -vmin
 
-   cnorm1, cticks1 = Vlasiator.set_colorbar(colorscale, vmin, vmax)
+   cnorm1, cticks1 = set_colorbar(colorscale, vmin, vmax)
 
    fig, axs = subplots(1,3,
       figsize=(10, 4), sharex=true, sharey=true, constrained_layout=true)
