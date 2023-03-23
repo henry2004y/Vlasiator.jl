@@ -34,18 +34,18 @@ using Distributed, ParallelDataTransfer, Glob
       ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
    end
 
-   axs[2,1].set_xlabel(pArgs1.strx; fontsize)
-   axs[2,2].set_xlabel(pArgs1.strx; fontsize)
-   axs[2,3].set_xlabel(pArgs1.strx; fontsize)
-   axs[1,1].set_ylabel(pArgs1.stry; fontsize)
-   axs[2,1].set_ylabel(pArgs1.stry; fontsize)
+   for ax in axs[end,:]
+      ax.set_xlabel(pArgs1.strx; fontsize)
+   end
+   for ax in axs[:,1]
+      ax.set_ylabel(pArgs1.stry; fontsize)
+   end
 
-   axs[1,1].set_title("Density"; fontsize)
-   axs[1,2].set_title("Velocity x"; fontsize)
-   axs[1,3].set_title("Velocity z"; fontsize)
-   axs[2,1].set_title("Thermal pressure"; fontsize)
-   axs[2,2].set_title("Magnetic field z"; fontsize)
-   axs[2,3].set_title("Electric field"; fontsize)
+   titles = ("Density", "Pth", "Vx", "Bz", "Vz", "E")
+
+   for (ax, title) in zip(axs, titles)
+      ax.set_title(title; fontsize)
+   end
 
    x1, x2 = Vlasiator.get_axis(pArgs1)
 
@@ -54,12 +54,18 @@ using Distributed, ParallelDataTransfer, Glob
 
    fakedata = zeros(Float32, length(range2), length(range1))
 
-   c1 = axs[1,1].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[1], cmap=cmaps[1])
-   c2 = axs[1,2].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[2], cmap=cmaps[2])
-   c3 = axs[1,3].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[3], cmap=cmaps[2])
-   c4 = axs[2,1].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[4], cmap=cmaps[1])
-   c5 = axs[2,2].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[5], cmap=cmaps[2])
-   c6 = axs[2,3].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[6], cmap=cmaps[1])
+   c1 = axs[1,1].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[1], cmap=cmaps[1])
+   c2 = axs[1,2].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[2], cmap=cmaps[2])
+   c3 = axs[1,3].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[3], cmap=cmaps[2])
+   c4 = axs[2,1].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[4], cmap=cmaps[1])
+   c5 = axs[2,2].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[5], cmap=cmaps[2])
+   c6 = axs[2,3].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[6], cmap=cmaps[1])
 
    cs = (c1, c2, c3, c4, c5, c6)
 
