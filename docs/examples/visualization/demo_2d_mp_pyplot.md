@@ -61,32 +61,23 @@ using Distributed, ParallelDataTransfer, Glob
    c5 = axs[2,2].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[5], cmap=cmaps[2])
    c6 = axs[2,3].pcolormesh(x1[range1], x2[range2], fakedata; norm=norms[6], cmap=cmaps[1])
 
-   format = matplotlib.ticker.FormatStrFormatter("%.1f")
-   cb1 = colorbar(c1; ax=axs[1,1], ticks=ticks[1], format)
-   cb1.ax.set_ylabel("[amu/cc]"; fontsize)
-   cb1.outline.set_linewidth(1.0)
-
-   cb2 = colorbar(c2; ax=axs[1,2], ticks=ticks[2])
-   cb2.ax.set_ylabel("[km/s]"; fontsize)
-   cb2.outline.set_linewidth(1.0)
-
-   cb3 = colorbar(c3; ax=axs[1,3], ticks=ticks[3])
-   cb3.ax.set_ylabel("[km/s]"; fontsize)
-   cb3.outline.set_linewidth(1.0)
-
-   cb4 = colorbar(c4; ax=axs[2,1], ticks=ticks[4], format)
-   cb4.ax.set_ylabel("[nPa]"; fontsize)
-   cb4.outline.set_linewidth(1.0)
-
-   cb5 = colorbar(c5; ax=axs[2,2], ticks=ticks[5], format, extend="both")
-   cb5.ax.set_ylabel("[nT]"; fontsize)
-   cb5.outline.set_linewidth(1.0)
-
-   cb6 = colorbar(c6; ax=axs[2,3], ticks=ticks[6], extend="max")
-   cb6.ax.set_ylabel("[mV/m]"; fontsize)
-   cb6.outline.set_linewidth(1.0)
-
    cs = (c1, c2, c3, c4, c5, c6)
+
+   format = matplotlib.ticker.FormatStrFormatter("%.1f")
+
+   cb1 = colorbar(c1; ax=axs[1,1], ticks=ticks[1], format)
+   cb2 = colorbar(c2; ax=axs[1,2], ticks=ticks[2])
+   cb3 = colorbar(c3; ax=axs[1,3], ticks=ticks[3])
+   cb4 = colorbar(c4; ax=axs[2,1], ticks=ticks[4], format)
+   cb5 = colorbar(c5; ax=axs[2,2], ticks=ticks[5], format, extend="both")
+   cb6 = colorbar(c6; ax=axs[2,3], ticks=ticks[6], extend="max")
+
+   ylabels = ("[amu/cc]", "[km/s]", "[km/s]", "[nPa]", "[nT]", "[mV/m]")
+
+   for (i, cb) in enumerate((cb1, cb2, cb3, cb4, cb5, cb6))
+      cb.ax.set_ylabel(ylabels[i]; fontsize)
+      cb.outline.set_linewidth(1.0)
+   end
 
    return fig, cs, range1, range2
 end

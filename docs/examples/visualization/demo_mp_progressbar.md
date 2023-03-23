@@ -129,16 +129,16 @@ end
    c2 = axsR[2].pcolormesh(x, y, fakedata, norm=cnorm2, cmap=cmap)
 
    cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04)
-   cb1.ax.set_ylabel("[km/s]"; fontsize)
-   cb1.outline.set_linewidth(1.0)
-
    cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
-   cb2.ax.set_ylabel("[km/s]"; fontsize)
-   cb2.outline.set_linewidth(1.0)
-
-   fig.suptitle("Density Pulse Run", fontsize="xx-large")
 
    cs = (c1, c2)
+
+   for cb in (cb1, cb2)
+      cb.ax.set_ylabel("[km/s]"; fontsize)
+      cb.outline.set_linewidth(1.0)
+   end
+
+   fig.suptitle("Density Pulse Run", fontsize="xx-large")
 
    return fig, subfigs, ls, vlines, cs
 end
