@@ -1,7 +1,7 @@
 name = "VlasiatorPyPlot"
 uuid = "de93d4bb-68ab-4e1d-9036-cf3c624bd395"
 authors = ["hyzhou <hyzhou@umich.edu>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
