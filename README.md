@@ -14,6 +14,9 @@
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue">
   </a>
+  <a href="https://doi.org/10.5281/zenodo.7769707">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.7769707.svg">
+  </a>
 </p>
 
 Data processing and analyzing tool for the collisionless ion-kinetic plasma physics numerical model [Vlasiator](https://github.com/fmihpc/vlasiator).
