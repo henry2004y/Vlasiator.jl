@@ -356,7 +356,7 @@ getvelocity(meta::MetaVLSV, vcellids::Vector{Int32}, vcellf::Vector{T};
     getpressure(vmesh::VMeshInfo, vcellids, vcellf)
 
 Get pressure tensor (6 components: Pxx, Pyy, Pzz, Pyz, Pzx, Pxy) of `species` from `VDF`
-associated with `meta`, pᵢⱼ = m/3 * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
+associated with `meta`, pᵢⱼ = m * ∫ (v - u)ᵢ(v - u)ⱼ * f(r,v) dV.
 Alternatively, one can directly pass `vcellids`, `vcellf`, as in [`getdensity`](@ref).
 """
 function getpressure(meta::MetaVLSV, VDF::Array{T};
