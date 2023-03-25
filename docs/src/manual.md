@@ -242,14 +242,14 @@ Vlasiator.jl does not include any plotting library as explicit dependency, but i
 
 Currently PyPlot provides the most complete and fine-tuned plotting capabilities. Plotting with PyPlot by accepting `MetaVLSV` as the first argument is supported via [`VlasiatorPyPlot`](https://github.com/henry2004y/Vlasiator.jl/VlasiatorPyPlot).
 Plots is a collection of plotting libraries with a uniform frontend, but it lacks fine-tuned supports and consistent APIs between different backends.
-Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
+Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~20s for the first plot on Julia 1.9. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
 More [examples](@ref examples) of customized plots can be found in the repository.
 
 ### PyPlot Backend
 
 To trigger Matplotlib plotting that supports `MetaVLSV`, `using VlasiatorPyPlot`.
-All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by their Matplotlib counterparts, e.g. font width, font size, colormap, etc. Users are encouraged to read the [Matplotlib](https://matplotlib.org/) documentation for details.
+All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by Matplotlib, e.g. font width, font size, colormap, etc. For detailed adjustment of plots, please refer to the [Matplotlib](https://matplotlib.org/) documentation for details.
 
 !!! warning
     The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`. See [Matplotlib's two interfaces](https://aaltoscicomp.github.io/python-for-scicomp/data-visualization/#matplotlib-has-two-different-interfaces) for the history of the interfaces.
@@ -330,7 +330,7 @@ For a full list available optional arguments, please refer to the [doc for each 
 
 ### Plots Backend
 
-To trigger Plots.jl plotting, `using Plots`. This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but several other plotting libraries are also supported.
+To trigger Plots.jl plotting, `using Plots`. This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but many other plotting libraries are also supported.
 
 - Scaler colored contour from 2D simulation
 
@@ -353,8 +353,6 @@ meta = load("bulk.1d.vlsv")
 location = [0.0, 0.0, 0.0]
 vdfslice(meta, location)
 ```
-
-The keyword arguments are the same as in PyPlot shown in the [API](internal.md#Vlasiator.vdfslice).
 
 ### Makie Backend
 
@@ -389,7 +387,7 @@ vlslices(meta, var)
 - 2D slice of VDFs at a spatial cell
 
 ```julia
-vdfslice(meta, location)
+VlasiatorMakie.vdfslice(meta, location)
 ```
 
 - Orthognal slices of VDFs at a spatial cell
