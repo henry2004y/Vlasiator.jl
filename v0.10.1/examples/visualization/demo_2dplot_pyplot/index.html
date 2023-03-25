@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>2D contour plot with streamlines and levels · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_2dplot_pyplot/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>2D contour plot with streamlines and levels</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>2D contour plot with streamlines and levels</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_2dplot_pyplot.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_2d_contour_streamline_levels"><a class="docs-heading-anchor" href="#demo_2d_contour_streamline_levels">2D contour plot with streamlines and levels</a><a id="demo_2d_contour_streamline_levels-1"></a><a class="docs-heading-anchor-permalink" href="#demo_2d_contour_streamline_levels" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to plot 2D colored contour in a region of interest with streamlines and levels.</p><pre><code class="language-julia hljs">using VlasiatorPyPlot
+using Vlasiator: RE
+
+function main(file::String, varname::String)
+   meta = load(file)
+
+   fig, ax = plt.subplots(1,1; figsize=(8,6), constrained_layout=true)
+
+   pcolormesh(meta, varname, ax)
+   streamplot(meta, &quot;rho_v&quot;, ax; comp=&quot;xy&quot;, color=&quot;w&quot;, density=2.0)
+
+   cbar = ax.collections[end].colorbar
+   boxcoords = Float64[0, 20, -15, 15]
+   ax.set_xlim([boxcoords[1],boxcoords[2]])
+   ax.set_ylim([boxcoords[3],boxcoords[4]])
+
+   # Contour line at a specific level
+   pArgs = Vlasiator.set_args(meta, varname, EARTH)
+   x, y = Vlasiator.get_axis(pArgs)
+   data = Vlasiator.prep2d(meta, varname)&#39;
+   CS = plt.contour(x, y, data, levels = [1e7],
+                    colors=(&quot;k&quot;,),linestyles=(&quot;-&quot;,),linewidths=(0.5,))
+
+   # Add a rectangular box region
+   boxrange = (250:299, 200:249)
+
+   x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1])
+   y = LinRange(meta.coordmin[2], meta.coordmax[2], meta.ncells[2])
+   # Construct the patch
+   rect = matplotlib.patches.Rectangle((x[boxrange[1][1]]/RE, y[boxrange[2][1]]/RE),
+      (x[boxrange[1][end]] - x[boxrange[1][1]])/RE,
+      (y[boxrange[2][end]] - y[boxrange[2][1]])/RE,
+      linewidth=1, edgecolor=&quot;r&quot;, facecolor=&quot;none&quot;)
+
+   ax.add_patch(rect)
+end
+
+
+file = &quot;bulk.0000501.vlsv&quot;
+nameρ = &quot;rho&quot;
+
+main(file, nameρ)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Saturday 25 March 2023 12:34">Saturday 25 March 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
