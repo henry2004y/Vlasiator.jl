@@ -17,6 +17,9 @@
   <a href="https://doi.org/10.5281/zenodo.7769707">
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.7769707.svg">
   </a>
+  <a style="border-width:0" href="https://doi.org/10.21105/joss.04906">
+    <img src="https://joss.theoj.org/papers/10.21105/joss.04906/status.svg" alt="DOI badge" >
+  </a>
 </p>
 
 Data processing and analyzing tool for the collisionless ion-kinetic plasma physics numerical model [Vlasiator](https://github.com/fmihpc/vlasiator).

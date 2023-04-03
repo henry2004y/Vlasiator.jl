@@ -118,4 +118,4 @@ Add [Plots.jl](https://docs.juliaplots.org/stable/) through the pkg manager. Bui
 
 ## Author
 
-This module is written by Hongyang Zhou.
+This module is written by Hongyang Zhou. For citing Vlasiator.jl, please refer to [![DOI](https://joss.theoj.org/papers/10.21105/joss.04906/status.svg)](https://doi.org/10.21105/joss.04906).
