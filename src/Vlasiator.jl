@@ -11,7 +11,7 @@ using LazyGrids: ndgrid
 using LaTeXStrings
 using Dates
 using Parsers
-using PrecompileTools
+using PrecompileTools: @setup_workload, @compile_workload
 
 include("utility/rotation.jl")
 include("utility/log.jl")
@@ -44,9 +44,11 @@ export
    compute_flux_function, find_reconnection_points
 
 # PrecompileTools
-@compile_workload begin
+@setup_workload begin
    initfile = joinpath(@__DIR__, "../test/init.vlsv")
-   meta = load(initfile)
+   @compile_workload begin
+      meta = load(initfile)
+   end
 end
 
 end
