@@ -99,13 +99,13 @@ end
    footer = read(fid, String) |> parsexml |> root
 end
 
-@inline function getdatatype(datatype::String, datasize::Int)
+@inline function getdatatype(datatype::Symbol, datasize::Int)
    T::DataType =
-      if datatype == "float"
+      if datatype == :float
          datasize == 4 ? Float32 : Float64
-      elseif datatype == "int"
+      elseif datatype == :int
          datasize == 4 ? Int32 : Int
-      elseif datatype == "uint"
+      elseif datatype == :uint
          datasize == 4 ? UInt32 : UInt
       else
          throw(ArgumentError("unknown type $datatype"))
@@ -120,7 +120,7 @@ function getvarinfo(nodevar::AbstractVector{EzXML.Node}, name::String)
       if var["name"] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
-         datatype = var["datatype"]
+         datatype = Symbol(var["datatype"])
          vectorsize = Parsers.parse(Int, var["vectorsize"])
          offset = Parsers.parse(Int, nodecontent(var))
          isFound = true
@@ -142,7 +142,7 @@ end
    for p in nodeparam
       if p["name"] == name
          datasize = Parsers.parse(Int, p["datasize"])
-         datatype = p["datatype"]
+         datatype = Symbol(p["datatype"])
          offset = Parsers.parse(Int, nodecontent(p))
          isFound = true
          break
@@ -165,7 +165,7 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
       if var[attr] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
-         datatype = var["datatype"]
+         datatype = Symbol(var["datatype"])
          vectorsize = Parsers.parse(Int, var["vectorsize"])
          offset = Parsers.parse(Int, nodecontent(var))
          isFound = true
