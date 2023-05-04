@@ -99,13 +99,13 @@ end
    footer = read(fid, String) |> parsexml |> root
 end
 
-@inline function getdatatype(datatype::String, datasize::Int)
-   T::Type =
-      if datatype == "float"
+@inline function getdatatype(datatype::Symbol, datasize::Int)
+   T::DataType =
+      if datatype == :float
          datasize == 4 ? Float32 : Float64
-      elseif datatype == "int"
+      elseif datatype == :int
          datasize == 4 ? Int32 : Int
-      elseif datatype == "uint"
+      elseif datatype == :uint
          datasize == 4 ? UInt32 : UInt
       else
          throw(ArgumentError("unknown type $datatype"))
@@ -120,7 +120,7 @@ function getvarinfo(nodevar::AbstractVector{EzXML.Node}, name::String)
       if var["name"] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
-         datatype = var["datatype"]
+         datatype = Symbol(var["datatype"])
          vectorsize = Parsers.parse(Int, var["vectorsize"])
          offset = Parsers.parse(Int, nodecontent(var))
          isFound = true
@@ -142,7 +142,7 @@ end
    for p in nodeparam
       if p["name"] == name
          datasize = Parsers.parse(Int, p["datasize"])
-         datatype = p["datatype"]
+         datatype = Symbol(p["datatype"])
          offset = Parsers.parse(Int, nodecontent(p))
          isFound = true
          break
@@ -165,7 +165,7 @@ function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
       if var[attr] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
-         datatype = var["datatype"]
+         datatype = Symbol(var["datatype"])
          vectorsize = Parsers.parse(Int, var["vectorsize"])
          offset = Parsers.parse(Int, nodecontent(var))
          isFound = true
@@ -250,10 +250,17 @@ function load(file::AbstractString)
    @views begin
       nodevar = ns[ibegin_[1]:iend_[1]]
       nodeparam = ns[ibegin_[2]:iend_[2]]
-      nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
-      nodecellblocks = ns[ibegin_[4]:iend_[4]]
-      nodeblockvar = ns[ibegin_[5]:iend_[5]]
-      nodeblockid = ns[ibegin_[6]:iend_[6]]
+      if ibegin_[3] != 0
+         nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
+         nodecellblocks = ns[ibegin_[4]:iend_[4]]
+         nodeblockvar = ns[ibegin_[5]:iend_[5]]
+         nodeblockid = ns[ibegin_[6]:iend_[6]]
+      else # non-standard Vlasiator outputs with no vspace meta data
+         nodecellwithVDF = ns[1:0]
+         nodecellblocks = ns[1:0]
+         nodeblockvar = ns[1:0]
+         nodeblockid = ns[1:0]
+      end
    end
 
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
@@ -332,7 +339,11 @@ function load(file::AbstractString)
    vars = [node["name"] for node in n.var]
 
    hasvdf = let
-      n.cellwithVDF[1]["arraysize"] != "0"
+      if length(n.cellwithVDF) == 0
+         false
+      else
+         n.cellwithVDF[1]["arraysize"] != "0"
+      end
    end
 
    # File IOstream is not closed for sake of data processing later.

@@ -1,0 +1,7 @@
+[testdata]
+git-tree-sha1 = "88e414a79028fb2a89f5ce46bc9c2e308eab735d"
+lazy = true
+
+    [[testdata.download]]
+    url = "https://github.com/henry2004y/vlsv_data/raw/master/testdata.tar.gz"
+    sha256 = "6ffdfd24b3096be18f16f3f9d773f3cca42b955c1cfb529f20c4c47cfc06d460"

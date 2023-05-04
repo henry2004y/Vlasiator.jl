@@ -8,11 +8,11 @@ Private = false
 Order = [:constant, :type, :function]
 ```
 
-## PyPlot helpers
+## PyPlot Wrapper APIs
 
 ```@autodocs
-Modules = [Vlasiator]
-Pages   = ["plot/pyplot.jl"]
+Modules = [VlasiatorPyPlot]
+Pages   = ["VlasiatorPyPlot.jl"]
 ```
 
 ## Private APIs

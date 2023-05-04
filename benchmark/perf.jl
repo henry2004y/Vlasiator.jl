@@ -1,7 +1,7 @@
 # Script for generating benchmark results in
 # https://henry2004y.github.io/Vlasiator.jl/dev/benchmark/
 
-using Vlasiator, PyPlot
+using Vlasiator, PyPlot, VlasiatorPyPlot
 using BenchmarkTools
 
 # Turn off GUI for Matplotlib

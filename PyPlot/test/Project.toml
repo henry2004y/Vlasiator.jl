@@ -1,0 +1,11 @@
+[deps]
+LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
+Vlasiator = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+PyPlot = "2.9"
+Vlasiator = "0.10"

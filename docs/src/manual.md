@@ -20,12 +20,12 @@ A bunch of physical constants are predefined in [Vlasiator.jl](https://github.co
 
 ## Loading VLSV data
 
-A quick way to obtain small test data can be found in [F&Q](log.md#Test-Data). Larger open-access data can be found from the references in [Vlasiator publications](https://www.helsinki.fi/en/researchgroups/vlasiator/publications-and-presentations), e.g. [Takahashi+ 2020](https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/).
+A quick way to obtain small test data can be found in [F&Q](log.md#Test-Data). Larger open-access data can be found from the references in [Vlasiator publications](https://www.helsinki.fi/en/researchgroups/vlasiator/publications-and-presentations), e.g. [Takahashi+ 2020](https://a3s.fi/swift/v1/AUTH_81f1cd490d494224880ea77e4f98490d/vlasiator-2d-afc/). In this tutorial we are using the 2D test file `bulk.2d.vlsv` from [vlsv_data](https://github.com/henry2004y/vlsv_data) if not specified.
 
 - Read meta data
 
 ```julia
-file = "bulk.0000004.vlsv"
+file = "bulk.2d.vlsv"
 meta = load(file)
 ```
 
@@ -52,9 +52,9 @@ A list of utility functions has been implemented for checking variable status. S
 - Read variable
 
 ```julia
-data = meta["proton/vg_rho"]
+data = meta["CellID"]
 # Or equivalently
-data = readvariable(meta, "proton/vg_rho")
+data = readvariable(meta, "CellID")
 ```
 
 The variable reading is designed for cells, which takes cell ID(s) as the 3rd argument if specified. The same interface works for both [DCCRG](https://github.com/fmihpc/dccrg) grid (for storing cell centered quantities like plasma moments) and [FS](https://github.com/fmihpc/fsgrid) grid (for storing field solver related quantities on a uniform high resolution mesh) variables. By default the returned DCCRG variable array is sorted by cell IDs. If in any case you want the original unsorted version as being stored in the file, use `readvariable(meta, var, false)`.
@@ -64,7 +64,7 @@ The variable reading is designed for cells, which takes cell ID(s) as the 3rd ar
 ```julia
 loc = [2.0, 0.0, 0.0]
 id = getcell(meta, loc)
-readvariable(meta, "proton/vg_rho", id)
+readvariable(meta, "CellID", id)
 ```
 
 - Get variable along a line between two points
@@ -80,6 +80,9 @@ var_extract = readvariable(meta, "VA", cellids)
 - Extract variable at a static cell ID from a sequence of files under the same grid
 
 ```julia
+files = ["bulk.2d.vlsv"]
+var = "CellID"
+id = 1
 extractsat(files, var, id)
 ```
 
@@ -190,6 +193,8 @@ which can also be found as keys of dictionary in [vlsvvariables.jl](https://gith
 We can also calculate plasma moments from the saved VLSV velocity space distributions.
 
 ```julia
+meta = load("bulk.1d.vlsv")
+cellid = 5
 # VDF cell indexes and values, with sparsity
 vcellids, vcellf = readvcells(meta, cellid; species="proton")
 
@@ -235,16 +240,16 @@ However, usually in practice there would be only about 1% nonzero values. The mo
 
 Vlasiator.jl does not include any plotting library as explicit dependency, but it offers plotting recipes/wrappers once the target plotting package is used.
 
-Currently PyPlot provides the most complete and fine-tuned plotting capabilities.
-Plots is a collection of plotting libraries with a uniform frontend, but it lacks detailed supports and consistent APIs.
-Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~40s for the first plot on Julia 1.8. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
+Currently PyPlot provides the most complete and fine-tuned plotting capabilities. Plotting with PyPlot by accepting `MetaVLSV` as the first argument is supported via [`VlasiatorPyPlot`](https://github.com/henry2004y/Vlasiator.jl/VlasiatorPyPlot).
+Plots is a collection of plotting libraries with a uniform frontend, but it lacks fine-tuned supports and consistent APIs between different backends.
+Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~20s for the first plot on Julia 1.9. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
-More [examples]((https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) of customized plots can be found in the repository.
+More [examples](@ref examples) of customized plots can be found in the repository.
 
 ### PyPlot Backend
 
-To trigger Matplotlib plotting, `using PyPlot`.
-All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by their Matplotlib counterparts, e.g. font width, font size, colormap, etc. Users are encouraged to read the [Matplotlib](https://matplotlib.org/) documentation for details.
+To trigger Matplotlib plotting that supports `MetaVLSV`, `using VlasiatorPyPlot`.
+All the functions with identical names as in Matplotlib accept all possible keyword arguments supported by Matplotlib, e.g. font width, font size, colormap, etc. For detailed adjustment of plots, please refer to the [Matplotlib](https://matplotlib.org/) documentation for details.
 
 !!! warning
     The method call to certain axes is not dispatched, e.g. `ax.plot`; as an alternative, one needs to pass `ax` as the third argument to the functions, e.g. `plot(meta, "rho", ax)`. See [Matplotlib's two interfaces](https://aaltoscicomp.github.io/python-for-scicomp/data-visualization/#matplotlib-has-two-different-interfaces) for the history of the interfaces.
@@ -252,13 +257,13 @@ All the functions with identical names as in Matplotlib accept all possible keyw
 - Scalar colored contour from 2D simulation
 
 ```julia
-pcolormesh(meta, "rho")
+pcolormesh(meta, "n")
 ```
 
 - Vector z-component colored contour from 2D simulation in a manually set range
 
 ```julia
-pcolormesh(meta, "rho", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
+pcolormesh(meta, "n", comp=:z, colorscale=Log, axisunit=EARTH, vmin=1e6, vmax=2e6)
 ```
 
 - Vz colored contour from 2D simulation with prescribed colormap
@@ -270,19 +275,19 @@ pcolormesh(meta, "proton/vg_v", comp=:z, colorscale=Linear, cmap=matplotlib.cm.R
 - Derived quantity colored contour from 2D simulation (as long as the input variable is in the predefined dictionary)
 
 ```julia
-pcolormesh(meta, "b", comp=:z, colorscale=Linear, axisunit=SI)
+pcolormesh(meta, "Bmag", comp=:z, colorscale=Linear, axisunit=SI)
 ```
 
 - Streamline from 2D simulation
 
 ```julia
-streamplot(meta, "rho_v", comp="xy")
+streamplot(meta, "proton/vg_v", comp="xy")
 ```
 
 - Quiver from 2D simulation
 
 ```julia
-quiver(meta, "rho_v", comp="xy")
+quiver(meta, "proton/vg_v", comp="xy")
 ```
 
 The `comp` option is used to specify the two vector components.
@@ -292,27 +297,22 @@ You can choose to use a linear/log/symlog color scale by setting keyword `colors
 - Mesh denoted by cell centers
 
 ```julia
-plotmesh(meta; projection="z", color="w")
+plotmesh(meta; projection="z", color="k")
 ```
 
 - Cut slice colored contour from 3D simulation
 
 ```julia
+meta = load("bulk.amr.vlsv")
 pcolormesh(meta, "proton/vg_rho", normal=:y, origin=0.0)
 ```
 
-- Velocity distribution slice plot near a given spatial location `coordinates = [0.0, 0.0, 0.0]`
+- Velocity distribution slice plot near a given spatial location
 
 ```julia
+meta = load("bulk.1d.vlsv")
+coordinates = [0.0, 0.0, 0.0]
 vdfslice(meta, coordinates)
-```
-
-- Extracted quantity line plot
-
-```julia
-rho_extract = vec(rho_extract)
-loc = range(x1, x2, length=length(rho_extract))
-plot(loc, rho_extract)
 ```
 
 - Quick interactive REPL-based function for data inspection
@@ -330,27 +330,29 @@ For a full list available optional arguments, please refer to the [doc for each 
 
 ### Plots Backend
 
-To trigger Plots.jl plotting, `using Plots`. This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but several other plotting libraries are also supported.
+To trigger Plots.jl plotting, `using Plots`. This backend supports all available attributes provided by [Plots.jl](http://docs.juliaplots.org/latest/). By default it uses [GR](https://gr-framework.org/), but many other plotting libraries are also supported.
 
 - Scaler colored contour from 2D simulation
 
 ```julia
+var = "n"
 heatmap(meta, var, aspect_ratio=:equal, c=:turbo)
 ```
 
 - Scaler colored contour with lines from 2D simulation
 
 ```julia
+var = "n"
 contourf(meta, var)
 ```
 
 - VDF projected slice in a normal direction
 
 ```julia
+meta = load("bulk.1d.vlsv")
+location = [0.0, 0.0, 0.0]
 vdfslice(meta, location)
 ```
-
-The keyword arguments are the same as in the PyPlot shown in the [API](internal.md#Vlasiator.vdfslice).
 
 ### Makie Backend
 
@@ -385,7 +387,7 @@ vlslices(meta, var)
 - 2D slice of VDFs at a spatial cell
 
 ```julia
-vdfslice(meta, location)
+VlasiatorMakie.vdfslice(meta, location)
 ```
 
 - Orthognal slices of VDFs at a spatial cell
@@ -407,14 +409,15 @@ The interactive plots are available through the OpenGL backend of Makie `GLMakie
 We are able to compute derived quantities from an original VLSV file and generate a new VLSV output with new quantities included.
 
 ```julia
-vmag = readvariable(meta, "Vmag", meta.cellid)
-pa = readvariable(meta, "Panisotropy", meta.cellid)
+meta = load("bulk.1d.vlsv")
+vmag = readvariable(meta, "Vmag")
+pa = readvariable(meta, "Panisotropy")
 vars = Vector{Tuple{VecOrMat, String, VarInfo}}(undef, 0)
-# require LaTeXStrings.jl
+using LaTeXStrings
 push!(vars, (vmag, "vmag", VarInfo("m/s", L"$\mathrm{m}/mathrm{s}$", L"$V$", "")))
 push!(vars, (pa, "panisotropy", VarInfo("", "", "", "")))
 
-write_vlsv("bulk.vlsv", "bulk_new.vlsv", vars)
+write_vlsv("bulk.1d.vlsv", "bulk.1d_new.vlsv", vars)
 ```
 
 !!! note
@@ -432,7 +435,7 @@ write_vtk(file)
 
 This function accepts either string of file names or `MetaVLSV`.
 
-To see the full list of options, please refer to the documentation in [API Reference](internal.md). Example usage can be found [here](https://github.com/henry2004y/Vlasiator.jl/blob/master/examples/demo_convert2vti.jl).
+To see the full list of options, please refer to the documentation in [API Reference](internal.md). Example usage can be found [here](@ref demo_convertvtk).
 
 !!! warning
     As of ParaView 5.9.1, there are [display issues](https://discourse.paraview.org/t/vthb-file-structure/7224) with `VTKOverlappingAMR`. However, we can read the generated image files directly. There is also an keyword argument for `write_vtk` called `maxamronly`: when it is set to `true`, then only the image file at the highest refinement level is generated.
@@ -447,11 +450,11 @@ file = "logfile.txt"
 timestamps, speed = readlog(file)
 ```
 
-See a live example at [demo_log.jl](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples/demo_log.jl).
+Here is a live [demo](@ref demo_log).
 
 ## Examples
 
-More [examples](https://github.com/henry2004y/Vlasiator.jl/tree/master/examples) are provided about
+More [examples](@ref examples) are provided about
 
 - Plotting with PyPlot
 - Plotting with Plots

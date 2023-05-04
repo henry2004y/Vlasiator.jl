@@ -1,0 +1,16 @@
+name = "VlasiatorPyPlot"
+uuid = "de93d4bb-68ab-4e1d-9036-cf3c624bd395"
+authors = ["hyzhou <hyzhou@umich.edu>"]
+version = "0.1.1"
+
+[deps]
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
+Vlasiator = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
+
+[compat]
+PyPlot = "2.9"
+Reexport = "1.2"
+Vlasiator = "0.10"
+julia = "1.7"
