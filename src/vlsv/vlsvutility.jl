@@ -997,12 +997,13 @@ end
 end
 
 """
-    getnearestcellwithvdf(meta, id::Int) -> Int
+    getnearestcellwithvdf(meta, id::Int, species::String="proton") -> Int
 
-Find the nearest spatial cell with VDF saved of a given cell `id` associated with `meta`.
+Find the nearest spatial cell with VDF saved for `species` of a given cell `id` associated
+with `meta`.
 """
-function getnearestcellwithvdf(meta::MetaVLSV, id::Int)
-   cells = getcellwithvdf(meta)
+function getnearestcellwithvdf(meta::MetaVLSV, id::Int, species::String="proton")
+   cells = getcellwithvdf(meta, species)
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords_orig = getcellcoordinates(meta, id)
    coords = [zeros(SVector{3}) for _ in cells]
