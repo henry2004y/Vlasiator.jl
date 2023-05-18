@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Pressure tensor · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_tensor_pyplot/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Pressure tensor</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Pressure tensor</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_tensor_pyplot.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_tensor"><a class="docs-heading-anchor" href="#demo_tensor">Pressure tensor</a><a id="demo_tensor-1"></a><a class="docs-heading-anchor-permalink" href="#demo_tensor" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to plot the pressure tensor from one snapshot.</p><pre><code class="language-julia hljs">using Vlasiator, VlasiatorPyPlot, LaTeXStrings, Printf
+
+function main()
+   file = &quot;bulk.0001582.vlsv&quot;
+
+   axisunit = EARTH
+   colorscale = Linear
+   cmap = matplotlib.cm.turbo
+
+   vars = [&quot;proton/vg_ptensor_diagonal&quot;, &quot;proton/vg_ptensor_offdiagonal&quot;]
+
+   #####
+   meta = load(file)
+
+   pArgs1 = Vlasiator.set_args(meta, vars[1], axisunit; normal=:none)
+   pArgs2 = Vlasiator.set_args(meta, vars[2], axisunit; normal=:none)
+
+   x, y = Vlasiator.get_axis(pArgs1)
+   # [nPa]
+   pxx = Vlasiator.prep2d(meta, vars[1], :x)&#39; .* 1e9
+   pyy = Vlasiator.prep2d(meta, vars[1], :y)&#39; .* 1e9
+   pzz = Vlasiator.prep2d(meta, vars[1], :z)&#39; .* 1e9
+   pyz = Vlasiator.prep2d(meta, vars[2], :1)&#39; .* 1e9
+   pxz = Vlasiator.prep2d(meta, vars[2], :2)&#39; .* 1e9
+   pxy = Vlasiator.prep2d(meta, vars[2], :3)&#39; .* 1e9
+
+   P = (pxx, pyy, pzz, pyz, pxz, pxy)
+   P_str = (&quot;Pxx&quot;, &quot;Pyy&quot;, &quot;Pzz&quot;, &quot;Pyz&quot;, &quot;Pxz&quot;, &quot;Pxy&quot;)
+
+   vmin = minimum(minimum.(P))
+   vmax = maximum(maximum.(P))
+
+   cnorm1, cticks1 = set_colorbar(colorscale, vmin, vmax)
+
+   fig, axs = subplots(3,2,
+      figsize=(6, 12), sharex=true, sharey=true, constrained_layout=true)
+
+   c1 = axs[1].pcolormesh(x, y, pxx; norm=cnorm1, cmap)
+
+   for i in eachindex(axs)[2:end]
+      axs[i].pcolormesh(x, y, P[i]; norm=cnorm1, cmap)
+   end
+
+   for (i, ax) in enumerate(axs)
+      ax.set_aspect(&quot;equal&quot;)
+      ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.set_title(P_str[i])
+   end
+
+   for ax in axs[3,:]
+      ax.set_xlabel(L&quot;x [$R_E$]&quot;)
+   end
+
+   for ax in axs[:,1]
+      ax.set_ylabel(L&quot;y [$R_E$]&quot;)
+   end
+
+   # One colorbar for all subplots
+   cb1 = colorbar(c1; ax=axs, ticks=cticks1, fraction=0.046, pad=0.04)
+   cb1.ax.set_ylabel(&quot;[nPa]&quot;)
+   cb1.outline.set_linewidth(1.0)
+
+   str_title = @sprintf &quot;Pressure Tensor at t = %4.1fs&quot; meta.time
+
+   fig.suptitle(str_title, fontsize=&quot;xx-large&quot;)
+
+   savefig(&quot;ptensor.png&quot;, bbox_inches=&quot;tight&quot;)
+end
+
+main()</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 18 May 2023 02:09">Thursday 18 May 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
