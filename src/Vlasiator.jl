@@ -4,7 +4,7 @@ using StaticArrays: SVector, @SVector, SMatrix, @SMatrix
 using Printf: @sprintf
 using LinearAlgebra: ×, dot, ⋅, norm, normalize, normalize!
 using Statistics: mean
-using XML
+using XML: Node, LazyNode, Element, Document, children, tag, attributes, value, write
 using Mmap: mmap
 using WriteVTK
 using LazyGrids: ndgrid

@@ -1373,9 +1373,9 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       # Generate vthb file
       filemeta = outdir*meta.name[1:end-4]*"vthb"
 
-      doc = XML.Document()
+      doc = Document()
 
-      elm = XML.Element("VTKFile";
+      elm = Element("VTKFile";
          type="vtkOverlappingAMR",
          version="1.1",
          byte_order="LittleEndian", # x86
@@ -1384,7 +1384,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       push!(doc, elm)
 
       origin = @sprintf "%f %f %f" coordmin[1] coordmin[2] coordmin[3]
-      xamr = XML.Element("vtkOverlappingAMR";
+      xamr = Element("vtkOverlappingAMR";
          origin=origin,
          grid_description="XYZ"
       )
@@ -1392,7 +1392,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
 
       @inbounds for i = 0:maxamr
          spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
-         xBlock = XML.Element("Block";
+         xBlock = Element("Block";
             level=string(i),
             spacing=spacing_str
          )
@@ -1401,7 +1401,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          amr_box = (0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1)
          box_str = @sprintf("%d %d %d %d %d %d", amr_box[1], amr_box[2], amr_box[3],
             amr_box[4], amr_box[5], amr_box[6])
-         xDataSet = XML.Element("DataSet";
+         xDataSet = Element("DataSet";
             index="0",
             amr_box=box_str,
             file=filedata[i+1]
@@ -1409,7 +1409,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          push!(xBlock, xDataSet)
       end
 
-      XML.write(filemeta, doc)
+      write(filemeta, doc)
    end
 
    return
@@ -1518,7 +1518,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
       [offset, [sizeof(newvars[i][1]) for i in eachindex(newvars)[1:end-1]]...])
    # Create new children for footer
    for i in eachindex(newvars, offsets)
-      elm = XML.Element("VARIABLE", string(offsets[i]);
+      elm = Element("VARIABLE", string(offsets[i]);
          arraysize=string(length(newvars[i][1])),
          datasize=string(sizeof(eltype(newvars[i][1]))),
          datatype=
@@ -1557,7 +1557,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
       for var in newvars
          write(io, var[1])
       end
-      XML.write(io, footer)
+      write(io, footer)
    end
 
    return

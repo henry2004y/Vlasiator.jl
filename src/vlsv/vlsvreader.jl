@@ -1,6 +1,6 @@
 # VLSV reader in Julia
 
-const NodeVector = SubArray{XML.LazyNode, 1, Vector{XML.LazyNode}, Tuple{UnitRange{Int64}},
+const NodeVector = SubArray{LazyNode, 1, Vector{LazyNode}, Tuple{UnitRange{Int64}},
    true}
 
 "Velocity mesh information."
@@ -96,7 +96,6 @@ end
    # Obtain the offset of the XML
    offset = read(fid, Int)
    seek(fid, offset)
-   #footer = read(fid, String) |> parsexml |> root
    str = read(fid, String)
    footer = parse(str, LazyNode)
 end
@@ -119,7 +118,7 @@ function getvarinfo(nodevar::NodeVector, name::String)
    isFound = false
 
    for nv in nodevar
-      var = XML.attributes(nv)
+      var = attributes(nv)
       if var["name"] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
@@ -143,7 +142,7 @@ end
    isFound = false
 
    for p in nodeparam
-      param = XML.attributes(p)
+      param = attributes(p)
       if param["name"] == name
          datasize = Parsers.parse(Int, param["datasize"])
          datatype = Symbol(param["datatype"])
@@ -160,21 +159,21 @@ end
    T, offset
 end
 
-function Base.findall(xpath::AbstractString, nodes::Vector{XML.LazyNode})
+function Base.findall(xpath::AbstractString, nodes::Vector{LazyNode})
    findall(x -> tag(x) == xpath, nodes)
 end
 
-function Base.findfirst(xpath::AbstractString, nodes::Vector{XML.LazyNode})
+function Base.findfirst(xpath::AbstractString, nodes::Vector{LazyNode})
    findfirst(x -> tag(x) == xpath, nodes)
 end
 
 "General inquiry of element `tag` with `tagname` and `attr`."
-function getObjInfo(ns::Vector{XML.LazyNode}, name::String, tagname::String, attr::String)
+function getObjInfo(ns::Vector{LazyNode}, name::String, tagname::String, attr::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
    for i in findall(tagname, ns)
-      var = XML.attributes(ns[i])
+      var = attributes(ns[i])
       if var[attr] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
@@ -233,9 +232,6 @@ function load(file::AbstractString)
    fid = open(file, "r")
 
    footer = getfooter(fid)
-
-   #ns = elements(footer)
-   # May have extra allocation!
    ns = children(footer[end])
 
    ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
@@ -418,7 +414,7 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
-@inline function readcoords(fid::IOStream, ns::Vector{XML.LazyNode}, qstring::String)
+@inline function readcoords(fid::IOStream, ns::Vector{LazyNode}, qstring::String)
    node = ns[findfirst(qstring, ns)]
 
    arraysize = Parsers.parse(Int, attributes(node)["arraysize"])
@@ -432,7 +428,7 @@ end
    coord
 end
 
-function readvcoords(fid::IOStream, ns::Vector{XML.LazyNode}, species::String, qstring::String)
+function readvcoords(fid::IOStream, ns::Vector{LazyNode}, species::String, qstring::String)
    local coord
    is = findall(qstring, ns)
 
@@ -453,7 +449,7 @@ function readvcoords(fid::IOStream, ns::Vector{XML.LazyNode}, species::String, q
 end
 
 "Return spatial mesh information."
-function readmesh(fid::IOStream, ns::Vector{XML.LazyNode})
+function readmesh(fid::IOStream, ns::Vector{LazyNode})
    # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
    node = ns[findfirst("MESH_BBOX", ns)]
    offset = Parsers.parse(Int, value(node[1]))
@@ -475,7 +471,7 @@ function readmesh(fid::IOStream, ns::Vector{XML.LazyNode})
 end
 
 "Return velocity mesh information."
-function readvmesh(fid::IOStream, ns::Vector{XML.LazyNode}, species::String)
+function readvmesh(fid::IOStream, ns::Vector{LazyNode}, species::String)
    is = findall("MESH_BBOX", ns)
 
    bbox = Vector{Int}(undef, 6)
