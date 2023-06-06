@@ -28,7 +28,8 @@ end
    if group in (:read, :all)
       @testset "Reading files" begin
          _, offset, _, _, _ = let footer = Vlasiator.getfooter(meta1.fid)
-            Vlasiator.getObjInfo(footer, "time", "PARAMETER", "name")
+            ns = Vlasiator.XML.children(footer[end])
+            Vlasiator.getObjInfo(ns, "time", "PARAMETER", "name")
          end
          @test offset == 264
 

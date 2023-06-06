@@ -1,6 +1,6 @@
 # VLSV reader in Julia
 
-const NodeVector = SubArray{EzXML.Node, 1, Vector{EzXML.Node}, Tuple{UnitRange{Int64}},
+const NodeVector = SubArray{XML.LazyNode, 1, Vector{XML.LazyNode}, Tuple{UnitRange{Int64}},
    true}
 
 "Velocity mesh information."
@@ -96,7 +96,9 @@ end
    # Obtain the offset of the XML
    offset = read(fid, Int)
    seek(fid, offset)
-   footer = read(fid, String) |> parsexml |> root
+   #footer = read(fid, String) |> parsexml |> root
+   str = read(fid, String)
+   footer = parse(str, LazyNode)
 end
 
 @inline function getdatatype(datatype::Symbol, datasize::Int)
@@ -112,17 +114,18 @@ end
       end
 end
 
-function getvarinfo(nodevar::AbstractVector{EzXML.Node}, name::String)
+function getvarinfo(nodevar::NodeVector, name::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
-   for var in nodevar
+   for nv in nodevar
+      var = XML.attributes(nv)
       if var["name"] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
          datatype = Symbol(var["datatype"])
          vectorsize = Parsers.parse(Int, var["vectorsize"])
-         offset = Parsers.parse(Int, nodecontent(var))
+         offset = Parsers.parse(Int, value(nv[1]))
          isFound = true
          break
       end
@@ -140,10 +143,11 @@ end
    isFound = false
 
    for p in nodeparam
-      if p["name"] == name
-         datasize = Parsers.parse(Int, p["datasize"])
-         datatype = Symbol(p["datatype"])
-         offset = Parsers.parse(Int, nodecontent(p))
+      param = XML.attributes(p)
+      if param["name"] == name
+         datasize = Parsers.parse(Int, param["datasize"])
+         datatype = Symbol(param["datatype"])
+         offset = Parsers.parse(Int, value(p[1]))
          isFound = true
          break
       end
@@ -156,18 +160,27 @@ end
    T, offset
 end
 
-"General inquiry of element `tag` with `name` and `attr`."
-function getObjInfo(footer::EzXML.Node, name::String, tag::String, attr::String)
+function Base.findall(xpath::AbstractString, nodes::Vector{XML.LazyNode})
+   findall(x -> tag(x) == xpath, nodes)
+end
+
+function Base.findfirst(xpath::AbstractString, nodes::Vector{XML.LazyNode})
+   findfirst(x -> tag(x) == xpath, nodes)
+end
+
+"General inquiry of element `tag` with `tagname` and `attr`."
+function getObjInfo(ns::Vector{XML.LazyNode}, name::String, tagname::String, attr::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
-   for var in findall("//$tag", footer)
+   for i in findall(tagname, ns)
+      var = XML.attributes(ns[i])
       if var[attr] == name
          arraysize = Parsers.parse(Int, var["arraysize"])
          datasize = Parsers.parse(Int, var["datasize"])
          datatype = Symbol(var["datatype"])
          vectorsize = Parsers.parse(Int, var["vectorsize"])
-         offset = Parsers.parse(Int, nodecontent(var))
+         offset = Parsers.parse(Int, value(ns[i][1]))
          isFound = true
          break
       end
@@ -221,27 +234,29 @@ function load(file::AbstractString)
 
    footer = getfooter(fid)
 
-   ns = elements(footer)
+   #ns = elements(footer)
+   # May have extra allocation!
+   ns = children(footer[end])
 
    ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
 
    for i in eachindex(ns)
-      if ns[i].name == "VARIABLE"
+      if tag(ns[i]) == "VARIABLE"
          if ibegin_[1] == 0 ibegin_[1] = i end
          iend_[1] = i
-      elseif ns[i].name == "PARAMETER"
+      elseif tag(ns[i]) == "PARAMETER"
          if ibegin_[2] == 0 ibegin_[2] = i end
          iend_[2] = i
-      elseif ns[i].name == "CELLSWITHBLOCKS"
+      elseif tag(ns[i]) == "CELLSWITHBLOCKS"
          if ibegin_[3] == 0 ibegin_[3] = i end
          iend_[3] = i
-      elseif ns[i].name == "BLOCKSPERCELL"
+      elseif tag(ns[i]) == "BLOCKSPERCELL"
          if ibegin_[4] == 0 ibegin_[4] = i end
          iend_[4] = i
-      elseif ns[i].name == "BLOCKVARIABLE"
+      elseif tag(ns[i]) == "BLOCKVARIABLE"
          if ibegin_[5] == 0 ibegin_[5] = i end
          iend_[5] = i
-      elseif ns[i].name == "BLOCKIDS"
+      elseif tag(ns[i]) == "BLOCKIDS"
          if ibegin_[6] == 0 ibegin_[6] = i end
          iend_[6] = i
       end
@@ -269,7 +284,7 @@ function load(file::AbstractString)
    cellid = getcellid(fid, n.var)
    cellindex = sortperm(cellid, alg=MergeSort)
 
-   ncells, block_size, coordmin, coordmax = readmesh(fid, footer)
+   ncells, block_size, coordmin, coordmax = readmesh(fid, ns)
 
    dcoord = ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
@@ -284,11 +299,12 @@ function load(file::AbstractString)
    vmax = [1.0, 1.0, 1.0]
 
    for node in n.blockid
-      if haskey(node, "name")
+      at = attributes(node)
+      if haskey(at, "name")
          # VLSV 5.0 file with bounding box
-         popname = node["name"]
+         popname = at["name"]
 
-         vbox, nodeX, nodeY, nodeZ = readvmesh(fid, footer, popname)
+         vbox, nodeX, nodeY, nodeZ = readvmesh(fid, ns, popname)
 
          vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
          vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
@@ -336,13 +352,13 @@ function load(file::AbstractString)
    # Obtain maximum refinement level
    maxamr = getmaxrefinement(cellid, ncells)
 
-   vars = [node["name"] for node in n.var]
+   vars = [attributes(node)["name"] for node in n.var]
 
    hasvdf = let
       if length(n.cellwithVDF) == 0
          false
       else
-         n.cellwithVDF[1]["arraysize"] != "0"
+         attributes(n.cellwithVDF[1])["arraysize"] != "0"
       end
    end
 
@@ -388,12 +404,13 @@ function readvariablemeta(meta::MetaVLSV, var::String)
       unit, variableLaTeX, unitLaTeX = units_predefined[varSym]
    elseif hasvariable(meta, var) # For Vlasiator 5 files, MetaVLSV is included
       for node in meta.nodeVLSV.var
-         if node["name"] == var
-            haskey(node, "unit") || break
-            unit = node["unit"]
-            unitLaTeX = node["unitLaTeX"]
-            variableLaTeX = node["variableLaTeX"]
-            unitConversion = node["unitConversion"]
+         at = attributes(node)
+         if at["name"] == var
+            haskey(at, "unit") || break
+            unit = at["unit"]
+            unitLaTeX = at["unitLaTeX"]
+            variableLaTeX = at["variableLaTeX"]
+            unitConversion = at["unitConversion"]
          end
       end
    end
@@ -401,11 +418,11 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
-@inline function readcoords(fid::IOStream, footer::EzXML.Node, qstring::String)
-   node = findfirst(qstring, footer)
+@inline function readcoords(fid::IOStream, ns::Vector{XML.LazyNode}, qstring::String)
+   node = ns[findfirst(qstring, ns)]
 
-   arraysize = Parsers.parse(Int, node["arraysize"])
-   offset = Parsers.parse(Int, nodecontent(node))
+   arraysize = Parsers.parse(Int, attributes(node)["arraysize"])
+   offset = Parsers.parse(Int, value(node[1]))
 
    # Warning: it may be Float32 in Vlasiator
    coord = Vector{Float64}(undef, arraysize)
@@ -415,14 +432,15 @@ end
    coord
 end
 
-function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring::String)
+function readvcoords(fid::IOStream, ns::Vector{XML.LazyNode}, species::String, qstring::String)
    local coord
-   ns = findall(qstring, footer)
+   is = findall(qstring, ns)
 
-   for i in reverse(eachindex(ns))
-      if ns[i]["mesh"] == species
-         arraysize = Parsers.parse(Int, ns[i]["arraysize"])
-         offset = Parsers.parse(Int, nodecontent(ns[i]))
+   for i in reverse(is)
+      at = attributes(ns[i])
+      if at["mesh"] == species
+         arraysize = Parsers.parse(Int, at["arraysize"])
+         offset = Parsers.parse(Int, value(ns[i][1]))
          # Warning: it may be Float32 in Vlasiator
          coord = Vector{Float64}(undef, arraysize)
          seek(fid, offset)
@@ -435,18 +453,18 @@ function readvcoords(fid::IOStream, footer::EzXML.Node, species::String, qstring
 end
 
 "Return spatial mesh information."
-function readmesh(fid::IOStream, footer::EzXML.Node)
+function readmesh(fid::IOStream, ns::Vector{XML.LazyNode})
    # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
-   node = findfirst("//MESH_BBOX", footer)
-   offset = Parsers.parse(Int, nodecontent(node))
+   node = ns[findfirst("MESH_BBOX", ns)]
+   offset = Parsers.parse(Int, value(node[1]))
 
    bbox = Vector{Int}(undef, 6)
    seek(fid, offset)
    read!(fid, bbox)
 
-   nodeX = readcoords(fid, footer, "//MESH_NODE_CRDS_X")
-   nodeY = readcoords(fid, footer, "//MESH_NODE_CRDS_Y")
-   nodeZ = readcoords(fid, footer, "//MESH_NODE_CRDS_Z")
+   nodeX = readcoords(fid, ns, "MESH_NODE_CRDS_X")
+   nodeY = readcoords(fid, ns, "MESH_NODE_CRDS_Y")
+   nodeZ = readcoords(fid, ns, "MESH_NODE_CRDS_Z")
 
    @inbounds ncells = (bbox[1], bbox[2], bbox[3])
    @inbounds block_size = (bbox[4], bbox[5], bbox[6])
@@ -457,23 +475,24 @@ function readmesh(fid::IOStream, footer::EzXML.Node)
 end
 
 "Return velocity mesh information."
-function readvmesh(fid::IOStream, footer::EzXML.Node, species::String)
-   ns = findall("//MESH_BBOX", footer)
+function readvmesh(fid::IOStream, ns::Vector{XML.LazyNode}, species::String)
+   is = findall("MESH_BBOX", ns)
 
    bbox = Vector{Int}(undef, 6)
 
-   for i in reverse(eachindex(ns))
-      if ns[i]["mesh"] == species
-         offset = Parsers.parse(Int, nodecontent(ns[i]))
+   for i in reverse(is)
+      at = attributes(ns[i])
+      if at["mesh"] == species
+         offset = Parsers.parse(Int, value(ns[i][1]))
          seek(fid, offset)
          read!(fid, bbox)
          break
       end
    end
 
-   nodeX = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_X")
-   nodeY = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_Y")
-   nodeZ = readvcoords(fid, footer, species, "//MESH_NODE_CRDS_Z")
+   nodeX = readvcoords(fid, ns, species, "MESH_NODE_CRDS_X")
+   nodeY = readvcoords(fid, ns, species, "MESH_NODE_CRDS_Y")
+   nodeZ = readvcoords(fid, ns, species, "MESH_NODE_CRDS_Z")
 
    bbox, nodeX, nodeY, nodeZ
 end
@@ -651,7 +670,7 @@ end
 @inline @Base.propagate_inbounds Base.getindex(meta::MetaVLSV, key::String) =
    readvariable(meta, key)
 
-@inline function getcellid(fid::IOStream, nodevar::AbstractVector{EzXML.Node})
+@inline function getcellid(fid::IOStream, nodevar::NodeVector)
    _, offset, asize, _, _ = getvarinfo(nodevar, "CellID")
    cellid = mmap(fid, Vector{Int}, asize, offset)
 end
@@ -665,7 +684,9 @@ Multi-threaded extraction of `var` at a fixed cell ID `cid` from `files`. This a
 function extractsat(files::AbstractVector{String}, var::String, cid::Int)
    v = open(files[1], "r") do fid
       footer = getfooter(fid)
-      nodevar = findall("//VARIABLE", footer)
+      ns = children(footer[end])
+      is = findall("VARIABLE", ns)
+      nodevar = @view ns[is[1]:is[end]]
       T, _, _, _, vsize = getvarinfo(nodevar, var)
 
       Array{T,2}(undef, vsize, length(files))
@@ -674,7 +695,9 @@ function extractsat(files::AbstractVector{String}, var::String, cid::Int)
    Threads.@threads for i in eachindex(files)
       fid = open(files[i], "r")
       footer = getfooter(fid)
-      nodevar = findall("//VARIABLE", footer)
+      ns = children(footer[end])
+      is = findall("VARIABLE", ns)
+      nodevar = @view ns[is[1]:is[end]]
       cellid = getcellid(fid, nodevar)
       c_ = findfirst(isequal(cid), cellid)
       _, offset, _, dsize, vsize = getvarinfo(nodevar, var)
@@ -783,7 +806,7 @@ Check if the VLSV file associated with `meta` contains a variable `var`.
 hasvariable(meta::MetaVLSV, var::String) = hasname(meta.nodeVLSV.var, var)
 
 "Check if the XML nodes `ns` contain a node of `name`."
-hasname(ns::NodeVector, name::String) = any(n -> n["name"] == name, ns)
+hasname(ns::NodeVector, name::String) = any(n -> attributes(n)["name"] == name, ns)
 
 """
     ndims(meta::MetaVLSV) -> Int
@@ -810,9 +833,10 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
 
    let cellsWithVDF, nblock_C
       for node in nodeVLSV.cellwithVDF
-         if node["name"] == species
-            asize = Parsers.parse(Int, node["arraysize"])
-            offset = Parsers.parse(Int, nodecontent(node))
+         at = attributes(node)
+         if at["name"] == species
+            asize = Parsers.parse(Int, at["arraysize"])
+            offset = Parsers.parse(Int, value(node[1]))
             cellsWithVDF = Vector{Int}(undef, asize)
             seek(fid, offset)
             read!(fid, cellsWithVDF)
@@ -821,10 +845,11 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
       end
 
       for node in nodeVLSV.cellblocks
-         if node["name"] == species
-            asize = Parsers.parse(Int, node["arraysize"])
-            dsize = Parsers.parse(Int, node["datasize"])
-            offset = Parsers.parse(Int, nodecontent(node))
+         at = attributes(node)
+         if at["name"] == species
+            asize = Parsers.parse(Int, at["arraysize"])
+            dsize = Parsers.parse(Int, at["datasize"])
+            offset = Parsers.parse(Int, value(node[1]))
             nblock_C = dsize == 4 ?
                Vector{Int32}(undef, asize) : Vector{Int}(undef, asize)
             seek(fid, offset)
@@ -851,10 +876,11 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    local dsize, vsize, offset
    # Read in avgs
    for node in nodeVLSV.blockvar
-      if node["name"] == species
-         dsize = Parsers.parse(Int, node["datasize"])
-         vsize = Parsers.parse(Int, node["vectorsize"])
-         offset = Parsers.parse(Int, nodecontent(node))
+      at = attributes(node)
+      if at["name"] == species
+         dsize = Parsers.parse(Int, at["datasize"])
+         vsize = Parsers.parse(Int, at["vectorsize"])
+         offset = Parsers.parse(Int, value(node[1]))
          break
       end
    end
@@ -867,9 +893,10 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
 
    # Read in block IDs
    for node in nodeVLSV.blockid
-      if node["name"] == species
-         dsize = Parsers.parse(Int, node["datasize"])
-         offset = Parsers.parse(Int, nodecontent(node))
+      at = attributes(node)
+      if at["name"] == species
+         dsize = Parsers.parse(Int, at["datasize"])
+         offset = Parsers.parse(Int, value(node[1]))
          break
       end
    end

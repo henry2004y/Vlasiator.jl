@@ -1026,10 +1026,11 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
    local cellsWithVDF, nblock_C
 
    for node in nodeVLSV.cellwithVDF
-      if node["name"] == species
-         asize = Parsers.parse(Int, node["arraysize"])
+      at = attributes(node)
+      if at["name"] == species
+         asize = Parsers.parse(Int, at["arraysize"])
          cellsWithVDF = Vector{Int}(undef, asize)
-         offset = Parsers.parse(Int, nodecontent(node))
+         offset = Parsers.parse(Int, value(node[1]))
          seek(fid, offset)
          read!(fid, cellsWithVDF)
          break
@@ -1037,10 +1038,11 @@ function getcellwithvdf(meta::MetaVLSV, species::String="proton")
    end
 
    for node in nodeVLSV.cellblocks
-      if node["name"] == species
-         asize = Parsers.parse(Int, node["arraysize"])
-         dsize = Parsers.parse(Int, node["datasize"])
-         offset = Parsers.parse(Int, nodecontent(node))
+      at = attributes(node)
+      if at["name"] == species
+         asize = Parsers.parse(Int, at["arraysize"])
+         dsize = Parsers.parse(Int, at["datasize"])
+         offset = Parsers.parse(Int, value(node[1]))
          nblock_C = dsize == 4 ?
             Vector{Int32}(undef, asize) : Vector{Int}(undef, asize)
          seek(fid, offset)
@@ -1370,35 +1372,44 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
 
       # Generate vthb file
       filemeta = outdir*meta.name[1:end-4]*"vthb"
-      doc = XMLDocument()
-      elm = ElementNode("VTKFile")
-      setroot!(doc, elm)
-      link!(elm, AttributeNode("type", "vtkOverlappingAMR"))
-      link!(elm, AttributeNode("version", "1.1"))
-      link!(elm, AttributeNode("byte_order", "LittleEndian")) # x86
-      link!(elm, AttributeNode("header_type", "UInt64"))
 
-      xamr = addelement!(elm, "vtkOverlappingAMR")
+      doc = XML.Document()
+
+      elm = XML.Element("VTKFile";
+         type="vtkOverlappingAMR",
+         version="1.1",
+         byte_order="LittleEndian", # x86
+         header_type="UInt64"
+      )
+      push!(doc, elm)
 
       origin = @sprintf "%f %f %f" coordmin[1] coordmin[2] coordmin[3]
-      link!(xamr, AttributeNode("origin", origin))
-      link!(xamr, AttributeNode("grid_description", "XYZ"))
+      xamr = XML.Element("vtkOverlappingAMR";
+         origin=origin,
+         grid_description="XYZ"
+      )
+      push!(elm, xamr)
 
       @inbounds for i = 0:maxamr
-         xBlock = addelement!(xamr, "Block")
-         link!(xBlock, AttributeNode("level", string(i)))
          spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
-         link!(xBlock, AttributeNode("spacing", spacing_str))
-         xDataSet = addelement!(xBlock, "DataSet")
-         link!(xDataSet, AttributeNode("index", "0"))
+         xBlock = XML.Element("Block";
+            level=string(i),
+            spacing=spacing_str
+         )
+         push!(xamr, xBlock)
+
          amr_box = (0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1)
          box_str = @sprintf("%d %d %d %d %d %d", amr_box[1], amr_box[2], amr_box[3],
             amr_box[4], amr_box[5], amr_box[6])
-         link!(xDataSet, AttributeNode("amr_box", box_str))
-         link!(xDataSet, AttributeNode("file", filedata[i+1]))
+         xDataSet = XML.Element("DataSet";
+            index="0",
+            amr_box=box_str,
+            file=filedata[i+1]
+         )
+         push!(xBlock, xDataSet)
       end
 
-      write(filemeta, doc)
+      XML.write(filemeta, doc)
    end
 
    return
@@ -1499,42 +1510,39 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
    seekstart(fid)
    readbytes!(fid, raw_data, offset)
    # Read input VLSV file footer
-   doc = read(fid, String) |> parsexml
-   footer = doc |> root
+   str = read(fid, String)
+   footer = parse(str, Node)
    close(fid)
    # Get new variables' offsets
    offsets = accumulate(+,
       [offset, [sizeof(newvars[i][1]) for i in eachindex(newvars)[1:end-1]]...])
    # Create new children for footer
    for i in eachindex(newvars, offsets)
-      elm = addelement!(footer, "VARIABLE", string(offsets[i]))
-
-      a1 = AttributeNode("arraysize", string(length(newvars[i][1])))
-      a2 = AttributeNode("datasize", string(sizeof(eltype(newvars[i][1]))))
-      a3 =
-         if eltype(newvars[i][1]) <: Signed
-            AttributeNode("datatype", "int")
-         elseif eltype(newvars[i][1]) <: AbstractFloat
-            AttributeNode("datatype", "float")
-         elseif eltype(newvars[i][1]) <: Unsigned
-            AttributeNode("datatype", "uint")
-         end
-      a4 = AttributeNode("mesh", "SpatialGrid")
-      a5 = AttributeNode("name", newvars[i][2])
-      a6 = AttributeNode("unit", newvars[i][3].unit)
-      a7 = AttributeNode("unitConversion", newvars[i][3].unitConversion)
-      a8 = AttributeNode("unitLaTeX", newvars[i][3].unitLaTeX)
-      a9 = AttributeNode("variableLaTeX", newvars[i][3].variableLaTeX)
-      a10 =
-         if ndims(newvars[i][1]) == 1
-            AttributeNode("vectorsize", "1")
-         else
-            AttributeNode("vectorsize", string(size(newvars[i][1], 1)))
-         end
-
-      for attributenode in (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
-         link!(elm, attributenode)
-      end
+      elm = XML.Element("VARIABLE", string(offsets[i]);
+         arraysize=string(length(newvars[i][1])),
+         datasize=string(sizeof(eltype(newvars[i][1]))),
+         datatype=
+            if eltype(newvars[i][1]) <: Signed
+               "int"
+            elseif eltype(newvars[i][1]) <: AbstractFloat
+               "float"
+            elseif eltype(newvars[i][1]) <: Unsigned
+               "uint"
+            end,
+         mesh="SpatialGrid",
+         name=newvars[i][2],
+         unit=newvars[i][3].unit,
+         unitConversion=newvars[i][3].unitConversion,
+         unitLaTeX=newvars[i][3].unitLaTeX,
+         variableLaTeX=newvars[i][3].variableLaTeX,
+         vectorsize=
+            if ndims(newvars[i][1]) == 1
+               "1"
+            else
+               string(size(newvars[i][1], 1))
+            end
+      )
+      push!(footer[end], elm)
    end
    # Write to fileout
    open(fileout, "w") do io
@@ -1549,7 +1557,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
       for var in newvars
          write(io, var[1])
       end
-      write(io, string(footer), '\n')
+      XML.write(io, footer)
    end
 
    return
