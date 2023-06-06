@@ -1,6 +1,6 @@
 # VLSV reader in Julia
 
-const NodeVector = SubArray{LazyNode, 1, Vector{LazyNode}, Tuple{UnitRange{Int64}},
+const NodeVector = SubArray{Node, 1, Vector{Node}, Tuple{UnitRange{Int64}},
    true}
 
 "Velocity mesh information."
@@ -97,7 +97,7 @@ end
    offset = read(fid, Int)
    seek(fid, offset)
    str = read(fid, String)
-   footer = parse(str, LazyNode)
+   footer = parse(str, Node)
 end
 
 @inline function getdatatype(datatype::Symbol, datasize::Int)
@@ -159,16 +159,16 @@ end
    T, offset
 end
 
-function Base.findall(xpath::AbstractString, nodes::Vector{LazyNode})
+function Base.findall(xpath::AbstractString, nodes::Vector{Node})
    findall(x -> tag(x) == xpath, nodes)
 end
 
-function Base.findfirst(xpath::AbstractString, nodes::Vector{LazyNode})
+function Base.findfirst(xpath::AbstractString, nodes::Vector{Node})
    findfirst(x -> tag(x) == xpath, nodes)
 end
 
 "General inquiry of element `tag` with `tagname` and `attr`."
-function getObjInfo(ns::Vector{LazyNode}, name::String, tagname::String, attr::String)
+function getObjInfo(ns::Vector{Node}, name::String, tagname::String, attr::String)
    local arraysize, datasize, datatype, vectorsize, offset
    isFound = false
 
@@ -414,7 +414,7 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    VarInfo(unit, unitLaTeX, variableLaTeX, unitConversion)
 end
 
-@inline function readcoords(fid::IOStream, ns::Vector{LazyNode}, qstring::String)
+@inline function readcoords(fid::IOStream, ns::Vector{Node}, qstring::String)
    node = ns[findfirst(qstring, ns)]
 
    arraysize = Parsers.parse(Int, attributes(node)["arraysize"])
@@ -428,7 +428,7 @@ end
    coord
 end
 
-function readvcoords(fid::IOStream, ns::Vector{LazyNode}, species::String, qstring::String)
+function readvcoords(fid::IOStream, ns::Vector{Node}, species::String, qstring::String)
    local coord
    is = findall(qstring, ns)
 
@@ -449,7 +449,7 @@ function readvcoords(fid::IOStream, ns::Vector{LazyNode}, species::String, qstri
 end
 
 "Return spatial mesh information."
-function readmesh(fid::IOStream, ns::Vector{LazyNode})
+function readmesh(fid::IOStream, ns::Vector{Node})
    # Assume SpatialGrid and FsGrid follows Vlasiator 5 standard
    node = ns[findfirst("MESH_BBOX", ns)]
    offset = Parsers.parse(Int, value(node[1]))
@@ -471,7 +471,7 @@ function readmesh(fid::IOStream, ns::Vector{LazyNode})
 end
 
 "Return velocity mesh information."
-function readvmesh(fid::IOStream, ns::Vector{LazyNode}, species::String)
+function readvmesh(fid::IOStream, ns::Vector{Node}, species::String)
    is = findall("MESH_BBOX", ns)
 
    bbox = Vector{Int}(undef, 6)
