@@ -1409,7 +1409,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          push!(xBlock, xDataSet)
       end
 
-      write(filemeta, doc)
+      XML.write(filemeta, doc)
    end
 
    return
@@ -1557,7 +1557,7 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
       for var in newvars
          write(io, var[1])
       end
-      write(io, footer)
+      XML.write(io, footer)
    end
 
    return

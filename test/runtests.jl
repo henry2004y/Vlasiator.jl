@@ -249,7 +249,7 @@ end
 
          write_vlsv(files[1], "bulk_new.vlsv", vars)
          sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
-         @test sha_str == "2b209fb022a2db3b013e01606a60c1fac360a79d"
+         @test sha_str == "1ae366c17d324939bd30aa2894eee72787670052"
 
          rm("bulk_new.vlsv", force=true)
       end
