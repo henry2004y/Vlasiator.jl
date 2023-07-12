@@ -306,7 +306,6 @@ function load(file::AbstractString)
          vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
          vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
          vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
-         dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
       else
          popname = "avgs"
          # In VLSV before 5.0 the mesh is defined with parameters.
@@ -317,11 +316,12 @@ function load(file::AbstractString)
             map!(i -> readparameter(fid, n.param, vblocks_str[i]), vblocks, 1:3)
             map!(i -> readparameter(fid, n.param, vmin_str[i]), vmin, 1:3)
             map!(i -> readparameter(fid, n.param, vmax_str[i]), vmax, 1:3)
-            dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
          else
             error("File not written by Vlasiator!")
          end
       end
+
+      dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
 
       # Update list of active species
       if popname ∉ species
