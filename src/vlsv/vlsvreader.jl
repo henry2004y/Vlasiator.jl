@@ -10,7 +10,7 @@ const NodeVector = SubArray{Node, 1, Vector{Node}, Tuple{UnitRange{Int64}},
    vmin::NTuple{3, Float64}
    vmax::NTuple{3, Float64}
    dv::NTuple{3, Float64}
-   @lazy cellsWithVDF::Vector{Int}
+   @lazy cellwithVDF::Vector{Int}
    @lazy nblock_C::Vector{Int}
 end
 
@@ -824,18 +824,17 @@ return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    (;fid, nodeVLSV) = meta
    (;vblock_size) = meta.meshes[species]
-   bsize = prod(vblock_size)
 
-   if !@isinit meta.meshes[species].cellsWithVDF
+   if !@isinit meta.meshes[species].cellwithVDF
       for node in nodeVLSV.cellwithVDF
          at = attributes(node)
          if at["name"] == species
             asize = Parsers.parse(Int, at["arraysize"])
             offset = Parsers.parse(Int, value(node[1]))
-            cellsWithVDF = Vector{Int}(undef, asize)
+            cellwithVDF = Vector{Int}(undef, asize)
             seek(fid, offset)
-            read!(fid, cellsWithVDF)
-            @init! meta.meshes[species].cellsWithVDF = cellsWithVDF
+            read!(fid, cellwithVDF)
+            @init! meta.meshes[species].cellwithVDF = cellwithVDF
             break
          end
       end
@@ -858,7 +857,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
       end
    end
 
-   cellWithVDFIndex = findfirst(==(cid), meta.meshes[species].cellsWithVDF)
+   cellWithVDFIndex = findfirst(==(cid), meta.meshes[species].cellwithVDF)
    if !isnothing(cellWithVDFIndex)
       @inbounds nblocks = meta.meshes[species].nblock_C[cellWithVDFIndex]
       if nblocks == 0
@@ -880,6 +879,8 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
          break
       end
    end
+
+   bsize = prod(vblock_size)
 
    data = let
       T = dsize == 4 ? Float32 : Float64
