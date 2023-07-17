@@ -3,14 +3,15 @@
 const NodeVector = SubArray{Node, 1, Vector{Node}, Tuple{UnitRange{Int64}},
    true}
 
-"Velocity mesh information."
-struct VMeshInfo
+@lazy struct VMeshInfo
    "number of velocity blocks"
    vblocks::NTuple{3, Int}
    vblock_size::NTuple{3, Int}
    vmin::NTuple{3, Float64}
    vmax::NTuple{3, Float64}
    dv::NTuple{3, Float64}
+   @lazy cellsWithVDF::Vector{Int}
+   @lazy nblock_C::Vector{Int}
 end
 
 "Variable information from the VLSV footer."
@@ -307,8 +308,8 @@ function load(file::AbstractString)
          vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
          vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
       else
-         popname = "avgs"
          # In VLSV before 5.0 the mesh is defined with parameters.
+         popname = "avgs"
          if "vxblocks_ini" in getindex.(n.param, "name")
             vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
             vmin_str = ("vxmin", "vymin", "vzmin")
@@ -328,9 +329,9 @@ function load(file::AbstractString)
          push!(species, popname)
       end
 
-      # Create a new object for this population
+      # Create a new object for this species
       popVMesh = VMeshInfo(NTuple{3}(vblocks), NTuple{3}(vblock_size),
-         NTuple{3}(vmin), NTuple{3}(vmax), dv)
+         NTuple{3}(vmin), NTuple{3}(vmax), dv, uninit, uninit)
 
       meshes[popname] = popVMesh
    end
@@ -825,9 +826,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    (;vblock_size) = meta.meshes[species]
    bsize = prod(vblock_size)
 
-   offset_v, nblocks = 0, 0
-
-   let cellsWithVDF, nblock_C
+   if !@isinit meta.meshes[species].cellsWithVDF
       for node in nodeVLSV.cellwithVDF
          at = attributes(node)
          if at["name"] == species
@@ -836,6 +835,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
             cellsWithVDF = Vector{Int}(undef, asize)
             seek(fid, offset)
             read!(fid, cellsWithVDF)
+            @init! meta.meshes[species].cellsWithVDF = cellsWithVDF
             break
          end
       end
@@ -846,48 +846,48 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
             asize = Parsers.parse(Int, at["arraysize"])
             dsize = Parsers.parse(Int, at["datasize"])
             offset = Parsers.parse(Int, value(node[1]))
-            nblock_C = dsize == 4 ?
-               Vector{Int32}(undef, asize) : Vector{Int}(undef, asize)
+            T = dsize == 4 ? Int32 : Int
+            nblock_C = Vector{Int}(undef, asize)
             seek(fid, offset)
-            read!(fid, nblock_C)
+            @inbounds for i in 1:asize
+               nblock_C[i] = read(fid, T)
+            end
+            @init! meta.meshes[species].nblock_C = nblock_C
             break
          end
       end
-
-      cellWithVDFIndex = findfirst(==(cid), cellsWithVDF)
-      if !isnothing(cellWithVDFIndex)
-         @inbounds nblocks = Int(nblock_C[cellWithVDFIndex])
-         if nblocks == 0
-            throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
-         end
-      else
-         throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
-      end
-      # Offset position to vcell storage
-      @inbounds for i in 1:cellWithVDFIndex-1
-         offset_v += nblock_C[i]
-      end
    end
 
-   local dsize, vsize, offset
-   # Read in avgs
+   cellWithVDFIndex = findfirst(==(cid), meta.meshes[species].cellsWithVDF)
+   if !isnothing(cellWithVDFIndex)
+      @inbounds nblocks = meta.meshes[species].nblock_C[cellWithVDFIndex]
+      if nblocks == 0
+         throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
+      end
+   else
+      throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
+   end
+   # Offset position to vcell storage
+   offset_v = sum(@view meta.meshes[species].nblock_C[1:cellWithVDFIndex-1]; init=0)
+
+   local dsize, offset
+   # Read raw VDF
    for node in nodeVLSV.blockvar
       at = attributes(node)
       if at["name"] == species
          dsize = Parsers.parse(Int, at["datasize"])
-         vsize = Parsers.parse(Int, at["vectorsize"])
          offset = Parsers.parse(Int, value(node[1]))
          break
       end
    end
 
    data = let
-      Tavg = dsize == 4 ? Float32 : Float64
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*nblocks, offset_v*vsize*dsize + offset)
-      reshape(reinterpret(Tavg, a), vsize, nblocks)
+      T = dsize == 4 ? Float32 : Float64
+      a = mmap(fid, Vector{UInt8}, dsize*bsize*nblocks, offset_v*bsize*dsize + offset)
+      reshape(reinterpret(T, a), bsize, nblocks)
    end
 
-   # Read in block IDs
+   # Read block IDs
    for node in nodeVLSV.blockid
       at = attributes(node)
       if at["name"] == species
