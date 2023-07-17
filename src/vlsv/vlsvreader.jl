@@ -916,7 +916,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
 end
 
 @inline function _fillvcell!(vcellids, vcellf, vcellid_local, data, blockIDs, bsize)
-   @inbounds for i in eachindex(blockIDs), j = 1:bsize
+   @inbounds for i in eachindex(blockIDs), j in 1:bsize
       index_ = (i-1)*bsize+j
       vcellids[index_] = vcellid_local[j] + bsize*blockIDs[i]
       vcellf[index_] = data[j,i]
