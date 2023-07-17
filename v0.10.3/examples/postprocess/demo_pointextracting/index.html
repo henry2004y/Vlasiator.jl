@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Virtual satellite · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_pointextracting/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Virtual satellite</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Virtual satellite</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/postprocess/demo_pointextracting.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_virtual_sat"><a class="docs-heading-anchor" href="#demo_virtual_sat">Virtual satellite</a><a id="demo_virtual_sat-1"></a><a class="docs-heading-anchor-permalink" href="#demo_virtual_sat" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to extract data for a virtual satellite. Outputs are stored in CSV format for sharing data.</p><p>Usage:</p><pre><code class="language-shell hljs">julia -t nthreads demo_virtual_satellite.jl</code></pre><p>or</p><pre><code class="language-shell hljs">JULIA_NUM_THREADS=nthreads julia demo_virtual_satellite.jl</code></pre><pre><code class="language-julia hljs">using Glob, DelimitedFiles, Vlasiator, DataFrames
+using Vlasiator: RE # Earth radius [m]
+
+function extract_vars(files, loc)
+   nfiles = length(files)
+   # variables to be extracted
+   t   = zeros(Float32, nfiles)
+   rho = zeros(Float32, nfiles)
+   v   = zeros(Float32, 3, nfiles)
+   p   = zeros(Float32, nfiles)
+   b   = zeros(Float32, 3, nfiles)
+   e   = zeros(Float32, 3, nfiles)
+
+   id = load(files[1]) do meta
+      getcell(meta, loc)
+   end
+
+   # Extract data from each frame
+   Threads.@threads for i = eachindex(files)
+      meta = load(files[i])
+      t[i] = meta.time
+      rho[i] = readvariable(meta, &quot;proton/vg_rho&quot;, id)[1]
+      v[:,i] = readvariable(meta, &quot;proton/vg_v&quot;, id)
+      p[i] = readvariable(meta, &quot;vg_pressure&quot;, id)[1]
+      b[:,i] = readvariable(meta, &quot;vg_b_vol&quot;, id)
+      e[:,i] = readvariable(meta, &quot;vg_e_vol&quot;, id)
+   end
+
+   df = DataFrame(t = t, rho = rho, v = v, p = p, b = b, e = e)
+   # Save into text file
+   writedlm(&quot;satellite.csv&quot;, Iterators.flatten(([names(df)], eachrow(df))), &#39;,&#39;)
+end
+
+#####
+
+files = glob(&quot;bulk*.vlsv&quot;, &quot;./&quot;)
+
+# virtual satellite location
+const loc = Float64[12, 0, 0] .* RE
+
+println(&quot;Number of files: $(length(files))&quot;)
+println(&quot;Extracting location: $loc&quot;)
+println(&quot;Running with $(Threads.nthreads()) threads...&quot;)
+
+@time extract_vars(files, loc)
+
+println(&quot;Virtual satellite extraction done!&quot;)
+
+## Visualization
+#=
+using PyPlot, DelimitedFiles
+
+data = readdlm(&quot;satellite.csv&quot;, &#39;,&#39;; header=true)
+
+fig, ax = subplots(figsize=(8,10), 5,1, sharex=true, constrained_layout=true)
+
+ax[1].plot(data[1][:,1], data[1][:,2] ./ 1e6, label=&quot;density&quot;)
+ax[2].plot(data[1][:,1], data[1][:,3] ./ 1e3, label=&quot;vx&quot;)
+ax[2].plot(data[1][:,1], data[1][:,4] ./ 1e3, label=&quot;vy&quot;)
+ax[3].plot(data[1][:,1], data[1][:,5] .* 1e9, label=&quot;p&quot;)
+ax[4].plot(data[1][:,1], data[1][:,6] .* 1e9, label=&quot;bz&quot;)
+ax[5].plot(data[1][:,1], data[1][:,7] .* 1e3, label=&quot;ex&quot;)
+ax[5].plot(data[1][:,1], data[1][:,8] .* 1e3, label=&quot;ey&quot;)
+
+for a in ax
+   a.grid(true)
+   a.legend()
+end
+
+ax[1].set_ylabel(&quot;density [amu/cc]&quot;, fontsize=14)
+ax[2].set_ylabel(&quot;velocity [km/s]&quot;, fontsize=14)
+ax[3].set_ylabel(&quot;pressure [nPa]&quot;, fontsize=14)
+ax[4].set_ylabel(&quot;magnetic field [nT]&quot;, fontsize=14)
+ax[5].set_ylabel(&quot;electric field [mV/m]&quot;, fontsize=14)
+ax[5].set_xlabel(&quot;time [s]&quot;, fontsize=14)
+
+fig.suptitle(&quot;Density Pulse Run, location = [12, 0, 0]&quot;, fontsize=&quot;xx-large&quot;)
+
+savefig(&quot;virtual_satellite.png&quot;, bbox_inches=&quot;tight&quot;)
+=#</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 17 July 2023 14:41">Monday 17 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

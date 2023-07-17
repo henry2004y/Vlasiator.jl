@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Combined plots · Vlasiator.jl</title><script data-outdated-warner src="../../../assets/warner.js"></script><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_1d2d_pyplot/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><form class="docs-search" action="../../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Combined plots</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Combined plots</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_1d2d_pyplot.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_1d2d"><a class="docs-heading-anchor" href="#demo_1d2d">Combined plots</a><a id="demo_1d2d-1"></a><a class="docs-heading-anchor-permalink" href="#demo_1d2d" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>To generate combined 1D/2D plots across multiple frames,</p><pre><code class="language-julia hljs">using Vlasiator, VlasiatorPyPlot, Glob, Printf, LaTeXStrings
+using Vlasiator: set_args, prep2d
+
+@assert VERSION ≥ v&quot;1.7.0&quot; &quot;Compatible with Julia v1.7+!&quot;
+@assert matplotlib.__version__ &gt;= &quot;3.4&quot; &quot;Require Matplotlib version 3.4+ to use subfigure!&quot;
+
+
+struct Varminmax{T}
+   &quot;Density, [amu/cc]&quot;
+   ρmin::T
+   ρmax::T
+   &quot;Velocity, [km/s]&quot;
+   vmin::T
+   vmax::T
+   &quot;Pressure, [nPa]&quot;
+   pmin::T
+   pmax::T
+   &quot;Magnetic field, [nT]&quot;
+   bmin::T
+   bmax::T
+   &quot;Electric field, [nT]&quot;
+   emin::T
+   emax::T
+   &quot;Alfven speed, [km/s]&quot;
+   vamin::T
+   vamax::T
+   &quot;Sonic speed, [km/s]&quot;
+   vsmin::T
+   vsmax::T
+end
+
+function init_figure(varminmax, loc, pArgs)
+   (; ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax,
+      vamin, vamax, vsmin, vsmax) = varminmax
+
+   fig = plt.figure(constrained_layout=true, figsize=(12, 7.2))
+   subfigs = fig.subfigures(1, 2, wspace=0.01, width_ratios=[2,1])
+
+   axsL = subfigs[1].subplots(5, 1, sharex=true)
+   axsR = subfigs[2].subplots(2, 1, sharex=true)
+
+   # Set line plots&#39; axes
+   axsL[end].set_xlim(loc[1], loc[end])
+
+   axsL[1].set_ylim(ρmin, ρmax)
+   axsL[2].set_ylim(vmin, vmax)
+   axsL[3].set_ylim(pmin, pmax)
+   axsL[4].set_ylim(bmin, bmax)
+   axsL[5].set_ylim(emin, emax)
+   for ax in axsL
+      ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.grid(true)
+   end
+
+   axsL[end].set_xlabel(L&quot;x [$R_E$]&quot;; fontsize=14)
+   axsL[1].set_ylabel(&quot;n [amu/cc]&quot;;   fontsize=14)
+   axsL[2].set_ylabel(&quot;V [km/s]&quot;;     fontsize=14)
+   axsL[3].set_ylabel(&quot;P [nPa]&quot;;      fontsize=14)
+   axsL[4].set_ylabel(&quot;B [nT]&quot;;       fontsize=14)
+   axsL[5].set_ylabel(&quot;E [mV/m]&quot;;     fontsize=14)
+
+   fakeline = loc
+   l1 = axsL[1].plot(loc, fakeline, label=&quot;Proton density&quot;, color=&quot;#1f77b4&quot;)
+   l2 = axsL[2].plot(loc, fakeline, label=&quot;Vx&quot;,             color=&quot;#1f77b4&quot;)
+   l3 = axsL[2].plot(loc, fakeline, label=&quot;Vy&quot;,             color=&quot;#ff7f0e&quot;)
+   l4 = axsL[2].plot(loc, fakeline, label=&quot;Vz&quot;,             color=&quot;#2ca02c&quot;)
+   l5 = axsL[3].plot(loc, fakeline, label=&quot;Ram&quot;,            color=&quot;#1f77b4&quot;)
+   l6 = axsL[3].plot(loc, fakeline, label=&quot;Thermal&quot;,        color=&quot;#ff7f0e&quot;)
+   l7 = axsL[4].plot(loc, fakeline, label=&quot;Bx&quot;,             color=&quot;#1f77b4&quot;)
+   l8 = axsL[4].plot(loc, fakeline, label=&quot;By&quot;,             color=&quot;#ff7f0e&quot;)
+   l9 = axsL[4].plot(loc, fakeline, label=&quot;Bz&quot;,             color=&quot;#2ca02c&quot;)
+   l10= axsL[5].plot(loc, fakeline, label=&quot;Ex&quot;,             color=&quot;#1f77b4&quot;)
+   l11= axsL[5].plot(loc, fakeline, label=&quot;Ey&quot;,             color=&quot;#ff7f0e&quot;)
+   l12= axsL[5].plot(loc, fakeline, label=&quot;Ez&quot;,             color=&quot;#2ca02c&quot;)
+
+   ls = (l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12)
+
+   axsL[2].legend(;loc=&quot;lower left&quot;,  ncol=3, frameon=false, fontsize=12)
+   axsL[3].legend(;loc=&quot;upper left&quot;,  ncol=2, frameon=false, fontsize=12)
+   axsL[4].legend(;loc=&quot;upper right&quot;, ncol=3, frameon=false, fontsize=12)
+   axsL[5].legend(;loc=&quot;lower right&quot;, ncol=3, frameon=false, fontsize=12)
+
+   vl1 = axsL[1].vlines(loc[1], ρmin, ρmax; colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+   vl2 = axsL[2].vlines(loc[1], vmin, vmax; colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+   vl3 = axsL[3].vlines(loc[1], pmin, pmax; colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+   vl4 = axsL[4].vlines(loc[1], bmin, bmax; colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+   vl5 = axsL[5].vlines(loc[1], emin, emax; colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+
+   hl2 = axsL[2].hlines(0.0, loc[1], loc[end]; colors=&quot;k&quot;, linestyle=&quot;dashed&quot;, alpha=0.2)
+   hl4 = axsL[4].hlines(0.0, loc[1], loc[end]; colors=&quot;k&quot;, linestyle=&quot;dashed&quot;, alpha=0.2)
+   hl5 = axsL[5].hlines(0.0, loc[1], loc[end]; colors=&quot;k&quot;, linestyle=&quot;dashed&quot;, alpha=0.2)
+
+   vlines = (vl1, vl2, vl3, vl4, vl5)
+
+   for ax in axsR
+      ax.set_aspect(&quot;equal&quot;)
+
+      # Set border line widths
+      for loc in (&quot;left&quot;, &quot;bottom&quot;, &quot;right&quot;, &quot;top&quot;)
+         edge = get(ax.spines, loc, nothing)
+         edge.set_linewidth(2.0)
+      end
+      ax.xaxis.set_tick_params(width=2.0, length=3)
+      ax.yaxis.set_tick_params(width=2.0, length=3)
+      ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+
+      ax.set_ylabel(L&quot;Y [$R_E$]&quot;; fontsize=14)
+   end
+
+   axsR[2].set_xlabel(L&quot;X [$R_E$]&quot;; fontsize=14)
+
+   axsR[1].set_title(&quot;Alfven speed&quot;, fontsize=14)
+   axsR[2].set_title(&quot;Sound speed&quot;, fontsize=14)
+
+   x, y = Vlasiator.get_axis(pArgs)
+   fakedata = fill(NaN32, length(y), length(x))
+
+   cnorm1, cticks1 = set_colorbar(Linear, vamin, vamax)
+   cnorm2, cticks2 = set_colorbar(Linear, vsmin, vsmax)
+   cmap = matplotlib.cm.turbo
+
+   c1 = axsR[1].pcolormesh(x, y, fakedata; norm=cnorm1, cmap)
+   c2 = axsR[2].pcolormesh(x, y, fakedata; norm=cnorm2, cmap)
+
+   rInner = 31.8e6 # [m]
+   circle1 = plt.Circle((0, 0), rInner/Vlasiator.RE, color=&quot;w&quot;)
+   circle2 = plt.Circle((0, 0), rInner/Vlasiator.RE, color=&quot;w&quot;)
+   axsR[1].add_patch(circle1)
+   axsR[2].add_patch(circle2)
+
+   cb1 = colorbar(c1; ax=axsR[1], ticks=cticks1, fraction=0.046, pad=0.04, extend=&quot;max&quot;)
+   cb1.ax.set_ylabel(&quot;[km/s]&quot;; fontsize=14)
+
+   cb2 = colorbar(c2; ax=axsR[2], ticks=cticks2, fraction=0.046, pad=0.04)
+   cb2.ax.set_ylabel(&quot;[km/s]&quot;; fontsize=14)
+
+   #fig.suptitle(&quot;Density Pulse Run&quot;, fontsize=&quot;xx-large&quot;)
+
+   cs = (c1, c2)
+
+   return fig, subfigs, ls, vlines, cs
+end
+
+
+&quot;Update frame.&quot;
+function update_plot!(plotargs, outdir, file)
+   isfile(outdir*file[end-8:end-5]*&quot;.png&quot;) &amp;&amp; return
+
+   fig, subfigs, ls, vlines, cs = plotargs
+
+   meta = load(file)
+
+   p_extract = readvariable(meta, &quot;vg_pressure&quot;, cellids) .* 1f9 |&gt; vec # [nPa]
+   rho_extract = readvariable(meta, &quot;proton/vg_rho&quot;, cellids) |&gt; vec
+   v_extract = readvariable(meta, &quot;proton/vg_v&quot;, cellids)
+   vmag2_extract = sum(x -&gt; x*x, v_extract, dims=1) |&gt; vec
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1f9 # [nPa]
+
+   bz = readvariable(meta, &quot;vg_b_vol&quot;, cellids)[3,:] .* 1f9 #[nT]
+
+   ls[1][1].set_ydata(rho_extract ./ 1f6)
+   ls[2][1].set_ydata(v_extract[1,:] ./ 1f3)
+   ls[3][1].set_ydata(pram_extract)
+   ls[4][1].set_ydata(p_extract)
+   ls[5][1].set_ydata(bz)
+
+   imagnetopause_ = findfirst(&lt;(0.0), bz)
+   for vline in vlines
+      update_vline(vline, loc[imagnetopause_])
+   end
+
+   str_title = @sprintf &quot;Sun-Earth line, t= %4.1fs&quot; meta.time
+   subfigs[1].suptitle(str_title, fontsize=14)
+
+   data = prep2d(meta, &quot;VA&quot;, :z)&#39;
+   cs[1].update(Dict(&quot;array&quot; =&gt; data ./ 1e3))
+
+   data = prep2d(meta, &quot;VS&quot;, :z)&#39;
+   cs[2].update(Dict(&quot;array&quot; =&gt; data ./ 1e3))
+
+   savefig(outdir*file[end-8:end-5]*&quot;.png&quot;, bbox_inches=&quot;tight&quot;, dpi=100)
+   return
+end
+
+function update_vline(h, x)
+   seg_old = h.get_segments()
+   ymin = seg_old[1][1, 2]
+   ymax = seg_old[1][2, 2]
+
+   seg_new = [[x ymin; x ymax]]
+
+   h.set_segments(seg_new)
+end
+
+####### Main
+
+files = glob(&quot;bulk*.vlsv&quot;, &quot;.&quot;)
+nfile = length(files)
+# Set output directory
+const outdir = &quot;out/&quot;
+
+meta = load(files[1])
+
+const x1, x2 = 7.0, 18.0 # Earth radii
+const point1 = [x1, 0, 0] .* Vlasiator.RE
+const point2 = [x2, 0, 0] .* Vlasiator.RE
+
+cellids, distances, coords = getcellinline(meta, point1, point2)
+
+loc = range(x1, x2, length=length(cellids))
+
+pArgs = set_args(meta, &quot;fakename&quot;, RE; normal=:none)
+
+# Upper/lower limits for each variable
+ρmin, ρmax = 0.0, 10.0     # [amu/cc]
+vmin, vmax = -640.0, 100.0 # [km/s]
+pmin, pmax = 0.0, 1.82     # [nPa]
+bmin, bmax = -25.0, 60.0   # [nT]
+emin, emax = -5.0, 5.0     # [mV/m]
+vamin, vamax = 0.0, 250.0  # [km/s]
+vsmin, vsmax = 0.0, 400.0  # [km/s]
+
+varminmax =
+   Varminmax(ρmin, ρmax, vmin, vmax, pmin, pmax, bmin, bmax, emin, emax,
+   vamin, vamax, vsmin, vsmax)
+
+
+plotargs = init_figure(varminmax, loc, pArgs)
+
+# Loop over snapshots
+for (i, file) in enumerate(files)
+   println(&quot;i = $i/$nfile, file = $(basename(file))&quot;)
+   update_plot!(plotargs, outdir, file)
+end
+
+close(plotargs[1])
+println(&quot;Finished!&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/johnnychen94/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.25 on <span class="colophon-date" title="Monday 17 July 2023 14:41">Monday 17 July 2023</span>. Using Julia version 1.9.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
