@@ -28,7 +28,8 @@ end
    if group in (:read, :all)
       @testset "Reading files" begin
          _, offset, _, _, _ = let footer = Vlasiator.getfooter(meta1.fid)
-            Vlasiator.getObjInfo(footer, "time", "PARAMETER", "name")
+            ns = Vlasiator.children(footer[end])
+            Vlasiator.getObjInfo(ns, "time", "PARAMETER", "name")
          end
          @test offset == 264
 
@@ -248,7 +249,7 @@ end
 
          write_vlsv(files[1], "bulk_new.vlsv", vars)
          sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
-         @test sha_str == "2b209fb022a2db3b013e01606a60c1fac360a79d"
+         @test sha_str == "76613a12331fabc3793b1d3be71a76d43d678574"
 
          rm("bulk_new.vlsv", force=true)
       end
