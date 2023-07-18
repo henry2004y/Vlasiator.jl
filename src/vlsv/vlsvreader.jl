@@ -908,18 +908,15 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    vcellids = Vector{Int32}(undef, bsize*nblocks)
    vcellf = Vector{Float32}(undef, bsize*nblocks)
 
-   vcellid_local = @inbounds [i + vblock_size[1]*j + vblock_size[1]*vblock_size[2]*k
-      for i in 0:vblock_size[1]-1, j in 0:vblock_size[2]-1, k in 0:vblock_size[3]-1]
-
-   _fillvcell!(vcellids, vcellf, vcellid_local, data, blockIDs, bsize)
+   _fillvcell!(vcellids, vcellf, data, blockIDs, bsize)
 
    vcellids, vcellf
 end
 
-@inline function _fillvcell!(vcellids, vcellf, vcellid_local, data, blockIDs, bsize)
+@inline function _fillvcell!(vcellids, vcellf, data, blockIDs, bsize)
    @inbounds for i in eachindex(blockIDs), j in 1:bsize
       index_ = (i-1)*bsize+j
-      vcellids[index_] = vcellid_local[j] + bsize*blockIDs[i]
+      vcellids[index_] = j - 1 + bsize*blockIDs[i]
       vcellf[index_] = data[j,i]
    end
 end
