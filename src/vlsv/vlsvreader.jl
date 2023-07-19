@@ -521,12 +521,12 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
 
       dataOrdered =
          if ndims(raw)::Int64 > 1
-            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox[1], bbox[2], bbox[3])
+            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox...)
          else
-            @inbounds Array{Float32}(undef, bbox[1], bbox[2], bbox[3])
+            @inbounds Array{Float32}(undef, bbox...)
          end
 
-      @inbounds fgDecomposition = @views getDomainDecomposition(bbox[1:3], nIORanks)
+      fgDecomposition = getDomainDecomposition(bbox, nIORanks)
 
       _fillFG!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
 
