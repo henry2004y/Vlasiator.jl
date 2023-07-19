@@ -773,7 +773,7 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
       @. coef_max = (max_bounds - p) / unit_vector
 
       # Negative coefficients indicates the opposite direction
-      for i = 1:3
+      for i in 1:3
          if unit_vector[i] == 0.0
             coef_min[i] = Inf
             coef_max[i] = Inf
@@ -824,14 +824,14 @@ function getslicecell(meta::MetaVLSV, sliceoffset::Float64, dir::Int,
    nlen = 0
    ncell = prod(ncells)
    # number of cells up to each refinement level
-   nStart = (vcat(0, accumulate(+, (ncell*8^ilvl for ilvl = 0:maxamr))))
+   nStart = (vcat(0, accumulate(+, (ncell*8^ilvl for ilvl in 0:maxamr))))
 
    indexlist = Int[]
    idlist = Int[]
 
    cellidsorted = sort(collect(keys(celldict)))
 
-   @inbounds for ilvl = 0:maxamr
+   @inbounds for ilvl in 0:maxamr
       nLow, nHigh = nStart[ilvl+1], nStart[ilvl+2]
       idfirst_ = searchsortedfirst(cellidsorted, nLow+1)
       idlast_  = searchsortedlast(cellidsorted, nHigh)
@@ -883,7 +883,7 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractVector,
    ncell = prod(ncells)
    nHigh, nLow = ncell, 0
 
-   @inbounds for i = 0:maxamr
+   @inbounds for i in 0:maxamr
       idfirst_ = searchsortedfirst(idlist, nLow+1)
       idlast_  = searchsortedlast(idlist, nHigh)
 
@@ -909,12 +909,12 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractVector,
 
       coords = [(0, 0) for _ in a, _ in 1:2^(2*(maxamr-i))]
 
-      @inbounds for ir = 1:2^(2*(maxamr-i)), ic in eachindex(a, b)
+      @inbounds for ir in 1:2^(2*(maxamr-i)), ic in eachindex(a, b)
          @fastmath coords[ic,ir] = (muladd(a[ic], refineRatio, 1+X[ir]),
                                     muladd(b[ic], refineRatio, 1+Y[ir]) )
       end
 
-      for ir = 1:2^(2*(maxamr-i)), ic in eachindex(d)
+      for ir in 1:2^(2*(maxamr-i)), ic in eachindex(d)
          dpoints[ coords[ic,ir]... ] = d[ic]
       end
 
@@ -1199,7 +1199,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    offset = Vector{Int}(undef, nv)
    arraysize = similar(offset)
    vsize = similar(offset)
-   @inbounds for i = 1:nv
+   @inbounds for i in 1:nv
       T[i], offset[i], arraysize[i], _, vsize[i] = getvarinfo(nodeVLSV.var, vars[i])
    end
 
@@ -1217,13 +1217,13 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    end
 
    @inbounds vtkGhostType = if !skipghosttype
-      [zeros(UInt8, ncells[1] << i, ncells[2] << i, ncells[3] << i) for i = 0:maxamr]
+      [zeros(UInt8, ncells[1] << i, ncells[2] << i, ncells[3] << i) for i in 0:maxamr]
    else
       [UInt8[]]
    end
 
    if maxamr == 0
-      @inbounds for iv = 1:nv
+      @inbounds for iv in 1:nv
          celldata[iv][1][:] = readvariable(meta, vars[iv])
       end
       return celldata, vtkGhostType
@@ -1234,7 +1234,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
    nLow, nHigh = 0, ncell
    cellidsorted = sort(collect(keys(celldict)))
 
-   @inbounds for ilvl = 0:maxamr
+   @inbounds for ilvl in 0:maxamr
       verbose && @info "scanning AMR level $ilvl..."
 
       idfirst_ = searchsortedfirst(cellidsorted, nLow+1)
@@ -1292,10 +1292,10 @@ end
 
 function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
    iz::Vector{Int}, dataout::Vector, datain::AbstractArray, ilvl::Int, maxamr::Int)
-   @inbounds for ilvlup = ilvl:maxamr
+   @inbounds for ilvlup in ilvl:maxamr
       r = 2^(ilvlup-ilvl) # ratio on refined level
       for c in eachindex(ids)
-         for k = 1:r, j = 1:r, i = 1:r
+         for k in 1:r, j in 1:r, i in 1:r
             _fillcelldata!(dataout[ilvlup+1], datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
          end
       end
@@ -1306,7 +1306,7 @@ function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
    iz::Vector{Int}, dataout::Array, datain::AbstractArray, ilvl::Int, maxamr::Int)
    r = 2^(maxamr-ilvl) # ratio on refined level
    @inbounds for c in eachindex(ids)
-      for k = 1:r, j = 1:r, i = 1:r
+      for k in 1:r, j in 1:r, i in 1:r
          _fillcelldata!(dataout, datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
       end
    end
@@ -1390,7 +1390,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       )
       push!(elm, xamr)
 
-      @inbounds for i = 0:maxamr
+      @inbounds for i in 0:maxamr
          spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
          xBlock = Element("Block";
             level=string(i),

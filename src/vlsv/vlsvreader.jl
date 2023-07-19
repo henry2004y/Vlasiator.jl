@@ -637,7 +637,7 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
    fgDecomposition::NTuple{3, Int}, nIORanks::Int32, bbox::NTuple{3, Int})
    offsetnow = 1
 
-   @inbounds @views for i = 1:nIORanks
+   @inbounds @views for i in 1:nIORanks
       xyz = (
          (i - 1) ÷ fgDecomposition[3] ÷ fgDecomposition[2],
          (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
@@ -732,15 +732,15 @@ function getDomainDecomposition(globalsize, nprocs)
    domainDecomp = (1, 1, 1)
    minValue = typemax(Float64)
 
-   @inbounds for i = 1:min(nprocs, globalsize[1])
+   @inbounds for i in 1:min(nprocs, globalsize[1])
       iBox = max(globalsize[1]/i, 1.0)
 
-      for j = 1:min(nprocs, globalsize[2])
+      for j in 1:min(nprocs, globalsize[2])
          i * j > nprocs && break
 
          jBox = max(globalsize[2]/j, 1.0)
 
-         for k = 1:min(nprocs, globalsize[2])
+         for k in 1:min(nprocs, globalsize[2])
             i * j * k > nprocs && continue
 
             kBox = max(globalsize[3]/k, 1.0)
