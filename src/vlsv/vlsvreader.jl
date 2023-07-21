@@ -651,11 +651,9 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
       # Reorder data
       if ndims(raw) > 1
          ldata = reshape(raw[:,offsetnow:offsetnext-1], size(raw,1), lsize...)
-
          dataOrdered[:,lrange...] = ldata
       else
          ldata = reshape(raw[offsetnow:offsetnext-1], lsize...)
-
          dataOrdered[lrange...] = ldata
       end
       offsetnow = offsetnext
