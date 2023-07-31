@@ -280,14 +280,8 @@ function _plot2d(f::PyObject, meta::MetaVLSV, var::String,
 
    norm, ticks = set_colorbar(colorscale, vmin, vmax, data)
 
-   range1, range2 =
-      if axisunit == EARTH
-         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
-         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
-      else
-         searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
-         searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
-      end
+   range1 = searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2])
+   range2 = searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
 
    if colorscale != SymLog
       if range1 == 1:pArgs.sizes[1] && range2 == 1:pArgs.sizes[2]
