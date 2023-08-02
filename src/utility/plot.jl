@@ -55,7 +55,7 @@ function set_args(meta::MetaVLSV, var::String, axisunit::AxisUnit; normal::Symbo
    end
 
    plotrange = (coordmin[seq[1]], coordmax[seq[1]], coordmin[seq[2]], coordmax[seq[2]])
-   axislabels = ['X', 'Y', 'Z'][[seq...]]
+   axislabels = ('X', 'Y', 'Z')[[seq...]]
    # Scale the sizes to the highest refinement level
    sizes = ncells[[seq...]] .<< meta.maxamr # data needs to be refined later
 
