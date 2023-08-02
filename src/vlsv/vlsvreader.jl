@@ -402,12 +402,12 @@ function readvariablemeta(meta::MetaVLSV, var::String)
    elseif hasvariable(meta, var) # For Vlasiator 5 files, MetaVLSV is included
       for node in meta.nodeVLSV.var
          at = attributes(node)
-         if at["name"] == var
-            haskey(at, "unit") || break
+         if at["name"] == var && haskey(at, "unit")
             unit = at["unit"]
             unitLaTeX = at["unitLaTeX"]
             variableLaTeX = at["variableLaTeX"]
             unitConversion = at["unitConversion"]
+            break
          end
       end
    end
