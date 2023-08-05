@@ -78,11 +78,11 @@ Any valid keyword argument for `plt.streamplot` is accepted.
 function PyPlot.streamplot(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
    comp::String="xy", axisunit::AxisUnit=EARTH, kwargs...)
 
-   X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
+   x, y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
    isnothing(ax) && (ax = plt.gca())
 
-   ax.streamplot(X, Y, v1, v2; kwargs...)
+   ax.streamplot(x, y, v1, v2; kwargs...)
 end
 
 """
@@ -101,11 +101,11 @@ Any valid keyword argument for `plt.quiver` is accepted.
 function PyPlot.quiver(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
    comp::String="xy", axisunit::AxisUnit=EARTH, stride::Int=10, kwargs...)
 
-   X, Y, v1, v2 = set_vector(meta, var, comp, axisunit)
+   x, y, v1, v2 = set_vector(meta, var, comp, axisunit)
 
    isnothing(ax) && (ax = plt.gca())
 
-   Xq,  Yq  = X[1:stride:end, 1:stride:end],  Y[1:stride:end, 1:stride:end]
+   Xq,  Yq  = x[1:stride:end], y[1:stride:end]
    v1q, v2q = v1[1:stride:end, 1:stride:end], v2[1:stride:end, 1:stride:end]
 
    ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
@@ -155,11 +155,7 @@ function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUni
 
    x, y = get_axis(axisunit, plotrange, sizes)
 
-   # meshgrid: note the array ordering difference between Julia and Python!
-   X = [i for _ in y, i in x]
-   Y = [j for j in y, _ in x]
-
-   X, Y, v1', v2'
+   x, y, v1', v2'
 end
 
 """
