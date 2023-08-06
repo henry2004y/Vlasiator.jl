@@ -397,26 +397,25 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
 
    V = getvcellcoordinates(meta, vcellids; species)
 
-   if center == :bulk # centered with bulk velocity
-      Vbulk =
+   Vcenter = 
+      if center == :bulk # centered with bulk velocity
          if hasvariable(meta, "moments") # From a restart file
-            readvariable(meta, "restart_V", cidNearest)
+            vc = readvariable(meta, "restart_V", cidNearest)
          elseif hasvariable(meta, species*"/vg_v") # Vlasiator 5
-            readvariable(meta, species*"/vg_v", cidNearest)
+            vc = readvariable(meta, species*"/vg_v", cidNearest)
          elseif hasvariable(meta, species*"/V")
-            readvariable(meta, species*"/V", cidNearest)
+            vc = readvariable(meta, species*"/V", cidNearest)
          else
-            readvariable(meta, "V", cidNearest)
+            vc = readvariable(meta, "V", cidNearest)
          end
+         SVector{3}(vc)
+      elseif center == :peak # centered on highest VDF-value
+         cidmax = argmax(vcellf)
+         V[cidmax]
+      end
 
-      for i in eachindex(V)
-         V[i] = V[i] .- Vbulk
-      end
-   elseif center == :peak # centered on highest VDF-value
-      Vpeak = maximum(vcellf)
-      for i in eachindex(V)
-         V[i] = V[i] .- Vpeak
-      end
+   for i in eachindex(V)
+      V[i] = V[i] .- Vcenter
    end
 
    # Set sparsity threshold
@@ -501,9 +500,9 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
       @info "CellID: $cidNearest"
 
       if center == :bulk
-         @info "Transforming to plasma frame, travelling at speed $Vbulk"
+         @info "Transforming to plasma frame, travelling at speed $Vcenter"
       elseif center == :peak
-         @info "Transforming to peak f-value frame, travelling at speed $Vpeak"
+         @info "Transforming to peak f-value frame, travelling at speed $Vcenter"
       end
 
       @info "Using VDF threshold value of $flimit."
