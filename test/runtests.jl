@@ -380,6 +380,14 @@ end
             Vlasiator.VDFSlice((meta, [0.0,0.0,0.0])))
          @test getfield(rec[1], 1)[:seriestype] == :histogram2d
 
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(:center => :bulk),
+            Vlasiator.VDFSlice((meta, [0.0,0.0,0.0])))
+         @test rec[1].args[1][1] == -0.00015234268f0
+
+         rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(:center => :peak),
+            Vlasiator.VDFSlice((meta, [0.0,0.0,0.0])))
+         @test rec[1].args[1][1] == -0.00019999992f0
+
          # 2D
          meta = meta2
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")

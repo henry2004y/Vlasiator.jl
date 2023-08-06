@@ -397,25 +397,27 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
 
    V = getvcellcoordinates(meta, vcellids; species)
 
-   Vcenter = 
-      if center == :bulk # centered with bulk velocity
-         if hasvariable(meta, "moments") # From a restart file
-            vc = readvariable(meta, "restart_V", cidNearest)
-         elseif hasvariable(meta, species*"/vg_v") # Vlasiator 5
-            vc = readvariable(meta, species*"/vg_v", cidNearest)
-         elseif hasvariable(meta, species*"/V")
-            vc = readvariable(meta, species*"/V", cidNearest)
-         else
-            vc = readvariable(meta, "V", cidNearest)
+   if center != :nothing
+      Vcenter = 
+         if center == :bulk # centered with bulk velocity
+            if hasvariable(meta, "moments") # From a restart file
+               vc = readvariable(meta, "restart_V", cidNearest)
+            elseif hasvariable(meta, species*"/vg_v") # Vlasiator 5
+               vc = readvariable(meta, species*"/vg_v", cidNearest)
+            elseif hasvariable(meta, species*"/V")
+               vc = readvariable(meta, species*"/V", cidNearest)
+            else
+               vc = readvariable(meta, "V", cidNearest)
+            end
+            SVector{3}(vc)
+         elseif center == :peak # centered on highest VDF-value
+            cidmax = argmax(vcellf)
+            V[cidmax]
          end
-         SVector{3}(vc)
-      elseif center == :peak # centered on highest VDF-value
-         cidmax = argmax(vcellf)
-         V[cidmax]
-      end
 
-   for i in eachindex(V)
-      V[i] = V[i] .- Vcenter
+      for i in eachindex(V)
+         V[i] = V[i] .- Vcenter
+      end
    end
 
    # Set sparsity threshold
