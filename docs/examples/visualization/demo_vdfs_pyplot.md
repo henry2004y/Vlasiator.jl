@@ -35,8 +35,10 @@ function main()
 
    file = "test/data/bulk.1d.vlsv"
    meta = load(file)
+   species = "proton"
 
-   cells = getcellwithvdf(meta)
+   init_cellswithVDF!(meta, species)
+   cells = meta.meshes[species].cellwithVDF
 
    ρ = zeros(Float64, size(cells))
    v = zeros(Float64, 3, size(cells)...)

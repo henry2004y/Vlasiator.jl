@@ -16,14 +16,15 @@ using Vlasiator: RE # Earth radius [m]
 function main()
    file = "bulk.0001347.vlsv"
    meta = load(file)
+   species = "proton"
 
    coordinates = [0.0, 0.0, 0.0]
 
    vdfslice(meta, coordinates; verbose=true)
 
    # Show the spatial distribution of cells with saved VDF
-   cellswithVDF = getcellwithvdf(meta)
-   locations = [getcellcoordinates(meta, cid) for cid in cellswithVDF]
+   init_cellswithVDF!(meta, species)
+   locations = [getcellcoordinates(meta, cid) for cid in meta.meshes[species].cellwithVDF]
 
    xcell = zeros(size(locations))
    ycell = similar(xcell)

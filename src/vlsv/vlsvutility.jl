@@ -1003,7 +1003,8 @@ Find the nearest spatial cell with VDF saved for `species` of a given cell `id` 
 with `meta`.
 """
 function getnearestcellwithvdf(meta::MetaVLSV, id::Int, species::String="proton")
-   cells = getcellwithvdf(meta, species)
+   init_cellswithVDF!(meta, species)
+   cells = meta.meshes[species].cellwithVDF
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords_orig = getcellcoordinates(meta, id)
    coords = [zeros(SVector{3}) for _ in cells]
@@ -1013,49 +1014,6 @@ function getnearestcellwithvdf(meta::MetaVLSV, id::Int, species::String="proton"
    min_ = findmin(c -> sum(abs2, c .- coords_orig), coords)[2]
 
    cells[min_]
-end
-
-"""
-    getcellwithvdf(meta, species::String="proton") -> cellids
-
-Get all the cell IDs with VDF saved associated with `meta`.
-"""
-function getcellwithvdf(meta::MetaVLSV, species::String="proton")
-   (; fid, nodeVLSV) = meta
-
-   local cellsWithVDF, nblock_C
-
-   for node in nodeVLSV.cellwithVDF
-      at = attributes(node)
-      if at["name"] == species
-         asize = Parsers.parse(Int, at["arraysize"])
-         cellsWithVDF = Vector{Int}(undef, asize)
-         offset = Parsers.parse(Int, value(node[1]))
-         seek(fid, offset)
-         read!(fid, cellsWithVDF)
-         break
-      end
-   end
-
-   for node in nodeVLSV.cellblocks
-      at = attributes(node)
-      if at["name"] == species
-         asize = Parsers.parse(Int, at["arraysize"])
-         dsize = Parsers.parse(Int, at["datasize"])
-         offset = Parsers.parse(Int, value(node[1]))
-         nblock_C = dsize == 4 ?
-            Vector{Int32}(undef, asize) : Vector{Int}(undef, asize)
-         seek(fid, offset)
-         read!(fid, nblock_C)
-         break
-      end
-   end
-
-   innerBCCells = findall(==(0), nblock_C)
-
-   deleteat!(cellsWithVDF, innerBCCells)
-
-   cellsWithVDF
 end
 
 "Return the first cell ID on `mylevel` given `ncells` on this level."

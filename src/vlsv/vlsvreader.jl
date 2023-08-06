@@ -823,37 +823,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    (;fid, nodeVLSV) = meta
    (;vblock_size) = meta.meshes[species]
 
-   if !@isinit meta.meshes[species].cellwithVDF
-      for node in nodeVLSV.cellwithVDF
-         at = attributes(node)
-         if at["name"] == species
-            asize = Parsers.parse(Int, at["arraysize"])
-            offset = Parsers.parse(Int, value(node[1]))
-            cellwithVDF = Vector{Int}(undef, asize)
-            seek(fid, offset)
-            read!(fid, cellwithVDF)
-            @init! meta.meshes[species].cellwithVDF = cellwithVDF
-            break
-         end
-      end
-
-      for node in nodeVLSV.cellblocks
-         at = attributes(node)
-         if at["name"] == species
-            asize = Parsers.parse(Int, at["arraysize"])
-            dsize = Parsers.parse(Int, at["datasize"])
-            offset = Parsers.parse(Int, value(node[1]))
-            T = dsize == 4 ? Int32 : Int
-            nblock_C = Vector{Int}(undef, asize)
-            seek(fid, offset)
-            @inbounds for i in 1:asize
-               nblock_C[i] = read(fid, T)
-            end
-            @init! meta.meshes[species].nblock_C = nblock_C
-            break
-         end
-      end
-   end
+   init_cellswithVDF!(meta, species)
 
    cellWithVDFIndex = findfirst(==(cid), meta.meshes[species].cellwithVDF)
    if !isnothing(cellWithVDFIndex)
@@ -909,6 +879,47 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    _fillvcell!(vcellids, vcellf, data, blockIDs, bsize)
 
    vcellids, vcellf
+end
+
+"Lazily initialize arrays of cell ID with VDF and number of vblock per cell."
+function init_cellswithVDF!(meta::MetaVLSV, species::String)
+   (; fid, nodeVLSV) = meta
+   mesh = meta.meshes[species]
+
+   if !@isinit mesh.cellwithVDF
+      for node in nodeVLSV.cellwithVDF
+         at = attributes(node)
+         if at["name"] == species
+            asize = Parsers.parse(Int, at["arraysize"])
+            offset = Parsers.parse(Int, value(node[1]))
+            cellwithVDF = Vector{Int}(undef, asize)
+            seek(fid, offset)
+            read!(fid, cellwithVDF)
+            @init! mesh.cellwithVDF = cellwithVDF
+            break
+         end
+      end
+
+      for node in nodeVLSV.cellblocks
+         at = attributes(node)
+         if at["name"] == species
+            asize = Parsers.parse(Int, at["arraysize"])
+            dsize = Parsers.parse(Int, at["datasize"])
+            offset = Parsers.parse(Int, value(node[1]))
+            T = dsize == 4 ? Int32 : Int
+            nblock_C = Vector{Int}(undef, asize)
+            seek(fid, offset)
+            @inbounds for i in 1:asize
+               nblock_C[i] = read(fid, T)
+            end
+            @init! mesh.nblock_C = nblock_C
+            break
+         end
+      end
+   end
+
+   innerBCCells = findall(==(0), mesh.nblock_C)
+   deleteat!(mesh.cellwithVDF, innerBCCells)
 end
 
 @inline function _fillvcell!(vcellids, vcellf, data, blockIDs, bsize)
