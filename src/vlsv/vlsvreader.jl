@@ -826,14 +826,10 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    init_cellswithVDF!(meta, species)
 
    cellWithVDFIndex = findfirst(==(cid), meta.meshes[species].cellwithVDF)
-   if !isnothing(cellWithVDFIndex)
-      @inbounds nblocks = meta.meshes[species].nblock_C[cellWithVDFIndex]
-      if nblocks == 0
-         throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
-      end
-   else
+   if isnothing(cellWithVDFIndex)
       throw(ArgumentError("Cell ID $cid does not store velocity distribution!"))
    end
+   @inbounds nblocks = meta.meshes[species].nblock_C[cellWithVDFIndex]
    # Offset position to vcell storage
    offset_v = sum(@view meta.meshes[species].nblock_C[1:cellWithVDFIndex-1]; init=0)
 
