@@ -440,7 +440,7 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
       v2select = [v[dir2] for v in Vselect]
       vnormal = [v[dir3] for v in Vselect]
 
-      strx, stry = getindex(["vx", "vy", "vz"], [dir1, dir2])
+      strx, stry = getindex(("vx", "vy", "vz"), [dir1, dir2])
    elseif slicetype ∈ (:bperp, :bpar1, :bpar2)
       v1select = Vector{eltype(Vselect[1])}(undef, length(Vselect))
       v2select = similar(v1select)
