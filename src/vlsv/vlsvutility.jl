@@ -255,10 +255,9 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector{Int32};
       for cid in vcellblockids]
 
    # Get cell coordinates
-   cellCoords = [SVector(0.0f0, 0.0f0, 0.0f0) for _ in vcellblockids]
-   @inbounds @simd for i in eachindex(vcellblockids)
-      cellCoords[i] = [blockCoord[i][j] + (cellidxyz[i][j] + 0.5) * dv[j] for j in 1:3]
-   end
+   cellCoords = [
+      @SVector [Float32(blockCoord[i][j] + (cellidxyz[i][j] + 0.5) * dv[j]) for j in 1:3]
+      for i in eachindex(vcellblockids)]
 
    cellCoords
 end
@@ -1007,10 +1006,7 @@ function getnearestcellwithvdf(meta::MetaVLSV, id::Int, species::String="proton"
    cells = meta.meshes[species].cellwithVDF
    isempty(cells) && throw(ArgumentError("No distribution saved in $(meta.name)"))
    coords_orig = getcellcoordinates(meta, id)
-   coords = [zeros(SVector{3}) for _ in cells]
-   @inbounds for i in eachindex(cells)
-      coords[i] = getcellcoordinates(meta, cells[i])
-   end
+   coords = [getcellcoordinates(meta, cid) for cid in cells]
    min_ = findmin(c -> sum(abs2, c .- coords_orig), coords)[2]
 
    cells[min_]
