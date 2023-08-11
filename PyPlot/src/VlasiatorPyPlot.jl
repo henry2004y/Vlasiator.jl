@@ -76,9 +76,9 @@ Wrapper over Matplotlib's streamplot function.
 Any valid keyword argument for `plt.streamplot` is accepted.
 """
 function PyPlot.streamplot(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
-   comp::String="xy", axisunit::AxisUnit=EARTH, kwargs...)
+   comp::String="xy", axisunit::AxisUnit=EARTH, origin::AbstractFloat=0.0, kwargs...)
 
-   x, y, v1, v2 = set_vector(meta, var, comp, axisunit)
+   x, y, v1, v2 = set_vector(meta, var, comp, axisunit, origin)
 
    isnothing(ax) && (ax = plt.gca())
 
@@ -99,9 +99,9 @@ Wrapper over Matplotlib's quiver function. If `ax===nothing`, plot on the curren
 Any valid keyword argument for `plt.quiver` is accepted.
 """
 function PyPlot.quiver(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=nothing;
-   comp::String="xy", axisunit::AxisUnit=EARTH, stride::Int=10, kwargs...)
-
-   x, y, v1, v2 = set_vector(meta, var, comp, axisunit)
+   comp::String="xy", axisunit::AxisUnit=EARTH, origin::AbstractFloat=0.0, stride::Int=10,
+   kwargs...)
+   x, y, v1, v2 = set_vector(meta, var, comp, axisunit, origin)
 
    isnothing(ax) && (ax = plt.gca())
 
@@ -111,7 +111,8 @@ function PyPlot.quiver(meta::MetaVLSV, var::String, ax::Union{PyObject,Nothing}=
    ax.quiver(Xq, Yq, v1q, v2q; kwargs...)
 end
 
-function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUnit)
+function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUnit,
+   origin::AbstractFloat = 0.0)
    (;ncells, maxamr, coordmin, coordmax) = meta
    if occursin("x", comp)
       v1_ = 1
@@ -142,8 +143,9 @@ function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUni
          v1 = data[v1_,:,:]
          v2 = data[v2_,:,:]
       else
+         sliceoffset = origin - coordmin[dir]
          idlist, indexlist =
-            getslicecell(meta, -coordmin[dir], dir, coordmin[dir], coordmax[dir])
+            getslicecell(meta, sliceoffset, dir, coordmin[dir], coordmax[dir])
          v2D = data[:,indexlist]
          v1 = @views refineslice(meta, idlist, v2D[v1_,:], dir)
          v2 = @views refineslice(meta, idlist, v2D[v2_,:], dir)
