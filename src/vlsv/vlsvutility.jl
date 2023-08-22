@@ -230,9 +230,9 @@ Return velocity cells' coordinates of `species` and `vcellids`.
 """
 function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector{Int32};
    species::String="proton")
-   (;vblocks, vblock_size, dv, vmin) = meta.meshes[species]
+   (;vblocks, vblocksize, dv, vmin) = meta.meshes[species]
 
-   bsize = prod(vblock_size)
+   bsize = prod(vblocksize)
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
    blockInd = [(
@@ -241,17 +241,17 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector{Int32};
       bid ÷ (vblocks[1] * vblocks[2]) )
       for bid in blockid]
    blockCoord = [(
-      bInd[1] * dv[1] * vblock_size[1] + vmin[1],
-      bInd[2] * dv[2] * vblock_size[2] + vmin[2],
-      bInd[3] * dv[3] * vblock_size[3] + vmin[3] )
+      bInd[1] * dv[1] * vblocksize[1] + vmin[1],
+      bInd[2] * dv[2] * vblocksize[2] + vmin[2],
+      bInd[3] * dv[3] * vblocksize[3] + vmin[3] )
       for bInd in blockInd]
 
    # Get cell indices
    vcellblockids = @. vcellids % bsize
    cellidxyz = [(
-      cid % vblock_size[1],
-      cid ÷ vblock_size[1] % vblock_size[2],
-      cid ÷ (vblock_size[1] * vblock_size[2]) )
+      cid % vblocksize[1],
+      cid ÷ vblocksize[1] % vblocksize[2],
+      cid ÷ (vblocksize[1] * vblocksize[2]) )
       for cid in vcellblockids]
 
    # Get cell coordinates
@@ -317,17 +317,17 @@ end
 function getvelocity(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{T}) where
    T <: AbstractFloat
 
-   (;vblock_size, vblocks, dv, vmin) = vmesh
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   (;vblocksize, vblocks, dv, vmin) = vmesh
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
-   blocksize = prod(vblock_size)
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   sliceCz = vblock_size[1]*vblock_size[2]
+   sliceCz = vblocksize[1]*vblocksize[2]
 
    u = @SVector zeros(T, 3)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      id = findindex(vcellids[ic], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
@@ -389,19 +389,19 @@ end
 function getpressure(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{T}) where
    T <: AbstractFloat
 
-   (;vblock_size, vblocks, dv, vmin) = vmesh
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   (;vblocksize, vblocks, dv, vmin) = vmesh
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
-   blocksize = prod(vblock_size)
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   sliceCz = vblock_size[1]*vblock_size[2]
+   sliceCz = vblocksize[1]*vblocksize[2]
 
    u = getvelocity(vmesh, vcellids, vcellf)
 
    p = @SVector zeros(T, 6)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      id = findindex(vcellids[ic], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
@@ -465,19 +465,19 @@ end
 function getheatfluxvector(vmesh::VMeshInfo, vcellids::Vector{Int32}, vcellf::Vector{T}
    ) where T <: AbstractFloat
 
-   (;vblock_size, vblocks, dv, vmin) = vmesh
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   (;vblocksize, vblocks, dv, vmin) = vmesh
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
-   blocksize = prod(vblock_size)
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   sliceCz = vblock_size[1]*vblock_size[2]
+   sliceCz = vblocksize[1]*vblocksize[2]
 
    u = getvelocity(vmesh, vcellids, vcellf)
 
    q = @SVector zeros(T, 3)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      id = findindex(vcellids[ic], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
@@ -502,19 +502,19 @@ getheatfluxvector(meta::MetaVLSV, vcellids::Vector{Int32}, vcellf::Vector{<:Abst
    getheatfluxvector(meta.meshes[species], vcellids, vcellf)
 
 "Get the original vcell index without blocks from raw vcell index `i` (0-based)."
-@inline function findindex(i::Int32, vblocks::NTuple{3, Int}, vblock_size::NTuple{3,Int},
+@inline function findindex(i::Int32, vblocks::NTuple{3, Int}, vblocksize::NTuple{3,Int},
    blocksize::Int, vsize::NTuple{3, Int}, sliceBz::Int, sliceCz::Int)
    iB = i ÷ blocksize
    iBx = iB % vblocks[1]
    iBy = iB % sliceBz ÷ vblocks[1]
    iBz = iB ÷ sliceBz
    iCellInBlock = i % blocksize
-   iCx = iCellInBlock % vblock_size[1]
-   iCy = iCellInBlock % sliceCz ÷ vblock_size[1]
+   iCx = iCellInBlock % vblocksize[1]
+   iCy = iCellInBlock % sliceCz ÷ vblocksize[1]
    iCz = iCellInBlock ÷ sliceCz
-   iBCx = iBx*vblock_size[1] + iCx
-   iBCy = iBy*vblock_size[2] + iCy
-   iBCz = iBz*vblock_size[3] + iCz
+   iBCx = iBx*vblocksize[1] + iCx
+   iBCy = iBy*vblocksize[2] + iCy
+   iBCz = iBz*vblocksize[3] + iCz
 
    iOrigin = iBCz*vsize[1]*vsize[2] + iBCy*vsize[1] + iBCx
 end
@@ -526,17 +526,17 @@ Reorder vblock-organized VDF indexes into x-->y-->z indexes. `vcellids` are raw 
 of nonzero VDFs ordered by blocks.
 """
 function reorder(vmesh::VMeshInfo, vcellids::Vector{Int32})
-   (;vblock_size, vblocks) = vmesh
-   blocksize = prod(vblock_size)
+   (;vblocksize, vblocks) = vmesh
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
-   sliceCz = vblock_size[1]*vblock_size[2]
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
+   sliceCz = vblocksize[1]*vblocksize[2]
 
    vcellids_origin = similar(vcellids)
    # IDs are 0-based
    @inbounds @simd for i in eachindex(vcellids)
       vcellids_origin[i] = 1 +
-         findindex(vcellids[i], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+         findindex(vcellids[i], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
    end
 
    vcellids_origin
@@ -550,17 +550,17 @@ blocks, and `vcellf` are the corresponding values in each cell.
 """
 function reconstruct(vmesh::VMeshInfo, vcellids::Vector{Int32},
    vcellf::Vector{<:AbstractFloat})
-   (;vblock_size, vblocks) = vmesh
-   blocksize = prod(vblock_size)
+   (;vblocksize, vblocks) = vmesh
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
-   sliceCz = vblock_size[1]*vblock_size[2]
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
+   sliceCz = vblocksize[1]*vblocksize[2]
    # Reconstruct the full velocity space
    VDF = zeros(Float32, vsize)
    # Raw IDs are 0-based
    @inbounds @simd for i in eachindex(vcellids)
       j = 1 +
-         findindex(vcellids[i], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+         findindex(vcellids[i], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
       VDF[j] = vcellf[i]
    end
 
@@ -607,12 +607,12 @@ end
 function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{Int32},
    vcellf::Vector{<:AbstractFloat}; species::String="proton")
 
-   (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   (;vblocksize, vblocks, dv, vmin) = meta.meshes[species]
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
-   blocksize = prod(vblock_size)
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   sliceCz = vblock_size[1]*vblock_size[2]
+   sliceCz = vblocksize[1]*vblocksize[2]
 
    n = getdensity(meta, vcellf)
    u = getvelocity(meta, vcellids, vcellf)
@@ -625,7 +625,7 @@ function getmaxwellianity(meta::MetaVLSV, vcellids::Vector{Int32},
    coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      id = findindex(vcellids[ic], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez
@@ -683,12 +683,12 @@ end
 function getKLdivergence(meta::MetaVLSV, vcellids::Vector{Int32},
    vcellf::Vector{<:AbstractFloat}; species::String="proton")
 
-   (;vblock_size, vblocks, dv, vmin) = meta.meshes[species]
-   vsize = @inbounds ntuple(i -> vblock_size[i] * vblocks[i], Val(3))
+   (;vblocksize, vblocks, dv, vmin) = meta.meshes[species]
+   vsize = @inbounds ntuple(i -> vblocksize[i] * vblocks[i], Val(3))
    slicez = vsize[1]*vsize[2]
-   blocksize = prod(vblock_size)
+   blocksize = prod(vblocksize)
    sliceBz = vblocks[1]*vblocks[2]
-   sliceCz = vblock_size[1]*vblock_size[2]
+   sliceCz = vblocksize[1]*vblocksize[2]
 
    n = getdensity(meta, vcellf)
    u = getvelocity(meta, vcellids, vcellf)
@@ -701,7 +701,7 @@ function getKLdivergence(meta::MetaVLSV, vcellids::Vector{Int32},
    coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
 
    @inbounds @simd for ic in eachindex(vcellids)
-      id = findindex(vcellids[ic], vblocks, vblock_size, blocksize, vsize, sliceBz, sliceCz)
+      id = findindex(vcellids[ic], vblocks, vblocksize, blocksize, vsize, sliceBz, sliceCz)
       i = id % vsize[1]
       j = id % slicez ÷ vsize[1]
       k = id ÷ slicez

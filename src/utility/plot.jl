@@ -332,8 +332,8 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
          dir1, dir2, dir3 = 2, 3, 1
          ŝ = @SVector [1., 0., 0.]
       end
-      v1size = vmesh.vblocks[dir1] * vmesh.vblock_size[dir1]
-      v2size = vmesh.vblocks[dir2] * vmesh.vblock_size[dir2]
+      v1size = vmesh.vblocks[dir1] * vmesh.vblocksize[dir1]
+      v2size = vmesh.vblocks[dir2] * vmesh.vblocksize[dir2]
 
       v1min, v1max = vmesh.vmin[dir1], vmesh.vmax[dir1]
       v2min, v2max = vmesh.vmin[dir2], vmesh.vmax[dir2]
@@ -368,7 +368,7 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
          getRotationMatrix(e, es)'
       end
       # heuristic guess
-      v1size = vmesh.vblocks[1] * vmesh.vblock_size[1]
+      v1size = vmesh.vblocks[1] * vmesh.vblocksize[1]
       v2size = v1size
       # Compute the ranges along the two perpendicular axis in the slice plane
       r = SMatrix{3,8}(Rinv * Float32[

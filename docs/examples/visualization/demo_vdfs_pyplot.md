@@ -44,7 +44,7 @@ function main()
    v = zeros(Float64, 3, size(cells)...)
    p = zeros(Float64, size(cells))
 
-   vsize = meta.meshes["proton"].vblock_size .* meta.meshes["proton"].vblocks
+   vsize = meta.meshes["proton"].vblocksize .* meta.meshes["proton"].vblocks
    vcellids = [Int[] for _ in cells]
    vcellf = [Float64[] for _ in cells]
 

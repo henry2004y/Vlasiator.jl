@@ -6,7 +6,7 @@ const NodeVector = SubArray{Node, 1, Vector{Node}, Tuple{UnitRange{Int64}},
 @lazy struct VMeshInfo
    "number of velocity blocks"
    vblocks::NTuple{3, Int}
-   vblock_size::NTuple{3, Int}
+   vblocksize::NTuple{3, Int}
    vmin::NTuple{3, Float64}
    vmax::NTuple{3, Float64}
    dv::NTuple{3, Float64}
@@ -50,7 +50,7 @@ struct MetaVLSV
    maxamr::Int
    hasvdf::Bool
    ncells::NTuple{3, Int}
-   block_size::NTuple{3, Int}
+   blocksize::NTuple{3, Int}
    coordmin::NTuple{3, Float64}
    coordmax::NTuple{3, Float64}
    dcoord::NTuple{3, Float64}
@@ -84,7 +84,7 @@ end
 
 function Base.show(io::IO, vmesh::VMeshInfo)
    println(io, "vblocks: ", vmesh.vblocks)
-   println(io, "vblock size: ", vmesh.vblock_size)
+   println(io, "vblock size: ", vmesh.vblocksize)
    foreach((vmin,dv,vmax,comp) -> println(io, "v$comp range: ", vmin, ":", dv, ":", vmax),
       vmesh.vmin, vmesh.dv, vmesh.vmax, 'x':'z')
 end
@@ -281,7 +281,7 @@ function load(file::AbstractString)
    cellid = getcellid(fid, n.var)
    cellindex = sortperm(cellid, alg=MergeSort)
 
-   ncells, block_size, coordmin, coordmax = readmesh(fid, ns)
+   ncells, blocksize, coordmin, coordmax = readmesh(fid, ns)
 
    dcoord = ntuple(i -> (coordmax[i] - coordmin[i]) / ncells[i], Val(3))
 
@@ -291,7 +291,7 @@ function load(file::AbstractString)
    species = String[]
 
    vblocks = [0, 0, 0]
-   vblock_size = [4, 4, 4]
+   vblocksize = [4, 4, 4]
    vmin = [0.0, 0.0, 0.0]
    vmax = [1.0, 1.0, 1.0]
 
@@ -304,7 +304,7 @@ function load(file::AbstractString)
          vbox, nodeX, nodeY, nodeZ = readvmesh(fid, ns, popname)
 
          vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
-         vblock_size[1], vblock_size[2], vblock_size[3] = vbox[4], vbox[5], vbox[6]
+         vblocksize[1], vblocksize[2], vblocksize[3] = vbox[4], vbox[5], vbox[6]
          vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
          vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
       else
@@ -322,7 +322,7 @@ function load(file::AbstractString)
          end
       end
 
-      dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblock_size[i], Val(3))
+      dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblocksize[i], Val(3))
 
       # Update list of active species
       if popname ∉ species
@@ -330,7 +330,7 @@ function load(file::AbstractString)
       end
 
       # Create a new object for this species
-      popVMesh = VMeshInfo(NTuple{3}(vblocks), NTuple{3}(vblock_size),
+      popVMesh = VMeshInfo(NTuple{3}(vblocks), NTuple{3}(vblocksize),
          NTuple{3}(vmin), NTuple{3}(vmax), dv, uninit, uninit)
 
       meshes[popname] = popVMesh
@@ -362,7 +362,7 @@ function load(file::AbstractString)
    # File IOstream is not closed for sake of data processing later.
 
    meta = MetaVLSV(splitdir(file)..., fid, n, vars, celldict, cellindex,
-      timesim, maxamr, hasvdf, ncells, block_size, coordmin, coordmax,
+      timesim, maxamr, hasvdf, ncells, blocksize, coordmin, coordmax,
       dcoord, species, meshes)
 end
 
@@ -464,11 +464,11 @@ function readmesh(fid::IOStream, ns::Vector{Node})
    nodeZ = readcoords(fid, ns, "MESH_NODE_CRDS_Z")
 
    @inbounds ncells = (bbox[1], bbox[2], bbox[3])
-   @inbounds block_size = (bbox[4], bbox[5], bbox[6])
+   @inbounds blocksize = (bbox[4], bbox[5], bbox[6])
    @inbounds coordmin = (nodeX[begin], nodeY[begin], nodeZ[begin])
    @inbounds coordmax = (nodeX[end], nodeY[end], nodeZ[end])
 
-   ncells, block_size, coordmin, coordmax
+   ncells, blocksize, coordmin, coordmax
 end
 
 "Return velocity mesh information."
@@ -821,7 +821,7 @@ return a map of velocity cell ids `vcellids` and corresponding value `vcellf`.
 """
 function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
    (;fid, nodeVLSV) = meta
-   (;vblock_size) = meta.meshes[species]
+   (;vblocksize) = meta.meshes[species]
 
    init_cellswithVDF!(meta, species)
 
@@ -844,7 +844,7 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
       end
    end
 
-   bsize = prod(vblock_size)
+   bsize = prod(vblocksize)
 
    data = let
       T = dsize == 4 ? Float32 : Float64
