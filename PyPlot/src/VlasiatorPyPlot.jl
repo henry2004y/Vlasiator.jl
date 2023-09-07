@@ -15,11 +15,11 @@ export plot, pcolormesh, vdfslice, streamplot, quiver, plotmesh, set_colorbar
 export pui
 
 function __init__()
-   @static if matplotlib.__version__ ≥ "3.3"
+   if matplotlib.__version__ ≥ "3.3"
       matplotlib.rc("image", cmap="turbo") # set default colormap
    end
 
-   @static if matplotlib.__version__ < "3.5"
+   if matplotlib.__version__ < "3.5"
       matplotlib.rc("pcolor", shading="nearest") # newer version default "auto"
    end
 
@@ -363,7 +363,7 @@ function set_plot(c::PyObject, ax::PyObject, pArgs::PlotArgs, ticks, addcolorbar
 
    # Set border line widths
    for loc in ("left", "bottom", "right", "top")
-      @static matplotlib.__version__ < "3.4" ?
+      matplotlib.__version__ < "3.4" ?
          ax.spines[loc].set_linewidth(2.0) :
          getproperty(ax.spines, loc).set_linewidth(2.0)
    end
