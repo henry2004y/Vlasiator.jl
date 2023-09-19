@@ -379,7 +379,7 @@ end
 function getmaxrefinement(cellid::Vector{Int}, ncells::NTuple{3, Int})
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
-   while @inbounds cid < maximum(cellid)
+   while cid < maximum(cellid)
       maxamr += 1
       cid += ncell*8^maxamr
    end
