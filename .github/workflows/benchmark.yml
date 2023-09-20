@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
-          cd benchmark; ln -s ../Artifacts.toml Artifacts.toml
+          cd benchmark; ln -s ../test/Artifacts.toml Artifacts.toml
       - name: Run benchmarks
         run: julia -e 'using BenchmarkCI; BenchmarkCI.judge(; retune=true)'
       - name: Post results
