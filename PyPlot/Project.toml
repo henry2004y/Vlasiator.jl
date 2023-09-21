@@ -1,7 +1,7 @@
 name = "VlasiatorPyPlot"
 uuid = "de93d4bb-68ab-4e1d-9036-cf3c624bd395"
 authors = ["hyzhou <hyzhou@umich.edu>"]
-version = "0.1.2"
+version = "0.1.3"
 
 [deps]
 PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
@@ -12,5 +12,5 @@ Vlasiator = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
 [compat]
 PyPlot = "2.9"
 Reexport = "1.2"
-Vlasiator = "0.10"
+Vlasiator = "0.10, 0.11"
 julia = "1.7"
