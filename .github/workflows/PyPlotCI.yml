@@ -56,9 +56,8 @@ jobs:
           using Pkg
           Pkg.Registry.add("General")
           # dev mono repo versions
-          Pkg.develop("PyPlot")
+          Pkg.develop("./PyPlot")
       - name: Run the tests
-        continue-on-error: true
         run: >
           julia --project=monorepo -e 'using Pkg; Pkg.test("VlasiatorPyPlot", coverage=true)'
           && echo "TESTS_SUCCESSFUL=true" >> $GITHUB_ENV
