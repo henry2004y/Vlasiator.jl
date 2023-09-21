@@ -10,10 +10,7 @@ Order = [:constant, :type, :function]
 
 ## PyPlot Wrapper APIs
 
-```@autodocs
-Modules = [VlasiatorPyPlot]
-Pages   = ["VlasiatorPyPlot.jl"]
-```
+VlasiatorPyPlot has been moved to a standalone package in a subdirectory.
 
 ## Private APIs
 

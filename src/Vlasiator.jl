@@ -25,6 +25,7 @@ include("vlsv/vlsvvariables.jl")
 include("vlsv/vlsvutility.jl")
 include("utility/plot.jl")
 include("utility/plotrecipe.jl")
+include("utility/viz.jl")
 
 export
    # vlsvreader
@@ -43,7 +44,9 @@ export
    # physical parameter monitor
    check_plasma_characteristics,
    # fluxfunction
-   compute_flux_function, find_reconnection_points
+   compute_flux_function, find_reconnection_points,
+   # visualization
+   viz, viz!, vlheatmap, vlslice, vlslices, vdfvolume, vdfslice, vdfslices
 
 # PrecompileTools
 @setup_workload begin

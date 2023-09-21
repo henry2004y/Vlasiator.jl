@@ -1,7 +1,7 @@
 name = "Vlasiator"
 uuid = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
 authors = ["Hongyang Zhou <hyzhou@umich.edu>"]
-version = "0.10.4"
+version = "0.11.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -15,27 +15,27 @@ PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 XML = "72c71f33-b9b6-44de-8c94-c961784809e2"
+
+[weakdeps]
+Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+VlasiatorMakieExt = "Makie"
 
 [compat]
 LaTeXStrings = "1.2"
 LazilyInitializedFields = "1.0"
 LazyGrids = "0.4, 0.5"
+Makie = "0.19"
 Parsers = "2.4"
 PrecompileTools = "1.0"
 RecipesBase = "1.1"
 StaticArrays = "1.2"
+StatsBase = "0.33, 0.34"
 WriteVTK = "1.9"
 XML = "0.3"
 julia = "1.7"
-
-[extras]
-LazyArtifacts = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
-SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
-Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["Test", "LazyArtifacts", "SHA", "Suppressor"]
