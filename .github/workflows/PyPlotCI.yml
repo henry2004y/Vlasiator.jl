@@ -56,7 +56,7 @@ jobs:
           using Pkg
           Pkg.Registry.add("General")
           # dev mono repo versions
-          Pkg.develop("./PyPlot")
+          Pkg.develop(path="./PyPlot")
       - name: Run the tests
         run: >
           julia --project=monorepo -e 'using Pkg; Pkg.test("VlasiatorPyPlot", coverage=true)'
