@@ -53,12 +53,20 @@ end
 
       loc = [2.0, 0.0, 0.0]
       v = VlasiatorPyPlot.vdfslice(meta, loc).get_array()
-      @test v[786] == 238.24398578141802
+      @static if matplotlib.__version__ < "3.8"
+         @test v[26, 20] == 238.24398578141802
+      else
+         @test v[20, 26] == 238.24398578141802
+      end
       @test_throws ArgumentError VlasiatorPyPlot.vdfslice(meta, loc, species="helium")
       output = @capture_err begin
          v = VlasiatorPyPlot.vdfslice(meta, loc; slicetype=:bperp).get_array()
       end
-      @test v[786] == 4.02741885708042e-10
+      @static if matplotlib.__version__ < "3.8"
+         @test v[26, 20] == 4.02741885708042e-10
+      else
+         @test v[20, 26] == 4.02741885708042e-10
+      end
 
       output = @capture_err begin
          VlasiatorPyPlot.vdfslice(meta, loc; verbose=true)
@@ -68,7 +76,11 @@ end
       # 2D
       meta = meta2
       v = pcolormesh(meta, "proton/vg_rho").get_array()
-      @test v[end-2] == 999535.8f0 && length(v) == 6300
+      @static if matplotlib.__version__ < "3.8"
+         @test v[end-2] == 999535.8f0 && length(v) == 6300
+      else
+         @test v[100, 61] == 999535.8f0 && size(v) == (100, 63)
+      end
       v = pcolormesh(meta, "proton/vg_rho", extent=[0.,1.,0.,2.]).get_array()
       @test v[end] == 0.0 && length(v) == 6
       v = pcolormesh(meta, "proton/vg_rho";
@@ -81,7 +93,11 @@ end
       v = contour(meta, "proton/vg_rho").get_array()
       @test length(v) == 8 && v[end] == 5.6e6
       v = contourf(meta, "proton/vg_rho").get_array()
-      @test length(v) == 8 && v[end] == 5.6e6
+      @static if matplotlib.__version__ < "3.8"
+         @test length(v) == 8 && v[end] == 5.6e6
+      else
+         @test length(v) == 7 && v[end] == 5.2e6
+      end
       p = streamplot(meta, "proton/vg_v", comp="xy")
       @test typeof(p) == PyPlot.PyObject
       v = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
@@ -94,9 +110,17 @@ end
       # 3D AMR
       meta = meta3
       v = pcolormesh(meta, "proton/vg_rho").get_array()
-      @test v[255] == 1.0483886f6 && length(v) == 512
+      @static if matplotlib.__version__ < "3.8"
+         @test v[255] == 1.0483886f6 && length(v) == 512
+      else
+         @test v[16, 31] == 1.04838825f6 && size(v) == (16,32)
+      end
       v = pcolormesh(meta, "proton/vg_v").get_array()
-      @test v[255] == 99992.586f0
+      @static if matplotlib.__version__ < "3.8"
+         @test v[255] == 99992.586f0
+      else
+         @test v[16, 31] == 99991.67f0
+      end
       v = contour(meta, "proton/vg_rho").get_array()
       @test length(v) == 9 && v[end] == 2.1e6
       pArgs = Vlasiator.set_args(meta, "fg_e", EARTH; normal=:y, origin=0.0)
