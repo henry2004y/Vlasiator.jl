@@ -242,7 +242,7 @@ Vlasiator.jl does not include any plotting library as explicit dependency, but i
 
 Currently PyPlot provides the most complete and fine-tuned plotting capabilities. Plotting with PyPlot by accepting `MetaVLSV` as the first argument is supported via [`VlasiatorPyPlot`](https://github.com/henry2004y/Vlasiator.jl/VlasiatorPyPlot).
 Plots is a collection of plotting libraries with a uniform frontend, but it lacks fine-tuned supports and consistent APIs between different backends.
-Makie, a native Julia plotting library, is also supported via [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl). Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~20s for the first plot on Julia 1.9. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
+Makie, a native Julia plotting library, is also supported via package extension after Julia 1.9 and a package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) before Julia 1.9. Without generating an system image from [PackageCompiler](https://github.com/JuliaLang/PackageCompiler.jl), it would take ~20s for the first plot on Julia 1.9. However, Makie has made nice progress in layouts, widgets, docs, and all the tiny things, which makes it a strong candidate for the de facto plotting library in the future.
 
 More [examples](@ref examples) of customized plots can be found in the repository.
 
@@ -356,7 +356,8 @@ vdfslice(meta, location)
 
 ### Makie Backend
 
-A standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie. To trigger Makie plotting with OpenGL, `using VlasiatorMakie, GLMakie`.
+Makie plotting is supported via package extension after Julia 1.9. The extension is automatically loaded when both `Vlasiator` and one of the Makie backends (e.g. `GLMakie`, `CairoMakie`). Before Julia 1.9, a standalone package [VlasiatorMakie.jl](https://github.com/henry2004y/VlasiatorMakie.jl) is designed for plotting with Makie. To trigger Makie plotting with OpenGL, `using VlasiatorMakie, GLMakie`.
+
 You can either use intrinsic Makie plotting methods like
 
 ```julia
@@ -364,13 +365,7 @@ lines(meta, var)   # 1D
 heatmap(meta, var) # 2D
 ```
 
-or use full recipes provided by VlasiatorMakie
-
-```julia
-vlheatmap(meta, var)
-```
-
-For quick inspection of data, we have
+or use full recipes for quick inspection of data
 
 - 2D slices of 3D AMR data
 
@@ -387,7 +382,7 @@ vlslices(meta, var)
 - 2D slice of VDFs at a spatial cell
 
 ```julia
-VlasiatorMakie.vdfslice(meta, location)
+vdfslice(meta, location)
 ```
 
 - Orthognal slices of VDFs at a spatial cell
@@ -403,6 +398,86 @@ vdfvolume(meta, location)
 ```
 
 The interactive plots are available through the OpenGL backend of Makie `GLMakie`. For noninteractive high fidelity plots, we can also use the Cairo backend of Makie `CairoMakie`. Other options can be found at [Makie Ecosystem](https://makie.juliaplots.org/stable/#makie_ecosystem).
+
+```julia
+using Vlasiator, GLMakie
+
+file = "bulk.2d.vlsv"
+meta = load(file)
+
+heatmap(meta, "proton/vg_rho")
+```
+
+3D isosurface:
+
+```julia
+fig = volume(meta, "fg_b", EARTH, 3; algorithm=:iso, isovalue=0.0, isorange=1e-9)
+```
+
+Single figure contour plot:
+
+```julia
+fig = Figure(resolution=(700, 600), fontsize=18)
+ga = fig[1,1] = GridLayout()
+ax = Axis(fig[1,1],
+   aspect = DataAspect(),
+   title = "t = $(round(meta.time, digits=1))s",
+   xlabel = L"x [$R_E$]",
+   ylabel = L"y [$R_E$]"
+)
+hmap = heatmap!(meta, "proton/vg_rho", colormap=:turbo)
+cbar = Colorbar(fig, hmap, label=L"$\rho$ [amu/cc]", width=13,
+                ticksize=13, tickalign=1, height=Relative(1))
+fig[1,2] = cbar
+colgap!(ga, 1)
+```
+
+Multi-figure contour plots:
+
+```julia
+fig = Figure(resolution=(1100, 800), fontsize=18)
+
+axes = []
+v_str = ["CellID", "proton/vg_rho", "proton/vg_v",
+   "vg_pressure", "vg_b_vol", "vg_e_vol"]
+c_str = ["", L"$\rho$ [amu/cc]", "[m/s]", "[Pa]", "[T]", "[V/m]"]
+c = 1
+
+for i in 1:2, j in 1:2:5
+   ax = Axis(fig[i,j], aspect=DataAspect(),
+      xgridvisible=false, ygridvisible=false,
+      title = v_str[c],
+      xlabel = L"x [$R_E$]",
+      ylabel = L"y [$R_E$]")
+   hmap = heatmap!(meta, v_str[c], colormap=:turbo)
+   cbar = Colorbar(fig, hmap, label=c_str[c], width=13,
+                ticksize=13, tickalign=1, height=Relative(1))
+   fig[i, j+1] = cbar
+   c += 1
+   push!(axes, ax) # just in case you need them later.
+end
+
+fig[0, :] = Label(fig, "t = $(round(meta.time, digits=1))s")
+```
+
+Adjusting axis limits:
+
+```julia
+location = [0, 0, 0]
+fig = vdfslice(meta, location)
+xlims!(fig.content[1], -1000, 1000)
+ylims!(fig.content[1], -1000, 1000)
+limits!(fig.content[1], 0, 10, 0, 10) # xmin, xmax, ymin, ymax
+```
+
+Saving figure:
+
+```julia
+fig = vdfvolume(meta, location)
+save("output.png", fig)
+```
+
+The resolution is a property of the Figure object returned from the function.
 
 ## Appending to VLSV
 
