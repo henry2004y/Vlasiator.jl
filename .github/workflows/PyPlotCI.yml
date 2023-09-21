@@ -57,8 +57,6 @@ jobs:
           Pkg.Registry.add("General")
           # dev subpackage
           Pkg.develop(path="./PyPlot")
-          # show status
-          Pkg.status()
       - name: Run the tests
         shell: julia --project=monorepo {0}
         run: |
