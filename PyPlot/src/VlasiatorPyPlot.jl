@@ -259,8 +259,8 @@ function _plot2d(f::PyObject, meta::MetaVLSV, var::String,
 
    if ndims(meta) == 3 || meta.maxamr > 0
       # check if origin and normal exist in kwargs
-      normal = haskey(kwargs, :normal) ? kwargs.data.normal : :y
-      origin = haskey(kwargs, :origin) ? kwargs.data.origin : 0.0
+      normal = haskey(kwargs, :normal) ? values(kwargs).normal : :y
+      origin = haskey(kwargs, :origin) ? values(kwargs).origin : 0.0
       kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
 
       pArgs = set_args(meta, var, axisunit; normal, origin)

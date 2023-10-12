@@ -54,7 +54,7 @@ end
       loc = [2.0, 0.0, 0.0]
       v = VlasiatorPyPlot.vdfslice(meta, loc).get_array()
       @static if matplotlib.__version__ < "3.8"
-         @test v[26, 20] == 238.24398578141802
+         @test v[786] == 238.24398578141802 # v[26,20]
       else
          @test v[20, 26] == 238.24398578141802
       end
@@ -63,7 +63,7 @@ end
          v = VlasiatorPyPlot.vdfslice(meta, loc; slicetype=:bperp).get_array()
       end
       @static if matplotlib.__version__ < "3.8"
-         @test v[26, 20] == 4.02741885708042e-10
+         @test v[786] == 4.02741885708042e-10 # v[26,20]
       else
          @test v[20, 26] == 4.02741885708042e-10
       end
