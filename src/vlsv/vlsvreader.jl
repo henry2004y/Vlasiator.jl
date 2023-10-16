@@ -519,7 +519,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
-      dataOrdered =
+      v =
          if ndims(raw)::Int64 > 1
             @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox...)
          else
@@ -528,9 +528,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
 
       fgDecomposition = getDomainDecomposition(bbox, nIORanks)
 
-      _fillFG!(dataOrdered, raw, fgDecomposition, nIORanks, bbox)
-
-      v = dropdims(dataOrdered, dims=(findall(size(dataOrdered) .== 1)...,))
+      _fillFG!(v, raw, fgDecomposition, nIORanks, bbox)
    elseif sorted # dccrg grid
       @inbounds v = ndims(raw) == 1 ? raw[meta.cellindex] : raw[:,meta.cellindex]
       if T === Float64; v = map(x->Float32(x), v); end
@@ -712,7 +710,8 @@ function getdata2d(meta::MetaVLSV, var::String)
    ndims(meta) == 2 || @error "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
-   data = ndims(data) == 1 || size(data, 1) == 1 ?
+
+   data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
       reshape(data, sizes[1], sizes[2]) :
       reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
 end
@@ -738,7 +737,7 @@ function getDomainDecomposition(globalsize, nprocs)
 
          jBox = max(globalsize[2]/j, 1.0)
 
-         for k in 1:min(nprocs, globalsize[2])
+         for k in 1:min(nprocs, globalsize[3])
             i * j * k > nprocs && continue
 
             kBox = max(globalsize[3]/k, 1.0)
