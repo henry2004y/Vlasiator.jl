@@ -32,18 +32,7 @@ const units_predefined = Dict(
    :perb_vol => ("T", L"B_\mathrm{vol,pert}$", "T"),
    :e => ("V/m", L"$E$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
    :e_vol => ("V/m",  L"$E_\mathrm{vol}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :exhall_000_100 => ("V/m", L"$E_\mathrm{Hall,000,100}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :exhall_001_101 => ("V/m", L"$E_\mathrm{Hall,001,101}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :exhall_010_110 => ("V/m", L"$E_\mathrm{Hall,010,110}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :exhall_011_111 => ("V/m", L"$E_\mathrm{Hall,011,111}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :eyhall_000_010 => ("V/m", L"$E_\mathrm{Hall,000,010}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :eyhall_001_011 => ("V/m", L"$E_\mathrm{Hall,001,011}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :eyhall_100_110 => ("V/m", L"$E_\mathrm{Hall,100,110}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :eyhall_101_111 => ("V/m", L"$E_\mathrm{Hall,101,111}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :ezhall_000_001 => ("V/m", L"$E_\mathrm{Hall,000,001}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :ezhall_010_011 => ("V/m", L"$E_\mathrm{Hall,010,011}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :ezhall_100_101 => ("V/m", L"$E_\mathrm{Hall,100,101}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
-   :ezhall_110_111 => ("V/m", L"$E_\mathrm{Hall,110,111}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
+   :e_hall => ("V/m", L"$E_\mathrm{Hall}$", L"$\mathrm{V}\,\mathrm{m}^{-1}$"),
    :pressure => ("Pa",  L"$P$", "Pa"),
    :pressure_dt2 => ("Pa", L"$P_{\mathrm{d}t/2}}$", "Pa"),
    :pressure_r => ("Pa",  L"$P_r$", "Pa"),
@@ -313,6 +302,30 @@ const variables_predefined = Dict(
       end
 
       Eperp
+   end,
+   :Ehallx => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
+      Ex1 = readvariable(meta, "fg_e_hall_0")::Array{Float32,3}
+      Ex2 = readvariable(meta, "fg_e_hall_5")::Array{Float32,3}
+      Ex3 = readvariable(meta, "fg_e_hall_8")::Array{Float32,3}
+      Ex4 = readvariable(meta, "fg_e_hall_11")::Array{Float32,3}
+
+      @. 0.25 * (Ex1 + Ex2 + Ex3 + Ex4)
+   end,
+   :Ehally => function (meta::MetaVLSV, ids::Vector{Int}=Int[])      
+      Ey1 = readvariable(meta, "fg_e_hall_1")::Array{Float32,3}
+      Ey2 = readvariable(meta, "fg_e_hall_3")::Array{Float32,3}
+      Ey3 = readvariable(meta, "fg_e_hall_9")::Array{Float32,3}
+      Ey4 = readvariable(meta, "fg_e_hall_10")::Array{Float32,3}
+
+      @. 0.25 * (Ey1 + Ey2 + Ey3 + Ey4)
+   end,
+   :Ehallz => function (meta::MetaVLSV, ids::Vector{Int}=Int[])
+      Ez1 = readvariable(meta, "fg_e_hall_2")::Array{Float32,3}
+      Ez2 = readvariable(meta, "fg_e_hall_4")::Array{Float32,3}      
+      Ez3 = readvariable(meta, "fg_e_hall_6")::Array{Float32,3}
+      Ez4 = readvariable(meta, "fg_e_hall_7")::Array{Float32,3}
+
+      @. 0.25 * (Ez1 + Ez2 + Ez3 + Ez4)
    end,
    :Poynting => function (meta::MetaVLSV, ids::Vector{Int}=Int[]) #WARN: real Poynting flux needs perturbed vars
       if hasvariable(meta, "vg_b_vol") && hasvariable(meta, "vg_e_vol")
