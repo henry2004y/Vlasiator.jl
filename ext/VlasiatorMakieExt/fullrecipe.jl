@@ -203,7 +203,7 @@ function vdfvolume(meta::MetaVLSV, location::AbstractVector; species::String="pr
    plt = Makie.meshscatter!(ax, Vselect, color=log10.(fselect),
       marker=Makie.Rect3f(Makie.Vec3f(0), Makie.Vec3f(4*vmesh.dv[1])),
       colormap=cmap,
-      transparency=true, shading=false)
+      transparency=true, shading=Makie.NoShading)
 
    cbar = Makie.Colorbar(fig, plt, label="f(v)")
 

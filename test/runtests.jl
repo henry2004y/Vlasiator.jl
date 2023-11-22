@@ -412,13 +412,13 @@ end
          var = "proton/vg_rho"
 
          fig, ax, plt = viz(meta1, var)
-         @test plt isa Combined
+         @test plt isa Plot{Vlasiator.viz, Tuple{MetaVLSV, String}}
 
          fig, ax, plt = viz(meta2, "vg_b_vol")
-         @test plt isa Combined
+         @test plt isa Plot{Vlasiator.viz, Tuple{MetaVLSV, String}}
 
          fig, ax, plt = viz(meta3, "proton/vg_rho")
-         @test plt isa Combined
+         @test plt isa Plot{Vlasiator.viz, Tuple{MetaVLSV, String}}
 
          fig, ax, plt = lines(meta1, var)
          @test plt isa Lines

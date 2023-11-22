@@ -9,7 +9,7 @@ function Makie.convert_arguments(P::Makie.PointBased, meta::MetaVLSV, var::Strin
 end
 
 "Conversion for 2D plots."
-function Makie.convert_arguments(P::Makie.SurfaceLike, meta::MetaVLSV, var::String,
+function Makie.convert_arguments(P::Makie.GridBased, meta::MetaVLSV, var::String,
    axisunit::AxisUnit=EARTH, comp::Union{Symbol, Int}=0, normal::Symbol=:y,
    origin::AbstractFloat=0.0)
 
