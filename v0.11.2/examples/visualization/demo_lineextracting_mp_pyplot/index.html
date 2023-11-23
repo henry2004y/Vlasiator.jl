@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Extract variables along a line with multi-processing · Vlasiator.jl</title><meta name="title" content="Extract variables along a line with multi-processing · Vlasiator.jl"/><meta property="og:title" content="Extract variables along a line with multi-processing · Vlasiator.jl"/><meta property="twitter:title" content="Extract variables along a line with multi-processing · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_lineextracting_mp_pyplot/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_lineextracting_mp_pyplot/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_lineextracting_mp_pyplot/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Extract variables along a line with multi-processing</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Extract variables along a line with multi-processing</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_lineextracting_mp_pyplot.md#L" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_line_extract_mp"><a class="docs-heading-anchor" href="#demo_line_extract_mp">Extract variables along a line with multi-processing</a><a id="demo_line_extract_mp-1"></a><a class="docs-heading-anchor-permalink" href="#demo_line_extract_mp" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demos shows how to extract multiple variables alone a line across multiple frames with multi-processing.</p><div class="admonition is-success"><header class="admonition-header">Tip</header><div class="admonition-body"><p>This can be made faster by updating the data without deleting the lines.</p></div></div><p>Usage:</p><pre><code class="language-shell hljs">julia -p $ncores demo_vars_extracting_mp.jl</code></pre><pre><code class="language-julia hljs">using Distributed, ParallelDataTransfer, Glob
+using Vlasiator: RE
+@everywhere using Vlasiator, PyPlot, Printf
+
+@everywhere function init_figure(x1, x2)
+   fig, axs = plt.subplots(4, 1; num=myid(),
+      figsize=(10, 15), sharex=true, constrained_layout=true)
+
+   axs[end].set_xlim(x1, x2)
+
+   axs[1].set_ylim(ρmin, ρmax)
+   axs[2].set_ylim(vmin, vmax)
+   axs[3].set_ylim(pmin, pmax)
+   axs[4].set_ylim(bmin, bmax)
+   for ax in axs
+      ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.grid(true)
+   end
+
+   axs[end].set_xlabel(&quot;x [RE]&quot;; fontsize)
+   axs[1].set_ylabel(&quot;Density [amu/cc]&quot;; fontsize)
+   axs[2].set_ylabel(&quot;Velocity [km/s]&quot;; fontsize)
+   axs[3].set_ylabel(&quot;Pressure [nPa]&quot;; fontsize)
+   axs[4].set_ylabel(&quot;Magnetic field [nT]&quot;; fontsize)
+   return fig, axs
+end
+
+@everywhere function process(axs, file, cellids)
+   isfile(&quot;out/&quot;*file[end-8:end-5]*&quot;.png&quot;) &amp;&amp; return
+
+   println(&quot;file = $file&quot;)
+   meta = load(file)
+
+   p_extract = readvariable(meta, &quot;vg_pressure&quot;, cellids) .* 1e9 |&gt; vec # [nPa]
+   rho_extract = readvariable(meta, &quot;proton/vg_rho&quot;, cellids) |&gt; vec
+   v_extract = readvariable(meta, &quot;proton/vg_v&quot;, cellids)
+   vmag2_extract = sum(x -&gt; x*x, v_extract, dims=1) |&gt; vec
+   pram_extract = rho_extract .* Vlasiator.mᵢ .* vmag2_extract .* 1e9 # [nPa]
+
+   bz = readvariable(meta, &quot;vg_b_vol&quot;, cellids)[3,:] .* 1e9 #[nT]
+
+   imagnetopause_ = findfirst(&lt;(0.0), bz)
+
+   axs[1].plot(loc, rho_extract ./ 1e6, label=&quot;Proton density&quot;, color=&quot;#1f77b4&quot;)
+   vl1 = axs[1].vlines(loc[imagnetopause_], ρmin, ρmax;
+      colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+
+   axs[2].plot(loc, v_extract[1,:] ./ 1e3, label=&quot;Vx&quot;, color=&quot;#1f77b4&quot;)
+   vl2 = axs[2].vlines(loc[imagnetopause_], vmin, vmax;
+      colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+
+   axs[3].plot(loc, pram_extract, label=&quot;Ram&quot;, color=&quot;#1f77b4&quot;)
+   axs[3].plot(loc, p_extract, label=&quot;Thermal&quot;, color=&quot;#ff7f0e&quot;)
+   vl3 = axs[3].vlines(loc[imagnetopause_], pmin, pmax;
+      colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+
+   axs[4].plot(loc, bz, label=&quot;Bz&quot;, color=&quot;#1f77b4&quot;)
+   hl4 = axs[4].hlines(0.0, loc[1], loc[end], colors=&quot;k&quot;, linestyle=&quot;dashed&quot;, alpha=0.2)
+   vl4 = axs[4].vlines(loc[imagnetopause_], bmin, bmax;
+       colors=&quot;r&quot;, linestyle=&quot;dashed&quot;, alpha=0.5)
+
+   str_title = @sprintf &quot;t= %4.1fs&quot; meta.time
+   axs[1].set_title(str_title; fontsize)
+
+   axs[2].legend(;loc=&quot;upper right&quot;, fontsize)
+   axs[3].legend(;loc=&quot;upper left&quot;,  fontsize)
+   axs[4].legend(;loc=&quot;upper right&quot;, fontsize)
+
+   savefig(&quot;out/&quot;*file[end-8:end-5]*&quot;.png&quot;, bbox_inches=&quot;tight&quot;)
+
+   for ax in axs
+      for line in ax.get_lines()
+         line.remove()
+      end
+   end
+   for line in (vl1, vl2, vl3, vl4, hl4)
+      line.remove()
+   end
+   return
+end
+
+function make_jobs(files)
+   for f in files
+       put!(jobs, f)
+   end
+end
+
+@everywhere function do_work(jobs, results)
+   fig, axs = init_figure(x1, x2)
+   while true
+      file = take!(jobs)
+      process(axs, file, cellids)
+      put!(results, true)
+   end
+   close(fig)
+end
+
+################################################################################
+files = glob(&quot;bulk*.vlsv&quot;, &quot;.&quot;)
+nfile = length(files)
+
+const x1, x2 = 8.0, 29.0
+const point1 = [x1, 0, 0] .* RE
+const point2 = [x2, 0, 0] .* RE
+
+meta = load(files[1])
+cellids, _, _ = getcellinline(meta, point1, point2)
+close(meta.fid)
+
+passobj(1, workers(), [:x1, :x2, :cellids])
+
+@broadcast begin
+   const loc = range(x1, x2, length=length(cellids))
+
+   const ρmin, ρmax = 0.0, 10.0     # [amu/cc]
+   const vmin, vmax = -640.0, 0.0   # [km/s]
+   const pmin, pmax = 0.0, 1.82     # [nPa]
+   const bmin, bmax = -25.0, 60.0   # [nT]
+
+   const fontsize = 14
+end
+
+const jobs    = RemoteChannel(()-&gt;Channel{String}(nfile))
+const results = RemoteChannel(()-&gt;Channel{Bool}(nworkers()))
+
+println(&quot;Total number of files: $nfile&quot;)
+println(&quot;Running with $(nworkers()) workers...&quot;)
+
+@async make_jobs(files) # Feed the jobs channel with all files to process.
+
+@sync for p in workers()
+   @async remote_do(do_work, p, jobs, results)
+end
+
+let n = nfile
+   t = @elapsed while n &gt; 0 # wait for all jobs to complete
+      take!(results)
+      n -= 1
+   end
+   println(&quot;Finished in $(round(t, digits=2))s.&quot;)
+end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.1.2 on <span class="colophon-date" title="Thursday 23 November 2023 01:49">Thursday 23 November 2023</span>. Using Julia version 1.9.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
