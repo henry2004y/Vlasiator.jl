@@ -303,8 +303,8 @@ function load(file::AbstractString)
 
          vbox, nodeX, nodeY, nodeZ = readvmesh(fid, ns, popname)
 
-         vblocks[1], vblocks[2], vblocks[3] = vbox[1], vbox[2], vbox[3]
-         vblocksize[1], vblocksize[2], vblocksize[3] = vbox[4], vbox[5], vbox[6]
+         vblocks[:] = @view vbox[1:3]
+         vblocksize[:] = @view vbox[4:6]
          vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
          vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
       else
@@ -376,12 +376,13 @@ function load(f::Function, file::AbstractString)
    end
 end
 
+"Get maximum refinement level, assuming 3D grid and dichotomy method."
 function getmaxrefinement(cellid::Vector{Int}, ncells::NTuple{3, Int})
    ncell = prod(ncells)
    maxamr, cid = 0, ncell
    while cid < maximum(cellid)
       maxamr += 1
-      cid += ncell*8^maxamr
+      cid += ncell << (3*maxamr)
    end
 
    maxamr
