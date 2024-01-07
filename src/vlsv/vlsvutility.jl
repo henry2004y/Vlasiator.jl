@@ -19,7 +19,7 @@ function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
    ncells_lowerlevel = 0
    ncell = prod(ncells)
 
-   @inbounds for ilevel = 0:maxamr
+   @inbounds for ilevel in 0:maxamr
       haskey(celldict, cid) && break
 
       ncells_lowerlevel += (8^ilevel)*ncell
@@ -104,7 +104,7 @@ function getchildren(meta::MetaVLSV, cid::Int)
 
    # get the first cell ID on the my level
    cid1st = 1
-   for i = 0:mylvl-1
+   for i in 0:mylvl-1
       cid1st += ncell * 8^i
    end
    # get my row and column sequence on my level (starting with 0)
@@ -117,14 +117,14 @@ function getchildren(meta::MetaVLSV, cid::Int)
    iy = (myseq - iz*xcell*ycell) ÷ xcell
 
    # get the children sequences on the finer level
-   ix *= 2
-   iy *= 2
-   iz *= 2
+   ix <<= 1
+   iy <<= 1
+   iz <<= 1
 
    nchildren = 2^ndims(meta)
    cid = Vector{Int}(undef, nchildren)
    # get the first cell ID on the finer level
-   cid1st += ncell*8^mylvl
+   cid1st += ncell << (3*mylvl)
    ix_, iy_ = (ix, ix+1), (iy, iy+1)
    iz_ = zcell != 1 ? (iz, iz+1) : iz
    for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
@@ -205,10 +205,8 @@ function getcellcoordinates(meta::MetaVLSV, cid::Int)
    while cid ≥ subtraction
       cid -= subtraction
       reflevel += 1
-      subtraction *= 8
-      ncells_refmax[1] *= 2
-      ncells_refmax[2] *= 2
-      ncells_refmax[3] *= 2
+      subtraction <<= 3
+      ncells_refmax .<<= 1
    end
 
    indices = @inbounds (
@@ -763,7 +761,7 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
       amrlvl = getlevel(meta, cid)
 
       # Get the max and min cell boundaries
-      Δ = dcell.*0.5.^amrlvl
+      Δ = dcell .* 0.5.^amrlvl
       min_bounds = getcellcoordinates(meta, cid) .- 0.5.*Δ
       max_bounds = min_bounds .+ Δ
 
@@ -849,7 +847,7 @@ function getslicecell(meta::MetaVLSV, sliceoffset::Float64, dir::Int,
          end
 
       # Find the cut plane index for each refinement level (0-based)
-      depth = floor(Int, sliceratio*nsize*2^ilvl)
+      depth = floor(Int, sliceratio*nsize<<ilvl)
       # Find the needed elements to create the cut and save the results
       elements = coords .== depth
       append!(indexlist, (nlen+1:nlen+length(ids))[elements])
@@ -918,7 +916,7 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractVector,
       end
 
       nLow = nHigh
-      nHigh += ncell*8^(i+1)
+      nHigh += ncell << (3*(i+1))
    end
 
    dpoints
@@ -950,7 +948,6 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractMatrix,
 end
 
 @inline function _getdim2d(ncells::NTuple{3, Int}, maxamr::Int, normal::Symbol)
-   ratio = 2^maxamr
    if normal == :x
       i1, i2 = 2, 3
    elseif normal == :y
@@ -958,6 +955,7 @@ end
    elseif normal == :z
       i1, i2 = 1, 2
    end
+   ratio = 2^maxamr
    dims = (ncells[i1]*ratio, ncells[i2]*ratio)
 end
 
@@ -1046,7 +1044,7 @@ end
 function get_fg_indices(meta::MetaVLSV, coords::SVector{3, Float64})
    dx = meta.dcoord ./ 2^meta.maxamr
    ri = @. Int(((coords - meta.coordmin) ÷ dx) + 1)
-   sz = meta.ncells .* 2 .^meta.maxamr
+   sz = meta.ncells .<< meta.maxamr
    if any(i -> i < 1, ri) || any(i -> i[1] > i[2], zip(ri, sz))
       error("fsgrid index out of bounds!")
    end
@@ -1062,7 +1060,7 @@ the spatial cell ID `cid`.
 """
 function get_fg_array_cell(meta::MetaVLSV, v_fg::Array, cid::Int)
    il, ih = get_fg_indices_cell(meta, cid)
-   v_fg[:,il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]]
+   v_fg[:, il[1]:ih[1], il[2]:ih[2], il[3]:ih[3]]
 end
 
 "Returns a slice tuple of fsgrid indices that are contained in the spatial cell `cid`."
@@ -1099,13 +1097,13 @@ Interpolate DCCRG variable `var` to field solver grid size.
 This is an alternative method to [`fillmesh`](@ref), but not optimized for performance.
 """
 function read_variable_as_fg(meta::MetaVLSV, var::String)
-   sz = meta.ncells .* 2 .^meta.maxamr
+   sz = meta.ncells .<< meta.maxamr
    data = readvariable(meta, var, false)
    if eltype(data) == Float64; data = Float32.(data); end
    cellid = Vlasiator.getcellid(meta.fid, meta.nodeVLSV.var)
    if ndims(data) == 2
       v_fg = zeros(eltype(data), (size(data,1), sz[1], sz[2], sz[3]))
-      for (i, cid) in enumerate(cellid)
+      @views for (i, cid) in enumerate(cellid)
          upsample_fsgrid_subarray!(meta, data[:,i], cid, v_fg)
       end
    else
@@ -1122,13 +1120,13 @@ end
 function upsample_fsgrid_subarray!(meta::MetaVLSV, data, cid::Int, v_fg::Array{T, 4}
    ) where T
    il, ih = get_fg_indices_cell(meta, cid)
-   v_fg[:,il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]] .= data
+   v_fg[:, il[1]:ih[1], il[2]:ih[2], il[3]:ih[3]] .= data
 end
 
 function upsample_fsgrid_subarray!(meta::MetaVLSV, data, cid::Int, v_fg::Array{T, 3}
    ) where T
    il, ih = get_fg_indices_cell(meta, cid)
-   v_fg[il[1]:ih[1],il[2]:ih[2],il[3]:ih[3]] .= data
+   v_fg[il[1]:ih[1], il[2]:ih[2], il[3]:ih[3]] .= data
 end
 
 fillmesh(meta::MetaVLSV, vars::String) = fillmesh(meta, [vars])
@@ -1164,7 +1162,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
 
    @inbounds celldata = if !maxamronly
       [[zeros(Tout[iv], vsize[iv], ncells[1] << i, ncells[2] << i, ncells[3] << i)
-      for i = 0:maxamr] for iv in 1:nv]
+      for i in 0:maxamr] for iv in 1:nv]
    else
       [[zeros(Tout[iv], vsize[iv],
       ncells[1] << maxamr, ncells[2] << maxamr, ncells[3] << maxamr)] for iv in 1:nv]
@@ -1238,7 +1236,7 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
          end
       end
       nLow = nHigh
-      nHigh += ncell*8^(ilvl+1)
+      nHigh += ncell << (3*(ilvl+1))
    end
 
    celldata, vtkGhostType
@@ -1247,7 +1245,7 @@ end
 function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
    iz::Vector{Int}, dataout::Vector, datain::AbstractArray, ilvl::Int, maxamr::Int)
    @inbounds for ilvlup in ilvl:maxamr
-      r = 2^(ilvlup-ilvl) # ratio on refined level
+      r = 2^(ilvlup - ilvl) # ratio on refined level
       for c in eachindex(ids)
          for k in 1:r, j in 1:r, i in 1:r
             _fillcelldata!(dataout[ilvlup+1], datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
@@ -1258,7 +1256,7 @@ end
 
 function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
    iz::Vector{Int}, dataout::Array, datain::AbstractArray, ilvl::Int, maxamr::Int)
-   r = 2^(maxamr-ilvl) # ratio on refined level
+   r = 2^(maxamr - ilvl) # ratio on refined level
    @inbounds for c in eachindex(ids)
       for k in 1:r, j in 1:r, i in 1:r
          _fillcelldata!(dataout, datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
@@ -1337,7 +1335,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
       )
       push!(doc, elm)
 
-      origin = @sprintf "%f %f %f" coordmin[1] coordmin[2] coordmin[3]
+      origin = @sprintf "%f %f %f" coordmin...
       xamr = Element("vtkOverlappingAMR";
          origin=origin,
          grid_description="XYZ"
@@ -1352,9 +1350,8 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          )
          push!(xamr, xBlock)
 
-         amr_box = (0, ncells[1]*2^i-1, 0, ncells[2]*2^i-1, 0, ncells[3]*2^i-1)
-         box_str = @sprintf("%d %d %d %d %d %d", amr_box[1], amr_box[2], amr_box[3],
-            amr_box[4], amr_box[5], amr_box[6])
+         amr_box = (0, ncells[1]<<i-1, 0, ncells[2]<<i-1, 0, ncells[3]<<i-1)
+         box_str = @sprintf("%d %d %d %d %d %d", amr_box...)
          xDataSet = Element("DataSet";
             index="0",
             amr_box=box_str,
