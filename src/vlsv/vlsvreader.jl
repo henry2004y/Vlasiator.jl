@@ -290,50 +290,53 @@ function load(file::AbstractString)
    # Find all species by the BLOCKIDS tag
    species = String[]
 
-   vblocks = [0, 0, 0]
-   vblocksize = [4, 4, 4]
-   vmin = [0.0, 0.0, 0.0]
-   vmax = [1.0, 1.0, 1.0]
+   @no_escape begin
+      vblocks = @alloc(Int, 3)
+      vblocksize = @alloc(Int, 3)
+      vmin = @alloc(Float64, 3)
+      vmax = @alloc(Float64, 3)
 
-   for node in n.blockid
-      at = attributes(node)
-      if haskey(at, "name")
-         # VLSV 5.0 file with bounding box
-         popname = at["name"]
+      for node in n.blockid
+         at = attributes(node)
+         if haskey(at, "name")
+            # VLSV 5.0 file with bounding box
+            popname = at["name"]
 
-         vbox, nodeX, nodeY, nodeZ = readvmesh(fid, ns, popname)
+            vbox, nodeX, nodeY, nodeZ = readvmesh(fid, ns, popname)
 
-         vblocks[:] = @view vbox[1:3]
-         vblocksize[:] = @view vbox[4:6]
-         vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
-         vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
-      else
-         # In VLSV before 5.0 the mesh is defined with parameters.
-         popname = "avgs"
-         if "vxblocks_ini" in getindex.(n.param, "name")
-            vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
-            vmin_str = ("vxmin", "vymin", "vzmin")
-            vmax_str = ("vxmax", "vymax", "vzmax")
-            map!(i -> readparameter(fid, n.param, vblocks_str[i]), vblocks, 1:3)
-            map!(i -> readparameter(fid, n.param, vmin_str[i]), vmin, 1:3)
-            map!(i -> readparameter(fid, n.param, vmax_str[i]), vmax, 1:3)
+            vblocks[:] = @view vbox[1:3]
+            vblocksize[:] = @view vbox[4:6]
+            vmin[1], vmin[2], vmin[3] = nodeX[begin], nodeY[begin], nodeZ[begin]
+            vmax[1], vmax[2], vmax[3] = nodeX[end], nodeY[end], nodeZ[end]
          else
-            error("File not written by Vlasiator!")
+            # In VLSV before 5.0 the mesh is defined with parameters.
+            popname = "avgs"
+            if "vxblocks_ini" in getindex.(n.param, "name")
+               vblocks_str = ("vxblocks_ini", "vyblocks_ini", "vzblocks_ini")
+               vmin_str = ("vxmin", "vymin", "vzmin")
+               vmax_str = ("vxmax", "vymax", "vzmax")
+               map!(i -> readparameter(fid, n.param, vblocks_str[i]), vblocks, 1:3)
+               map!(i -> readparameter(fid, n.param, vmin_str[i]), vmin, 1:3)
+               map!(i -> readparameter(fid, n.param, vmax_str[i]), vmax, 1:3)
+               vblocksize .= 4
+            else
+               error("File not written by Vlasiator!")
+            end
          end
+
+         dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblocksize[i], Val(3))
+
+         # Update list of active species
+         if popname ∉ species
+            push!(species, popname)
+         end
+
+         # Create a new object for this species
+         popVMesh = VMeshInfo(NTuple{3}(vblocks), NTuple{3}(vblocksize),
+            NTuple{3}(vmin), NTuple{3}(vmax), dv, uninit, uninit)
+
+         meshes[popname] = popVMesh
       end
-
-      dv = ntuple(i -> (vmax[i] - vmin[i]) / vblocks[i] / vblocksize[i], Val(3))
-
-      # Update list of active species
-      if popname ∉ species
-         push!(species, popname)
-      end
-
-      # Create a new object for this species
-      popVMesh = VMeshInfo(NTuple{3}(vblocks), NTuple{3}(vblocksize),
-         NTuple{3}(vmin), NTuple{3}(vmax), dv, uninit, uninit)
-
-      meshes[popname] = popVMesh
    end
 
    if hasname(n.param, "time") # Vlasiator 5.0+
@@ -920,7 +923,7 @@ end
 
 @inline function _fillvcell!(vcellids, vcellf, data, blockIDs, bsize)
    @inbounds for i in eachindex(blockIDs), j in 1:bsize
-      index_ = (i-1)*bsize+j
+      index_ = (i-1)*bsize + j
       vcellids[index_] = j - 1 + bsize*blockIDs[i]
       vcellf[index_] = data[j,i]
    end
