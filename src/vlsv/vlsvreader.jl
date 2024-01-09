@@ -235,43 +235,48 @@ function load(file::AbstractString)
    footer = getfooter(fid)
    ns = children(footer[end])
 
-   ibegin_, iend_ = zeros(Int, 6), zeros(Int, 6)
-
-   for i in eachindex(ns)
-      if tag(ns[i]) == "VARIABLE"
-         if ibegin_[1] == 0 ibegin_[1] = i end
-         iend_[1] = i
-      elseif tag(ns[i]) == "PARAMETER"
-         if ibegin_[2] == 0 ibegin_[2] = i end
-         iend_[2] = i
-      elseif tag(ns[i]) == "CELLSWITHBLOCKS"
-         if ibegin_[3] == 0 ibegin_[3] = i end
-         iend_[3] = i
-      elseif tag(ns[i]) == "BLOCKSPERCELL"
-         if ibegin_[4] == 0 ibegin_[4] = i end
-         iend_[4] = i
-      elseif tag(ns[i]) == "BLOCKVARIABLE"
-         if ibegin_[5] == 0 ibegin_[5] = i end
-         iend_[5] = i
-      elseif tag(ns[i]) == "BLOCKIDS"
-         if ibegin_[6] == 0 ibegin_[6] = i end
-         iend_[6] = i
+   @no_escape begin
+      ibegin_, iend_ = @alloc(Int, 6), @alloc(Int, 6)
+      for i in eachindex(ibegin_)
+         ibegin_[i] = 0
       end
-   end
 
-   @views begin
-      nodevar = ns[ibegin_[1]:iend_[1]]
-      nodeparam = ns[ibegin_[2]:iend_[2]]
-      if ibegin_[3] != 0
-         nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
-         nodecellblocks = ns[ibegin_[4]:iend_[4]]
-         nodeblockvar = ns[ibegin_[5]:iend_[5]]
-         nodeblockid = ns[ibegin_[6]:iend_[6]]
-      else # non-standard Vlasiator outputs with no vspace meta data
-         nodecellwithVDF = ns[1:0]
-         nodecellblocks = ns[1:0]
-         nodeblockvar = ns[1:0]
-         nodeblockid = ns[1:0]
+      for i in eachindex(ns)
+         if tag(ns[i]) == "VARIABLE"
+            if ibegin_[1] == 0 ibegin_[1] = i end
+            iend_[1] = i
+         elseif tag(ns[i]) == "PARAMETER"
+            if ibegin_[2] == 0 ibegin_[2] = i end
+            iend_[2] = i
+         elseif tag(ns[i]) == "CELLSWITHBLOCKS"
+            if ibegin_[3] == 0 ibegin_[3] = i end
+            iend_[3] = i
+         elseif tag(ns[i]) == "BLOCKSPERCELL"
+            if ibegin_[4] == 0 ibegin_[4] = i end
+            iend_[4] = i
+         elseif tag(ns[i]) == "BLOCKVARIABLE"
+            if ibegin_[5] == 0 ibegin_[5] = i end
+            iend_[5] = i
+         elseif tag(ns[i]) == "BLOCKIDS"
+            if ibegin_[6] == 0 ibegin_[6] = i end
+            iend_[6] = i
+         end
+      end
+
+      @views begin
+         nodevar = ns[ibegin_[1]:iend_[1]]
+         nodeparam = ns[ibegin_[2]:iend_[2]]
+         if ibegin_[3] != 0
+            nodecellwithVDF = ns[ibegin_[3]:iend_[3]]
+            nodecellblocks = ns[ibegin_[4]:iend_[4]]
+            nodeblockvar = ns[ibegin_[5]:iend_[5]]
+            nodeblockid = ns[ibegin_[6]:iend_[6]]
+         else # non-standard Vlasiator outputs with no vspace meta data
+            nodecellwithVDF = ns[1:0]
+            nodecellblocks = ns[1:0]
+            nodeblockvar = ns[1:0]
+            nodeblockid = ns[1:0]
+         end
       end
    end
 
