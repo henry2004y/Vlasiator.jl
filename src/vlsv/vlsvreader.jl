@@ -98,7 +98,7 @@ end
    offset = read(fid, Int)
    seek(fid, offset)
    str = read(fid, String)
-   footer = parse(str, Node)
+   footer = parse(Node, str)
 end
 
 @inline function getdatatype(datatype::Symbol, datasize::Int)
