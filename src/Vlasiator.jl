@@ -13,6 +13,7 @@ using LazyGrids: ndgrid
 using LaTeXStrings
 using Dates
 using Parsers
+using Bumper
 using PrecompileTools: @setup_workload, @compile_workload
 
 include("utility/rotation.jl")
