@@ -281,6 +281,7 @@ end
             # 2D
             A = ones(Float32, 3,3,1,3)
             @test sum(Vlasiator.curl(A, dx)) == 0.0
+            @test sum(Vlasiator.divergence2d(A, dx[1])) == 0.0
             # 3D
             A = ones(Float32, 3,3,3,3)
             @test sum(Vlasiator.curl(A, dx)) == 0.0

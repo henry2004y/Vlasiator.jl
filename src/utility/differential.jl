@@ -4,6 +4,9 @@
 @inline δyᵃᶜᵃ(i, j, k, A) = @inbounds A[i, j+1, k] - A[i, j-1, k]
 @inline δzᵃᵃᶜ(i, j, k, A) = @inbounds A[i, j, k+1] - A[i, j, k-1]
 
+@inline δxᶜᵃ(i, j, A) = @inbounds A[i+1, j] - A[i-1, j]
+@inline δyᵃᶜ(i, j, A) = @inbounds A[i, j+1] - A[i, j-1]
+
 """
     curl(A::AbstractArray{T,N}, dx:Union{Vector{U}, NTuple{3,U}}) where {T,N,U}
 
@@ -142,6 +145,35 @@ function divergence(A::AbstractArray{T,N}, dx::Vector{U}=ones(T, 3)) where {T,N,
       ∂Az∂z = δzᵃᵃᶜ(i, j, k, Az) * dx2⁻¹[3]
 
       B[i,j,k] = ∂Ax∂x + ∂Ay∂y + ∂Az∂z
+   end
+
+   B
+end
+
+"""
+    divergence2d(A::AbstractArray{T,N}, dx::AbstractFloat) where {T,N}
+
+Calculate 2nd order cell-centered ∇⋅A where `A` is a 4D array of size (3, nx, ny, nz) and
+`dx` is the uniform grid interval in each dimension. One of the dimension must be 1.
+"""
+function divergence2d(A::AbstractArray{T,N}, dx::AbstractFloat) where {T,N}
+   @assert N == 4 "Input vector shall be indexed in 3D!"
+
+   @views begin
+      dims = findall(size(A)[2:end] .!= 1)
+      A2d = dropdims(A, dims = tuple(findall(size(A) .== 1)...))
+
+      A1, A2 = A2d[dims[1],:,:], A2d[dims[2],:,:]
+      B = zeros(T, size(A2d)[2:end])
+
+      dx2⁻¹ = inv(2*dx)
+   end
+
+   @inbounds for j in 2:size(A,1+dims[2])-1, i in 2:size(A,1+dims[1])-1
+      ∂Ax∂x = δxᶜᵃ(i, j, A1) * dx2⁻¹
+      ∂Ay∂y = δyᵃᶜ(i, j, A2) * dx2⁻¹
+
+      B[i,j] = ∂Ax∂x + ∂Ay∂y
    end
 
    B
