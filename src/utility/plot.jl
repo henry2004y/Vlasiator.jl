@@ -436,7 +436,7 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
       fselect = Vector{Float32}(undef, select_num)
       Vselect = Vector{SVector{3, Float32}}(undef, select_num)
       for i in eachindex(vcellf)
-         if vcellf[i] > flimit
+         if vcellf[i] ≥ flimit
             fselect[i_] = vcellf[i]
             Vselect[i_] = V[i]
             i_ += 1
