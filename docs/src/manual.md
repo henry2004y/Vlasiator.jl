@@ -382,7 +382,8 @@ vlslices(meta, var)
 - 2D slice of VDFs at a spatial cell
 
 ```julia
-vdfslice(meta, location)
+fig, ax = vdfslice(meta, location)
+fig
 ```
 
 - Orthognal slices of VDFs at a spatial cell
@@ -394,7 +395,8 @@ vdfslices(meta, location)
 - 3D scatter of VDFs at a spatial cell
 
 ```julia
-vdfvolume(meta, location)
+fig, ax = vdfvolume(meta, location)
+fig
 ```
 
 The interactive plots are available through the OpenGL backend of Makie `GLMakie`. For noninteractive high fidelity plots, we can also use the Cairo backend of Makie `CairoMakie`. Other options can be found at [Makie Ecosystem](https://makie.juliaplots.org/stable/#makie_ecosystem).
