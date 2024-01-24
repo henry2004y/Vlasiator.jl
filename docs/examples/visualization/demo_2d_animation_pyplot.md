@@ -11,6 +11,8 @@ This example shows how to plot 2D colored contours with `pcolormesh`.
 `ffmpeg` is required to be installed for saving into mp4.
 ```julia
 using Vlasiator, Glob, VlasiatorPyPlot, Printf
+using PyCall
+@pyimport matplotlib.animation as anim
 
 files = glob("bulk*.vlsv", ".")
 const var = "proton/vg_rho"
@@ -41,7 +43,7 @@ c = let
    ax.pcolormesh(x1, x2, fakedata; norm, cmap)
 end
 
-Vlasiator.set_plot(c, ax, pArgs, ticks, addcolorbar)
+VlasiatorPyPlot.set_plot(c, ax, pArgs, ticks, addcolorbar)
 
 function animate(i::Int, files::Vector{String}, var::String, comp::Int, c)
    meta = load(files[i+1])
@@ -56,9 +58,9 @@ function animate(i::Int, files::Vector{String}, var::String, comp::Int, c)
 end
 
 # https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html
-anim = matplotlib.animation.FuncAnimation(fig, animate, fargs=(files, var, comp, c),
+out = anim.FuncAnimation(fig, animate, fargs=(files, var, comp, c),
    frames=length(files), blit=true,
    repeat_delay=1000, interval=50)
 # Make sure ffmpeg is available!
-anim.save("contour.mp4", writer="ffmpeg", fps=30)
+out.save("contour.mp4", writer="ffmpeg", fps=30)
 ```

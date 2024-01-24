@@ -42,7 +42,7 @@ fakedata = zeros(Float32, length(x2), length(x1))
 
 c = ax.pcolormesh(x1, x2, fakedata; norm, cmap)
 
-Vlasiator.set_plot(c, ax, pArgs, ticks, addcolorbar)
+VlasiatorPyPlot.set_plot(c, ax, pArgs, ticks, addcolorbar)
 
 for (i, file) in enumerate(files)
    @info "$i out of $nfile"
