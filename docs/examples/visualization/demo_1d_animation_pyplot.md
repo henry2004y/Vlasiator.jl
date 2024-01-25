@@ -9,7 +9,9 @@
 
 This example demonstrates 1D plot animation. `ffmpeg` is required to be installed for saving into mp4.
 ```julia
-using Vlasiator, Glob, PyPlot, Printf
+using Vlasiator, Glob, VlasiatorPyPlot, Printf
+using PyCall
+@pyimport matplotlib.animation as anim
 
 files = glob("bulk.*.vlsv", ".")
 # Choose plotting variable
@@ -37,9 +39,9 @@ function animate(i::Int, files::Vector{String}, var::String, comp::Int, ax, line
 end
 
 # https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html
-anim = matplotlib.animation.FuncAnimation(fig, animate, fargs=(files, var, comp, ax, line),
+out = anim.FuncAnimation(fig, animate, fargs=(files, var, comp, ax, line),
    frames=length(files), blit=true,
    repeat_delay=1000, interval=200)
 # Make sure ffmpeg is available!
-anim.save("line.mp4", writer="ffmpeg", fps=30)
+out.save("line.mp4", writer="ffmpeg", fps=30)
 ```

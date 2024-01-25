@@ -61,7 +61,7 @@ function main()
       println("i = $i/$nfiles, file = $file")
       meta = load(file)
 
-      p_extract = readvariable(meta, "vg_pressure", cellids) .* 1e9 |> vec # [nPa]
+      p_extract = readvariable(meta, "P", cellids) .* 1e9 |> vec # [nPa]
       rho_extract = readvariable(meta, "proton/vg_rho", cellids) |> vec
       v_extract = readvariable(meta, "proton/vg_v", cellids)
       vmag2_extract = sum(x -> x*x, v_extract, dims=1) |> vec
