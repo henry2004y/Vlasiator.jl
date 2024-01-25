@@ -1,5 +1,5 @@
 # ---
-# title: Trace field lines in 2D
+# title: Tracing field lines in 2D
 # id: demo_2d_trace
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

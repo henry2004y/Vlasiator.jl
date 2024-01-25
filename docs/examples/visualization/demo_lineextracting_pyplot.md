@@ -1,5 +1,5 @@
 # ---
-# title: Plot variables along a line
+# title: Plotting variables along a line
 # id: demo_plot_line2
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

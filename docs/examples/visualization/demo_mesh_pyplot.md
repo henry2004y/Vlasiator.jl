@@ -1,5 +1,5 @@
 # ---
-# title: Plot mesh
+# title: Plotting mesh
 # id: demo_plot_mesh
 # cover: ../../src/figures/mesh.png
 # date: 2023-02-25

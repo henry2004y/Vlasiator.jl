@@ -1,5 +1,5 @@
 # ---
-# title: Trace field lines in 3D
+# title: Tracing field lines in 3D
 # id: demo_3d_trace
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

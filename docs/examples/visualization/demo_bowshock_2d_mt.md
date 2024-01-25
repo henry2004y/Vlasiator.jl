@@ -1,5 +1,5 @@
 # ---
-# title: Extract bow shock location
+# title: Extracting bow shock location
 # id: demo_2d_bowshock_mt
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

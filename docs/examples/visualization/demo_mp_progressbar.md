@@ -1,5 +1,5 @@
 # ---
-# title: Plot with multi-nodes
+# title: Plotting with multi-nodes
 # id: demo_plot_multinode
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

@@ -1,5 +1,5 @@
 # ---
-# title: Extract variable along a line
+# title: Extracting variable along a line
 # id: demo_line_extract
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

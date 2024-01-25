@@ -1,5 +1,5 @@
 # ---
-# title: Extract differences between FsGrid and DCCRG variables
+# title: Extracting differences between FsGrid and DCCRG variables
 # id: demo_3d_grid_diff
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"

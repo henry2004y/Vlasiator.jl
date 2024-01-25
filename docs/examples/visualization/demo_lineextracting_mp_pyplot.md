@@ -1,5 +1,5 @@
 # ---
-# title: Extract variables along a line with multi-processing
+# title: Extracting variables along a line with multi-processing
 # id: demo_line_extract_mp
 # date: 2023-02-25
 # author: "[Hongyang Zhou](https://github.com/henry2004y)"
