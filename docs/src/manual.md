@@ -419,7 +419,7 @@ fig = volume(meta, "fg_b", EARTH, 3; algorithm=:iso, isovalue=0.0, isorange=1e-9
 Single figure contour plot:
 
 ```julia
-fig = Figure(resolution=(700, 600), fontsize=18)
+fig = Figure(size=(700, 600), fontsize=18)
 ga = fig[1,1] = GridLayout()
 ax = Axis(fig[1,1],
    aspect = DataAspect(),
@@ -437,7 +437,7 @@ colgap!(ga, 1)
 Multi-figure contour plots:
 
 ```julia
-fig = Figure(resolution=(1100, 800), fontsize=18)
+fig = Figure(size=(1100, 800), fontsize=18)
 
 axes = []
 v_str = ["CellID", "proton/vg_rho", "proton/vg_v",
