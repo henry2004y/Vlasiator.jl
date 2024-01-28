@@ -18,3 +18,4 @@ test*
 Manifest.toml
 /.benchmarkci
 /benchmark/*.json
+.vscode/
