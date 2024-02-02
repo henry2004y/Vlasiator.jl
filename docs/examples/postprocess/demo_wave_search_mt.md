@@ -32,7 +32,7 @@ JULIA_NUM_THREADS=4 julia demo_wave_search_mt.jl
 ```
 
 ```julia
-using Glob, Vlasiator, PyPlot, LaTeXStrings
+using Vlasiator, PyPlot, LaTeXStrings
 
 "Extract time series variable"
 function extract_var(files, ncells, varname, component=0)
@@ -147,7 +147,8 @@ function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
    for i in eachindex(varnames)
       outdir = "../out/$(lowercase(varnames_print[i]))"
       !isdir(outdir) && mkdir(outdir)
-      length(glob("spatial*.png", outdir)) == length(files) - nboxlength + 1 && continue
+      length(filter(contains(r"^spatial.*\.png$"), readdir(outdir))) ==
+         length(files) - nboxlength + 1 && continue
 
       # Obtain time series data
       var = extract_var(files, ncells, varnames[i], components[i])
@@ -181,7 +182,7 @@ function main()
    nplotstride = 50                   # plot intervals in frames
    dir = "./" # data directory
 
-   files = glob("bulk*.vlsv", dir)
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir(dir))
 
    println("Total number of snapshots: $(length(files))")
    println("Running with $(Threads.nthreads()) threads...")

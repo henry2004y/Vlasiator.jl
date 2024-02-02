@@ -18,7 +18,7 @@ JULIA_NUM_THREADS=$nthreads julia demo_bowshock_2d_mt.jl
 ```
 
 ```julia
-using Vlasiator, Glob
+using Vlasiator
 using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
@@ -63,7 +63,7 @@ function extract_bowshock_position(files; verbose=true)
 end
 
 #####
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 @time x_crossing, y_crossing = extract_bowshock_position(files)
 

@@ -9,11 +9,11 @@
 
 This example demonstrates 1D plot animation. `ffmpeg` is required to be installed for saving into mp4.
 ```julia
-using Vlasiator, Glob, VlasiatorPyPlot, Printf
+using Vlasiator, VlasiatorPyPlot, Printf
 using PyCall
 @pyimport matplotlib.animation as anim
 
-files = glob("bulk.*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 # Choose plotting variable
 const var = "proton/vg_rho"
 const comp = 0 # component of vector, if used

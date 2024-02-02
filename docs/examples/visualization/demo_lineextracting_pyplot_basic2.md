@@ -9,11 +9,11 @@
 
 This demo shows how to plot pressure along a line across multiple frames.
 ```julia
-using Vlasiator, PyPlot, Glob, Printf
+using Vlasiator, PyPlot, Printf
 using Vlasiator: RE # Earth radius [m]
 
 function main()
-   files = glob("bulk*.vlsv", ".")
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
    nfile = length(files)
 
    x1, x2 = 8.0, 29.0

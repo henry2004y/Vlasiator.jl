@@ -9,7 +9,7 @@
 
 To generate combined 1D/2D plots across multiple frames,
 ```julia
-using Vlasiator, VlasiatorPyPlot, Glob, Printf, LaTeXStrings
+using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
 using Vlasiator: set_args, prep2d
 
 @assert VERSION ≥ v"1.7.0" "Compatible with Julia v1.7+!"
@@ -207,7 +207,7 @@ end
 
 ####### Main
 
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 nfile = length(files)
 # Set output directory
 const outdir = "out/"

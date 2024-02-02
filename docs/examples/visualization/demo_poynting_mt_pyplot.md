@@ -23,7 +23,7 @@ using Statistics: mean, normalize
 using LinearAlgebra: ×, ⋅
 using Vlasiator
 using Vlasiator: μ₀, prep2d, prep2dslice
-using Glob, DSP, Polyester, Printf, PyPlot
+using DSP, Polyester, Printf, PyPlot
 
 """
     extract_EM(files, range1, range2, pArgs, ndim=2; normal=:y, verbose=true)
@@ -245,7 +245,7 @@ end
 
 ########## Main
 
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 nfile = length(files)
 
 const frequency_range = "low" # filtered frequency range ∈ ("low", "high")

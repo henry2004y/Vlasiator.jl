@@ -25,7 +25,7 @@ JULIA_NUM_THREADS=4 julia demo_wave_tracing_mt.jl
 ```julia
 using Vlasiator, VlasiatorPyPlot
 using Vlasiator: qᵢ, μ₀, c, mᵢ, ϵ₀, RE
-using Glob, DSP, FFTW, ImageFiltering, Interpolations
+using DSP, FFTW, ImageFiltering, Interpolations
 using Statistics: mean
 using LinearAlgebra
 
@@ -397,7 +397,7 @@ function main()
    components = [0, 3, 1, 0] # 0 for scalar, 1-3 for vector components
 
    dir = "../run_rho2_bz-5_timevarying_startfrom300s"
-   files = glob("bulk.*.vlsv", dir)
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir(dir))
 
    vars = Variables(varnames, varnames_print, components)
 

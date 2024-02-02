@@ -11,16 +11,19 @@ This demo shows how to extract data for virtual satellites at multiple locations
 Outputs are stored in binary format for sharing within Julia.
 
 Usage:
+
 ```shell
 julia -t nthreads demo_pointsextracting.jl
 ```
+
 or
+
 ```shell
 JULIA_NUM_THREADS=nthreads julia demo_pointsextracting.jl
 ```
 
 ```julia
-using Glob, Vlasiator
+using Vlasiator
 using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
@@ -59,7 +62,7 @@ end
 
 #####
 
-files = glob("bulk*.vlsv", "./")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 # virtual satellite locations
 const locations = [[7RE, 0, 0], [9RE, 0, 0], [11RE, 0, 0], [12RE, 0, 0],

@@ -30,7 +30,7 @@ julia demo_mp_progressbar.jl
 ```
 
 ```julia
-using Distributed, ProgressMeter, Glob
+using Distributed, ProgressMeter
 using Vlasiator: RE # Earth radius [m]
 using ClusterManagers
 addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])),
@@ -193,7 +193,8 @@ end
 
 ## Parameters
 
-files = glob("bulk*.vlsv", "../run_rho2_bz-5_timevarying_startfrom300s")
+dir = "mydatadir"
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir(dir))
 nfiles = length(files)
 
 const p = Progress(nfiles; showspeed=true)

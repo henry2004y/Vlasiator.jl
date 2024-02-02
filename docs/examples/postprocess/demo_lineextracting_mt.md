@@ -9,11 +9,11 @@
 
 To extract variables along a line across multiple frames using multithreads,
 ```julia
-using Vlasiator, Glob
+using Vlasiator
 using JLD2: jldsave
 
 function main()
-   files = glob("bulk*.vlsv", ".")
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
    nfile = length(files)
    # Define end points of the line in Earth radius
    x1, x2 = 6.0, 20.0

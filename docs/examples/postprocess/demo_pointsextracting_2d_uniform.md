@@ -11,7 +11,7 @@ This demo shows how to extract data for virtual satellites at uniformly sampled 
 Outputs are stored in binary format for sharing within Julia.
 
 ```julia
-using Glob, Vlasiator
+using Vlasiator
 using JLD2: jldsave
 
 "Select cells in 2D `meta` with uniform distance `dx`."
@@ -74,7 +74,7 @@ end
 
 #####
 
-files = glob("bulk*.vlsv", "./")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 const dx = 5RE # uniform sampling distance [m]
 

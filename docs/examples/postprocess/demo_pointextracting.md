@@ -19,7 +19,7 @@ JULIA_NUM_THREADS=nthreads julia demo_virtual_satellite.jl
 ```
 
 ```julia
-using Glob, DelimitedFiles, Vlasiator, DataFrames
+using DelimitedFiles, Vlasiator, DataFrames
 using Vlasiator: RE # Earth radius [m]
 
 function extract_vars(files, loc)
@@ -54,7 +54,7 @@ end
 
 #####
 
-files = glob("bulk*.vlsv", "./")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 # virtual satellite location
 const loc = Float64[12, 0, 0] .* RE

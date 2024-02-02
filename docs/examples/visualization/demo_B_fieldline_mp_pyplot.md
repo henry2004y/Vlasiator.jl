@@ -14,7 +14,7 @@ julia -p $ncores demo_fieldline_mp_pyplot.jl
 ```
 
 ```julia
-using Distributed, ParallelDataTransfer, Glob
+using Distributed, ParallelDataTransfer
 @everywhere using Vlasiator, VlasiatorPyPlot, PyCall, Printf, LaTeXStrings, FieldTracer
 @everywhere using Vlasiator: RE
 
@@ -128,7 +128,7 @@ end
 end
 
 ################################################################################
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 nfile = length(files)
 # Set output directory

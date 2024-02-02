@@ -14,7 +14,7 @@ julia -p $ncores demo_1d2d_mp_pyplot.jl
 ```
 
 ```julia
-using Distributed, Glob
+using Distributed
 @everywhere using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
 
 @assert matplotlib.__version__ ≥ "3.4" "Require Matplotlib version 3.4+ to use subfigure!"
@@ -225,7 +225,7 @@ end
 end
 
 ################################################################################
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 nfile = length(files)
 # Set output directory

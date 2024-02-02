@@ -9,9 +9,9 @@
 
 To convert VLSV time series files to VTK image files using multithreads,
 ```julia
-using Vlasiator, Glob
+using Vlasiator
 
-files = glob("*.vlsv")
+files = filter(endswith(".vlsv"), readdir())
 
 Threads.@threads for file in files
    @info file, Threads.threadid()

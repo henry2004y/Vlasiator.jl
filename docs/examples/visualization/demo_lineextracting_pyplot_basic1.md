@@ -12,11 +12,11 @@ This demo shows how to extract data alone a line across frames.
     This can be made faster by updating the data without deleting the lines.
 
 ```julia
-using Vlasiator, Glob, PyPlot, Printf
+using Vlasiator, PyPlot, Printf
 using Vlasiator: RE # Earth radius, [m]
 
 function main()
-   files = glob("run4/bulk*.vlsv")
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
    point1 = [0e8, 0, 0]
    point2 = [1.9e8, 0, 0]

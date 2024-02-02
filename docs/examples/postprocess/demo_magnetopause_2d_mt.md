@@ -19,7 +19,7 @@ JULIA_NUM_THREADS=4 julia demo_magnetopause_2d_mt.jl
 ```
 
 ```julia
-using Vlasiator, Glob
+using Vlasiator
 using Vlasiator: RE # Earth radius, [m]
 using JLD2: jldsave
 
@@ -79,7 +79,7 @@ end
 
 ######
 
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 @time z,x,v,ey = extract_magnetopause_var(files)
 

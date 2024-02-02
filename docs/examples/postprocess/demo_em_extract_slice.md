@@ -9,7 +9,7 @@
 
 To save Epar, Eperp, B in a selected slice region from 3D VLSV outputs,
 ```julia
-using Vlasiator, Glob
+using Vlasiator
 using JLD2: jldsave
 using StaticArrays
 using LinearAlgebra: norm
@@ -66,7 +66,7 @@ function main()
    outdir = "EM/"
    outfile = "EM.jld2"
 
-   files = glob("bulk1.*vlsv", directory)
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir(directory))
    # Only orthogonal slices are supported
    normal = :y # (:x, :y, :z)
    origin = 0.0

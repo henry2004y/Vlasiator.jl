@@ -10,9 +10,9 @@
 This script creates contours from a series of input files with a fixed color range.
 Combined with `ffmpeg`, we can easily make animations from data.
 ```julia
-using Vlasiator, Glob, VlasiatorPyPlot, Printf
+using Vlasiator, VlasiatorPyPlot, Printf
 
-files = glob("bulk*.vlsv")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 nfile = length(files)
 # Set output directory
 const outdir = "out/"

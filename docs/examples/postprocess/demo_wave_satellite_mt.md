@@ -21,7 +21,7 @@ JULIA_NUM_THREADS=4 julia demo_wave_satellite_mt.jl
 ```julia
 using Statistics: mean
 using LinearAlgebra: ⋅, normalize!, norm
-using DSP, PyPlot, Glob
+using DSP, PyPlot
 using Vlasiator
 using Vlasiator: μ₀, mᵢ, RE
 using Polyester
@@ -114,7 +114,7 @@ function align_yaxis(ax1, ax2)
 end
 
 function main()
-   files = glob("bulk*.vlsv", ".")
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
    # virtual satellite location
    loc = [12Vlasiator.RE, 0, 0]

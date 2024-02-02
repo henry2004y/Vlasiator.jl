@@ -14,7 +14,7 @@ julia -p $ncores demo_2d_mp_pyplot.jl
 ```
 
 ```julia
-using Distributed, ParallelDataTransfer, Glob
+using Distributed, ParallelDataTransfer
 @everywhere using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
 
 @everywhere function init_figure(cmaps, norms, ticks, pArgs1, extent)
@@ -135,7 +135,7 @@ end
 end
 
 ################################################################################
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
 nfile = length(files)
 # Set output directory

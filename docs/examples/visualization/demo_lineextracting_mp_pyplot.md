@@ -17,7 +17,7 @@ julia -p $ncores demo_vars_extracting_mp.jl
 ```
 
 ```julia
-using Distributed, ParallelDataTransfer, Glob
+using Distributed, ParallelDataTransfer
 using Vlasiator: RE
 @everywhere using Vlasiator, PyPlot, Printf
 
@@ -116,7 +116,7 @@ end
 end
 
 ################################################################################
-files = glob("bulk*.vlsv", ".")
+files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 nfile = length(files)
 
 const x1, x2 = 8.0, 29.0

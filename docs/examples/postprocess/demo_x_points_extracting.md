@@ -12,10 +12,10 @@ save the coordinates as well as extracted reconnection rate Ey from multiple out
 Here we assume a X-Z plane.
 ```julia
 using JLD2: jldsave
-using Vlasiator, Glob, ProgressMeter
+using Vlasiator, ProgressMeter
 
 function main()
-   files = glob("bulk*.vlsv", ".")
+   files = filter(contains(r"^bulk.*\.vlsv$"), readdir())
 
    nG = 2 # number of ghost cells
 
