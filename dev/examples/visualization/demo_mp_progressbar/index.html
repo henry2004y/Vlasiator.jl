@@ -10,7 +10,7 @@
 #SBATCH --output=%x_%j.log
 #SBATCH --job-name=pmap
 
-julia demo_mp_progressbar.jl</code></pre><pre><code class="language-julia hljs">using Distributed, ProgressMeter, Glob
+julia demo_mp_progressbar.jl</code></pre><pre><code class="language-julia hljs">using Distributed, ProgressMeter
 using Vlasiator: RE # Earth radius [m]
 using ClusterManagers
 addprocs(SlurmManager(parse(Int, ENV[&quot;SLURM_NTASKS&quot;])),
@@ -173,7 +173,8 @@ end
 
 ## Parameters
 
-files = glob(&quot;bulk*.vlsv&quot;, &quot;../run_rho2_bz-5_timevarying_startfrom300s&quot;)
+dir = &quot;mydatadir&quot;
+files = filter(contains(r&quot;^bulk.*\.vlsv$&quot;), readdir(dir))
 nfiles = length(files)
 
 const p = Progress(nfiles; showspeed=true)
@@ -235,4 +236,4 @@ end
       end
       put!(channel, false) # this tells the printing task to finish
    end
-end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Sunday 28 January 2024 23:19">Sunday 28 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 2 February 2024 22:31">Friday 2 February 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
