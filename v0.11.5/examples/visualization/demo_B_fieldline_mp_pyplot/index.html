@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Field lines with customized seeds via multi-processing · Vlasiator.jl</title><meta name="title" content="Field lines with customized seeds via multi-processing · Vlasiator.jl"/><meta property="og:title" content="Field lines with customized seeds via multi-processing · Vlasiator.jl"/><meta property="twitter:title" content="Field lines with customized seeds via multi-processing · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_B_fieldline_mp_pyplot/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_B_fieldline_mp_pyplot/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_B_fieldline_mp_pyplot/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/gridtheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Field lines with customized seeds via multi-processing</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Field lines with customized seeds via multi-processing</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_B_fieldline_mp_pyplot.md#L" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_2d_fieldlines_mp"><a class="docs-heading-anchor" href="#demo_2d_fieldlines_mp">Field lines with customized seeds via multi-processing</a><a id="demo_2d_fieldlines_mp-1"></a><a class="docs-heading-anchor-permalink" href="#demo_2d_fieldlines_mp" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to plot field lines with handpicked seeds via multi-processing. To run on a single node,</p><pre><code class="language-shell hljs">julia -p $ncores demo_fieldline_mp_pyplot.jl</code></pre><pre><code class="language-julia hljs">using Distributed, ParallelDataTransfer
+@everywhere using Vlasiator, VlasiatorPyPlot, PyCall, Printf, LaTeXStrings, FieldTracer
+@everywhere using Vlasiator: RE
+
+function generate_seeds(coordmin, coordmax, dim_, nseeds)
+   seeds = Matrix{Float64}(undef, 2, nseeds)
+   for i in 1:nseeds
+      seeds[1,i] = coordmin[dim_[1]] +
+         (coordmax[dim_[1]] - coordmin[dim_[1]]) / nseeds * (i - 1)
+      seeds[2,i] = -20RE
+   end
+   seeds
+end
+
+@everywhere function init_figure(pArgs, norm, ticks, seeds, extent)
+   fig, ax = plt.subplots(1, 1; num=myid(),
+      figsize=(6, 8), constrained_layout=true)
+
+   fontsize = &quot;x-large&quot;
+
+   ax.set_aspect(&quot;equal&quot;)
+   # Set border line widths
+   for loc in (&quot;left&quot;, &quot;bottom&quot;, &quot;right&quot;, &quot;top&quot;)
+      edge = get(ax.spines, loc, nothing)
+      edge.set_linewidth(2.0)
+   end
+   ax.xaxis.set_tick_params(width=2.0, length=3)
+   ax.yaxis.set_tick_params(width=2.0, length=3)
+   ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+   ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+
+   ax.set_xlabel(pArgs.strx; fontsize)
+   ax.set_ylabel(pArgs.stry; fontsize)
+
+   ax.set_title(&quot;Density&quot;; fontsize)
+
+   x1, x2 = Vlasiator.get_axis(pArgs)
+
+   range1 = searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2])
+   range2 = searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+
+   fakedata = zeros(Float32, length(range2), length(range1))
+   c = ax.pcolormesh(x1[range1], x2[range2], fakedata; norm, cmap=matplotlib.cm.turbo)
+
+   format = matplotlib.ticker.FormatStrFormatter(&quot;%.1f&quot;)
+   cb1 = colorbar(c; ax, ticks, format)
+   cb1.ax.set_ylabel(&quot;[amu/cc]&quot;; fontsize)
+   cb1.outline.set_linewidth(1.0)
+
+   fakeline = [0.0, 1.0]
+   ls = [ax.plot(fakeline, fakeline,  color=&quot;w&quot;) for _ in 1:size(seeds,2)]
+
+   return fig, ax, c, ls, range1, range2
+end
+
+@everywhere function update_plot!(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2,
+   outdir, file)
+   isfile(outdir*file[end-8:end-5]*&quot;.png&quot;) &amp;&amp; return
+
+   println(&quot;file = $file&quot;)
+   meta = load(file)
+
+   data = Vlasiator.prep2d(meta, &quot;proton/vg_rho&quot;, :mag)&#39;
+   c.set_array(data[range2,range1] ./ 1f6)
+
+   str_title = @sprintf &quot;Density pulse run, t= %4.1fs&quot; meta.time
+   ax.set_title(str_title; fontsize=&quot;x-large&quot;)
+
+   b = meta[&quot;vg_b_vol&quot;]
+   b1 = reshape(b[dim_[1],:], meta.ncells[dim_[1]], meta.ncells[dim_[2]])
+   b2 = reshape(b[dim_[2],:], meta.ncells[dim_[1]], meta.ncells[dim_[2]])
+   # Find existing arrow annotations
+   annotations = [child for child in ax.get_children() if
+      pybuiltin(:isinstance)(child, matplotlib.text.Annotation)]
+   # Remove existing arrows
+   for a in annotations
+      a.remove()
+   end
+   # Add new arrows along field lines
+   for i in axes(seeds,2)
+      startx, starty = seeds[:,i]
+      x1, y1 = trace(b1, b2, startx, starty, grid1, grid2;
+         ds=0.5, maxstep=4000, gridtype=&quot;ndgrid&quot;)
+      x1 ./= RE
+      y1 ./= RE
+      if length(x1) &lt; 5; continue; end
+      ls[i][1].set_xdata(x1)
+      ls[i][1].set_ydata(y1)
+      add_arrow(ls[i][1])
+   end
+
+   savefig(outdir*file[end-8:end-5]*&quot;.png&quot;, bbox_inches=&quot;tight&quot;)
+end
+
+function make_jobs(files)
+   for f in files
+       put!(jobs, f)
+   end
+end
+
+@everywhere function do_work(jobs, status,
+   outdir, pArgs, norm, ticks, grid1, grid2, dim_, seeds, extent)
+
+   fig, ax, c, ls, range1, range2 = init_figure(pArgs, norm, ticks, seeds, extent)
+
+   while true
+      file = take!(jobs)
+      update_plot!(ax, c, ls, range1, range2, dim_, seeds, grid1, grid2, outdir, file)
+      put!(status, true)
+   end
+   close(fig)
+end
+
+################################################################################
+files = filter(contains(r&quot;^bulk.*\.vlsv$&quot;), readdir())
+
+nfile = length(files)
+# Set output directory
+const outdir = &quot;out/&quot;
+
+const jobs   = RemoteChannel(()-&gt;Channel{String}(nfile))
+const status = RemoteChannel(()-&gt;Channel{Bool}(nworkers()))
+
+const axisunit = EARTH # contour plot axes unit
+const extent = [0., 20., -20., 20.] # [RE], default: [-Inf32, Inf32, -Inf32, Inf32]
+
+# Upper/lower limits for each variable
+const ρmin, ρmax = 0.0, 11.0      # [amu/cc]
+
+meta = load(files[1])
+# Construct pieces for plotting
+pArgs = Vlasiator.set_args(meta, &quot;proton/vg_rho&quot;, axisunit; normal=:none)
+norm, ticks = set_colorbar(Linear, ρmin, ρmax)
+
+# Mark spatial dimensions
+const dim_ = pArgs.stry[1] == &#39;Z&#39; ? (1,3) : (1,2)
+
+(;coordmin, coordmax, ncells) = meta
+
+# Generate regular Cartesian range
+grid1 = range(coordmin[dim_[1]], coordmax[dim_[1]], length=ncells[dim_[1]])
+grid2 = range(coordmin[dim_[2]], coordmax[dim_[2]], length=ncells[dim_[2]])
+# Generate seeds for in-plane field line tracing
+const nseeds = 10
+seeds = generate_seeds(coordmin, coordmax, dim_, nseeds)
+
+
+println(&quot;Total number of files: $nfile&quot;)
+println(&quot;Running with $(nworkers()) workers...&quot;)
+
+@async make_jobs(files) # Feed the jobs channel with all files to process.
+
+@sync for p in workers()
+   @async remote_do(do_work, p, jobs, status,
+      outdir, pArgs, norm, ticks, grid1, grid2, dim_, seeds, extent)
+end
+
+let n = nfile
+   t = @elapsed while n &gt; 0 # wait for all jobs to complete
+      take!(status)
+      n -= 1
+   end
+   println(&quot;Finished in $(round(t, digits=2))s.&quot;)
+end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="auto">Automatic (OS)</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.2.1 on <span class="colophon-date" title="Friday 2 February 2024 23:11">Friday 2 February 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
