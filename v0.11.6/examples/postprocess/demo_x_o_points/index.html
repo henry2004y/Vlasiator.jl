@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Find X- and O-points · Vlasiator.jl</title><meta name="title" content="Find X- and O-points · Vlasiator.jl"/><meta property="og:title" content="Find X- and O-points · Vlasiator.jl"/><meta property="twitter:title" content="Find X- and O-points · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_x_o_points/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_x_o_points/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_x_o_points/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/nocoverlisttheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Find X- and O-points</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Find X- and O-points</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/postprocess/demo_x_o_points.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_x_o_points"><a class="docs-heading-anchor" href="#demo_x_o_points">Find X- and O-points</a><a id="demo_x_o_points-1"></a><a class="docs-heading-anchor-permalink" href="#demo_x_o_points" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to find X-points and O-points in a 2D magnetic reconnection configuration. Here we assume a X-Z meridional plane.</p><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><ol><li>The input B field domain matters for computing the flux function, but I don&#39;t know</li></ol><p>why there are differences.</p><ol><li>In identifying the X-points and O-points, we currently provide two methods: method 1</li></ol><p>needs to set the relative tolerance, while method 2 does not.</p></div></div><pre><code class="language-julia hljs">using VlasiatorPyPlot
+
+function main()
+   file = &quot;bulk.0001657.vlsv&quot;
+   meta = load(file)
+
+   ndims(meta) != 2 &amp;&amp; @error &quot;Flux function only works for 2D simulations!&quot;
+
+   meta.ncells[3] == 1 &amp;&amp; @error &quot;equatorial plane, no reconnection!&quot;
+
+   b = meta[&quot;vg_b_vol&quot;]
+   b = reshape(b, 3, meta.ncells[1], meta.ncells[3])
+   dx = [meta.dcoord[1], meta.dcoord[3]]
+
+   x = LinRange(meta.coordmin[1], meta.coordmax[1], meta.ncells[1]) ./ Vlasiator.RE
+   z = LinRange(meta.coordmin[3], meta.coordmax[3], meta.ncells[3]) ./ Vlasiator.RE
+
+   xmin_ = searchsortedfirst(x, 7.0)
+   xmax_ = searchsortedlast(x, 9.5)
+   zmin_ = searchsortedfirst(z, -5.0)
+   zmax_ = searchsortedlast(z, 5.0)
+
+   # meshgrid for plotting
+   X = [a for a in x[xmin_:xmax_], _ in z[zmin_:zmax_]]
+   Z = [b for _ in x[xmin_:xmax_], b in z[zmin_:zmax_]]
+
+   flux = compute_flux_function(view(b,:,xmin_:xmax_,zmin_:zmax_), dx)
+
+   fig, ax = plt.subplots(subplot_kw=Dict(&quot;projection&quot;=&gt;&quot;3d&quot;))
+
+   ax.plot_surface(X, Z, flux;
+      cmap=matplotlib.cm.turbo,
+      linewidth=0, antialiased=false)
+
+   indices_x, indices_o = find_reconnection_points(flux; retol=1e-4, method=2)
+
+   fig, ax = subplots(figsize=(6,10), constrained_layout=true)
+
+   pcolormesh(meta, &quot;proton/vg_v&quot;, ax;
+      comp=:z, extent=[5, 10, -7.5, 7.5],
+      cmap=matplotlib.cm.RdBu_r)
+   s1 = ax.scatter(x[indices_x[1,:].+xmin_.-1], z[indices_x[2,:].+zmin_.-1];
+      s=50, marker=&quot;x&quot;, color=&quot;tab:gray&quot;)
+   s2 = ax.scatter(x[indices_o[1,:].+xmin_.-1], z[indices_o[2,:].+zmin_.-1];
+      s=12, marker=&quot;o&quot;, color=&quot;tab:brown&quot;)
+
+   ax.legend([s1, s2], [&quot;X-point&quot;, &quot;O-point&quot;])
+end
+
+main()</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.3.0 on <span class="colophon-date" title="Sunday 31 March 2024 03:55">Sunday 31 March 2024</span>. Using Julia version 1.10.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
