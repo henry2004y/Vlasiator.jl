@@ -22,7 +22,7 @@ Vlasiator.jl contains the following features:
 
 ## What is Vlasiator
 
-Vlasiator solves the Vlasov–Maxwell system of equations for ions while assuming massless electrons under quasi-neutrality. The fundamental description of charged particle motion in an electromagnetic field is given by the Vlasov equation
+Vlasiator solves the Vlasov–Maxwell system of equations for ions while assuming massless electrons under the quasi-neutrality condition ``\sum_\alpha n_\alpha q_\alpha \approx e n_e``. The fundamental description of charged particle motion in an electromagnetic field is given by the Vlasov equation
 
 ```math
 \frac{\partial f_\alpha}{\partial t} + \mathbf{v}\cdot\frac{\partial f_\alpha}{\partial \mathbf{r}} + \frac{q_\alpha}{m_\alpha}(\mathbf{E}+\mathbf{v}\times\mathbf{B})\cdot \frac{\partial f_\alpha}{\partial \mathbf{v}} = 0
@@ -48,10 +48,10 @@ The magnetic field is updated using Faraday's law:
 and the electric field is given by the generalized Ohm's law:
 
 ```math
-\mathbf{E} = -\sum_\alpha\mathbf{u}_\alpha \times\mathbf{B} + \frac{1}{\sum_\alpha n_\alpha q_\alpha}\mathbf{j}\times\mathbf{B} - \frac{1}{\sum_\alpha n_\alpha q_\alpha}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
+\mathbf{E} = -\frac{\sum_\alpha n_\alpha q_\alpha\mathbf{u}_\alpha}{\sum_\alpha n_\alpha q_\alpha} \times\mathbf{B} + \frac{1}{\sum_\alpha n_\alpha q_\alpha}\mathbf{j}\times\mathbf{B} - \frac{1}{\sum_\alpha n_\alpha q_\alpha}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
 ```
 
-The four terms on the right-handed side are the convection term, the Hall term, the electron pressure gradient term, and the resistive term, respectively.
+The four terms on the right-handed side are the convection term, the Hall term, the electron pressure gradient term, and the resistive term, respectively. For multi-ion species, the convection velocity is the charge averaged ion velocity.
 The total current density ``\mathbf{j}`` is obtained from Ampère's law where the displacement current has been neglected:
 
 ```math
