@@ -48,14 +48,14 @@ The magnetic field is updated using Faraday's law:
 and the electric field is given by the generalized Ohm's law:
 
 ```math
-\mathbf{E} = -\frac{\sum_\alpha n_\alpha q_\alpha\mathbf{u}_\alpha}{\sum_\alpha n_\alpha q_\alpha} \times\mathbf{B} + \frac{1}{\sum_\alpha n_\alpha q_\alpha}\mathbf{j}\times\mathbf{B} - \frac{1}{\sum_\alpha n_\alpha q_\alpha}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{j}
+\mathbf{E} = -\frac{\sum_\alpha n_\alpha q_\alpha\mathbf{u}_\alpha}{\sum_\alpha n_\alpha q_\alpha} \times\mathbf{B} + \frac{1}{\sum_\alpha n_\alpha q_\alpha}\mathbf{J}\times\mathbf{B} - \frac{1}{\sum_\alpha n_\alpha q_\alpha}\nabla\cdot\overleftrightarrow{P}_e + \eta \mathbf{J}
 ```
 
 The four terms on the right-handed side are the convection term, the Hall term, the electron pressure gradient term, and the resistive term, respectively. For multi-ion species, the convection velocity is the charge averaged ion velocity.
-The total current density ``\mathbf{j}`` is obtained from Ampère's law where the displacement current has been neglected:
+The total current density ``\mathbf{J}`` is obtained from Ampère's law where the displacement current has been neglected:
 
 ```math
-\nabla\times\mathbf{B} = \mu_0 \mathbf{j}
+\nabla\times\mathbf{B} = \mu_0 \mathbf{J}
 ```
 
 Finally, by determining the electron pressure tensor by using an appropriate equation of state, the evolution of the system can be followed in time. For example, let $\overleftrightarrow{P}_e = p_e \overleftrightarrow{I}$ where $p_e$ is the isotropic scalar electron pressure. In an isothermal process,
