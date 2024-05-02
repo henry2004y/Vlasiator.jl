@@ -205,8 +205,13 @@ end
 
 @inline function readvector(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
    ::Val{true}) where T
-   a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
-   w = reinterpret(T, a)
+   w =
+      if offset % dsize == 0
+         mmap(fid, Vector{T}, dsize*asize, offset)
+      else
+         a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
+         reinterpret(T, a)
+      end
 end
 
 @inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
@@ -220,8 +225,13 @@ end
 
 @inline function readarray(fid::IOStream, ::Type{T}, offset::Int, asize::Int, dsize::Int,
    vsize::Int, ::Val{true}) where T
-   a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-   w = reshape(reinterpret(T, a), vsize, asize)
+   w =
+      if offset % dsize == 0
+         mmap(fid, Array{T,2}, (vsize, asize), offset)
+      else
+         a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+         reshape(reinterpret(T, a), vsize, asize)
+      end
 end
 
 """
@@ -606,9 +616,11 @@ end
    nid::Int, offset::Int, asize::Int, dsize::Int, vsize::Int)::Array{T} where T
    v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
 
-   w = let
+   if offset % dsize == 0
+      w = mmap(fid, Array{T,2}, (vsize, asize), offset)
+   else
       a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      reshape(reinterpret(T, a), vsize, asize)
+      w = reshape(reinterpret(T, a), vsize, asize)
    end
 
    _fillv!(v, w, celldict, ids)
@@ -856,8 +868,14 @@ function readvcells(meta::MetaVLSV, cid::Int; species::String="proton")
 
    data = let
       T = dsize == 4 ? Float32 : Float64
-      a = mmap(fid, Vector{UInt8}, dsize*bsize*nblocks, offset_v*bsize*dsize + offset)
-      reshape(reinterpret(T, a), bsize, nblocks)
+      offset += offset_v*bsize*dsize
+      a =
+         if offset % dsize == 0
+            mmap(fid, Array{T, 2}, (bsize, nblocks), offset)
+         else
+            aflat = mmap(fid, Vector{UInt8}, dsize*bsize*nblocks, offset)
+            reshape(reinterpret(T, aflat), bsize, nblocks)
+         end
    end
 
    # Read block IDs
