@@ -616,12 +616,8 @@ end
    nid::Int, offset::Int, asize::Int, dsize::Int, vsize::Int)::Array{T} where T
    v = vsize == 1 ? Vector{T}(undef, nid) : Array{T,2}(undef, vsize, nid)
 
-   if offset % dsize == 0
-      w = mmap(fid, Array{T,2}, (vsize, asize), offset)
-   else
-      a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
-      w = reshape(reinterpret(T, a), vsize, asize)
-   end
+   a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
+   w = reshape(reinterpret(T, a), vsize, asize)
 
    _fillv!(v, w, celldict, ids)
 
