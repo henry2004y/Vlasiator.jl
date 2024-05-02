@@ -227,7 +227,7 @@ end
    vsize::Int, ::Val{true}) where T
    w =
       if offset % dsize == 0
-         mmap(fid, Array{T,2}, (vsize, asize), offset)
+         mmap(fid, Array{T, 2}, (vsize, asize), offset)
       else
          a = mmap(fid, Vector{UInt8}, dsize*vsize*asize, offset)
          reshape(reinterpret(T, a), vsize, asize)
@@ -555,7 +555,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       v = raw
    end
 
-   return v::Union{Array, Base.ReinterpretArray}
+   return v::Union{Array, Base.ReinterpretArray, Base.ReshapedArray}
 end
 
 """
