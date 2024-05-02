@@ -207,7 +207,7 @@ end
    ::Val{true}) where T
    w =
       if offset % dsize == 0
-         mmap(fid, Vector{T}, dsize*asize, offset)
+         mmap(fid, Vector{T}, asize, offset)
       else
          a = mmap(fid, Vector{UInt8}, dsize*asize, offset)
          reinterpret(T, a)
