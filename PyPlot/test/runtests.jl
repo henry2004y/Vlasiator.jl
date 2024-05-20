@@ -100,6 +100,8 @@ end
       end
       p = streamplot(meta, "proton/vg_v", comp="xy")
       @test typeof(p) == PyPlot.PyObject
+      p = streamplot(meta, "fg_b", comp="xy")
+      @test typeof(p) == PyPlot.PyObject
       v = quiver(meta, "proton/vg_v", axisunit=SI, stride=1).get_offsets()
       @test size(v) == (6300, 2)
       # should be tested in 3D, but in principle 2D also works

@@ -114,7 +114,8 @@ end
 
 function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUnit,
    origin::AbstractFloat = 0.0)
-   (;ncells, maxamr, coordmin, coordmax) = meta
+   @assert ndims(meta) == 2 "Vector plot only support 2D outputs!"
+   (; ncells, maxamr, coordmin, coordmax) = meta
    if occursin("x", comp)
       v1_ = 1
       if occursin("y", comp)
@@ -151,9 +152,10 @@ function set_vector(meta::MetaVLSV, var::String, comp::String, axisunit::AxisUni
          v1 = @views refineslice(meta, idlist, v2D[v1_,:], dir)
          v2 = @views refineslice(meta, idlist, v2D[v2_,:], dir)
       end
-   else
-      v1 = data[v1_,:,:]
-      v2 = data[v2_,:,:]
+   else # Field solver grid
+      dataslice = dropdims(data, dims = tuple(findall(size(data) .== 1)...))
+      v1 = dataslice[v1_,:,:]
+      v2 = dataslice[v2_,:,:]
    end
 
    x, y = get_axis(axisunit, plotrange, sizes)
