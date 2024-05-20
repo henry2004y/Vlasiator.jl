@@ -220,15 +220,13 @@ function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{In
       if typeof(comp) == Symbol
          comp = comp == :x ? 1 : comp == :y ? 2 : comp == :z ? 3 : 0
       end
-      if normal == :x
-         data = comp != 0 ? data3D[comp,icut,:,:] :
-            @views hypot.(data3D[1,icut,:,:], data3D[2,icut,:,:], data3D[3,icut,:,:])
-      elseif normal == :y
-         data = comp != 0 ? data3D[comp,:,icut,:] :
-            @views hypot.(data3D[1,:,icut,:], data3D[2,:,icut,:], data3D[3,:,icut,:])
-      elseif normal == :z
-         data = comp != 0 ? data3D[comp,:,:,icut] :
-            @views hypot.(data3D[1,:,:,icut], data3D[2,:,:,icut], data3D[3,:,:,icut])
+      data = if comp != 0
+         dataslice = selectdim(data3D, dir+1, icut)
+         dataslice[comp,:,:]
+      else
+         dataslice = selectdim(data3D, dir+1, icut)
+         datavec = eachslice(dataslice, dims=1)
+         hypot.(datavec[1], datavec[2], datavec[3])
       end
    else # moments, dccrg grid
       # vlasov grid, AMR
