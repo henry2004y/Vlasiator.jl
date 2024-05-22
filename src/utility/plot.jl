@@ -198,10 +198,10 @@ the plane orientation, and `comp` to select the component of a vector.
 function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{Int, Symbol},
    pArgs::PlotArgs)
    (;origin, idlist, indexlist) = pArgs
-
    data3D = readvariable(meta, var)
+   dim = ndims(data3D)
 
-   if startswith(var, "fg_") || ndims(data3D) > 2 # field or derived quantities, fsgrid
+   if startswith(var, "fg_") || dim > 2 # Field Solver grid or derived quantities
       ncells = meta.ncells .* 2^meta.maxamr
       if normal == :x
          dir = 1
@@ -228,13 +228,13 @@ function prep2dslice(meta::MetaVLSV, var::String, normal::Symbol, comp::Union{In
          datavec = eachslice(dataslice, dims=1)
          hypot.(datavec[1], datavec[2], datavec[3])
       end
-   else # moments, dccrg grid
+   else # moments, DCCRG grid
       # vlasov grid, AMR
-      if ndims(data3D) == 1
+      if dim == 1 # scalar
          data2D = data3D[indexlist]
 
          data = refineslice(meta, idlist, data2D, normal)
-      elseif ndims(data3D) == 2
+      elseif dim == 2 # vector
          data2D = data3D[:,indexlist]
 
          if comp in (:x, :y, :z, 1, 2, 3)

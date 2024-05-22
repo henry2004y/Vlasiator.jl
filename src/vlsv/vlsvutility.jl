@@ -1041,10 +1041,15 @@ function downsample_fg_cell(meta::MetaVLSV, v_fg::Array, cid::Int)
 end
 
 "Return the field solver grid cell indexes containing `coords` (low-inclusive)."
-function get_fg_indices(meta::MetaVLSV, coords::SVector{3, Float64})
+function get_fg_indices(meta::MetaVLSV, coords::SVector{3, Float64}, order=:F)
    dx = meta.dcoord ./ 2^meta.maxamr
-   ri = @. Int(((coords - meta.coordmin) ÷ dx) + 1)
-   sz = meta.ncells .<< meta.maxamr
+   if order == :F
+      ri = ntuple(i -> Int(((coords[4-i] - meta.coordmin[4-i]) ÷ dx[4-i]) + 1), Val(3))
+      sz = ntuple(i -> meta.ncells[4-i] << meta.maxamr, Val(3))
+   else
+      ri = @. Int(((coords - meta.coordmin) ÷ dx) + 1)
+      sz = meta.ncells .<< meta.maxamr
+   end
    if any(i -> i < 1, ri) || any(i -> i[1] > i[2], zip(ri, sz))
       error("fsgrid index out of bounds!")
    end
@@ -1080,10 +1085,14 @@ Shift the corners (`lower`, `upper`) inward by a distance controlled by `tol`. I
 low-inclusive behaviour is required, `tol` shall be set to 0.
 """
 function get_fg_indices_subvolume(meta::MetaVLSV, lower::SVector{3, Float64},
-   upper::SVector{3, Float64}, tol::Float64=1e-3)
-   ϵ = @. meta.dcoord / 2^meta.maxamr * tol
-   il = get_fg_indices(meta, lower .+ ϵ)
-   iu = get_fg_indices(meta, upper .- ϵ)
+   upper::SVector{3, Float64}, tol::Float64=1e-3, order=:F)
+   if order == :F
+      ϵ = ntuple(i -> meta.dcoord[4-i] / 2^meta.maxamr * tol, Val(3))
+   else
+      ϵ = @. meta.dcoord / 2^meta.maxamr * tol
+   end
+   il = get_fg_indices(meta, lower .+ ϵ, order)
+   iu = get_fg_indices(meta, upper .- ϵ, order)
 
    il, iu
 end
@@ -1091,13 +1100,19 @@ end
 ## Upsampling
 
 """
-    read_variable_as_fg(meta::MetaVLSV, var::String)
+    read_variable_as_fg(meta::MetaVLSV, var::String, order::Symbol=:F)
 
-Interpolate DCCRG variable `var` to field solver grid size.
+Interpolate DCCRG variable `var` to field solver grid size. If `order==:F`, we use the
+default Fortran-style ordering; otherwise the returned variable would be in C-style
+ordering.
 This is an alternative method to [`fillmesh`](@ref), but not optimized for performance.
 """
-function read_variable_as_fg(meta::MetaVLSV, var::String)
-   sz = meta.ncells .<< meta.maxamr
+function read_variable_as_fg(meta::MetaVLSV, var::String, order::Symbol=:F)
+   if order == :F
+      sz = ntuple(i -> meta.ncells[4-i] << meta.maxamr, Val(3))
+   else
+      sz = meta.ncells .<< meta.maxamr
+   end
    data = readvariable(meta, var, false)
    if eltype(data) == Float64; data = Float32.(data); end
    cellid = Vlasiator.getcellid(meta.fid, meta.nodeVLSV.var)
@@ -1142,8 +1157,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 """
 function fillmesh(meta::MetaVLSV, vars::Vector{String};
    skipghosttype::Bool=true, maxamronly::Bool=false, verbose::Bool=false)
-
-   (;maxamr, fid, nodeVLSV, ncells, celldict) = meta
+   (; maxamr, fid, nodeVLSV, ncells, celldict) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)

@@ -533,25 +533,23 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       raw = readarray(meta.fid, T, offset, asize, dsize, vsize, Val(usemmap))
    end
 
-   if startswith(var, "fg_") # fsgrid
+   if startswith(var, "fg_") # Field Solver grid
       bbox = @. meta.ncells * 2^meta.maxamr
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
 
       v =
          if ndims(raw)::Int64 > 1
-            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox...)
+            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox[3], bbox[2], bbox[1])
          else
-            @inbounds Array{Float32}(undef, bbox...)
+            @inbounds Array{Float32}(undef, bbox[3], bbox[2], bbox[1])
          end
-
       fgDecomposition = getDomainDecomposition(bbox, nIORanks)
-
       _fillFG!(v, raw, fgDecomposition, nIORanks, bbox)
-   elseif sorted # dccrg grid
+   elseif sorted # DCCRG grid
       @inbounds v = ndims(raw) == 1 ? raw[meta.cellindex] : raw[:,meta.cellindex]
       if T === Float64; v = map(x->Float32(x), v); end
-   else # dccrg grid
+   else # DCCRG grid
       v = raw
    end
 
@@ -665,11 +663,12 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
       lrange = map((x,y)->x:y, lstart, lend)
       # Reorder data
       if ndims(raw) > 1
-         ldata = reshape(raw[:,offsetnow:offsetnext-1], size(raw,1), lsize...)
-         dataOrdered[:,lrange...] = ldata
+         ldata = reshape(raw[:,offsetnow:offsetnext-1],
+            size(raw,1), lsize[3], lsize[2], lsize[1])
+         dataOrdered[:,lrange[3],lrange[2],lrange[1]] = ldata
       else
-         ldata = reshape(raw[offsetnow:offsetnext-1], lsize...)
-         dataOrdered[lrange...] = ldata
+         ldata = reshape(raw[offsetnow:offsetnext-1], lsize[3], lsize[2], lsize[1])
+         dataOrdered[lrange[3],lrange[2],lrange[1]] = ldata
       end
       offsetnow = offsetnext
    end
@@ -728,9 +727,17 @@ function getdata2d(meta::MetaVLSV, var::String)
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
 
-   data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
-      reshape(data, sizes[1], sizes[2]) :
-      reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
+   if startswith(var, "fg_")
+      data = ndims(data) == 3 ?
+         reshape(data, sizes[2], sizes[1]) :
+         reshape(data, 3, sizes[2], sizes[1])
+   else # DCCRG
+      data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
+         reshape(data, sizes[1], sizes[2]) :
+         reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
+   end
+
+   data
 end
 
 "File size in bytes."
