@@ -59,8 +59,6 @@ data = readvariable(meta, "CellID")
 
 The variable reading is designed for cells, which takes cell ID(s) as the 3rd argument if specified. The same interface works for both [DCCRG](https://github.com/fmihpc/dccrg) grid (for storing cell centered quantities like plasma moments) and [FS](https://github.com/fmihpc/fsgrid) grid (for storing field solver related quantities on a uniform high resolution mesh) variables. By default the returned DCCRG variable array is sorted by cell IDs. If in any case you want the original unsorted version as being stored in the file, use `readvariable(meta, var, false)`.
 
-For the Field Solver grid, the raw data is stored in C-style ordering. For example, the magnetic field has the size (nx,ny,nz,3). However, Julia uses Fortran-style ordering.
-
 - Get variable at a given location
 
 ```julia
