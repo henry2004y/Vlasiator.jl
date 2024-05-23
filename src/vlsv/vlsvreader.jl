@@ -724,15 +724,9 @@ function getdata2d(meta::MetaVLSV, var::String)
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
 
-   if startswith(var, "fg_")
-      data = ndims(data) == 3 ?
-         reshape(data, sizes[1], sizes[2]) :
-         reshape(data, 3, sizes[1], sizes[2])
-   else # DCCRG
-      data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
-         reshape(data, sizes[1], sizes[2]) :
-         reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
-   end
+   data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
+      reshape(data, sizes[1], sizes[2]) :
+      reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
 
    data
 end
