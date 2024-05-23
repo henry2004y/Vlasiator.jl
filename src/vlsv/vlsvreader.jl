@@ -533,7 +533,7 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
       raw = readarray(meta.fid, T, offset, asize, dsize, vsize, Val(usemmap))
    end
 
-   if startswith(var, "fg_") # fsgrid
+   if startswith(var, "fg_") # Field Solver grid
       bbox = @. meta.ncells * 2^meta.maxamr
       # Determine fsgrid domain decomposition
       nIORanks = readparameter(meta, "numWritingRanks")::Int32
@@ -544,14 +544,12 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
          else
             @inbounds Array{Float32}(undef, bbox...)
          end
-
       fgDecomposition = getDomainDecomposition(bbox, nIORanks)
-
       _fillFG!(v, raw, fgDecomposition, nIORanks, bbox)
-   elseif sorted # dccrg grid
+   elseif sorted # DCCRG grid
       @inbounds v = ndims(raw) == 1 ? raw[meta.cellindex] : raw[:,meta.cellindex]
       if T === Float64; v = map(x->Float32(x), v); end
-   else # dccrg grid
+   else # DCCRG grid
       v = raw
    end
 
@@ -662,14 +660,12 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
       lstart = ntuple(i -> calcLocalStart(bbox[i], fgDecomposition[i], xyz[i]), Val(3))
       offsetnext = offsetnow + prod(lsize)
       lend = @. lstart + lsize - 1
-      lrange = map((x,y)->x:y, lstart, lend)
+      lrange = map((x,y)->x:y, lstart, lend) |> CartesianIndices
       # Reorder data
       if ndims(raw) > 1
-         ldata = reshape(raw[:,offsetnow:offsetnext-1], size(raw,1), lsize...)
-         dataOrdered[:,lrange...] = ldata
+         dataOrdered[:,lrange] = raw[:,offsetnow:offsetnext-1]
       else
-         ldata = reshape(raw[offsetnow:offsetnext-1], lsize...)
-         dataOrdered[lrange...] = ldata
+         dataOrdered[lrange] = raw[offsetnow:offsetnext-1]
       end
       offsetnow = offsetnext
    end
@@ -727,10 +723,13 @@ function getdata2d(meta::MetaVLSV, var::String)
    ndims(meta) == 2 || @error "2D outputs required."
    sizes = filter(!=(1), meta.ncells)
    data = readvariable(meta, var)
+   dim = ndims(data)
 
-   data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
+   data = dim == 1 || size(data, 1) == 1 || dim == 3 ?
       reshape(data, sizes[1], sizes[2]) :
       reshape(data, 3, sizes[1], sizes[2]) # assumes 3-vector, may not work in general
+
+   data
 end
 
 "File size in bytes."

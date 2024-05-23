@@ -54,7 +54,9 @@ Integers but not unsigned integers shall be used for indexing, even though [unsi
 
 ## Memory
 
-Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through [`mmap`](https://docs.julialang.org/en/v1/stdlib/Mmap/) in Julia. With this mechanism you never need to worry about unable to process data with small free memory. Besides, we found that proper usage of `mmap` can also speed up reading and reduce memory comsumption. However, without `reinterpret` we may encounter the alignment issue!
+Vlasiator output files can be large. If we have limited memory relative to the file size, Vlasiator.jl provide direct hard disk mapping through [`mmap`](https://docs.julialang.org/en/v1/stdlib/Mmap/) in Julia. With this mechanism you never need to worry about unable to process data with small free memory. Besides, we found that proper usage of `mmap` can also speed up reading and reduce memory comsumption. However, without `reinterpret` we may encounter the alignment issue. Therefore, we check the page alignment while using `mmap`.
+
+The memory layout of the field solver grid is a bit tricky when converting from 1D arrays to multidimensional arrays. In pyvlasiator/analysator, the FSgrid output `fg_b` has size of (nx,ny,nz,3); In Vlasiator.jl, the final output would be size of (3, nx,ny,nz).
 
 ## Parallelism
 

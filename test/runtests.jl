@@ -171,7 +171,7 @@ end
          data = readvariable(metaAMR, "fg_e")
          ncells, namr = metaAMR.ncells, metaAMR.maxamr
          @test size(data) == (3, ncells[1]*namr^2, ncells[2]*namr^2, ncells[3]*namr^2)
-         @test data[:,16,8,8] == [-1.3758785f-7, 3.2213068f-4, -3.1518404f-4]
+         @test data[:,5,1,1] == [7.603512f-7, 2f-4, -2f-4]
 
          # Compare two VLSV files
          @test issame(files[1], files[1])
@@ -220,7 +220,7 @@ end
 
          @test meta["BetaStar"][1] == 229.5517f0
 
-         @test meta["Poynting"][:,10,10] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
+         @test meta["Poynting"][:,10,10,1] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
          @test meta["IonInertial"][1] == 8.578087f7
 
@@ -319,7 +319,7 @@ end
          meta = meta3 # amr
 
          @test Vlasiator.downsample_fg(meta, "fg_e")[1,3] == 7.5771624f-7
-         coords = Vlasiator.SVector(100.0,200.0, 3e8)
+         coords = Vlasiator.SVector(100.0, 200.0, 3e8)
          @test_throws ErrorException Vlasiator.get_fg_indices(meta, coords)
 
          data = let

@@ -1142,8 +1142,7 @@ Fill the DCCRG mesh with quantity of `vars` on all refinement levels.
 """
 function fillmesh(meta::MetaVLSV, vars::Vector{String};
    skipghosttype::Bool=true, maxamronly::Bool=false, verbose::Bool=false)
-
-   (;maxamr, fid, nodeVLSV, ncells, celldict) = meta
+   (; maxamr, fid, nodeVLSV, ncells, celldict) = meta
 
    nvarvg = findall(!startswith("fg_"), vars)
    nv = length(vars)
