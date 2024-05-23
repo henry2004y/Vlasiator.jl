@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Tracing field lines in 3D · Vlasiator.jl</title><meta name="title" content="Tracing field lines in 3D · Vlasiator.jl"/><meta property="og:title" content="Tracing field lines in 3D · Vlasiator.jl"/><meta property="twitter:title" content="Tracing field lines in 3D · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_field_tracing_3d/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_field_tracing_3d/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_field_tracing_3d/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/nocoverlisttheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Tracing field lines in 3D</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Tracing field lines in 3D</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_field_tracing_3d.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_3d_trace"><a class="docs-heading-anchor" href="#demo_3d_trace">Tracing field lines in 3D</a><a id="demo_3d_trace-1"></a><a class="docs-heading-anchor-permalink" href="#demo_3d_trace" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to trace along a field line and extract variables from 3D AMR grid.</p><div class="admonition is-warning"><header class="admonition-header">Warning</header><div class="admonition-body"><p>This is a proof of concept, which is memory-bound in 3D and may be quite inefficient!</p></div></div><pre><code class="language-julia hljs">using Vlasiator, FieldTracer, PyPlot
+using StaticArrays
+using Vlasiator: RE
+
+function get_cell_along_B(meta::MetaVLSV, seed::Vector{T};
+   ds::Float64=0.2, maxstep::Int=20000, direction::String=&quot;both&quot;) where T
+   B = Vlasiator.fillmesh(meta, [&quot;vg_b_vol&quot;]; maxamronly=true)[1][1][1]
+
+   nx, ny, nz = size(B)[2:4]
+
+   xrange = LinRange(meta.coordmin[1], meta.coordmax[1], nx)
+   yrange = LinRange(meta.coordmin[2], meta.coordmax[2], ny)
+   zrange = LinRange(meta.coordmin[3], meta.coordmax[3], nz)
+
+   bx = @view B[1,:,:,:]
+   by = @view B[2,:,:,:]
+   bz = @view B[3,:,:,:]
+   xs, ys, zs = seed
+
+   x, y, z = trace(bx, by, bz, xs, ys, zs, xrange, yrange, zrange; ds, maxstep, direction)
+
+   cellids = [getcell(meta, SVector(x[1], y[1], z[1]))]
+
+   for i in eachindex(x)[2:end]
+      cellidnew = getcell(meta, SVector(x[i], y[i], z[i]))
+      if cellidnew != cellids[end]
+         push!(cellids, cellidnew)
+      end
+   end
+
+   cellids
+end
+
+function main()
+   file = &quot;bulk1.0001000.vlsv&quot;
+   meta = load(file)
+
+   seed = [-5.0, 0., 3.5] .* RE
+   # For EGI, ds=1.0 is between 1-2 steps per finest cell.
+   cellids = get_cell_along_B(meta, seed; ds=1.0, maxstep=100, direction=&quot;backward&quot;)
+
+   #n = readvariable(meta, &quot;proton/vg_rho&quot;, cellids)
+   #v = readvariable(meta, &quot;proton/vg_v&quot;, cellids)
+   #E = readvariable(meta, &quot;fg_e&quot;, cellids) # Not available for now!
+
+   x = zeros(Float64, length(cellids))
+   y = zeros(Float64, length(cellids))
+   z = zeros(Float64, length(cellids))
+
+   for i in eachindex(cellids)
+      coords = getcellcoordinates(meta, cellids[i])
+      x[i], y[i], z[i] = coords
+   end
+
+   fig = plt.figure()
+   ax = fig.add_subplot(projection=&quot;3d&quot;)
+
+   ax.set_xlabel(&quot;x [RE]&quot;)
+   ax.set_ylabel(&quot;y [RE]&quot;)
+   ax.set_zlabel(&quot;z [RE]&quot;)
+
+   ax.set_box_aspect([1,1,1])
+   ax.set_xlim3d([-20.0, -5.0])
+   ax.set_ylim3d([0.0, 0.5])
+   ax.set_zlim3d([-2.0, 3.0])
+
+   ax.plot3D(x./RE, y./RE, z./RE)
+end
+
+main()</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Thursday 23 May 2024 04:46">Thursday 23 May 2024</span>. Using Julia version 1.10.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
