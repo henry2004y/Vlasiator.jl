@@ -540,9 +540,9 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
 
       v =
          if ndims(raw)::Int64 > 1
-            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox[3], bbox[2], bbox[1])
+            @inbounds Array{Float32}(undef, size(raw,1)::Int64, bbox...)
          else
-            @inbounds Array{Float32}(undef, bbox[3], bbox[2], bbox[1])
+            @inbounds Array{Float32}(undef, bbox...)
          end
       fgDecomposition = getDomainDecomposition(bbox, nIORanks)
       _fillFG!(v, raw, fgDecomposition, nIORanks, bbox)
@@ -660,15 +660,12 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
       lstart = ntuple(i -> calcLocalStart(bbox[i], fgDecomposition[i], xyz[i]), Val(3))
       offsetnext = offsetnow + prod(lsize)
       lend = @. lstart + lsize - 1
-      lrange = map((x,y)->x:y, lstart, lend)
+      lrange = map((x,y)->x:y, lstart, lend) |> CartesianIndices
       # Reorder data
       if ndims(raw) > 1
-         ldata = reshape(raw[:,offsetnow:offsetnext-1],
-            size(raw,1), lsize[3], lsize[2], lsize[1])
-         dataOrdered[:,lrange[3],lrange[2],lrange[1]] = ldata
+         dataOrdered[:,lrange] = raw[:,offsetnow:offsetnext-1]
       else
-         ldata = reshape(raw[offsetnow:offsetnext-1], lsize[3], lsize[2], lsize[1])
-         dataOrdered[lrange[3],lrange[2],lrange[1]] = ldata
+         dataOrdered[lrange] = raw[offsetnow:offsetnext-1]
       end
       offsetnow = offsetnext
    end
@@ -729,8 +726,8 @@ function getdata2d(meta::MetaVLSV, var::String)
 
    if startswith(var, "fg_")
       data = ndims(data) == 3 ?
-         reshape(data, sizes[2], sizes[1]) :
-         reshape(data, 3, sizes[2], sizes[1])
+         reshape(data, sizes[1], sizes[2]) :
+         reshape(data, 3, sizes[1], sizes[2])
    else # DCCRG
       data = ndims(data) == 1 || size(data, 1) == 1 || ndims(data) == 3 ?
          reshape(data, sizes[1], sizes[2]) :

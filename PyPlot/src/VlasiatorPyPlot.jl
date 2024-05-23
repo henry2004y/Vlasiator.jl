@@ -267,17 +267,13 @@ function _plot2d(f::PyObject, meta::MetaVLSV, var::String,
       kwargs = Base.structdiff(values(kwargs), (normal = normal, origin = origin))
 
       pArgs = set_args(meta, var, axisunit; normal, origin)
-      data = prep2dslice(meta, var, normal, comp, pArgs)
+      data = prep2dslice(meta, var, normal, comp, pArgs)'
    else
       pArgs = set_args(meta, var, axisunit)
-      data = prep2d(meta, var, comp)
+      data = prep2d(meta, var, comp)'
    end
 
    x1, x2 = get_axis(pArgs)
-
-   if (length(x1) == size(data,1) && length(x2) == size(data,2))
-      data = data'
-   end
 
    if var in ("fg_b", "fg_e", "vg_b_vol", "vg_e_vol") || endswith(var, "vg_v")
       _fillinnerBC!(data, data)
