@@ -940,9 +940,11 @@ function init_cellswithVDF!(meta::MetaVLSV, species::String)
 end
 
 @inline function _fillvcell!(vcellids, vcellf, data, blockIDs, bsize)
-   @inbounds for i in eachindex(blockIDs), j in 1:bsize
-      index_ = (i-1)*bsize + j
-      vcellids[index_] = j - 1 + bsize*blockIDs[i]
-      vcellf[index_] = data[j,i]
+   @inbounds @fastmath for i in eachindex(blockIDs)
+      @simd for j in 1:bsize
+         index_ = (i-1)*bsize + j
+         vcellids[index_] = j - 1 + bsize*blockIDs[i]
+         vcellf[index_] = data[j,i]
+      end
    end
 end

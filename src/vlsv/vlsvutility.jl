@@ -19,7 +19,7 @@ function getcell(meta::MetaVLSV, loc::AbstractVector{<:AbstractFloat})
    ncells_lowerlevel = 0
    ncell = prod(ncells)
 
-   @inbounds for ilevel in 0:maxamr
+   @inbounds @fastmath for ilevel in 0:maxamr
       haskey(celldict, cid) && break
 
       ncells_lowerlevel += (8^ilevel)*ncell
@@ -127,7 +127,7 @@ function getchildren(meta::MetaVLSV, cid::Int)
    cid1st += ncell << (3*mylvl)
    ix_, iy_ = (ix, ix+1), (iy, iy+1)
    iz_ = zcell != 1 ? (iz, iz+1) : iz
-   for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
+   for (n, i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell*4 + i[2]*xcell*2 + i[1]
    end
 
@@ -171,7 +171,7 @@ function getsiblings(meta::MetaVLSV, cid::Int)
    cid = Vector{Int}(undef, nsiblings)
    ix_, iy_ = (ix, ix1), (iy, iy1)
    iz_ = zcell != 1 ? (iz, iz1) : iz
-   for (n,i) in enumerate(Iterators.product(ix_, iy_, iz_))
+   for (n, i) in enumerate(Iterators.product(ix_, iy_, iz_))
       @inbounds cid[n] = cid1st + i[3]*xcell*ycell + i[2]*xcell + i[1]
    end
 
@@ -233,11 +233,11 @@ function getvcellcoordinates(meta::MetaVLSV, vcellids::Vector{Int32};
    bsize = prod(vblocksize)
    blockid = @. vcellids ÷ bsize
    # Get block coordinates
-   blockInd = [(
+   blockInd = ((
       bid % vblocks[1],
       bid ÷ vblocks[1] % vblocks[2],
       bid ÷ (vblocks[1] * vblocks[2]) )
-      for bid in blockid]
+      for bid in blockid)
    blockCoord = [(
       bInd[1] * dv[1] * vblocksize[1] + vmin[1],
       bInd[2] * dv[2] * vblocksize[2] + vmin[2],
@@ -298,11 +298,11 @@ function getvelocity(meta::MetaVLSV, VDF::Array{T};
    (;dv, vmin) = meta.meshes[species]
    u = @SVector zeros(T, 3)
 
-   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
-      vx = vmin[1] + (i - 0.5f0)*dv[1]
-      vy = vmin[2] + (j - 0.5f0)*dv[2]
-      vz = vmin[3] + (k - 0.5f0)*dv[3]
-      u += VDF[i,j,k] .* SVector(vx, vy, vz)
+   @inbounds @fastmath for I in CartesianIndices(VDF)
+      vx = vmin[1] + (I[1] - 0.5f0)*dv[1]
+      vy = vmin[2] + (I[2] - 0.5f0)*dv[2]
+      vz = vmin[3] + (I[3] - 0.5f0)*dv[3]
+      u += VDF[I] .* SVector(vx, vy, vz)
    end
 
    n = sum(VDF)
@@ -364,12 +364,12 @@ function getpressure(meta::MetaVLSV, VDF::Array{T};
 
    u = getvelocity(meta, VDF; species)
 
-   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
-      vx = vmin[1] + (i - 0.5f0)*dv[1]
-      vy = vmin[2] + (j - 0.5f0)*dv[2]
-      vz = vmin[3] + (k - 0.5f0)*dv[3]
+   @inbounds @fastmath for I in CartesianIndices(VDF)
+      vx = vmin[1] + (I[1] - 0.5f0)*dv[1]
+      vy = vmin[2] + (I[2] - 0.5f0)*dv[2]
+      vz = vmin[3] + (I[3] - 0.5f0)*dv[3]
 
-      p += VDF[i,j,k] .* SVector(
+      p += VDF[I] .* SVector(
          (vx - u[1])*(vx - u[1]),
          (vy - u[2])*(vy - u[2]),
          (vz - u[3])*(vz - u[3]),
@@ -443,12 +443,12 @@ function getheatfluxvector(meta::MetaVLSV, VDF::Array{T}; species::String="proto
 
    u = getvelocity(meta, VDF; species)
 
-   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
-      vx = vmin[1] + (i - 0.5f0)*dv[1]
-      vy = vmin[2] + (j - 0.5f0)*dv[2]
-      vz = vmin[3] + (k - 0.5f0)*dv[3]
+   @inbounds @fastmath for I in CartesianIndices(VDF)
+      vx = vmin[1] + (I[1] - 0.5f0)*dv[1]
+      vy = vmin[2] + (I[2] - 0.5f0)*dv[2]
+      vz = vmin[3] + (I[3] - 0.5f0)*dv[3]
 
-      q += VDF[i,j,k] .* SVector(
+      q += VDF[I] .* SVector(
          (vx - u[1])*(vx - u[1])*(vx - u[1]),
          (vy - u[2])*(vy - u[2])*(vy - u[2]),
          (vz - u[3])*(vz - u[3])*(vz - u[3]))
@@ -589,14 +589,14 @@ function getmaxwellianity(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
    vth2⁻¹ = mᵢ / (2kB*T)
    coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
 
-   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
-      vx = vmin[1] + (i - 0.5f0)*dv[1]
-      vy = vmin[2] + (j - 0.5f0)*dv[2]
-      vz = vmin[3] + (k - 0.5f0)*dv[3]
+   @inbounds @fastmath for I in CartesianIndices(VDF)
+      vx = vmin[1] + (I[1] - 0.5f0)*dv[1]
+      vy = vmin[2] + (I[2] - 0.5f0)*dv[2]
+      vz = vmin[3] + (I[3] - 0.5f0)*dv[3]
       dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
 
       g = n * coef * ℯ^(-vth2⁻¹*dv2)
-      ϵₘ += abs(VDF[i,j,k] - g)
+      ϵₘ += abs(VDF[I] - g)
    end
 
    ϵₘ = -log(0.5 / n * convert(eltype(VDF), prod(dv)) * ϵₘ)
@@ -663,15 +663,15 @@ function getKLdivergence(meta::MetaVLSV, VDF::Array{<:AbstractFloat};
    vth2⁻¹ = mᵢ / (2kB*T)
    coef = √(vth2⁻¹/π) * (vth2⁻¹/π)
 
-   @inbounds for k in axes(VDF,3), j in axes(VDF,2), i in axes(VDF,1)
-      vx = vmin[1] + (i - 0.5f0)*dv[1]
-      vy = vmin[2] + (j - 0.5f0)*dv[2]
-      vz = vmin[3] + (k - 0.5f0)*dv[3]
+   @inbounds for I in CartesianIndices(VDF)
+      vx = vmin[1] + (I[1] - 0.5f0)*dv[1]
+      vy = vmin[2] + (I[2] - 0.5f0)*dv[2]
+      vz = vmin[3] + (I[3] - 0.5f0)*dv[3]
       dv2 = (vx - u[1])^2 + (vy - u[2])^2 + (vz - u[3])^2
 
-      p = VDF[i,j,k] / n
+      p = VDF[I] / n
       q = coef * ℯ^(-vth2⁻¹*dv2)
-      f = p*log(p/q)
+      f = p * log(p / q)
       ϵₘ += ifelse(isnan(f), zero(f), f)
    end
 
@@ -906,9 +906,9 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractVector,
 
       coords = [(0, 0) for _ in a, _ in 1:2^(2*(maxamr-i))]
 
-      @inbounds for ir in 1:2^(2*(maxamr-i)), ic in eachindex(a, b)
-         @fastmath coords[ic,ir] = (muladd(a[ic], refineRatio, 1+X[ir]),
-                                    muladd(b[ic], refineRatio, 1+Y[ir]) )
+      @fastmath for ir in 1:2^(2*(maxamr-i)), ic in eachindex(a, b)
+         coords[ic,ir] = (muladd(a[ic], refineRatio, 1+X[ir]),
+                          muladd(b[ic], refineRatio, 1+Y[ir]) )
       end
 
       for ir in 1:2^(2*(maxamr-i)), ic in eachindex(d)
@@ -940,7 +940,7 @@ function refineslice(meta::MetaVLSV, idlist::Vector{Int}, data::AbstractMatrix,
 
    dout = zeros(eltype(data), size(data,1), dims...)
 
-   for i in axes(data,1)
+   @inbounds @simd for i in axes(data, 1)
       dout[i,:,:] = @views refineslice(meta, idlist, data[i,:], normal)
    end
 
@@ -962,14 +962,13 @@ end
 "Compute x, y and z indexes of all cell `ids` on the given refinement level (0-based)."
 @inline function getindexes(ilevel::Int, xcells::Int, ycells::Int, nCellUptoLowerLvl::Int,
    ids::AbstractVector{Int})
-
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
 
    iz = @. (ids - nCellUptoLowerLvl - 1) ÷ slicesize
    iy = similar(iz)
    ix = similar(iz)
-   @inbounds for i in eachindex(ids, iz)
+   @inbounds @fastmath @simd for i in eachindex(ids, iz)
       # number of ids up to the coordinate z in the refinement level ilevel
       idUpToZ = muladd(iz[i], slicesize, nCellUptoLowerLvl)
       iy[i] = (ids[i] - idUpToZ - 1) ÷ (xcells*ratio)
@@ -982,7 +981,6 @@ end
 "Compute x, y and z index of cell `id` on a given refinement level `ilevel`(0-based)."
 @inline function getindexes(ilevel::Int, xcells::Int, ycells::Int, nCellUptoLowerLvl::Int,
    id::Int)
-
    ratio = 2^ilevel
    slicesize = xcells*ycells*ratio^2
    iz = (id - nCellUptoLowerLvl - 1) ÷ slicesize
@@ -1024,7 +1022,7 @@ Downsample a field solver array `v_fg` to the spatial grid associated with `meta
 function downsample_fg(meta::MetaVLSV, v_fg::Array)
    v_vg = zeros(eltype(v_fg), (3, length(meta.cellindex)))
 
-   for (cid, i) in meta.celldict
+   @inbounds for (cid, i) in meta.celldict
       v_vg[:,i] = downsample_fg_cell(meta, v_fg, cid)
    end
 
@@ -1103,12 +1101,12 @@ function read_variable_as_fg(meta::MetaVLSV, var::String)
    cellid = Vlasiator.getcellid(meta.fid, meta.nodeVLSV.var)
    if ndims(data) == 2
       v_fg = zeros(eltype(data), (size(data,1), sz[1], sz[2], sz[3]))
-      @views for (i, cid) in enumerate(cellid)
+      @inbounds @views for (i, cid) in enumerate(cellid)
          upsample_fsgrid_subarray!(meta, data[:,i], cid, v_fg)
       end
    else
       v_fg = zeros(eltype(data), (sz[1], sz[2], sz[3]))
-      for (i, cid) in enumerate(cellid)
+      @inbounds for (i, cid) in enumerate(cellid)
          upsample_fsgrid_subarray!(meta, data[i], cid, v_fg)
       end
    end
@@ -1228,9 +1226,8 @@ function fillmesh(meta::MetaVLSV, vars::Vector{String};
                a = mmap(fid, Vector{UInt8}, sizeof(T[iv])*vsize[iv]*arraysize[iv],
                   offset[iv])
                dataRaw = reshape(reinterpret(T[iv], a), vsize[iv], arraysize[iv])
-               data = @view dataRaw[:,rOffsetsRaw]
 
-               _fillcell!(ids, ix, iy, iz, celldata[iv][end], data)
+               _fillcell!(ids, ix, iy, iz, celldata[iv][end], @view dataRaw[:,rOffsetsRaw])
             end
          end
       end
@@ -1243,7 +1240,7 @@ end
 
 function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
    iz::Vector{Int}, dataout::Vector, datain::AbstractArray, ilvl::Int, maxamr::Int)
-   @inbounds for ilvlup in ilvl:maxamr
+   @inbounds @fastmath for ilvlup in ilvl:maxamr
       r = 2^(ilvlup - ilvl) # ratio on refined level
       for c in eachindex(ids)
          for k in 1:r, j in 1:r, i in 1:r
@@ -1256,7 +1253,7 @@ end
 function _fillcell!(ids::AbstractVector{Int}, ix::Vector{Int}, iy::Vector{Int},
    iz::Vector{Int}, dataout::Array, datain::AbstractArray, ilvl::Int, maxamr::Int)
    r = 2^(maxamr - ilvl) # ratio on refined level
-   @inbounds for c in eachindex(ids)
+   @inbounds @fastmath for c in eachindex(ids)
       for k in 1:r, j in 1:r, i in 1:r
          _fillcelldata!(dataout, datain, ix[c]*r+i, iy[c]*r+j, iz[c]*r+k, c)
       end
@@ -1330,8 +1327,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          type="vtkOverlappingAMR",
          version="1.1",
          byte_order="LittleEndian", # x86
-         header_type="UInt64"
-      )
+         header_type="UInt64")
       push!(doc, elm)
 
       origin = @sprintf "%f %f %f" coordmin...
@@ -1345,8 +1341,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          spacing_str = @sprintf "%f %f %f" dcoord[1]/2^i dcoord[2]/2^i dcoord[3]/2^i
          xBlock = Element("Block";
             level=string(i),
-            spacing=spacing_str
-         )
+            spacing=spacing_str)
          push!(xamr, xBlock)
 
          amr_box = (0, ncells[1]<<i-1, 0, ncells[2]<<i-1, 0, ncells[3]<<i-1)
@@ -1354,8 +1349,7 @@ function write_vtk(meta::MetaVLSV; vars::Vector{String}=[""], ascii::Bool=false,
          xDataSet = Element("DataSet";
             index="0",
             amr_box=box_str,
-            file=filedata[i+1]
-         )
+            file=filedata[i+1])
          push!(xBlock, xDataSet)
       end
 
@@ -1424,7 +1418,7 @@ function save_image(meta::MetaVLSV, file::String, vars::Vector{String},
       kmin = Int((box[5] - coordmin[3]) ÷ spacing[3]) + 1
       kmax = kmin + length(zrange) - 2
 
-      @inbounds for (iv, var) in enumerate(vars)
+      @inbounds @views for (iv, var) in enumerate(vars)
          vtk[var, VTKCellData()] = data[iv][level+1][:,imin:imax,jmin:jmax,kmin:kmax]
       end
       if !isempty(vtkGhostType)
@@ -1464,8 +1458,8 @@ function write_vlsv(filein::AbstractString, fileout::AbstractString,
    footer = parse(str, Node)
    close(fid)
    # Get new variables' offsets
-   offsets = accumulate(+,
-      [offset, [sizeof(newvars[i][1]) for i in eachindex(newvars)[1:end-1]]...])
+   offsets = cumsum([offset,
+      (sizeof(newvars[i][1]) for i in eachindex(newvars)[1:end-1])...])
    # Create new children for footer
    for i in eachindex(newvars, offsets)
       elm = Element("VARIABLE", string(offsets[i]);
