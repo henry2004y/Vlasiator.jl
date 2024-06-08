@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Virtual satellites · Vlasiator.jl</title><meta name="title" content="Virtual satellites · Vlasiator.jl"/><meta property="og:title" content="Virtual satellites · Vlasiator.jl"/><meta property="twitter:title" content="Virtual satellites · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_pointsextracting_2d_uniform/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_pointsextracting_2d_uniform/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_pointsextracting_2d_uniform/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/nocoverlisttheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Virtual satellites</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Virtual satellites</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/postprocess/demo_pointsextracting_2d_uniform.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_2d_virtual_sats"><a class="docs-heading-anchor" href="#demo_2d_virtual_sats">Virtual satellites</a><a id="demo_2d_virtual_sats-1"></a><a class="docs-heading-anchor-permalink" href="#demo_2d_virtual_sats" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to extract data for virtual satellites at uniformly sampled locations on a 2D plane. Outputs are stored in binary format for sharing within Julia.</p><pre><code class="language-julia hljs">using Vlasiator
+using JLD2: jldsave
+
+&quot;Select cells in 2D `meta` with uniform distance `dx`.&quot;
+function sample(meta, dx)
+   dcell = floor(Int, dx ÷ meta.dcoord[1])
+
+   cellid = sort(collect(keys(meta.celldict)))
+   cellid = reshape(cellid, meta.ncells[1], meta.ncells[2])
+   cellid_select = cellid[1+dcell:dcell:end-dcell, 1+dcell:dcell:end-dcell]
+end
+
+function extract_vars(files, dx)
+   nfiles = length(files)
+
+   meta = load(files[1])
+   ids = sample(meta, dx)
+   locations = [getcellcoordinates(meta, id) for id in ids]
+
+   nsize = size(ids)
+   println(&quot;Number of virtual satellites: $(length(ids))&quot;)
+
+   # variables to be extracted
+   t   = zeros(Float32, nfiles)
+   rho = zeros(Float32, nfiles, nsize[1], nsize[2])
+   vx  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   vy  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   vz  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   p   = zeros(Float32, nfiles, nsize[1], nsize[2])
+   bx  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   by  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   bz  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   ex  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   ey  = zeros(Float32, nfiles, nsize[1], nsize[2])
+   ez  = zeros(Float32, nfiles, nsize[1], nsize[2])
+
+   # Extract data from each frame
+   for i = eachindex(files)
+      meta = load(files[i])
+      t[i] = meta.time
+      rho[i,:,:] = readvariable(meta, &quot;proton/vg_rho&quot;, ids)
+      v = readvariable(meta, &quot;proton/vg_v&quot;, ids)
+      vx[i,:,:] = v[1,:]
+      vy[i,:,:] = v[2,:]
+      vz[i,:,:] = v[3,:]
+      p[i,:,:] = readvariable(meta, &quot;vg_pressure&quot;, ids)
+      b = readvariable(meta, &quot;vg_b_vol&quot;, ids)
+      bx[i,:,:] = b[1,:]
+      by[i,:,:] = b[2,:]
+      bz[i,:,:] = b[3,:]
+      e = readvariable(meta, &quot;vg_e_vol&quot;, ids)
+      ex[i,:,:] = e[1,:]
+      ey[i,:,:] = e[2,:]
+      ez[i,:,:] = e[3,:]
+   end
+
+   # Save into binary file
+   jldsave(&quot;satellites_uniform_sampled.jld2&quot;;
+      locations, t, rho, vx, vy, vz, p, bx, by, bz, ex, ey, ez)
+end
+
+#####
+
+files = filter(contains(r&quot;^bulk.*\.vlsv$&quot;), readdir())
+
+const dx = 5RE # uniform sampling distance [m]
+
+println(&quot;Number of files: $(length(files))&quot;)
+println(&quot;Running with $(Threads.nthreads()) threads...&quot;)
+
+@time extract_vars(files, dx)
+
+println(&quot;Virtual satellite extraction done!&quot;)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.4.1 on <span class="colophon-date" title="Saturday 8 June 2024 18:08">Saturday 8 June 2024</span>. Using Julia version 1.10.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
