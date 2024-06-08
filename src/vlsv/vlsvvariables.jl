@@ -343,7 +343,7 @@ const variables_predefined = Dict(
 
       function computecross!()
          Rpost = CartesianIndices(size(E)[2:end])
-         @inbounds @views for i in Rpost
+         @inbounds @views @simd for i in Rpost
             F[:,i] = E[:,i] × B[:,i] ./ μ₀
          end
       end
@@ -371,9 +371,9 @@ const variables_predefined = Dict(
       By = selectdim(B, 1, 2)
       Bz = selectdim(B, 1, 3)
 
-      Qsqr = Vector{Float32}(undef, size(Pdiag,2))
+      Qsqr = Vector{Float32}(undef, size(Pdiag, 2))
 
-      @inbounds for ic in eachindex(Qsqr)
+      @inbounds @simd for ic in eachindex(Qsqr)
          I₁ = Pxx[ic] + Pyy[ic] + Pzz[ic]
          I₂ = Pxx[ic]*Pyy[ic] + Pxx[ic]*Pzz[ic] + Pyy[ic]*Pzz[ic] -
             Pxy[ic]*Pxy[ic] - Pyz[ic]*Pyz[ic] - Pxz[ic]*Pxz[ic]
@@ -392,7 +392,7 @@ const variables_predefined = Dict(
 
       μ₀32 = Float32(μ₀)
       Beta = Vector{Float32}(undef, size(P))
-      @inbounds for i in eachindex(Beta)
+      @inbounds @simd for i in eachindex(Beta)
          Bmag = B[1,i]^2 + B[2,i]^2 + B[3,i]^2
          Beta[i] = (Bmag != 0) ? 2 * μ₀32 * P[i] / Bmag : NaN32
       end
@@ -405,7 +405,7 @@ const variables_predefined = Dict(
 
       μ₀32 = Float32(μ₀)
       βstar = Vector{Float32}(undef, size(P))
-      @inbounds for i in eachindex(βstar)
+      @inbounds @simd for i in eachindex(βstar)
          Bmag = B[1,i]^2 + B[2,i]^2 + B[3,i]^2
          βstar[i] = (Bmag != 0) ? 2 * μ₀32 * (P[i] + Pram[i]) / Bmag : NaN32
       end
@@ -453,7 +453,7 @@ const variables_predefined = Dict(
       B = reshape(B, 3, meta.ncells...)
 
       dx2⁻¹ = @. inv(2*meta.dcoord)
-      @views Bx, By, Bz = B[1,:,:,:], B[2,:,:,:], B[3,:,:,:]
+      Bx, By, Bz = eachslice(B, dims=1)
 
       tension = similar(B)
       if ndims(meta) == 3
@@ -522,14 +522,14 @@ end
 
 function _fillinnerBC!(data::AbstractArray{T}, dataRef::AbstractArray{T}) where
    T<:AbstractFloat
-   @inbounds for i in eachindex(dataRef) # sparsity/inner boundary
+   @inbounds @simd for i in eachindex(dataRef) # sparsity/inner boundary
       dataRef[i] == 0 && (data[i] = NaN)
    end
 end
 
 function _fillinnerBC!(data::AbstractMatrix{T}, dataRef::AbstractVector{T}) where
    T<:AbstractFloat
-   @inbounds for i in eachindex(dataRef) # sparsity/inner boundary
+   @inbounds @simd for i in eachindex(dataRef) # sparsity/inner boundary
       dataRef[i] == 0 && (data[:,i] .= NaN)
    end
 end
