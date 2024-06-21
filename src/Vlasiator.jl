@@ -8,6 +8,7 @@ using XML: Node, LazyNode, Element, Document, children, tag, attributes, value
 import XML
 using Mmap: mmap
 using LazilyInitializedFields
+using Rotations: AngleAxis
 using WriteVTK
 using LazyGrids: ndgrid
 using LaTeXStrings

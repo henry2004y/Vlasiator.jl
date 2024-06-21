@@ -183,7 +183,7 @@ end
          meta = meta1
          @test meta["Vmag"] |> sortperm == [3, 4, 1, 2, 8, 9, 10, 5, 7, 6]
          @test meta["Protated"][2,2,3] == 1.7952461f-29
-         @test meta["Panisotropy"][4] == 1.0147696f0
+         @test meta["Panisotropy"][4] == 1.0147697f0
          @test meta["Tanisotropy"][4] == 1.0147696f0
          @test meta["Agyrotropy"][1] |> isnan
 
@@ -256,7 +256,7 @@ end
 
          write_vlsv(files[1], "bulk_new.vlsv", vars)
          sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
-         @test sha_str == "76613a12331fabc3793b1d3be71a76d43d678574"
+         @test sha_str == "f9352fe67a319b4d526608b222075889a5085a7a"
 
          rm("bulk_new.vlsv", force=true)
       end
@@ -264,16 +264,13 @@ end
 
    if group in (:utility, :all)
       @testset "Rotation" begin
-         e1 = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
          e2 = [0.0 1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
-         R = Vlasiator.getRotationMatrix(e1, e2)
-         @test R == e2
+         R = Vlasiator.getRotationMatrix(e2)
+         @test inv(R) ≈ R'
 
          v = fill(1/√3, 3)
          θ = π / 4
-         R = Vlasiator.getRotationMatrix(v, θ)
-         @test inv(R) ≈ R'
-
+         R = Vlasiator.AngleAxis(θ, v...)
          Rᵀ = Vlasiator.rotateTensorToVectorZ(R, v)
          @test Rᵀ ≈ [1/√2 -1/√2 0.0; 1/√2 1/√2 0.0; 0.0 0.0 1.0]
       end

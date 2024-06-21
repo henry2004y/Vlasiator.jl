@@ -13,65 +13,40 @@ function rotateTensorToVectorZ(tensor::AbstractMatrix{T}, v::AbstractVector{T}) 
    if axis[1] == axis[2] == 0
       return tensor
    else
-      normalize!(axis)
-      angle = acos(v ⋅ k / hypot(v[1], v[2], v[3]))
-      R = getRotationMatrix(axis, angle)
+      angle = acos(v ⋅ k / √(v[1]^2 + v[2]^2 + v[3]^2))
+      R = AngleAxis(angle, axis...)
       return R * tensor * R'
    end
 end
 
 """
-    getRotationMatrix(axis::AbstractVector, angle::Real) --> SMatrix{3,3}
+    getRotationMatrix(e1::AbtractMatrix) -> AngleAxis
 
-Create a rotation matrix for rotating a 3D vector around a unit `axis` by an `angle` in
-radians.
-Reference: [Rotation matrix from axis and angle](https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle)
-
-# Example
-
-```julia
-using LinearAlgebra
-v = [-0.5, 1.0, 1.0]
-v̂ = normalize(v)
-θ = deg2rad(-74)
-R = getRotationMatrix(v̂, θ)
-```
-"""
-function getRotationMatrix(v::AbstractVector{<:AbstractFloat}, θ::Real)
-   sinθ, cosθ = sincos(eltype(v)(θ))
-   tmp = 1 - cosθ
-   m =  @SMatrix [
-        cosθ+v[1]^2*tmp         v[1]*v[2]*tmp-v[3]*sinθ v[1]*v[3]*tmp+v[2]*sinθ;
-        v[1]*v[2]*tmp+v[3]*sinθ cosθ+v[2]^2*tmp         v[2]*v[3]*tmp-v[1]*sinθ;
-        v[1]*v[3]*tmp-v[2]*sinθ v[3]*v[2]*tmp+v[1]*sinθ cosθ+v[3]^2*tmp]
-end
-
-"""
-    getRotationMatrix(e1::Matrix, e2::Matrix) -> SMatrix{3,3}
-
-Obtain the rotation matrix from orthgonal base vectors `e1` to `e2`, such that a vector
-``\\mathbf{u}_1`` in `e1` can be expressed as ``\\mathbf{u}_1 = M\\cdot \\mathbf{u}_2``,
-where ``M`` is the rotation matrix and ``\\mathbf{u}_2`` is the same vector in `e2`.
+Obtain the rotation matrix from the Cartesian coordinate to orthgonal base vectors `vbase`,
+where each column represents a base vector.
 
 # Example
 
 ```julia
-e1 = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
-e2 = [0.0 1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
-R = getRotationMatrix(e1, e2)
+e1 = [0.0 1.0 0.0; 1.0 0.0 0.0; 0.0 0.0 1.0]
+R = getRotationMatrix(e1)
 ```
 """
-function getRotationMatrix(e1::AbstractMatrix, e2::AbstractMatrix)
-   @views begin
-      r11 = e1[:,1] ⋅ e2[:,1]
-      r12 = e1[:,1] ⋅ e2[:,2]
-      r13 = e1[:,1] ⋅ e2[:,3]
-      r21 = e1[:,2] ⋅ e2[:,1]
-      r22 = e1[:,2] ⋅ e2[:,2]
-      r23 = e1[:,2] ⋅ e2[:,3]
-      r31 = e1[:,3] ⋅ e2[:,1]
-      r32 = e1[:,3] ⋅ e2[:,2]
-      r33 = e1[:,3] ⋅ e2[:,3]
+function getRotationMatrix(vbase::AbstractMatrix{T}) where T
+   k = SVector{3, T}(0, 0, 1)
+   vref = SVector{3, T}(vbase[1,3], vbase[2,3], vbase[3,3])
+
+   if vref == k
+      vref = SVector{3, T}(vbase[1,2], vbase[2,2], vbase[3,2])
+      k = SVector{3, T}(0, 1, 0)
    end
-   R = @SMatrix [r11 r12 r13; r21 r22 r23; r31 r32 r33]
+   if vref == k
+      axis = SVector{3, T}(1, 0, 0)
+      angle = 0.0
+   else
+      axis = k × vref
+      angle = acos(k ⋅ vref)
+   end
+
+   R = AngleAxis(angle, axis...)
 end
