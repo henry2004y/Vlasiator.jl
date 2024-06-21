@@ -361,14 +361,12 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
          ŝ = SVector{3}(êperp1)
          es = SMatrix{3,3}(hcat(êperp2, b̂, êperp1))
       end
-      Rinv = let e = @SMatrix Float32[1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
-         getRotationMatrix(e, es)'
-      end
+      R = getRotationMatrix(es)
       # heuristic guess
       v1size = vmesh.vblocks[1] * vmesh.vblocksize[1]
       v2size = v1size
       # Compute the ranges along the two perpendicular axis in the slice plane
-      r = SMatrix{3,8}(Rinv * Float32[
+      r = SMatrix{3,8}(R * Float32[
          [vmesh.vmin[1], vmesh.vmin[2], vmesh.vmin[3]];;
          [vmesh.vmin[1], vmesh.vmin[2], vmesh.vmax[3]];;
          [vmesh.vmin[1], vmesh.vmax[2], vmesh.vmin[3]];;
@@ -455,7 +453,7 @@ function prep_vdf(meta::MetaVLSV, location::AbstractVector; species::String="pro
       vnormal = similar(v1select)
 
       for iv in eachindex(Vselect)
-         v1select[iv], v2select[iv], vnormal[iv] = Rinv * Vselect[iv]
+         v1select[iv], v2select[iv], vnormal[iv] = R * Vselect[iv]
       end
 
       if slicetype == :bperp
