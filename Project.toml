@@ -29,7 +29,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 VlasiatorMakieExt = "Makie"
 
 [compat]
-Bumper = "0.6"
+Bumper = "0.6, 0.7"
 LaTeXStrings = "1.2"
 LazilyInitializedFields = "1.0"
 LazyGrids = "0.4, 0.5, 1"
