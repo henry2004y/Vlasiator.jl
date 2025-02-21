@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Search waves · Vlasiator.jl</title><meta name="title" content="Search waves · Vlasiator.jl"/><meta property="og:title" content="Search waves · Vlasiator.jl"/><meta property="twitter:title" content="Search waves · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_wave_search_mt/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_wave_search_mt/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/postprocess/demo_wave_search_mt/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/nocoverlisttheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Search waves</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Search waves</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/postprocess/demo_wave_search_mt.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_search_waves"><a class="docs-heading-anchor" href="#demo_search_waves">Search waves</a><a id="demo_search_waves-1"></a><a class="docs-heading-anchor-permalink" href="#demo_search_waves" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to search for wave-like structures and plot spatial-temporal distributions.</p><p>Procedures:</p><ol><li>Extract variables in all cells from all snapshots.</li><li>For each cell and time interval, count time-series local peaks.</li><li>Plot the peak occurrence frequencies across the whole domain as an indicator for waves.</li></ol><div class="admonition is-info"><header class="admonition-header">Note</header><div class="admonition-body"><ol><li>When dealing with multiple variables, it is recommended to handle one variable at a</li></ol><p>time through the whole process due to memory considerations. With large number of frame counts, the current procedure is still memory-consuming.</p><ol><li>It assumes uniform sampling in time.</li><li>Peak-finding is threaded, but plotting is still serial.</li></ol></div></div><p>Usage:</p><pre><code class="language-shell hljs">julia -t 4 demo_wave_search_mt.jl</code></pre><p>or</p><pre><code class="language-shell hljs">JULIA_NUM_THREADS=4 julia demo_wave_search_mt.jl</code></pre><pre><code class="language-julia hljs">using Vlasiator, PyPlot, LaTeXStrings
+
+&quot;Extract time series variable&quot;
+function extract_var(files, ncells, varname, component=0)
+   nfiles = length(files)
+   var = zeros(Float32, ncells[1], ncells[2], nfiles)
+
+   # Extract data from each frame
+   if component == 0 # scalar
+      Threads.@threads for i = eachindex(files)
+         meta = load(files[i])
+         var[:,:,i] = meta[varname]
+      end
+   else # vector component
+      Threads.@threads for i = eachindex(files)
+         meta = load(files[i])
+         var[:,:,i] = meta[varname][component,:]
+      end
+   end
+
+   return var
+end
+
+&quot;Count local maxima of vector `y` with moving box length `n`.&quot;
+function countpeaks(y, n; interval=1)
+   maxs = Int[]
+   if interval == 1
+      for i in 2:length(y)-1
+         if y[i-1] &lt; y[i] &gt; y[i+1]
+            push!(maxs, i)
+         end
+      end
+   elseif interval == 2
+      for i in 3:length(y)-2
+         if y[i-2] ≤ y[i-1] &lt; y[i] &gt; y[i+1] ≥ y[i+2]
+            push!(maxs, i)
+         end
+      end
+   elseif interval == 3
+      for i in 4:length(y)-3
+         if y[i-3] ≤ y[i-2] ≤ y[i-1] &lt; y[i] &gt; y[i+1] ≥ y[i+2] &gt; y[i+3]
+            push!(maxs, i)
+         end
+      end
+   else
+      error(&quot;interval = $interval not implemented!&quot;)
+   end
+   nCounts = zeros(Int, length(y)-n+1)
+   nCounts[1] = count(i-&gt;(1 ≤ i ≤ n), maxs)
+   for i in 1:length(y)-n
+      nCounts[i+1] = nCounts[i]
+      if i ∈ maxs
+         nCounts[i+1] -= 1
+      end
+      if i+n-1 ∈ maxs
+         nCounts[i+1] += 1
+      end
+   end
+   nCounts
+end
+
+&quot;Check wave-like occurrence frequencies within box length `n` of output interval `dt`.&quot;
+function checkwaves_sma(var, dt=0.5, n::Int=size(var,3); interval=1)
+   nPeaks = zeros(Int, size(var,3)-n+1, size(var,1), size(var,2))
+
+   Threads.@threads for j in axes(var, 2)
+      for i in axes(var, 1)
+         var_series = @view var[i,j,:]
+         nPeaks[:,i,j] = countpeaks(var_series, n; interval)
+      end
+   end
+   nPeaks ./ (n*dt)
+end
+
+function plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
+   interval=1, nplotstride=1)
+   @assert nboxlength ≥ 3 &amp;&amp; isodd(nboxlength) &quot;Expect odd box length ≥ 3!&quot;
+   if (local nfiles = length(files)) &lt; nboxlength
+      @warn &quot;Set moving box length to the number of files...&quot;
+      nboxlength = nfiles
+   end
+   local x, y, tStart, tEnd, ncells
+   let RE = Vlasiator.RE
+      meta = load(files[1])
+      tStart = meta.time
+      ncells = meta.ncells
+      x = LinRange{Float32}(meta.coordmin[1]/RE, meta.coordmax[1]/RE, meta.ncells[1])
+      y = LinRange{Float32}(meta.coordmin[2]/RE, meta.coordmax[2]/RE, meta.ncells[2])
+      meta = load(files[end])
+      tEnd = meta.time
+   end
+
+   fig, ax = plt.subplots(figsize=(16,9))
+   fontsize = 14
+   vmin, vmax = 0.0, 0.5
+   levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(vmin, vmax)
+   norm = matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
+   ticks = range(vmin, vmax, length=11)
+
+   fakedata = zeros(Float32, length(x), length(y))
+   im = ax.pcolormesh(y, x, fakedata; norm)
+
+   ax.set_aspect(&quot;equal&quot;)
+   ax.set_xlabel(L&quot;y [$R_E$]&quot;; fontsize, weight=&quot;black&quot;)
+   ax.set_ylabel(L&quot;x [$R_E$]&quot;; fontsize, weight=&quot;black&quot;)
+   ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+   ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+   ax.grid(true, color=&quot;grey&quot;, linestyle=&quot;-&quot;)
+
+   cb = fig.colorbar(im; ax, ticks, pad=0.02)
+   cb.ax.set_ylabel(&quot;Frequency of local maxima occurrence, [#/s]&quot;; fontsize)
+
+   for i in eachindex(varnames)
+      outdir = &quot;../out/$(lowercase(varnames_print[i]))&quot;
+      !isdir(outdir) &amp;&amp; mkdir(outdir)
+      length(filter(contains(r&quot;^spatial.*\.png$&quot;), readdir(outdir))) ==
+         length(files) - nboxlength + 1 &amp;&amp; continue
+
+      # Obtain time series data
+      var = extract_var(files, ncells, varnames[i], components[i])
+      # Count local peak occuring frequencies at each location
+      fPeaks = checkwaves_sma(var, Δt, nboxlength; interval)
+
+      for it in 1:nplotstride:size(fPeaks,1) # Iterate over time
+         outname = joinpath(outdir,
+            &quot;spatial_perturbation_distribution_$(lpad(it, 4, &#39;0&#39;)).png&quot;)
+         isfile(outname) &amp;&amp; continue
+         # Update plot
+         im.set_array(fPeaks[it,:,:])
+         ax.set_title(&quot;$(varnames_print[i]) Perturbation Detection, &quot;*
+            &quot;t = $(round(tStart+(it-1)*Δt, digits=1)) ~ &quot;*
+            &quot;$(round(tStart+(it+nboxlength-1)*Δt, digits=1))s&quot;;
+            fontsize, fontweight=&quot;bold&quot;)
+
+         savefig(outname, bbox_inches=&quot;tight&quot;)
+      end
+   end
+end
+
+function main()
+   varnames = [&quot;proton/vg_rho&quot;, &quot;vg_pressure&quot;, &quot;proton/vg_v&quot;, &quot;proton/vg_v&quot;, &quot;vg_b_vol&quot;,
+      &quot;vg_e_vol&quot;, &quot;vg_e_vol&quot;]
+   varnames_print = [&quot;Density&quot;, &quot;Thermal Pressure&quot;, &quot;Vx&quot;, &quot;Vy&quot;, &quot;Bz&quot;, &quot;Ex&quot;, &quot;Ey&quot;]
+   components = [0, 0, 1, 2, 3, 1, 2] # 0: scalar; 1: x, 2: y, 3: z
+   Δt = 0.5                           # output time interval [s]
+   nboxlength = 101                   # moving box average length
+   interval = 2                       # local peak gap minimal interval
+   nplotstride = 50                   # plot intervals in frames
+   dir = &quot;./&quot; # data directory
+
+   files = filter(contains(r&quot;^bulk.*\.vlsv$&quot;), readdir(dir))
+
+   println(&quot;Total number of snapshots: $(length(files))&quot;)
+   println(&quot;Running with $(Threads.nthreads()) threads...&quot;)
+
+   @time plot_dist(files, varnames, varnames_print, components, Δt, nboxlength;
+      interval, nplotstride)
+
+   println(&quot;Virtual satellite extraction done!&quot;)
+end
+
+main()</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.8.1 on <span class="colophon-date" title="Friday 21 February 2025 15:31">Friday 21 February 2025</span>. Using Julia version 1.11.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
