@@ -53,7 +53,7 @@ end
 
       loc = [2.0, 0.0, 0.0]
       v = VlasiatorPyPlot.vdfslice(meta, loc).get_array()
-      @static if matplotlib.__version__ < "3.8"
+      @static if VersionNumber(matplotlib.__version__) < v"3.8"
          @test v[786] == 238.24398578141802 # v[26,20]
       else
          @test v[20, 26] == 238.24398578141802
@@ -62,10 +62,12 @@ end
       output = @capture_err begin
          v = VlasiatorPyPlot.vdfslice(meta, loc; slicetype=:bperp).get_array()
       end
-      @static if matplotlib.__version__ < "3.8"
+      @static if VersionNumber(matplotlib.__version__) < v"3.8"
          @test v[786] == 4.02741885708042e-10 # v[26,20]
-      else
+      elseif VersionNumber(matplotlib.__version__) == v"3.9"
          @test v[20, 26] == 4.02741885708042e-10
+      else
+         @test v[20, 26] == 1.8909347789515487e-5
       end
 
       output = @capture_err begin
@@ -76,7 +78,7 @@ end
       # 2D
       meta = meta2
       v = pcolormesh(meta, "proton/vg_rho").get_array()
-      @static if matplotlib.__version__ < "3.8"
+      @static if VersionNumber(matplotlib.__version__) < v"3.8"
          @test v[end-2] == 999535.8f0 && length(v) == 6300
       else
          @test v[100, 61] == 999535.8f0 && size(v) == (100, 63)
@@ -93,7 +95,7 @@ end
       v = contour(meta, "proton/vg_rho").get_array()
       @test length(v) == 8 && v[end] == 5.6e6
       v = contourf(meta, "proton/vg_rho").get_array()
-      @static if matplotlib.__version__ < "3.8"
+      @static if VersionNumber(matplotlib.__version__) < v"3.8"
          @test length(v) == 8 && v[end] == 5.6e6
       else
          @test length(v) == 7 && v[end] == 5.2e6
@@ -112,13 +114,13 @@ end
       # 3D AMR
       meta = meta3
       v = pcolormesh(meta, "proton/vg_rho").get_array()
-      @static if matplotlib.__version__ < "3.8"
+      @static if VersionNumber(matplotlib.__version__) < v"3.8"
          @test v[255] == 1.0483886f6 && length(v) == 512
       else
          @test v[16, 31] == 1.04838825f6 && size(v) == (16,32)
       end
       v = pcolormesh(meta, "proton/vg_v").get_array()
-      @static if matplotlib.__version__ < "3.8"
+      @static if VersionNumber(matplotlib.__version__) < v"3.8"
          @test v[255] == 99992.586f0
       else
          @test v[16, 31] == 99991.67f0
