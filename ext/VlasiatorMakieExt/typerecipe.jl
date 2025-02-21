@@ -29,19 +29,16 @@ end
 "Conversion for 3D plots."
 function Makie.convert_arguments(P::Makie.VolumeLike, meta::MetaVLSV, var::String,
    axisunit::AxisUnit=EARTH, comp::Union{Symbol, Int}=1)
-   (;ncells, coordmin, coordmax) = meta
-
-   # Scale the sizes to the highest refinement level
-   sizes = ncells .<< meta.maxamr # data needs to be refined later
+   (; coordmin, coordmax) = meta
 
    if axisunit == EARTH
-      x = LinRange(coordmin[1], coordmax[1], sizes[1]) ./ Vlasiator.RE
-      y = LinRange(coordmin[2], coordmax[2], sizes[2]) ./ Vlasiator.RE
-      z = LinRange(coordmin[3], coordmax[3], sizes[3]) ./ Vlasiator.RE
+      x = (coordmin[1]/Vlasiator.RE, coordmax[1]/Vlasiator.RE)
+      y = (coordmin[2]/Vlasiator.RE, coordmax[2]/Vlasiator.RE)
+      z = (coordmin[3]/Vlasiator.RE, coordmax[3]/Vlasiator.RE)
    else
-      x = LinRange(coordmin[1], coordmax[1], sizes[1])
-      y = LinRange(coordmin[2], coordmax[2], sizes[2])
-      z = LinRange(coordmin[3], coordmax[3], sizes[3])
+      x = (coordmin[1], coordmax[1])
+      y = (coordmin[2], coordmax[2])
+      z = (coordmin[3], coordmax[3])
    end
 
    if startswith(var, "fg")
