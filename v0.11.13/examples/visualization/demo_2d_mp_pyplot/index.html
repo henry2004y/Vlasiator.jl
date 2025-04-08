@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>2D contour plots with multi-processing · Vlasiator.jl</title><meta name="title" content="2D contour plots with multi-processing · Vlasiator.jl"/><meta property="og:title" content="2D contour plots with multi-processing · Vlasiator.jl"/><meta property="twitter:title" content="2D contour plots with multi-processing · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_2d_mp_pyplot/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_2d_mp_pyplot/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_2d_mp_pyplot/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/nocoverlisttheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>2D contour plots with multi-processing</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>2D contour plots with multi-processing</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_2d_mp_pyplot.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_2d_contour_mp"><a class="docs-heading-anchor" href="#demo_2d_contour_mp">2D contour plots with multi-processing</a><a id="demo_2d_contour_mp-1"></a><a class="docs-heading-anchor-permalink" href="#demo_2d_contour_mp" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to generate 2D colored contours with multi-processing. To run on a single node,</p><pre><code class="language-shell hljs">julia -p $ncores demo_2d_mp_pyplot.jl</code></pre><pre><code class="language-julia hljs">using Distributed, ParallelDataTransfer
+@everywhere using Vlasiator, VlasiatorPyPlot, Printf, LaTeXStrings
+
+@everywhere function init_figure(cmaps, norms, ticks, pArgs1, extent)
+   fig, axs = plt.subplots(2, 3; num=myid(),
+      figsize=(13.5, 9.5), sharex=true, sharey=true, constrained_layout=true)
+
+   for ax in axs
+      ax.set_aspect(&quot;equal&quot;)
+      # Set border line widths
+      for loc in (&quot;left&quot;, &quot;bottom&quot;, &quot;right&quot;, &quot;top&quot;)
+         edge = get(ax.spines, loc, nothing)
+         edge.set_linewidth(2.0)
+      end
+      ax.xaxis.set_tick_params(width=2.0, length=3)
+      ax.yaxis.set_tick_params(width=2.0, length=3)
+      ax.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+      ax.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+   end
+
+   for ax in axs[end,:]
+      ax.set_xlabel(pArgs1.strx; fontsize)
+   end
+   for ax in axs[:,1]
+      ax.set_ylabel(pArgs1.stry; fontsize)
+   end
+
+   titles = (&quot;Density&quot;, &quot;Pth&quot;, &quot;Vx&quot;, &quot;Bz&quot;, &quot;Vz&quot;, &quot;E&quot;)
+
+   for (ax, title) in zip(axs, titles)
+      ax.set_title(title; fontsize)
+   end
+
+   x1, x2 = Vlasiator.get_axis(pArgs1)
+
+   range1 = searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2])
+   range2 = searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+
+   fakedata = zeros(Float32, length(range2), length(range1))
+
+   c1 = axs[1,1].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[1], cmap=cmaps[1])
+   c2 = axs[1,2].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[2], cmap=cmaps[2])
+   c3 = axs[1,3].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[3], cmap=cmaps[2])
+   c4 = axs[2,1].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[4], cmap=cmaps[1])
+   c5 = axs[2,2].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[5], cmap=cmaps[2])
+   c6 = axs[2,3].pcolormesh(x1[range1], x2[range2], fakedata;
+      norm=norms[6], cmap=cmaps[1])
+
+   cs = (c1, c2, c3, c4, c5, c6)
+
+   format = matplotlib.ticker.FormatStrFormatter(&quot;%.1f&quot;)
+
+   cb1 = colorbar(c1; ax=axs[1,1], ticks=ticks[1], format)
+   cb2 = colorbar(c2; ax=axs[1,2], ticks=ticks[2])
+   cb3 = colorbar(c3; ax=axs[1,3], ticks=ticks[3])
+   cb4 = colorbar(c4; ax=axs[2,1], ticks=ticks[4], format)
+   cb5 = colorbar(c5; ax=axs[2,2], ticks=ticks[5], format, extend=&quot;both&quot;)
+   cb6 = colorbar(c6; ax=axs[2,3], ticks=ticks[6], extend=&quot;max&quot;)
+
+   ylabels = (&quot;[amu/cc]&quot;, &quot;[km/s]&quot;, &quot;[km/s]&quot;, &quot;[nPa]&quot;, &quot;[nT]&quot;, &quot;[mV/m]&quot;)
+
+   for (i, cb) in enumerate((cb1, cb2, cb3, cb4, cb5, cb6))
+      cb.ax.set_ylabel(ylabels[i]; fontsize)
+      cb.outline.set_linewidth(1.0)
+   end
+
+   return fig, cs, range1, range2
+end
+
+@everywhere function update_plot!(fig, cs, range1, range2, outdir, file)
+   isfile(outdir*file[end-8:end-5]*&quot;.png&quot;) &amp;&amp; return
+
+   println(&quot;file = $file&quot;)
+   meta = load(file)
+
+   data = Vlasiator.prep2d(meta, &quot;proton/vg_rho&quot;, :mag)&#39;
+   cs[1].set_array(data[range2,range1] ./ 1f6)
+
+   data = Vlasiator.prep2d(meta, &quot;proton/vg_v&quot;, :x)&#39;
+   cs[2].set_array(data[range2,range1] ./ 1f3)
+
+   data = Vlasiator.prep2d(meta, &quot;proton/vg_v&quot;, :z)&#39;
+   cs[3].set_array(data[range2,range1] ./ 1f3)
+
+   data = Vlasiator.prep2d(meta, &quot;vg_pressure&quot;, :mag)&#39;
+   cs[4].set_array(data[range2,range1] .* 1f9)
+
+   data = Vlasiator.prep2d(meta, &quot;vg_b_vol&quot;, :z)&#39;
+   cs[5].set_array(data[range2,range1] .* 1f9)
+
+   data = Vlasiator.prep2d(meta, &quot;vg_e_vol&quot;, :mag)&#39;
+   cs[6].set_array(data[range2,range1] .* 1f3)
+
+   str_title = @sprintf &quot;Density pulse run, t= %4.1fs&quot; meta.time
+   fig.suptitle(str_title; fontsize=&quot;xx-large&quot;)
+
+   savefig(outdir*file[end-8:end-5]*&quot;.png&quot;, bbox_inches=&quot;tight&quot;)
+end
+
+function make_jobs(files)
+   for f in files
+       put!(jobs, f)
+   end
+end
+
+@everywhere function do_work(jobs, status, outdir, cmaps, norms, ticks, pArgs1, extent)
+   fig, cs, range1, range2 = init_figure(cmaps, norms, ticks, pArgs1, extent)
+   while true
+      file = take!(jobs)
+      update_plot!(fig, cs, range1, range2, outdir, file)
+      put!(status, true)
+   end
+   close(fig)
+end
+
+################################################################################
+files = filter(contains(r&quot;^bulk.*\.vlsv$&quot;), readdir())
+
+nfile = length(files)
+# Set output directory
+const outdir = &quot;contour/&quot;
+
+# Set colormaps for continuous and divergent data
+const cmaps = (matplotlib.cm.turbo, matplotlib.cm.RdBu_r)
+const axisunit = EARTH
+const extent = [0., 20., -20., 20.] # [RE], default: [-Inf32, Inf32, -Inf32, Inf32]
+
+# Plotting range for each variable
+const ρmin, ρmax   = 0.1, 15.0     # [amu/cc]
+const vxmin, vxmax = -650.0, 650.0 # [km/s]
+const vzmin, vzmax = -500.0, 500.0 # [km/s]
+const pmin, pmax   = 0.0, 3.6      # [nPa]
+const bmin, bmax   = -60.0, 60.    # [nT]
+const emin, emax   = 0.0, 20.      # [mV/m]
+
+meta = load(files[1])
+
+pArgs1 = Vlasiator.set_args(meta, &quot;proton/vg_rho&quot;, axisunit; normal=:none)
+
+norm1, ticks1 = set_colorbar(Linear, ρmin, ρmax)
+norm2, ticks2 = set_colorbar(Linear, vxmin, vxmax)
+norm3, ticks3 = set_colorbar(Linear, vzmin, vzmax)
+norm4, ticks4 = set_colorbar(Linear, pmin, pmax)
+norm5, ticks5 = set_colorbar(Linear, bmin, bmax)
+norm6, ticks6 = set_colorbar(Linear, emin, emax)
+
+const norms = (norm1, norm2, norm3, norm4, norm5, norm6)
+const ticks = (ticks1, ticks2, ticks3, ticks4, ticks5, ticks6)
+
+const jobs   = RemoteChannel(()-&gt;Channel{String}(nfile))
+const status = RemoteChannel(()-&gt;Channel{Bool}(nworkers()))
+
+@broadcast begin
+   const fontsize = &quot;x-large&quot;
+end
+
+println(&quot;Total number of files: $nfile&quot;)
+println(&quot;Running with $(nworkers()) workers...&quot;)
+
+@async make_jobs(files) # Feed the jobs channel with all files to process.
+
+@sync for p in workers()
+   @async remote_do(do_work, p, jobs, status, outdir, cmaps, norms, ticks, pArgs1, extent)
+end
+
+let n = nfile
+   t = @elapsed while n &gt; 0 # wait for all jobs to complete
+      take!(status)
+      n -= 1
+   end
+   println(&quot;Finished in $(round(t, digits=2))s.&quot;)
+end</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.10.1 on <span class="colophon-date" title="Tuesday 8 April 2025 17:53">Tuesday 8 April 2025</span>. Using Julia version 1.11.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
