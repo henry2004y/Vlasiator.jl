@@ -753,8 +753,8 @@ function getcellinline(meta::MetaVLSV, point1::Vector{T}, point2::Vector{T}) whe
    ϵ = eps(T)
    unit_vector = @. (point2 - point1) / $norm(point2 - point1 + ϵ)
    p = coords[1]
-   coef_min = Vector{T}(undef, 3)
-   coef_max = Vector{T}(undef, 3)
+   coef_min = MVector{3, T}(undef)
+   coef_max = MVector{3, T}(undef)
 
    @inbounds while true
       cid = getcell(meta, p)

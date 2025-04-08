@@ -1,6 +1,6 @@
 module Vlasiator
 
-using StaticArrays: SVector, @SVector, SMatrix, @SMatrix
+using StaticArrays: SVector, @SVector, SMatrix, @SMatrix, MVector
 using Printf: @sprintf
 using LinearAlgebra: ×, dot, ⋅, norm, normalize, normalize!
 using Statistics: mean
