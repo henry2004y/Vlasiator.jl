@@ -474,7 +474,7 @@ function readmesh(fid::IOStream, ns::Vector{Node})
    node = ns[findfirst("MESH_BBOX", ns)]
    offset = Parsers.parse(Int, value(node[1]))
 
-   bbox = Vector{Int}(undef, 6)
+   bbox = MVector{6, Int}(undef)
    seek(fid, offset)
    read!(fid, bbox)
 
@@ -494,7 +494,7 @@ end
 function readvmesh(fid::IOStream, ns::Vector{Node}, species::String)
    is = findall("MESH_BBOX", ns)
 
-   bbox = Vector{Int}(undef, 6)
+   bbox = MVector{6, Int}(undef)
 
    for i in reverse(is)
       at = attributes(ns[i])
