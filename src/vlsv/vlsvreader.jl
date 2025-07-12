@@ -55,6 +55,7 @@ struct MetaVLSV
    coordmax::NTuple{3, Float64}
    dcoord::NTuple{3, Float64}
    species::Vector{String}
+   fgDecomposition::MVector{3, Int32}
    meshes::Dict{String, VMeshInfo}
 end
 
@@ -290,6 +291,16 @@ function load(file::AbstractString)
       end
    end
 
+   fgDecomposition = MVector{3, Int32}(0, 0, 0)
+   for x in ns
+      if tag(x) == "MESH_DECOMPOSITION" && x["mesh"] == "fsgrid"
+         offset = Parsers.parse(Int, value(ns[11].children[1]))
+         seek(meta.fid, offset)
+         read!(meta.fid, fgDecomposition)
+         break
+      end
+   end
+
    n = NodeVLSV(nodevar, nodeparam, nodecellwithVDF, nodecellblocks, nodeblockvar,
       nodeblockid)
 
@@ -381,7 +392,7 @@ function load(file::AbstractString)
 
    meta = MetaVLSV(splitdir(file)..., fid, n, vars, celldict, cellindex,
       timesim, maxamr, hasvdf, ncells, blocksize, coordmin, coordmax,
-      dcoord, species, meshes)
+      dcoord, species, fgDecomposition, meshes)
 end
 
 # Allow `do ... end` syntax.
@@ -544,8 +555,10 @@ function readvariable(meta::MetaVLSV, var::String, sorted::Bool=true, usemmap::B
          else
             @inbounds Array{Float32}(undef, bbox...)
          end
-      fgDecomposition = getDomainDecomposition(bbox, nIORanks)
-      _fillFG!(v, raw, fgDecomposition, nIORanks, bbox)
+      if meta.fgDecomposition[1] == 0
+         meta.fgDecomposition .= getDomainDecomposition(bbox, nIORanks)
+      end
+      _fillFG!(v, raw, meta.fgDecomposition, nIORanks, bbox)
    elseif sorted # DCCRG grid
       @inbounds v = ndims(raw) == 1 ? raw[meta.cellindex] : raw[:,meta.cellindex]
       if T === Float64; v = map(x->Float32(x), v); end
@@ -647,7 +660,7 @@ end
 end
 
 function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
-   fgDecomposition::NTuple{3, Int}, nIORanks::Int32, bbox::NTuple{3, Int})
+   fgDecomposition, nIORanks::Int32, bbox::NTuple{3, Int})
    offsetnow = 1
 
    @inbounds @views for i in 1:nIORanks
