@@ -1,7 +1,15 @@
 name: Benchmark this PR
 on:
-  pull_request_target:
-    branches: [ master ]
+  pull_request:
+    branches:
+      - master
+      - '!compathelper/**'
+    paths-ignore:
+      - 'README.md'
+      - 'test/**'
+      - 'docs/**'
+      - 'examples/**'
+      - 'PyPlot/**'
 permissions:
   pull-requests: write    # needed to post comments
 
