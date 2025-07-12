@@ -17,6 +17,9 @@ jobs:
   bench:
     runs-on: ubuntu-latest
     steps:
+      - name: Add sample files
+        run: |
+          ln -s ../test/Artifacts.toml Artifacts.toml
       - uses: MilesCranmer/AirspeedVelocity.jl@action-v1
         with:
           julia-version: '1'
