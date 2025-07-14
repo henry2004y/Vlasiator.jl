@@ -1,4 +1,4 @@
-using BenchmarkTools, Downloads, Tar, CodecZlib
+using BenchmarkTools, Downloads, Tar, CodecZlib, Vlasiator
 
 println("Julia version is $VERSION")
 println()
@@ -10,14 +10,14 @@ datadir = "data"
 files = ("bulk.1d.vlsv", "bulk.2d.vlsv", "bulk.amr.vlsv")
 
 # Check if all files already exist
-if joinpath(datadir, files[1]) -> isfile
+if joinpath(datadir, files[1]) |> isfile
    println("✅ All data files already exist.")
 else
    println("⬇️ Downloading and extracting data...")
 
    # Download and extract the data
    testdata = Downloads.download(testdata_url)
-   open(Gzip.GzipDecompressorStream, testdata) do io
+   open(GzipDecompressorStream, testdata) do io
       Tar.extract(io, datadir)
    end
 
