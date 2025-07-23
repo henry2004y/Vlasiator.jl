@@ -11,7 +11,7 @@ visualtests = !isCI || (isCI && islinux)
 
 group = get(ENV, "TEST_GROUP", :all) |> Symbol
 
-function nanmaximum(x::AbstractArray{T}) where T<:AbstractFloat
+function nanmaximum(x::AbstractArray{T}) where T <: AbstractFloat
    result = convert(eltype(x), NaN)
    for i in x
       if !isnan(i)
@@ -94,8 +94,8 @@ end
          @test getnearestcellwithvdf(meta, id) == 5
 
          # velocity space reading
-         vcellids, vcellf = readvcells(meta, 5; species="proton")
-         V = getvcellcoordinates(meta, vcellids; species="proton")
+         vcellids, vcellf = readvcells(meta, 5; species = "proton")
+         V = getvcellcoordinates(meta, vcellids; species = "proton")
          @test V[end] == [2.45f0, 1.95f0, 1.95f0]
          @test_throws ArgumentError readvcells(meta, 2)
          vcids = Vlasiator.reorder(meta.meshes["proton"], vcellids)
@@ -117,15 +117,16 @@ end
 
          meta = meta2
          @test_throws ErrorException Vlasiator.prep1d(meta, "CellID")
-         v = Vlasiator.prep1d(meta, "CellID"; i1=1)
+         v = Vlasiator.prep1d(meta, "CellID"; i1 = 1)
          @test length(v) == 100 && v[end] == 0x000000000000185e
-         v = Vlasiator.prep1d(meta, "CellID"; i2=1)
+         v = Vlasiator.prep1d(meta, "CellID"; i2 = 1)
          @test length(v) == 63 && v[end] == 0x000000000000003f
 
          # AMR data reading, DCCRG grid
          metaAMR = meta3
          sliceoffset = abs(metaAMR.coordmin[2])
-         idlist, indexlist = getslicecell(metaAMR, sliceoffset, 2,
+         idlist,
+         indexlist = getslicecell(metaAMR, sliceoffset, 2,
             metaAMR.coordmin[2], metaAMR.coordmax[2])
 
          # ID finding (AMR)
@@ -141,12 +142,12 @@ end
          @test sum(dataslice) ≈ 7.6903526f8
 
          data = readvariable(metaAMR, "proton/vg_v")
-         dataslice = refineslice(metaAMR, idlist, data[:,indexlist], :y)
-         @test dataslice[:,30,10] == [99989.88f0,-10.058721f0, -9.56321f0]
+         dataslice = refineslice(metaAMR, idlist, data[:, indexlist], :y)
+         @test dataslice[:, 30, 10] == [99989.88f0, -10.058721f0, -9.56321f0]
 
          let err = nothing
             try
-               getslicecell(metaAMR, sliceoffset, 1, -2., -1.)
+               getslicecell(metaAMR, sliceoffset, 1, -2.0, -1.0)
             catch err
             end
             @test err isa Exception
@@ -171,7 +172,7 @@ end
          data = readvariable(metaAMR, "fg_e")
          ncells, namr = metaAMR.ncells, metaAMR.maxamr
          @test size(data) == (3, ncells[1]*namr^2, ncells[2]*namr^2, ncells[3]*namr^2)
-         @test data[:,5,1,1] == [7.603512f-7, 2f-4, -2f-4]
+         @test data[:, 5, 1, 1] == [7.603512f-7, 2.0f-4, -2.0f-4]
 
          # Compare two VLSV files
          @test issame(files[1], files[1])
@@ -182,7 +183,7 @@ end
       @testset "Derived variables" begin
          meta = meta1
          @test meta["Vmag"] |> sortperm == [3, 4, 1, 2, 8, 9, 10, 5, 7, 6]
-         @test meta["Protated"][2,2,3] == 1.7952461f-29
+         @test meta["Protated"][2, 2, 3] == 1.7952461f-29
          @test meta["Panisotropy"][4] == 1.0147697f0
          @test meta["Tanisotropy"][4] == 1.0147696f0
          @test meta["Agyrotropy"][1] |> isnan
@@ -196,7 +197,7 @@ end
 
          @test meta["VA"] |> nanmaximum == 2.3202628822256166e8
 
-         @test readvariable(meta, "VA", [1,2])[2] == 65507.75496283364
+         @test readvariable(meta, "VA", [1, 2])[2] == 65507.75496283364
 
          @test meta["MA"][end] == 10.700530839822328
 
@@ -220,7 +221,7 @@ end
 
          @test meta["BetaStar"][1] == 229.5517f0
 
-         @test meta["Poynting"][:,10,10,1] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
+         @test meta["Poynting"][:, 10, 10, 1] == [-3.677613f-11, 8.859047f-9, 2.4681486f-9]
 
          @test meta["IonInertial"][1] == 8.578087f7
 
@@ -232,11 +233,11 @@ end
 
          @test meta["Gyrofrequency"][1] == 0.0457995f0
 
-         @test meta["J"][1,30,50,1] == 4.6532236f-12
+         @test meta["J"][1, 30, 50, 1] == 4.6532236f-12
 
-         @test meta["Jpar"][30,50,1] == -4.205885f-11
+         @test meta["Jpar"][30, 50, 1] == -4.205885f-11
 
-         @test meta["Jperp"][30,50,1] == 9.058601f-11
+         @test meta["Jperp"][30, 50, 1] == 9.058601f-11
 
          @test meta["Omegap"][1] == 1316.6211f0
 
@@ -258,7 +259,7 @@ end
          sha_str = bytes2hex(open(sha1, "bulk_new.vlsv"))
          @test sha_str == "f9352fe67a319b4d526608b222075889a5085a7a"
 
-         rm("bulk_new.vlsv", force=true)
+         rm("bulk_new.vlsv", force = true)
       end
    end
 
@@ -277,20 +278,20 @@ end
       @testset "Curvature, Divergence" begin
          let dx = ones(Float32, 3)
             # 2D
-            A = ones(Float32, 3,3,1,3)
+            A = ones(Float32, 3, 3, 1, 3)
             @test sum(Vlasiator.curl(A, dx)) == 0.0
             @test sum(Vlasiator.divergence2d(A, dx[1])) == 0.0
             # 3D
-            A = ones(Float32, 3,3,3,3)
+            A = ones(Float32, 3, 3, 3, 3)
             @test sum(Vlasiator.curl(A, dx)) == 0.0
             @test sum(Vlasiator.divergence(A, dx)) == 0.0
          end
       end
       @testset "Gradient" begin
-         let A = ones(Float32, 3,3,3), dx = ones(Float32, 3)
+         let A = ones(Float32, 3, 3, 3), dx = ones(Float32, 3)
             @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
-         let A = ones(Float32, 3,3), dx = ones(Float32, 2)
+         let A = ones(Float32, 3, 3), dx = ones(Float32, 2)
             @test sum(Vlasiator.gradient(A, dx)) == 0.0
          end
          let A = ones(Float32, 3), dx = ones(Float32, 1)
@@ -299,14 +300,14 @@ end
       end
       @testset "FluxFunction" begin
          b = reshape(1:75, 3, 5, 5)
-         dx = [1,2]
+         dx = [1, 2]
          flux = compute_flux_function(b, dx, 1)
-         @test flux[3,3] == 29
+         @test flux[3, 3] == 29
          # saddle point test func
          flux = [x^2 - y^2 for x in -10:1.0:10, y in -10:1.0:10]
-         xi_, oi_ = find_reconnection_points(flux; method=1)
+         xi_, oi_ = find_reconnection_points(flux; method = 1)
          @test xi_ == [11; 11;;]
-         xi_, oi_ = find_reconnection_points(flux; method=2)
+         xi_, oi_ = find_reconnection_points(flux; method = 2)
          @test xi_ == [11; 11;;]
       end
    end
@@ -315,17 +316,17 @@ end
       @testset "Sampling" begin
          meta = meta3 # amr
 
-         @test Vlasiator.downsample_fg(meta, "fg_e")[1,3] == 7.5771624f-7
+         @test Vlasiator.downsample_fg(meta, "fg_e")[1, 3] == 7.5771624f-7
          coords = Vlasiator.SVector(100.0, 200.0, 3e8)
          @test_throws ErrorException Vlasiator.get_fg_indices(meta, coords)
 
          data = let
-            tmp = Vlasiator.fillmesh(meta, ["proton/vg_rho"]; maxamronly=true)[1][1][1]
-            dropdims(tmp; dims=1)
+            tmp = Vlasiator.fillmesh(meta, ["proton/vg_rho"]; maxamronly = true)[1][1][1]
+            dropdims(tmp; dims = 1)
          end
          @test Vlasiator.read_variable_as_fg(meta, "proton/vg_rho") == data
-         @test Vlasiator.read_variable_as_fg(meta, "proton/vg_v")[1,18,8,8] == 106991.59f0
-
+         @test Vlasiator.read_variable_as_fg(meta, "proton/vg_v")[1, 18, 8, 8] ==
+               106991.59f0
       end
    end
 
@@ -336,18 +337,22 @@ end
          @test size(data[1][1]) == (1, 63, 100, 1)
 
          meta = meta3 # amr
-         write_vtk(meta, vars=["proton/vg_rho", "fg_b", "proton/vg_v"])
+         write_vtk(meta, vars = ["proton/vg_rho", "fg_b", "proton/vg_v"])
          sha_str = bytes2hex(open(sha1, "bulk.amr_3.vti"))
          @test sha_str == "8a2bb0a15c5dcc329f88821036df840a86eef9d5"
 
          # Selected region
-         write_vtk(meta, vars=["proton/vg_rho"], maxamronly=true, box=
+         write_vtk(meta,
+            vars = ["proton/vg_rho"],
+            maxamronly = true,
+            box =
             [meta.coordmin[1], meta.coordmax[1], 0, meta.coordmax[2], 0, meta.coordmax[3]])
          sha_str = bytes2hex(open(sha1, "bulk.amr.vti"))
          @test sha_str == "50e01f51ec7e16a1a57e794eab8545eeeda4e2b6"
 
-         foreach(f -> rm(f, force=true), ["bulk.amr.vthb", "bulk.amr_1.vti",
-            "bulk.amr_2.vti", "bulk.amr_3.vti", "bulk.amr.vti"])
+         foreach(f -> rm(f, force = true),
+            ["bulk.amr.vthb", "bulk.amr_1.vti",
+               "bulk.amr_2.vti", "bulk.amr_3.vti", "bulk.amr.vti"])
       end
    end
 
@@ -379,25 +384,25 @@ end
          meta = meta1
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :line &&
-            rec[1].args[1] isa LinRange
+               rec[1].args[1] isa LinRange
 
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(),
-            Vlasiator.VDFSlice((meta, [0.0,0.0,0.0])))
+            Vlasiator.VDFSlice((meta, [0.0, 0.0, 0.0])))
          @test getfield(rec[1], 1)[:seriestype] == :histogram2d
 
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(:center => :bulk),
-            Vlasiator.VDFSlice((meta, [0.0,0.0,0.0])))
+            Vlasiator.VDFSlice((meta, [0.0, 0.0, 0.0])))
          @test rec[1].args[1][1] == -0.00015234268f0
 
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(:center => :peak),
-            Vlasiator.VDFSlice((meta, [0.0,0.0,0.0])))
+            Vlasiator.VDFSlice((meta, [0.0, 0.0, 0.0])))
          @test rec[1].args[1][1] == -0.00019999992f0
 
          # 2D
          meta = meta2
          rec = RecipesBase.apply_recipe(Dict{Symbol, Any}(), meta, "proton/vg_rho")
          @test getfield(rec[1], 1)[:seriestype] == :heatmap &&
-            rec[1].args[1] isa LinRange
+               rec[1].args[1] isa LinRange
 
          # 3D AMR
          meta = meta3
@@ -431,10 +436,11 @@ end
          fig, ax = vlslice(meta3, var)
          @test fig isa Figure
 
-         fig, ax = vlslices(meta3, var; addcolorbar=true)
+         fig, ax = vlslices(meta3, var; addcolorbar = true)
          @test fig isa Figure
 
-         fig = volume(meta3, "fg_b", EARTH, 3; algorithm=:iso, isovalue=0.0, isorange=1e-9)
+         fig = volume(
+            meta3, "fg_b", EARTH, 3; algorithm = :iso, isovalue = 0.0, isorange = 1e-9)
          @test fig isa Makie.FigureAxisPlot
 
          location = [0.0, 0.0, 0.0]
@@ -445,11 +451,11 @@ end
          @test fig isa Figure
 
          @suppress_err begin
-            fig, ax = vdfvolume(meta1, location; verbose=true)
+            fig, ax = vdfvolume(meta1, location; verbose = true)
          end
          @test fig isa Figure
 
-         fig, ax = vdfvolume(meta1, location; unit=EARTH, verbose=false)
+         fig, ax = vdfvolume(meta1, location; unit = EARTH, verbose = false)
          @test fig isa Figure
       end
    end
