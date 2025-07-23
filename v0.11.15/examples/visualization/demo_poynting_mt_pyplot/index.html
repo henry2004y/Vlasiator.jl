@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Poynting flux · Vlasiator.jl</title><meta name="title" content="Poynting flux · Vlasiator.jl"/><meta property="og:title" content="Poynting flux · Vlasiator.jl"/><meta property="twitter:title" content="Poynting flux · Vlasiator.jl"/><meta name="description" content="Documentation for Vlasiator.jl."/><meta property="og:description" content="Documentation for Vlasiator.jl."/><meta property="twitter:description" content="Documentation for Vlasiator.jl."/><meta property="og:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_poynting_mt_pyplot/"/><meta property="twitter:url" content="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_poynting_mt_pyplot/"/><link rel="canonical" href="https://henry2004y.github.io/Vlasiator.jl/examples/visualization/demo_poynting_mt_pyplot/"/><script data-outdated-warner src="../../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../../assets/documenter.js"></script><script src="../../../search_index.js"></script><script src="../../../siteinfo.js"></script><script src="../../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../../assets/themeswap.js"></script><link href="../../../democards/nocoverlisttheme.css" rel="stylesheet" type="text/css"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../../"><img src="../../../assets/logo.png" alt="Vlasiator.jl logo"/></a><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../../">Home</a></li><li><a class="tocitem" href="../../../manual/">User Guide</a></li><li><a class="tocitem" href="../../">Examples</a></li><li><a class="tocitem" href="../../../python/">Calling from Python</a></li><li><a class="tocitem" href="../../../gallery/">Gallery</a></li><li><a class="tocitem" href="../../../benchmark/">Benchmarks</a></li><li><a class="tocitem" href="../../../internal/">API Reference</a></li><li><a class="tocitem" href="../../../contributing/">Contributing</a></li><li><a class="tocitem" href="../../../log/">FAQ</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Poynting flux</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Poynting flux</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/henry2004y/Vlasiator.jl/blob/master/docs/examples/visualization/demo_poynting_mt_pyplot.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="demo_poynting"><a class="docs-heading-anchor" href="#demo_poynting">Poynting flux</a><a id="demo_poynting-1"></a><a class="docs-heading-anchor-permalink" href="#demo_poynting" title="Permalink"></a></h1><p><a href="https://github.com/henry2004y"><img src="https://img.shields.io/badge/Author-Hongyang%20Zhou-blue" alt="Author"/></a> <img src="https://img.shields.io/date/1677283200" alt="Update time"/></p><p>This demo shows how to extract the Poynting flux on a subdomain from 2D and plot.</p><p>Usage:</p><pre><code class="language-shell hljs">julia -t 4 demo_poynting_mt_pyplot.jl</code></pre><p>or</p><pre><code class="language-shell hljs">JULIA_NUM_THREADS=4 julia demo_poynting_mt_pyplot.jl</code></pre><pre><code class="language-julia hljs">using Statistics: mean, normalize
+using LinearAlgebra: ×, ⋅
+using Vlasiator
+using Vlasiator: μ₀, prep2d, prep2dslice
+using DSP, Polyester, Printf, PyPlot
+
+&quot;&quot;&quot;
+    extract_EM(files, range1, range2, pArgs, ndim=2; normal=:y, verbose=true)
+
+Extract time-series of EM fields from `files` within `range1` in the 1st dim and `range1` in
+the 2nd dim.
+&quot;&quot;&quot;
+function extract_EM(files, range1, range2, pArgs, ndim=2; normal=:y, verbose=true)
+   @assert ndim ∈ (2,3) &quot;Only support extracting EM fields from 2D/3D runs.&quot;
+   nfile = length(files)
+   e = zeros(Float32, 3, length(range1), length(range2), nfile)
+   b = zeros(Float32, 3, length(range1), length(range2), nfile)
+
+   if ndim == 2
+      @batch for i in eachindex(files)
+         verbose &amp;&amp; println(&quot;i = $i/$nfile, file = $(files[i])&quot;)
+         meta = load(files[i])
+
+         e[1,:,:,i] = prep2d(meta, &quot;vg_e_vol&quot;, 1)[range1, range2]
+         e[2,:,:,i] = prep2d(meta, &quot;vg_e_vol&quot;, 2)[range1, range2]
+         e[3,:,:,i] = prep2d(meta, &quot;vg_e_vol&quot;, 3)[range1, range2]
+         b[1,:,:,i] = prep2d(meta, &quot;vg_b_vol&quot;, 1)[range1, range2]
+         b[2,:,:,i] = prep2d(meta, &quot;vg_b_vol&quot;, 2)[range1, range2]
+         b[3,:,:,i] = prep2d(meta, &quot;vg_b_vol&quot;, 3)[range1, range2]
+      end
+   else
+      @batch for i in eachindex(files)
+         verbose &amp;&amp; println(&quot;i = $i/$nfile, file = $(files[i])&quot;)
+         meta = load(files[i])
+
+         e[1,:,:,i] = prep2dslice(meta, &quot;vg_e_vol&quot;, normal, 1, pArgs)[range1, range2]
+         e[2,:,:,i] = prep2dslice(meta, &quot;vg_e_vol&quot;, normal, 2, pArgs)[range1, range2]
+         e[3,:,:,i] = prep2dslice(meta, &quot;vg_e_vol&quot;, normal, 3, pArgs)[range1, range2]
+         b[1,:,:,i] = prep2dslice(meta, &quot;vg_b_vol&quot;, normal, 1, pArgs)[range1, range2]
+         b[2,:,:,i] = prep2dslice(meta, &quot;vg_b_vol&quot;, normal, 2, pArgs)[range1, range2]
+         b[3,:,:,i] = prep2dslice(meta, &quot;vg_b_vol&quot;, normal, 3, pArgs)[range1, range2]
+      end
+   end
+   e, b
+end
+
+&quot;Moving box average of vector `g` with box size `n`.&quot;
+function moving_average(g::AbstractVector{&lt;:AbstractFloat}, n::Int)
+   nbackward = div(n,2)
+   nforward = isodd(n) ? div(n,2) : div(n,2) - 1
+   len = length(g)
+   g_avg = similar(g)
+   @inbounds @batch for i = 1:len
+       lo = max(1, i - nbackward)
+       hi = min(len, i + nforward)
+       g_avg[i] = mean(@view g[lo:hi])
+   end
+   g_avg
+end
+
+&quot;Extract the perturbation from vector `v` with moving box size `nbox`.&quot;
+function detrend(v::AbstractVector{&lt;:AbstractFloat}; nbox=length(v)÷12)
+   v̄ = moving_average(v, nbox)
+   dv = v .- v̄
+end
+
+&quot;Extract the perturbation from 4D array `v` along the last dim with moving box size `nbox`.&quot;
+function detrend(v::AbstractArray{&lt;:AbstractFloat}; nbox=size(v,4)÷12)
+   v̄ = similar(v)
+   for idim = 1:3
+      for j in axes(v, 3), i in axes(v, 2)
+         v̄[idim,i,j,:] = @views moving_average(v[idim,i,j,:], nbox)
+      end
+   end
+   dv = v .- v̄
+   dv, v̄
+end
+
+&quot;Band pass filter for vector field `var`.&quot;
+function band_pass_filter(var, responsetype, designmethod)
+
+   filter = digitalfilter(responsetype, designmethod)
+
+   var_filtered = zeros(eltype(var), size(var,4), 3, size(var,2), size(var,3))
+
+   for idim = 1:3
+      for j in axes(var, 3), i in axes(var, 2)
+         var_filtered[:,idim,i,j] = filtfilt(filter, var[idim,i,j,:])
+      end
+   end
+   var_filtered
+end
+
+&quot;&quot;&quot;
+    calc_poynting(de, db, b̄, it)
+
+Return full Poynting vector, also parallel and perpendicular Poynting vector components to
+the magnetic field. The perpendicular components are in-plane.
+&quot;&quot;&quot;
+function calc_poynting(de, db, b̄, it)
+
+   s = zeros(3, size(de,3), size(de,4))
+   # parallel and perpendicular Poynting vector magnitudes
+   s_par  = zeros(size(de,3), size(de,4))
+   s_perp = zeros(size(de,3), size(de,4))
+
+   @views for j in axes(de,4), i in axes(de,3)
+      # Poynting vector = dE × dB
+      s[:,i,j] = de[it,:,i,j] × db[it,:,i,j] / μ₀
+
+      # Transform into parallel and perpendicular direction w.r.t. B
+      b̂ = normalize(b̄[:,i,j,it])
+      s_par[i,j] = s[:,i,j] ⋅ b̂
+      #s_perp[i,j] = norm(s[:,i,j] .- s_par[i,j] .* b̂)
+      # in-plane perpendicular component only
+      s_perp[i,j] = sqrt((s[1,i,j] - s_par[i,j]*b̂[1])^2 + (s[3,i,j] - s_par[i,j]*b̂[3])^2)
+   end
+
+   s, s_par, s_perp
+end
+
+&quot;Output figures of Poynting vectors for each snapshot.&quot;
+function plot_poynting(de_filtered, db_filtered, b̄, x1, x2, frequency_range)
+
+   nt = size(de_filtered, 1)
+
+   norm1 = let
+      sparmax = frequency_range == &quot;high&quot; ? 5e-7 : 1e-5
+      sparmin = -sparmax
+      levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(sparmin, sparmax)
+      matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
+   end
+
+   norm2 = let
+      sperpmax = frequency_range == &quot;high&quot; ? 5e-7 : 1e-5
+      sperpmin = 0.0
+      levels = matplotlib.ticker.MaxNLocator(nbins=255).tick_values(sperpmin, sperpmax)
+      matplotlib.colors.BoundaryNorm(levels, ncolors=256, clip=true)
+   end
+
+   stride = 10 # number of strides for quivers
+
+   s, s_par, s_perp = calc_poynting(de_filtered, db_filtered, b̄, 1)
+
+
+   fig, axs = plt.subplots(1, 2; figsize=(11,6), sharex=true, sharey=true,
+      constrained_layout=true)
+
+   axs[1].set_title(L&quot;S_\parallel&quot;; fontsize=&quot;large&quot;)
+   axs[2].set_title(L&quot;S_\perp&quot;; fontsize=&quot;large&quot;)
+
+   for ax in axs
+      ax.set_aspect(&quot;equal&quot;)
+      ax.set_xlabel(L&quot;x1 [R_E]&quot;; fontsize=&quot;large&quot;)
+      ax.set_ylabel(L&quot;x2 [R_E]&quot;; fontsize=&quot;large&quot;)
+   end
+
+   c1 = axs[1].pcolormesh(x1, x2, s_par&#39;;
+      cmap=matplotlib.cm.RdBu_r,
+      shading=&quot;nearest&quot;,
+      norm=norm1,
+      )
+
+   cb1 = colorbar(c1; ax=axs[1], extend=&quot;both&quot;)
+   cb1.ax.set_ylabel(L&quot;[W/m^2]&quot;; fontsize=&quot;large&quot;)
+
+   c2 = axs[2].pcolormesh(x1, x2, s_perp&#39;;
+      cmap=matplotlib.cm.turbo,
+      shading=&quot;nearest&quot;,
+      norm=norm2,
+      )
+
+   cb2 = colorbar(c2; ax=axs[2], extend=&quot;max&quot;)
+   cb2.ax.set_ylabel(L&quot;[W/m^2]&quot;; fontsize=&quot;large&quot;)
+
+   s1 = @views (s[1,:,:] ./ hypot.(s[1,:,:], s[3,:,:]))[1:stride:end, 1:stride:end]&#39;
+   s2 = @views (s[3,:,:] ./ hypot.(s[1,:,:], s[3,:,:]))[1:stride:end, 1:stride:end]&#39;
+
+   q = axs[1].quiver(x1[1:stride:end], x2[1:stride:end], s1, s2; color=&quot;k&quot;)
+
+   b1 = @views (b̄[1,:,:,1] ./ hypot.(b̄[1,:,:,1], b̄[3,:,:,1]))[1:stride:end, 1:stride:end]&#39;
+   b2 = @views (b̄[3,:,:,1] ./ hypot.(b̄[1,:,:,1], b̄[3,:,:,1]))[1:stride:end, 1:stride:end]&#39;
+
+   qb = axs[1].quiver(x1[1:stride:end], x2[1:stride:end], b1, b2; color=&quot;tab:purple&quot;)
+
+   if frequency_range == &quot;high&quot;
+      fig.suptitle(&quot;t = $(t[1]) s, [0.1, 1.0] Hz&quot;;
+         fontsize=&quot;xx-large&quot;)
+   else
+      fig.suptitle(&quot;t = $(t[1]) s, [$(responsetype.w1), $(responsetype.w2)] Hz&quot;;
+         fontsize=&quot;xx-large&quot;)
+   end
+
+   for it = 1:nt
+      @info &quot;it = $it&quot;
+      local s, s_par, s_perp
+      outname = &quot;poynting/poynting_$(lpad(it, 4, &#39;0&#39;))_band$frequency_range.png&quot;
+      isfile(outname) &amp;&amp; continue
+      s, s_par, s_perp = calc_poynting(de_filtered, db_filtered, b̄, it)
+
+      c1.set_array(s_par&#39;)
+      c2.set_array(s_perp&#39;)
+
+      ŝx = @views @. s[1,:,:] / hypot(s[1,:,:], s[3,:,:])
+      ŝz = @views @. s[3,:,:] / hypot(s[1,:,:], s[3,:,:])
+
+      q.set_UVC(ŝx[1:stride:end, 1:stride:end]&#39;, ŝz[1:stride:end, 1:stride:end]&#39;)
+
+      b̂x = @views @. b̄[1,:,:,it] / hypot(b̄[1,:,:,it], b̄[3,:,:,it])
+      b̂z = @views @. b̄[3,:,:,it] / hypot(b̄[1,:,:,it], b̄[3,:,:,it])
+
+      qb.set_UVC(b̂x[1:stride:end, 1:stride:end]&#39;, b̂z[1:stride:end, 1:stride:end]&#39;)
+
+      if frequency_range == &quot;high&quot;
+         fig.suptitle(&quot;t = $(t[it]) s, [0.1, 1.0] Hz&quot;;
+            fontsize=&quot;xx-large&quot;)
+      else
+         fig.suptitle(&quot;t = $(t[it]) s, [$(responsetype.w1), $(responsetype.w2)] Hz&quot;;
+            fontsize=&quot;xx-large&quot;)
+      end
+      savefig(outname; dpi=300, bbox_inches=&quot;tight&quot;)
+   end
+end
+
+########## Main
+
+files = filter(contains(r&quot;^bulk.*\.vlsv$&quot;), readdir())
+nfile = length(files)
+
+const frequency_range = &quot;low&quot; # filtered frequency range ∈ (&quot;low&quot;, &quot;high&quot;)
+const extent = [6., 16., -7., 7.] # [RE], default: [-Inf32, Inf32, -Inf32, Inf32]
+const normal = :none # plane normal direction for 3D data, (:none, :x, :y, :z)
+const fs = 2.0 # sampling frequency, [Hz]
+
+# WARNING: t may not be exact due to round-off errors in output time stamps!
+ndim, pArgs, t, range1, range2 = let meta = load(files[1])
+   pArgs = Vlasiator.set_args(meta, &quot;vg_e_vol&quot;, EARTH; normal=:none)
+   x1, x2 = Vlasiator.get_axis(pArgs)
+
+   tstart = meta.time
+   tend = load(files[end]).time
+
+   ndims(meta), pArgs,
+   range(round(tstart,digits=1), round(tend, digits=1), length=nfile),
+   searchsortedfirst(x1, extent[1]):searchsortedlast(x1, extent[2]),
+   searchsortedfirst(x2, extent[3]):searchsortedlast(x2, extent[4])
+end
+
+@assert ndim == 3 &quot;3D not working yet!&quot;
+
+e, b = extract_EM(files, range1, range2, pArgs, ndim; normal, verbose=true)
+
+designmethod = Butterworth(5)
+if frequency_range == &quot;high&quot;
+   responsetype = Highpass(0.1; fs)
+   nbox = 40
+elseif frequency_range == &quot;low&quot;
+   responsetype = Bandpass(0.02, 0.067; fs)
+   nbox = 200
+end
+
+de, _ = detrend(e; nbox)
+db, b̄ = detrend(b; nbox)
+
+de_filtered = band_pass_filter(de, responsetype, designmethod)
+db_filtered = band_pass_filter(db, responsetype, designmethod)
+
+x1 = range(extent[1], extent[2], length=length(range1))
+x2 = range(extent[3], extent[4], length=length(range2))
+
+plot_poynting(de_filtered, db_filtered, b̄, x1, x2, frequency_range)</code></pre><hr/><p><em>This page was generated using <a href="https://github.com/JuliaDocs/DemoCards.jl">DemoCards.jl</a>.</em></p></article><nav class="docs-footer"><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.14.1 on <span class="colophon-date" title="Wednesday 23 July 2025 17:18">Wednesday 23 July 2025</span>. Using Julia version 1.11.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
