@@ -675,9 +675,11 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
       lend = @. lstart + lsize - 1
       lrange = map((x,y)->x:y, lstart, lend) |> CartesianIndices
       # Reorder data
-      raw_slice = selectdim(raw, ndims(raw), offsetnow:offsetnext-1)
-      dest_view = view(dataOrdered, ntuple(_ -> Colon(), ndims(dataOrdered) - 3)..., lrange)
-      dest_view[:] = vec(raw_slice)
+      if ndims(raw) > 1
+         dataOrdered[:,lrange] = vec(raw[:,offsetnow:offsetnext-1])
+      else
+         dataOrdered[lrange] = vec(raw[offsetnow:offsetnext-1])
+      end
       offsetnow = offsetnext
    end
 
