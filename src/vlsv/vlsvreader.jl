@@ -663,7 +663,7 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
    fgDecomposition, nIORanks::Int32, bbox::NTuple{3, Int})
    offsetnow = 1
 
-   @inbounds @views for i in 1:nIORanks
+   @inbounds for i in 1:nIORanks
       xyz = (
          (i - 1) ÷ fgDecomposition[3] ÷ fgDecomposition[2],
          (i - 1) ÷ fgDecomposition[3] % fgDecomposition[2],
@@ -674,12 +674,10 @@ function _fillFG!(dataOrdered::Array{Float32}, raw::AbstractArray{<:Real},
       offsetnext = offsetnow + prod(lsize)
       lend = @. lstart + lsize - 1
       lrange = map((x,y)->x:y, lstart, lend) |> CartesianIndices
-      # Reorder data
-      if ndims(raw) > 1
-         dataOrdered[:,lrange] = vec(raw[:,offsetnow:offsetnext-1])
-      else
-         dataOrdered[lrange] = vec(raw[offsetnow:offsetnext-1])
-      end
+      # Reorder scalar and vector data
+      rawslice = selectdim(raw, ndims(raw), offsetnow:offsetnext-1)
+      dataview = view(dataOrdered, ntuple(_ -> Colon(), ndims(dataOrdered) - 3)..., lrange)
+      dataview[:] = vec(rawslice)
       offsetnow = offsetnext
    end
 
