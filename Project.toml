@@ -1,7 +1,7 @@
 name = "Vlasiator"
 uuid = "7d2ba682-ad6e-4e20-80d9-3f2d4a610bb4"
 authors = ["Hongyang Zhou <hyzhou@umich.edu>"]
-version = "0.11.15"
+version = "0.11.16"
 
 [deps]
 Bumper = "8ce10254-0962-460f-a3d8-1f77fea1446e"
@@ -33,7 +33,7 @@ Bumper = "0.6, 0.7"
 LaTeXStrings = "1.2"
 LazilyInitializedFields = "1.0"
 LazyGrids = "0.4, 0.5, 1"
-Makie = "0.22"
+Makie = "0.22, 0.23, 0.24"
 Parsers = "2.4"
 PrecompileTools = "1.0"
 RecipesBase = "1.1"
