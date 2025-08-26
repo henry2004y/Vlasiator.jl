@@ -295,8 +295,8 @@ function load(file::AbstractString)
    for x in ns
       if tag(x) == "MESH_DECOMPOSITION" && x["mesh"] == "fsgrid"
          offset = Parsers.parse(Int, value(ns[11].children[1]))
-         seek(meta.fid, offset)
-         read!(meta.fid, fgDecomposition)
+         seek(fid, offset)
+         read!(fid, fgDecomposition)
          break
       end
    end
