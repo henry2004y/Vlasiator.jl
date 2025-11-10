@@ -11,7 +11,7 @@ const kB = 1.38064852e-23   # Boltzmann constant, [m²kg/(s²K)]
 const RE = 6.371e6          # Earth radius, [m]
 
 # Define units, LaTeX markup names, and LaTeX markup units for intrinsic values
-const units_predefined = Dict(
+const units_predefined = Base.ImmutableDict(
    :Rhom => ("kg/m3", L"$\rho_m$",  L"$\mathrm{kg}\,\mathrm{m}^{-3}$"),
    :rhoq => ("C/m3", L"$\rho_q$", L"$\mathrm{C}\,\mathrm{m}^{-3}$"),
    :rho => ("1/m3", L"$n_\mathrm{p}$", L"$\mathrm{m}^{-3}$"),
